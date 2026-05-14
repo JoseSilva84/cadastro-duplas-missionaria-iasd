@@ -84,18 +84,21 @@ export default function Cadastro() {
         setForm((prev) => ({ ...prev, regiaoNome: r.data.regiao?.nome || '' }));
       });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIgrejas([]);
     }
   }, [form.distritoId]);
 
-  // Detecta se o parceiro é externo automaticamente
-  useEffect(() => {
-    if (form.membro2Tipo !== 'MEMBRO_IASD') {
-      setForm((prev) => ({ ...prev, comAmigos: true }));
-    }
-  }, [form.membro2Tipo]);
-
-  const set = (campo, valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
+  const set = (campo, valor) => {
+    setForm((prev) => {
+      const next = { ...prev, [campo]: valor };
+      // Detecta automaticamente se o parceiro é externo
+      if (campo === 'membro2Tipo') {
+        next.comAmigos = valor !== 'MEMBRO_IASD';
+      }
+      return next;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

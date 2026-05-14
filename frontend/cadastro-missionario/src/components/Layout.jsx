@@ -41,8 +41,7 @@ const icons = {
   ),
   logoIasd: (
     <div
-      className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
-      style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
+      className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"      
     >
       <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
     </div>
@@ -126,7 +125,7 @@ export default function Layout() {
           <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center">
             {icons.logoIasd}
             <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
-              Cadastro - Duplas Missionárias
+              Cadastro Duplas Missionárias
             </span>
           </div>
           <div className="w-8 flex-shrink-0" />
@@ -145,7 +144,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-6 border-b border-white/10">
+      <div className="flex items-start gap-3 px-5 py-6 border-b border-white/10">
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
