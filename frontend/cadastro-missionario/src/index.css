@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --azul: #1A3A6B;
+    --azul-escuro: #0f2347;
+    --azul-claro: #2a5298;
+    --dourado: #C9963A;
+    --dourado-claro: #e5b05a;
+    --branco: #FFFFFF;
+    --cinza-claro: #F4F5F7;
+    --cinza-medio: #e2e4e9;
+    --texto: #1a1a2e;
+    --texto-leve: #6b7280;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Cursor pointer em todos os botões e links interativos */
+  button,
+  a,
+  [role="button"],
+  .cursor-pointer {
+    cursor: pointer;
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: var(--cinza-claro);
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply bg-[#1A3A6B] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#0f2347] transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-[#C9963A] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#e5b05a] transition-all duration-200 shadow-md active:scale-95;
+  }
+  .btn-outline {
+    @apply border-2 border-[#1A3A6B] text-[#1A3A6B] font-semibold px-6 py-3 rounded-lg hover:bg-[#1A3A6B] hover:text-white transition-all duration-200;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+  }
+  .input-field {
+    @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3A6B] focus:border-transparent transition-all;
+  }
+  .badge-ativa {
+    @apply bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full;
+  }
+  .badge-pendente {
+    @apply bg-yellow-100 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded-full;
+  }
+  .badge-inativa {
+    @apply bg-gray-100 text-gray-500 text-xs font-semibold px-2.5 py-1 rounded-full;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-150;
+  }
+  .sidebar-link.active {
+    @apply bg-white/20 text-white;
+  }
+}

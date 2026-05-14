@@ -1,0 +1,105 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Toaster } from 'sonner';
+
+// Páginas
+import Login from './pages/Login';
+import Layout from './components/Layout';
+import Regioes from './pages/Regioes';
+import Distritos from './pages/Distritos';
+import Duplas from './pages/Duplas';
+import DadosDupla from './pages/DadosDupla';
+import ComAmigos from './pages/ComAmigos';
+import Cadastro from './pages/Cadastro';
+import Relatorios from './pages/Relatorios';
+
+// Rota protegida — redireciona para login se não autenticado
+function RotaProtegida({ children }) {
+  const { usuario, carregando } = useAuth();
+  if (carregando) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-[#1A3A6B] border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">Carregando sistema...</p>
+        </div>
+      </div>
+    );
+  }
+  return usuario ? children : <Navigate to="/login" replace />;
+}
+
+// Rota apenas para admin
+function RotaAdmin({ children }) {
+  const { usuario } = useAuth();
+  if (usuario?.perfil !== 'ADMINISTRADOR') {
+    return <Navigate to="/regioes" replace />;
+  }
+  return children;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000}
+          toastOptions={{
+            style: {
+              fontFamily: 'Inter, system-ui, sans-serif',
+            },
+          }}
+        />
+        <Routes>
+          {/* Rota pública */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Rotas protegidas com layout lateral */}
+          <Route
+            path="/"
+            element={
+              <RotaProtegida>
+                <Layout />
+              </RotaProtegida>
+            }
+          >
+            {/* Redireciona raiz para regiões */}
+            <Route index element={<Navigate to="/regioes" replace />} />
+
+            {/* Regiões */}
+            <Route path="regioes" element={<Regioes />} />
+            <Route path="regioes/:regiaoId/distritos" element={<Distritos />} />
+
+            {/* Distritos */}
+            <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
+
+            {/* Duplas */}
+            <Route path="duplas" element={<Duplas />} />
+            <Route path="duplas/nova" element={<Cadastro />} />
+            <Route path="duplas/com-amigos" element={<ComAmigos />} />
+            <Route path="duplas/:id" element={<DadosDupla />} />
+            <Route path="duplas/:id/editar" element={<Cadastro />} />
+
+            {/* Relatórios — apenas admin */}
+            <Route
+              path="relatorios"
+              element={
+                <RotaAdmin>
+                  <Relatorios />
+                </RotaAdmin>
+              }
+            />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/regioes" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;

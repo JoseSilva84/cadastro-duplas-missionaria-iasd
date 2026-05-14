@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Círculo externo dourado -->
+  <circle cx="60" cy="60" r="58" fill="none" stroke="#C9963A" stroke-width="3"/>
+
+  <!-- Círculo interno decorativo -->
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#C9963A" stroke-width="1" opacity="0.5"/>
+
+  <!-- Chamas / Espírito Santo no topo -->
+  <path d="M60 8 C60 8, 68 20, 68 30 C68 38, 64 42, 60 42 C56 42, 52 38, 52 30 C52 20, 60 8, 60 8Z" fill="#C9963A"/>
+  <path d="M50 14 C50 14, 56 24, 56 32 C56 37, 53 40, 50 40 C47 40, 44 37, 44 32 C44 24, 50 14, 50 14Z" fill="#C9963A" opacity="0.7"/>
+  <path d="M70 14 C70 14, 76 24, 76 32 C76 37, 73 40, 70 40 C67 40, 64 37, 64 32 C64 24, 70 14, 70 14Z" fill="#C9963A" opacity="0.7"/>
+
+  <!-- Livros abertos / Bíblia na base -->
+  <path d="M30 90 L60 78 L90 90 L60 102 Z" fill="none" stroke="#C9963A" stroke-width="2"/>
+  <line x1="60" y1="78" x2="60" y2="102" stroke="#C9963A" stroke-width="1.5"/>
+  <line x1="38" y1="87" x2="55" y2="81" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="91" x2="55" y2="85" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+  <line x1="65" y1="81" x2="82" y2="87" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+  <line x1="65" y1="85" x2="82" y2="91" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+
+  <!-- Globo terrestre -->
+  <circle cx="60" cy="58" r="18" fill="none" stroke="#C9963A" stroke-width="2"/>
+  <ellipse cx="60" cy="58" rx="8" ry="18" fill="none" stroke="#C9963A" stroke-width="1.5"/>
+  <line x1="42" y1="58" x2="78" y2="58" stroke="#C9963A" stroke-width="1.5"/>
+  <path d="M46 48 C50 52, 56 52, 60 48" fill="none" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+  <path d="M60 68 C64 64, 70 64, 74 68" fill="none" stroke="#C9963A" stroke-width="1" opacity="0.6"/>
+
+  <!-- Cruz dourada sobre o globo -->
+  <rect x="56" y="44" width="8" height="28" rx="1.5" fill="#C9963A"/>
+  <rect x="48" y="50" width="24" height="8" rx="1.5" fill="#C9963A"/>
+
+  <!-- Texto "IASD" na parte inferior -->
+  <text x="60" y="115" text-anchor="middle" font-family="Georgia, serif" font-size="10" font-weight="bold" fill="#C9963A" letter-spacing="3">IASD</text>
+</svg>

@@ -1,0 +1,132 @@
+// Schema Prisma — Sistema de Duplas Missionárias — Associação Paulistana
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Perfis de acesso do sistema
+enum Perfil {
+  ADMINISTRADOR
+  COORDENADOR_REGIONAL
+  PASTOR_DISTRITAL
+  LIDER_REGIOES
+}
+
+// Status da dupla missionária
+enum StatusDupla {
+  ATIVA
+  PENDENTE
+  INATIVA
+}
+
+// Tipo do segundo membro da dupla
+enum TipoMembro2 {
+  MEMBRO_IASD
+  CONVIDADO
+  INTERESSADO
+}
+
+// Tipo de projeto missionário
+enum TipoProjeto {
+  CASA_A_CASA
+  PEQUENOS_GRUPOS
+  ACAO_SOCIAL
+  MISSAO_COM_AMIGOS
+  EVANGELISMO_PUBLICO
+}
+
+// Usuários do sistema
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String
+  perfil    Perfil
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  // Relacionamentos opcionais por perfil
+  regiaoId   Int?
+  distritoId Int?
+  regiao     Regiao?   @relation(fields: [regiaoId], references: [id])
+  distrito   Distrito? @relation(fields: [distritoId], references: [id])
+}
+
+// Regiões da Associação Paulistana
+model Regiao {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  descricao String?
+  cor       String   @default("#1A3A6B") // cor identificadora do card
+  criadoEm DateTime @default(now())
+
+  distritos Distrito[]
+  usuarios  Usuario[]
+}
+
+// Distritos dentro de cada região
+model Distrito {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  regiaoId  Int
+  criadoEm DateTime @default(now())
+
+  regiao   Regiao    @relation(fields: [regiaoId], references: [id])
+  duplas   Dupla[]
+  usuarios Usuario[]
+  igrejas  Igreja[]
+}
+
+// Igrejas/congregações do distrito
+model Igreja {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  distritoId Int
+  criadoEm  DateTime @default(now())
+
+  distrito Distrito @relation(fields: [distritoId], references: [id])
+  duplas   Dupla[]
+}
+
+// Duplas Missionárias
+model Dupla {
+  id         Int      @id @default(autoincrement())
+
+  // Localização
+  regiaoNome  String
+  distritoId  Int
+  igrejaId    Int?
+  bairro      String
+
+  // Tipo de projeto
+  tipoProjeto TipoProjeto
+
+  // Membro 1 (líder)
+  liderNome    String
+  liderTelefone String?
+  liderEmail   String?
+  liderIgreja  String?
+
+  // Membro 2
+  membro2Tipo     TipoMembro2
+  membro2Nome     String
+  membro2Telefone String?
+
+  // Metadados
+  status           StatusDupla @default(ATIVA)
+  comAmigos        Boolean     @default(false)
+  pessoasAlcancadas Int        @default(0)
+  observacoes      String?
+  dataInicio       DateTime    @default(now())
+  criadoEm        DateTime    @default(now())
+  atualizadoEm    DateTime    @updatedAt
+
+  // Relacionamentos
+  distrito Distrito @relation(fields: [distritoId], references: [id])
+  igreja   Igreja?  @relation(fields: [igrejaId], references: [id])
+}
