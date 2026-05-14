@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-// Ícones SVG inline
 const icons = {
   regioes: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,15 +34,12 @@ const icons = {
     </svg>
   ),
   logoIasd: (
-    <div
-      className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"      
-    >
+    <div className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0">
       <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
     </div>
   ),
 };
 
-// Perfil para label legível
 const perfilLabel = {
   ADMINISTRADOR: 'Administrador',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
@@ -75,7 +71,7 @@ export default function Layout() {
       {/* Sidebar desktop */}
       <aside
         className="hidden lg:flex flex-col w-64 flex-shrink-0"
-        style={{ background: 'linear-gradient(180deg, #0f2347 0%, #1A3A6B 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #0b1a36 0%, #1A3A6B 40%, #162d54 100%)' }}
       >
         <SidebarContent
           usuario={usuario}
@@ -85,17 +81,15 @@ export default function Layout() {
         />
       </aside>
 
-      {/* Sidebar mobile — overlay com animação */}
-      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarAberta ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-        {/* Backdrop com fade */}
+      {/* Sidebar mobile */}
+      <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarAberta ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <div
-          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${sidebarAberta ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sidebarAberta ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setSidebarAberta(false)}
         />
-        {/* Sidebar com slide-in */}
         <aside
           className={`absolute left-0 top-0 bottom-0 w-72 flex flex-col z-50 transition-transform duration-300 ease-out ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'}`}
-          style={{ background: 'linear-gradient(180deg, #0f2347 0%, #1A3A6B 100%)' }}
+          style={{ background: 'linear-gradient(180deg, #0b1a36 0%, #1A3A6B 40%, #162d54 100%)' }}
         >
           <SidebarContent
             usuario={usuario}
@@ -109,23 +103,24 @@ export default function Layout() {
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Header mobile */}
-        <header className="lg:hidden flex items-center justify-between px-3 py-3 bg-[#1A3A6B] shadow-md gap-2">
+        <header className="lg:hidden flex items-center justify-between px-3 py-3 shadow-md gap-2"
+          style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
+        >
           <button
             onClick={() => setSidebarAberta(true)}
-            className="text-white p-1 flex-shrink-0"
+            className="text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
           >
             {icons.menu}
           </button>
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center">
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
             {icons.logoIasd}
             <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
-              Cadastro Duplas Missionárias
+              Duplas Missionárias
             </span>
           </div>
-          <div className="w-8 flex-shrink-0" />
+          <div className="w-9 flex-shrink-0" />
         </header>
 
-        {/* Área de scroll do conteúdo */}
         <main className="flex-1 overflow-y-auto bg-[#F4F5F7]">
           <Outlet />
         </main>
@@ -142,15 +137,16 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-            Cadastro - Duplas Missionárias
+            Duplas Missionárias
           </p>
-          <p className="text-[#C9963A] text-xs font-medium">Assoc. Paulistana</p>
+          <p className="text-[#C9963A] text-xs font-medium mt-0.5">Assoc. Paulistana</p>
         </div>
       </div>
 
       {/* Navegação */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navLinks.map((link) => (
+        <p className="px-4 pt-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
+        {navLinks.map((link, i) => (
           <NavLink
             key={link.to}
             to={link.to}
@@ -158,6 +154,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
+            style={{ animationDelay: `${i * 50}ms` }}
           >
             {link.icon}
             {link.label}
@@ -167,16 +164,23 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
 
       {/* Usuário logado */}
       <div className="px-3 py-4 border-t border-white/10">
-        <div className="bg-white/10 rounded-xl p-3 mb-3">
-          <p className="text-white text-sm font-semibold truncate">{usuario?.nome}</p>
-          <p className="text-white/60 text-xs mt-0.5">{perfilLabel[usuario?.perfil]}</p>
+        <div className="bg-white/8 rounded-xl p-3 mb-3 backdrop-blur-sm border border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
+              {usuario?.nome?.charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate">{usuario?.nome}</p>
+              <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
+            </div>
+          </div>
           {usuario?.regiao && (
-            <p className="text-[#C9963A] text-xs mt-0.5">📍 {usuario.regiao.nome}</p>
+            <p className="text-[#C9963A] text-xs mt-2 pl-10">📍 {usuario.regiao.nome}</p>
           )}
         </div>
         <button
           onClick={handleLogout}
-          className="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/20"
+          className="sidebar-link w-full text-red-300/80 hover:text-red-200 hover:bg-red-500/15"
         >
           {icons.logout}
           Sair do sistema

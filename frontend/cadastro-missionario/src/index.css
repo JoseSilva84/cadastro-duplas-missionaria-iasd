@@ -20,7 +20,6 @@
     padding: 0;
   }
 
-  /* Cursor pointer em todos os botões e links interativos */
   button,
   a,
   [role="button"],
@@ -38,46 +37,279 @@
   h1, h2, h3 {
     font-family: 'Georgia', 'Times New Roman', serif;
   }
+
+  /* Scrollbar personalizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c4c8d2;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #1A3A6B;
+  }
 }
 
 @layer utilities {
   .btn-primary {
-    @apply bg-[#1A3A6B] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#0f2347] transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+    @apply bg-[#1A3A6B] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+    background: linear-gradient(135deg, #1A3A6B 0%, #2a5298 100%);
   }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0) scale(0.97);
+  }
+
   .btn-secondary {
-    @apply bg-[#C9963A] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#e5b05a] transition-all duration-200 shadow-md active:scale-95;
+    @apply bg-[#C9963A] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md active:scale-95;
+    background: linear-gradient(135deg, #C9963A 0%, #e5b05a 100%);
   }
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, #b8862f 0%, #C9963A 100%);
+    transform: translateY(-1px);
+  }
+
   .btn-outline {
-    @apply border-2 border-[#1A3A6B] text-[#1A3A6B] font-semibold px-6 py-3 rounded-lg hover:bg-[#1A3A6B] hover:text-white transition-all duration-200;
+    @apply border-2 border-[#1A3A6B] text-[#1A3A6B] font-semibold px-6 py-3 rounded-lg transition-all duration-200;
   }
+  .btn-outline:hover {
+    @apply bg-[#1A3A6B] text-white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 58, 107, 0.25);
+  }
+  .btn-outline:active {
+    transform: translateY(0) scale(0.97);
+  }
+
   .card {
-    @apply bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+    @apply bg-white rounded-2xl shadow-md p-6 transition-all duration-300;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
   }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+  }
+
   .input-field {
-    @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3A6B] focus:border-transparent transition-all;
+    @apply w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-all duration-200;
+    background: #fafbfc;
   }
+  .input-field:focus {
+    @apply border-transparent;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.12);
+  }
+  .input-field:hover:not(:focus) {
+    border-color: #c4c8d2;
+  }
+
   .badge-ativa {
-    @apply bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full;
+    @apply text-xs font-semibold px-2.5 py-1 rounded-full;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
   }
   .badge-pendente {
-    @apply bg-yellow-100 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded-full;
+    @apply text-xs font-semibold px-2.5 py-1 rounded-full;
+    background: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%);
+    color: #854d0e;
   }
   .badge-inativa {
-    @apply bg-gray-100 text-gray-500 text-xs font-semibold px-2.5 py-1 rounded-full;
+    @apply text-xs font-semibold px-2.5 py-1 rounded-full;
+    background: #f3f4f6;
+    color: #6b7280;
   }
+
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-150;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
+    color: rgba(255, 255, 255, 0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  .sidebar-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: inherit;
+  }
+  .sidebar-link:hover {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  .sidebar-link:hover::before {
+    opacity: 1;
   }
   .sidebar-link.active {
-    @apply bg-white/20 text-white;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
+  .sidebar-link.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: #C9963A;
+    border-radius: 0 3px 3px 0;
+  }
+}
+
+/* ============================================
+   ANIMAÇÕES GLOBAIS
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 540ms; }
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #1A3A6B 0%, #C9963A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Loading skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
 }
 
 /* ============================================
    VERSÍCULO HERO — Mateus 28:19
    ============================================ */
 
-/* --- Keyframes --- */
 @keyframes particle-float {
   0% {
     transform: translateY(100%) translateX(0) scale(0);
@@ -189,7 +421,6 @@
   }
 }
 
-/* --- Container --- */
 .versiculo-hero-container {
   position: relative;
   display: flex;
@@ -213,7 +444,6 @@
   pointer-events: none;
 }
 
-/* --- Partículas douradas --- */
 .versiculo-particles {
   position: absolute;
   inset: 0;
@@ -232,7 +462,6 @@
   box-shadow: 0 0 6px rgba(201, 150, 58, 0.4);
 }
 
-/* --- Anel de brilho pulsante --- */
 .versiculo-glow-ring {
   position: absolute;
   top: 50%;
@@ -252,7 +481,6 @@
   z-index: 0;
 }
 
-/* --- Linhas decorativas --- */
 .versiculo-line-top,
 .versiculo-line-bottom {
   width: 60px;
@@ -276,7 +504,6 @@
   transform-origin: center;
 }
 
-/* --- Aspas decorativas --- */
 .versiculo-quote-mark {
   position: absolute;
   font-family: Georgia, 'Times New Roman', serif;
@@ -302,7 +529,6 @@
   animation-delay: 0.9s, 0.9s;
 }
 
-/* --- Card principal --- */
 .versiculo-card {
   position: relative;
   z-index: 1;
@@ -323,7 +549,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* --- Ícone da bíblia --- */
 .versiculo-icon {
   width: 44px;
   height: 44px;
@@ -338,7 +563,6 @@
   animation: icon-breathe 3.5s ease-in-out infinite, fade-in-up 0.6s ease 0.5s both;
 }
 
-/* --- Texto do versículo --- */
 .versiculo-texto {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 0.925rem;
@@ -351,7 +575,6 @@
   animation: fade-in-up 0.8s ease 0.7s both;
 }
 
-/* --- Palavras destacadas --- */
 .versiculo-highlight {
   color: #C9963A;
   font-weight: 600;
@@ -361,7 +584,6 @@
   white-space: nowrap;
 }
 
-/* --- Referência bíblica --- */
 .versiculo-reference {
   display: flex;
   align-items: center;

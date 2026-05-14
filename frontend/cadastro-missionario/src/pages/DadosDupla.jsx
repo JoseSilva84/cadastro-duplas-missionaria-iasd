@@ -17,8 +17,8 @@ const StatusBadge = ({ status }) => {
 };
 
 const InfoRow = ({ label, valor }) => valor ? (
-  <div className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 border-b border-gray-50 last:border-0">
-    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">{label}</dt>
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 py-3.5 border-b border-gray-50 last:border-0 group/row">
+    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0 group-hover/row:text-[#1A3A6B] transition-colors">{label}</dt>
     <dd className="text-sm text-gray-800 font-medium">{valor}</dd>
   </div>
 ) : null;
@@ -48,34 +48,36 @@ export default function DadosDupla() {
   if (carregando) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <div className="w-10 h-10 border-4 border-[#1A3A6B] border-t-transparent rounded-full animate-spin" />
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
+          <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
+        </div>
       </div>
     );
   }
-  if (!dupla) return <div className="p-6 text-red-500">Dupla não encontrada.</div>;
+  if (!dupla) return <div className="p-6 text-red-500 animate-fade-in">Dupla não encontrada.</div>;
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 flex-wrap">
-        <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B]">Regiões</button>
-        <span>/</span>
-        <button onClick={() => navigate(-1)} className="hover:text-[#1A3A6B]">Duplas</button>
-        <span>/</span>
+      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-6 flex-wrap animate-fade-in-down">
+        <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">Regiões</button>
+        <span className="text-gray-300">/</span>
+        <button onClick={() => navigate(-1)} className="hover:text-[#1A3A6B] transition-colors">Duplas</button>
+        <span className="text-gray-300">/</span>
         <span className="text-[#1A3A6B] font-medium">Detalhes</span>
       </div>
 
       {/* Header */}
-      <div className="card mb-4 sm:mb-6 relative overflow-hidden p-4 sm:p-6">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1A3A6B] to-[#C9963A]" />
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 pt-2">
+      <div className="card mb-6 relative overflow-hidden animate-scale-in">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1A3A6B] via-[#C9963A] to-[#1A3A6B] animate-gradient" style={{ backgroundSize: '200% 100%' }} />
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-3">
           <div className="flex items-center gap-4">
-            {/* Avatares sobrepostos */}
             <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-full bg-[#1A3A6B] flex items-center justify-center text-white font-bold text-xl shadow-md">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-xl shadow-lg">
                 {dupla.liderNome.charAt(0)}
               </div>
-              <div className="w-10 h-10 rounded-full bg-[#C9963A] flex items-center justify-center text-white font-bold text-sm absolute -bottom-1 -right-2 border-2 border-white shadow">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white font-bold text-sm absolute -bottom-1 -right-2 border-2 border-white shadow-md">
                 {dupla.membro2Nome.charAt(0)}
               </div>
             </div>
@@ -87,14 +89,16 @@ export default function DadosDupla() {
                 <span className="text-gray-300">+</span>
                 <h2 className="text-lg font-semibold text-gray-700">{dupla.membro2Nome}</h2>
               </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <StatusBadge status={dupla.status} />
-                <span className="text-xs text-gray-400">📍 {dupla.bairro}</span>
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                  {dupla.bairro}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Ações */}
           <div className="flex gap-2">
             <button
               onClick={() => navigate(`/duplas/${id}/editar`)}
@@ -105,16 +109,16 @@ export default function DadosDupla() {
             {!confirmandoDelete ? (
               <button
                 onClick={() => setConfirmandoDelete(true)}
-                className="px-4 py-2 rounded-lg border-2 border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors"
+                className="px-4 py-2 rounded-lg border-2 border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 hover:border-red-300 transition-all duration-200"
               >
                 Remover
               </button>
             ) : (
-              <div className="flex gap-2">
-                <button onClick={handleDelete} className="px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold">
+              <div className="flex gap-2 animate-fade-in">
+                <button onClick={handleDelete} className="px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors shadow-md">
                   Confirmar
                 </button>
-                <button onClick={() => setConfirmandoDelete(false)} className="px-3 py-2 rounded-lg border text-sm">
+                <button onClick={() => setConfirmandoDelete(false)} className="px-3 py-2 rounded-lg border text-sm hover:bg-gray-50 transition-colors">
                   Cancelar
                 </button>
               </div>
@@ -122,23 +126,23 @@ export default function DadosDupla() {
           </div>
         </div>
 
-        {/* Pessoas alcançadas */}
         {dupla.pessoasAlcancadas > 0 && (
-          <div className="mt-4 flex items-center gap-2 bg-[#C9963A]/10 rounded-xl px-4 py-3">
-            <span className="text-2xl">🙏</span>
+          <div className="mt-5 flex items-center gap-3 bg-gradient-to-r from-[#C9963A]/10 to-[#C9963A]/5 rounded-xl px-5 py-4 border border-[#C9963A]/10">
+            <span className="text-3xl animate-float">🙏</span>
             <div>
-              <p className="text-[#C9963A] font-bold text-xl">{dupla.pessoasAlcancadas}</p>
+              <p className="text-[#C9963A] font-bold text-2xl">{dupla.pessoasAlcancadas}</p>
               <p className="text-gray-500 text-xs">pessoas alcançadas</p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 stagger-children">
         {/* Localização e projeto */}
         <div className="card">
           <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
-            <span>📍</span> Localização & Projeto
+            <span className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-sm">📍</span>
+            Localização & Projeto
           </h3>
           <dl>
             <InfoRow label="Região" valor={dupla.distrito?.regiao?.nome || dupla.regiaoNome} />
@@ -153,7 +157,7 @@ export default function DadosDupla() {
         {/* Líder */}
         <div className="card">
           <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#1A3A6B] flex items-center justify-center text-white text-xs font-bold">1</div>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-xs font-bold shadow-sm">1</div>
             Líder (Membro 1)
           </h3>
           <dl>
@@ -167,7 +171,7 @@ export default function DadosDupla() {
         {/* Segundo membro */}
         <div className="card">
           <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#C9963A] flex items-center justify-center text-white text-xs font-bold">2</div>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold shadow-sm">2</div>
             Parceiro (Membro 2)
           </h3>
           <dl>
@@ -181,7 +185,8 @@ export default function DadosDupla() {
         {dupla.observacoes && (
           <div className="card">
             <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
-              <span>📝</span> Observações
+              <span className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-sm">📝</span>
+              Observações
             </h3>
             <p className="text-sm text-gray-600 leading-relaxed">{dupla.observacoes}</p>
           </div>
@@ -191,11 +196,12 @@ export default function DadosDupla() {
       {/* Histórico */}
       <div className="card mt-5">
         <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
-          <span>🕐</span> Histórico
+          <span className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-sm">🕐</span>
+          Histórico
         </h3>
         <div className="flex items-center gap-6 text-sm text-gray-500">
-          <span>Cadastrado em: <strong>{new Date(dupla.criadoEm).toLocaleDateString('pt-BR')}</strong></span>
-          <span>Atualizado em: <strong>{new Date(dupla.atualizadoEm).toLocaleDateString('pt-BR')}</strong></span>
+          <span>Cadastrado em: <strong className="text-gray-700">{new Date(dupla.criadoEm).toLocaleDateString('pt-BR')}</strong></span>
+          <span>Atualizado em: <strong className="text-gray-700">{new Date(dupla.atualizadoEm).toLocaleDateString('pt-BR')}</strong></span>
         </div>
       </div>
     </div>
