@@ -111,7 +111,10 @@ export default function Login() {
           <div className="lg:hidden flex flex-col items-center mb-8 gap-2">
             <Cruz />
             <h1 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Cadastro - Duplas Missionárias
+              Cadastro
+            </h1>
+            <h1 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Duplas Missionárias
             </h1>
             <p className="text-[#C9963A] font-semibold text-sm">Associação Paulistana</p>
           </div>
