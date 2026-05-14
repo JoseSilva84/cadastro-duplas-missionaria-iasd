@@ -40,7 +40,12 @@ const icons = {
     </svg>
   ),
   logoIasd: (
-    <img src="/logoiasd.png" alt="Logo IASD" className="w-9 h-9 object-contain" />
+    <div
+      className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
+      style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
+    >
+      <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
+    </div>
   ),
 };
 
@@ -87,41 +92,44 @@ export default function Layout() {
         />
       </aside>
 
-      {/* Sidebar mobile — overlay */}
-      {sidebarAberta && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarAberta(false)} />
-          <aside
-            className="absolute left-0 top-0 bottom-0 w-72 flex flex-col z-50"
-            style={{ background: 'linear-gradient(180deg, #0f2347 0%, #1A3A6B 100%)' }}
-          >
-            <SidebarContent
-              usuario={usuario}
-              navLinks={navLinks}
-              handleLogout={handleLogout}
-              setSidebarAberta={setSidebarAberta}
-            />
-          </aside>
-        </div>
-      )}
+      {/* Sidebar mobile — overlay com animação */}
+      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarAberta ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        {/* Backdrop com fade */}
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${sidebarAberta ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setSidebarAberta(false)}
+        />
+        {/* Sidebar com slide-in */}
+        <aside
+          className={`absolute left-0 top-0 bottom-0 w-72 flex flex-col z-50 transition-transform duration-300 ease-out ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'}`}
+          style={{ background: 'linear-gradient(180deg, #0f2347 0%, #1A3A6B 100%)' }}
+        >
+          <SidebarContent
+            usuario={usuario}
+            navLinks={navLinks}
+            handleLogout={handleLogout}
+            setSidebarAberta={setSidebarAberta}
+          />
+        </aside>
+      </div>
 
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Header mobile */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#1A3A6B] shadow-md">
+        <header className="lg:hidden flex items-center justify-between px-3 py-3 bg-[#1A3A6B] shadow-md gap-2">
           <button
             onClick={() => setSidebarAberta(true)}
-            className="text-white p-1"
+            className="text-white p-1 flex-shrink-0"
           >
             {icons.menu}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center">
             {icons.logoIasd}
-            <span className="text-white text-sm font-bold" style={{ fontFamily: 'Georgia, serif' }}>
-              Duplas Missionárias
+            <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
+              Cadastro - Duplas Missionárias
             </span>
           </div>
-          <div className="w-8" />
+          <div className="w-8 flex-shrink-0" />
         </header>
 
         {/* Área de scroll do conteúdo */}
@@ -141,7 +149,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-            Duplas Missionárias
+            Cadastro - Duplas Missionárias
           </p>
           <p className="text-[#C9963A] text-xs font-medium">Assoc. Paulistana</p>
         </div>

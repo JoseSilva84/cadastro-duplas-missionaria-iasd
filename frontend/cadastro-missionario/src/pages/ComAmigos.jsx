@@ -28,15 +28,15 @@ export default function ComAmigos() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Cabeçalho */}
-      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
         <div>
-          <p className="text-purple-500 text-sm font-semibold uppercase tracking-wider">Missão</p>
-          <h1 className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <p className="text-purple-500 text-xs sm:text-sm font-semibold uppercase tracking-wider">Missão</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
             Duplas com Amigos
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">
             Duplas que incluem convidados externos ou interessados
           </p>
         </div>

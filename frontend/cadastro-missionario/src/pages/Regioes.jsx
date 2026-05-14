@@ -1,21 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
 
 // Cores padrão para regiões sem cor definida
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
-// Badge de contagem
-const Badge = ({ valor, label, cor = 'bg-[#1A3A6B]' }) => (
-  <div className="flex flex-col items-center">
-    <span className={`text-2xl font-bold text-white`}>{valor}</span>
-    <span className="text-white/70 text-xs">{label}</span>
-  </div>
-);
-
 export default function Regioes() {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
@@ -43,29 +33,29 @@ export default function Regioes() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Cabeçalho */}
-      <div className="mb-8">
-        <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Painel Geral</p>
-        <h1 className="text-3xl font-bold text-[#1A3A6B] mt-1" style={{ fontFamily: 'Georgia, serif' }}>
+      <div className="mb-6 sm:mb-8">
+        <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Painel Geral</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B] mt-1" style={{ fontFamily: 'Georgia, serif' }}>
           Regiões Missionárias
         </h1>
-        <p className="text-gray-500 text-sm mt-1">Associação Paulistana — Igreja Adventista do Sétimo Dia</p>
+        <p className="text-gray-500 text-xs sm:text-sm mt-1">Associação Paulistana — Igreja Adventista do Sétimo Dia</p>
       </div>
 
       {/* Indicadores gerais */}
       {resumo && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[
             { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️' },
             { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅' },
             { label: 'Duplas Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳' },
             { label: 'Pessoas Alcançadas', valor: resumo.totalPessoasAlcancadas, cor: '#2a5298', icon: '🙏' },
           ].map((item) => (
-            <div key={item.label} className="card flex items-center gap-4">
-              <span className="text-3xl">{item.icon}</span>
+            <div key={item.label} className="card flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+              <span className="text-2xl sm:text-3xl">{item.icon}</span>
               <div>
-                <p className="text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
                 <p className="text-gray-500 text-xs font-medium">{item.label}</p>
               </div>
             </div>

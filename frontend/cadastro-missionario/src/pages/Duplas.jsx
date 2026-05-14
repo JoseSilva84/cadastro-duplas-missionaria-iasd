@@ -4,10 +4,10 @@ import api from '../lib/api';
 
 // Mapeamento dos tipos de projeto
 const projetoLabel = {
-  CASA_A_CASA: 'Casa a Casa',
+  CASA_A_CASA: 'Casa em Casa',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  MISSAO_COM_AMIGOS: 'Missão com Amigos',
+  MISSAO_COM_AMIGOS: 'Estudo Bíblico',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
 };
 
@@ -59,10 +59,10 @@ export default function Duplas() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
       {distrito && (
-        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 flex-wrap">
           <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B]">Regiões</button>
           <span>/</span>
           <button onClick={() => navigate(`/regioes/${distrito.regiao.id}/distritos`)} className="hover:text-[#1A3A6B]">
@@ -74,19 +74,19 @@ export default function Duplas() {
       )}
 
       {/* Cabeçalho */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div>
-          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
             {distrito ? `Distrito ${distrito.nome}` : 'Todas as Duplas'}
           </p>
-          <h1 className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
             Duplas Missionárias
           </h1>
-          <p className="text-gray-400 text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
         <button
           onClick={() => navigate('/duplas/nova')}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-2 self-start"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -96,16 +96,16 @@ export default function Duplas() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
         <input
           type="text"
           placeholder="Buscar por nome ou bairro..."
-          className="input-field max-w-xs"
+          className="input-field sm:max-w-xs"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
         <select
-          className="input-field w-auto"
+          className="input-field sm:w-auto"
           value={filtroStatus}
           onChange={(e) => setFiltroStatus(e.target.value)}
         >

@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 
 const projetoLabel = {
-  CASA_A_CASA: 'Casa a Casa',
+  CASA_A_CASA: 'Casa em Casa',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  MISSAO_COM_AMIGOS: 'Missão com Amigos',
+  MISSAO_COM_AMIGOS: 'Estudo Bíblico',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
 };
 const membro2Label = { MEMBRO_IASD: 'Membro IASD', CONVIDADO: 'Convidado', INTERESSADO: 'Interessado' };
@@ -56,9 +56,9 @@ export default function DadosDupla() {
   if (!dupla) return <div className="p-6 text-red-500">Dupla não encontrada.</div>;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 flex-wrap">
         <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B]">Regiões</button>
         <span>/</span>
         <button onClick={() => navigate(-1)} className="hover:text-[#1A3A6B]">Duplas</button>
@@ -67,9 +67,9 @@ export default function DadosDupla() {
       </div>
 
       {/* Header */}
-      <div className="card mb-6 relative overflow-hidden">
+      <div className="card mb-4 sm:mb-6 relative overflow-hidden p-4 sm:p-6">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1A3A6B] to-[#C9963A]" />
-        <div className="flex items-start justify-between flex-wrap gap-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 pt-2">
           <div className="flex items-center gap-4">
             {/* Avatares sobrepostos */}
             <div className="relative flex-shrink-0">

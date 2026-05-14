@@ -134,14 +134,14 @@ export default function Cadastro() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       {/* Cabeçalho */}
-      <div className="mb-8">
-        <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Formulário</p>
-        <h1 className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+      <div className="mb-6 sm:mb-8">
+        <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Formulário</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Cadastro de Dupla
         </h1>
-        <p className="text-gray-400 text-sm mt-1">Preencha os dados da nova dupla missionária</p>
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">Preencha os dados da nova dupla missionária</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

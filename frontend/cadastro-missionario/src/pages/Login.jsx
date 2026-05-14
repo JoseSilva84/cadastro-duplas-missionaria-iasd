@@ -3,9 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 
-// Logo IASD (PNG)
-const Cruz = () => (
-  <img src="/logoiasd.png" alt="Logo IASD" className="w-25 h-25 object-contain" />
+// Logo IASD (PNG) — com background azul escuro para visibilidade
+const Cruz = ({ size = 'w-25 h-25' }) => (
+  <div
+    className={`${size} flex items-center justify-center rounded-xl`}
+    style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
+  >
+    <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-1" />
+  </div>
 );
 
 export default function Login() {
@@ -106,7 +111,7 @@ export default function Login() {
           <div className="lg:hidden flex flex-col items-center mb-8 gap-2">
             <Cruz />
             <h1 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Duplas Missionárias
+              Cadastro - Duplas Missionárias
             </h1>
             <p className="text-[#C9963A] font-semibold text-sm">Associação Paulistana</p>
           </div>

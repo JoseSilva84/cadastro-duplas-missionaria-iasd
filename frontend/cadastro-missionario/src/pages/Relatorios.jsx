@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import api from '../lib/api';
 
 const projetoLabel = {
-  CASA_A_CASA: 'Casa a Casa',
+  CASA_A_CASA: 'Casa em Casa',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  MISSAO_COM_AMIGOS: 'Missão com Amigos',
+  MISSAO_COM_AMIGOS: 'Estudo Bíblico',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
 };
 
@@ -33,28 +33,32 @@ export default function Relatorios() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Cabeçalho */}
-      <div className="mb-8">
-        <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Administração</p>
-        <h1 className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+      <div className="mb-6 sm:mb-8">
+        <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Administração</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Relatórios
         </h1>
-        <p className="text-gray-400 text-sm mt-1">Visão geral do programa missionário da Associação Paulistana</p>
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">Visão geral do programa missionário da Associação Paulistana</p>
       </div>
 
       {/* KPIs gerais */}
       {resumo && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {[
             { label: 'Total Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', bg: '#1A3A6B15' },
             { label: 'Ativas', valor: resumo.totalAtivas, cor: '#16a34a', bg: '#16a34a15' },
             { label: 'Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', bg: '#C9963A15' },
             { label: 'Inativas', valor: resumo.totalInativas, cor: '#9ca3af', bg: '#9ca3af15' },
             { label: 'Pessoas Alcançadas', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', bg: '#7B2D8B15' },
-          ].map((item) => (
-            <div key={item.label} className="card text-center" style={{ borderTop: `3px solid ${item.cor}` }}>
-              <p className="text-3xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
+          ].map((item, idx) => (
+            <div
+              key={item.label}
+              className="card text-center p-3 sm:p-6"
+              style={{ borderTop: `3px solid ${item.cor}`, gridColumn: idx === 4 ? 'span 2 / span 2' : 'auto' }}
+            >
+              <p className="text-2xl sm:text-3xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
               <p className="text-xs text-gray-500 mt-1 font-medium">{item.label}</p>
             </div>
           ))}

@@ -25,9 +25,9 @@ export default function Distritos() {
   if (!regiao) return <div className="p-6 text-red-500">Região não encontrada.</div>;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 flex-wrap">
         <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">
           Regiões
         </button>
@@ -36,13 +36,13 @@ export default function Distritos() {
       </div>
 
       {/* Cabeçalho */}
-      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
         <div>
-          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Região</p>
-          <h1 className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Região</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
             {regiao.nome}
           </h1>
-          <p className="text-gray-400 text-sm mt-1">{regiao.descricao}</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">{regiao.descricao}</p>
         </div>
         <button
           onClick={() => navigate('/duplas/nova')}
