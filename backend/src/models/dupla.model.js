@@ -1,0 +1,57 @@
+// Model de Dupla — Operações no banco de dados
+const prisma = require('../lib/prisma');
+
+const DuplaModel = {
+  // Lista duplas com filtro opcional
+  async findAll(filtro = {}) {
+    return prisma.dupla.findMany({
+      where: filtro,
+      include: {
+        distrito: { include: { regiao: true } },
+        igreja: true,
+      },
+      orderBy: { criadoEm: 'desc' },
+    });
+  },
+
+  // Busca dupla por ID
+  async findById(id) {
+    return prisma.dupla.findUnique({
+      where: { id: Number(id) },
+      include: {
+        distrito: { include: { regiao: true } },
+        igreja: true,
+      },
+    });
+  },
+
+  // Cria nova dupla
+  async create(data) {
+    return prisma.dupla.create({
+      data,
+      include: {
+        distrito: { include: { regiao: true } },
+        igreja: true,
+      },
+    });
+  },
+
+  // Atualiza dupla por ID
+  async update(id, data) {
+    return prisma.dupla.update({
+      where: { id: Number(id) },
+      data,
+      include: {
+        distrito: { include: { regiao: true } },
+        igreja: true,
+      },
+    });
+  },
+
+  // Remove dupla por ID
+  async remove(id) {
+    return prisma.dupla.delete({ where: { id: Number(id) } });
+  },
+};
+
+module.exports = DuplaModel;

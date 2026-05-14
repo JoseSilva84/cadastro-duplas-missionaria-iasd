@@ -1,0 +1,77 @@
+// Controller de Dupla — Entrada e saída HTTP
+const { body, validationResult } = require('express-validator');
+const DuplaService = require('../services/dupla.service');
+
+// Validações do cadastro de dupla
+const validarDupla = [
+  body('bairro').notEmpty().withMessage('Bairro obrigatório.'),
+  body('tipoProjeto').notEmpty().withMessage('Tipo de projeto obrigatório.'),
+  body('liderNome').notEmpty().withMessage('Nome do líder obrigatório.'),
+  body('membro2Nome').notEmpty().withMessage('Nome do segundo membro obrigatório.'),
+  body('membro2Tipo').notEmpty().withMessage('Tipo do segundo membro obrigatório.'),
+  body('distritoId').isInt().withMessage('Distrito obrigatório.'),
+];
+
+const DuplaController = {
+  // GET /api/duplas
+  async listar(req, res) {
+    try {
+      const duplas = await DuplaService.listar(req.usuario, req.query);
+      res.json(duplas);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ erro: 'Erro ao listar duplas.' });
+    }
+  },
+
+  // GET /api/duplas/:id
+  async buscarPorId(req, res) {
+    try {
+      const dupla = await DuplaService.buscarPorId(req.params.id);
+      res.json(dupla);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao buscar dupla.' });
+    }
+  },
+
+  // POST /api/duplas
+  async criar(req, res) {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) {
+      return res.status(400).json({ erros: erros.array() });
+    }
+
+    try {
+      const dupla = await DuplaService.criar(req.body);
+      res.status(201).json(dupla);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ erro: 'Erro ao cadastrar dupla.' });
+    }
+  },
+
+  // PUT /api/duplas/:id
+  async atualizar(req, res) {
+    try {
+      const dupla = await DuplaService.atualizar(req.params.id, req.body, req.usuario);
+      res.json(dupla);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar dupla.' });
+    }
+  },
+
+  // DELETE /api/duplas/:id
+  async remover(req, res) {
+    try {
+      await DuplaService.remover(req.params.id);
+      res.json({ mensagem: 'Dupla removida com sucesso.' });
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao remover dupla.' });
+    }
+  },
+};
+
+module.exports = { DuplaController, validarDupla };
