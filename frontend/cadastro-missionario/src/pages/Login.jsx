@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import VersiculoHero from '../components/VersiculoHero';
 
 // Logo IASD (PNG)
 const Cruz = () => (
@@ -56,22 +57,22 @@ export default function Login() {
           ))}
         </div>
 
-        <div className="relative z-10 flex flex-col items-center text-center px-12 gap-8">
+        <div className="relative z-10 flex flex-col items-center text-center px-8 gap-4 py-6">
           {/* Cruz + Logo */}
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-2">
             <Cruz />
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-32 h-1 rounded-full bg-[#C9963A]" />
-              <h1 className="text-3xl font-bold text-white mt-2" style={{ fontFamily: 'Georgia, serif' }}>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-28 h-0.5 rounded-full bg-[#C9963A]" />
+              <h1 className="text-2xl font-bold text-white mt-1" style={{ fontFamily: 'Georgia, serif' }}>
                 Cadastro
               </h1>
-              <h1 className="text-3xl font-bold text-white mt-0.5" style={{ fontFamily: 'Georgia, serif' }}>
+              <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>
                 Duplas Missionárias
               </h1>
-              <p className="text-[#C9963A] font-semibold text-lg tracking-wide mt-1">
+              <p className="text-[#C9963A] font-semibold text-base tracking-wide mt-0.5">
                 Associação Paulistana
               </p>
-              <p className="text-white/60 text-sm mt-2">
+              <p className="text-white/60 text-xs mt-1 mb-5">
                 <a href="https://www.adventistas.org/pt/" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">
                   @Igreja Adventista do Sétimo Dia
                 </a>
@@ -79,24 +80,19 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Citação bíblica */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 max-w-sm">
-            <p className="text-white/90 text-sm italic leading-relaxed">
-              "Ide, portanto, fazei discípulos de todas as nações, batizando-os em nome do Pai, e do Filho, e do Espírito Santo."
-            </p>
-            <p className="text-[#C9963A] text-xs font-semibold mt-3">Mateus 28:19</p>
-          </div>
+          {/* Versículo animado — Mateus 28:19 */}
+          <VersiculoHero />
 
           {/* Estatísticas decorativas */}
-          <div className="grid grid-cols-3 gap-4 w-full max-w-sm">
+          <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
             {[
               { label: 'Regiões', valor: '5+' },
               { label: 'Distritos', valor: '20+' },
               { label: 'Duplas', valor: '100+' },
             ].map((item) => (
-              <div key={item.label} className="bg-white/10 rounded-xl p-3 text-center">
-                <p className="text-[#C9963A] font-bold text-xl">{item.valor}</p>
-                <p className="text-white/70 text-xs mt-0.5">{item.label}</p>
+              <div key={item.label} className="bg-white/10 rounded-lg px-2 py-2 text-center">
+                <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>
+                <p className="text-white/70 text-xs">{item.label}</p>
               </div>
             ))}
           </div>
