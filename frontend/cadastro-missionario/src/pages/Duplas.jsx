@@ -7,7 +7,6 @@ const projetoLabel = {
   CASA_A_CASA: 'Casa em Casa',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  MISSAO_COM_AMIGOS: 'Estudo Bíblico',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
 };
 
@@ -47,7 +46,7 @@ export default function Duplas() {
     const matchBusca = !busca || d.liderNome.toLowerCase().includes(busca.toLowerCase()) ||
       d.membro2Nome.toLowerCase().includes(busca.toLowerCase()) ||
       d.bairro.toLowerCase().includes(busca.toLowerCase());
-    return matchStatus && matchBusca && !d.comAmigos;
+    return matchStatus && matchBusca;
   });
 
   if (carregando) {

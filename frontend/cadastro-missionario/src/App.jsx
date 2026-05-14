@@ -9,7 +9,6 @@ import Regioes from './pages/Regioes';
 import Distritos from './pages/Distritos';
 import Duplas from './pages/Duplas';
 import DadosDupla from './pages/DadosDupla';
-import ComAmigos from './pages/ComAmigos';
 import Cadastro from './pages/Cadastro';
 import Relatorios from './pages/Relatorios';
 
@@ -79,7 +78,6 @@ function App() {
             {/* Duplas */}
             <Route path="duplas" element={<Duplas />} />
             <Route path="duplas/nova" element={<Cadastro />} />
-            <Route path="duplas/com-amigos" element={<ComAmigos />} />
             <Route path="duplas/:id" element={<DadosDupla />} />
             <Route path="duplas/:id/editar" element={<Cadastro />} />
 

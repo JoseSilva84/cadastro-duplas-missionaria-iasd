@@ -4,7 +4,7 @@ const DuplaModel = require('../models/dupla.model');
 const DuplaService = {
   // Lista duplas com filtros e restrições por perfil
   async listar(usuario, query) {
-    const { distritoId, status, comAmigos, regiaoNome } = query;
+    const { distritoId, status, regiaoNome } = query;
     const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId } = usuario;
 
     const filtro = {};
@@ -19,7 +19,6 @@ const DuplaService = {
     // Filtros opcionais da query
     if (distritoId) filtro.distritoId = Number(distritoId);
     if (status) filtro.status = status;
-    if (comAmigos !== undefined) filtro.comAmigos = comAmigos === 'true';
     if (regiaoNome) filtro.regiaoNome = { contains: regiaoNome, mode: 'insensitive' };
 
     return DuplaModel.findAll(filtro);
@@ -50,7 +49,6 @@ const DuplaService = {
       membro2Nome: data.membro2Nome,
       membro2Telefone: data.membro2Telefone,
       status: data.status || 'ATIVA',
-      comAmigos: data.comAmigos === true || data.comAmigos === 'true',
       pessoasAlcancadas: Number(data.pessoasAlcancadas) || 0,
       observacoes: data.observacoes,
       dataInicio: data.dataInicio ? new Date(data.dataInicio) : new Date(),

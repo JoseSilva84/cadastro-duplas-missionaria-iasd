@@ -6,10 +6,9 @@ const projetoLabel = {
   CASA_A_CASA: 'Casa em Casa',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  MISSAO_COM_AMIGOS: 'Estudo Bíblico',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
 };
-const membro2Label = { MEMBRO_IASD: 'Membro IASD', CONVIDADO: 'Convidado', INTERESSADO: 'Interessado' };
+const membro2Label = { MEMBRO_IASD: 'Membro IASD' };
 
 const StatusBadge = ({ status }) => {
   const map = { ATIVA: 'badge-ativa', PENDENTE: 'badge-pendente', INATIVA: 'badge-inativa' };
@@ -90,11 +89,6 @@ export default function DadosDupla() {
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <StatusBadge status={dupla.status} />
-                {dupla.comAmigos && (
-                  <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                    Com Amigos
-                  </span>
-                )}
                 <span className="text-xs text-gray-400">📍 {dupla.bairro}</span>
               </div>
             </div>

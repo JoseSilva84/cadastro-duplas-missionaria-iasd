@@ -130,10 +130,9 @@ async function main() {
         tipoProjeto: 'PEQUENOS_GRUPOS',
         liderNome: 'Pedro Souza',
         liderTelefone: '(11) 98888-0001',
-        membro2Tipo: 'CONVIDADO',
+        membro2Tipo: 'MEMBRO_IASD',
         membro2Nome: 'Ana Costa',
         status: 'ATIVA',
-        comAmigos: true,
         pessoasAlcancadas: 8,
       },
       {

@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 
 const TIPOS_PROJETO = [
   { value: 'CASA_A_CASA', label: 'Casa a Casa' },
   { value: 'PEQUENOS_GRUPOS', label: 'Pequenos Grupos' },
   { value: 'ACAO_SOCIAL', label: 'Ação Social' },
-  { value: 'MISSAO_COM_AMIGOS', label: 'Missão com Amigos' },
   { value: 'EVANGELISMO_PUBLICO', label: 'Evangelismo Público' },
 ];
 
 const TIPOS_MEMBRO2 = [
   { value: 'MEMBRO_IASD', label: 'Membro da IASD' },
-  { value: 'CONVIDADO', label: 'Convidado / Amigo' },
-  { value: 'INTERESSADO', label: 'Interessado' },
 ];
 
 // Componente de campo de formulário
@@ -41,9 +38,6 @@ const SecaoHeader = ({ numero, titulo, descricao }) => (
 
 export default function Cadastro() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const comAmigosInicial = location.state?.comAmigos || false;
-
   const [distritos, setDistritos] = useState([]);
   const [igrejas, setIgrejas] = useState([]);
   const [enviando, setEnviando] = useState(false);
@@ -64,7 +58,6 @@ export default function Cadastro() {
     membro2Nome: '',
     membro2Telefone: '',
     status: 'ATIVA',
-    comAmigos: comAmigosInicial,
     pessoasAlcancadas: 0,
     observacoes: '',
     dataInicio: new Date().toISOString().split('T')[0],
@@ -90,14 +83,7 @@ export default function Cadastro() {
   }, [form.distritoId]);
 
   const set = (campo, valor) => {
-    setForm((prev) => {
-      const next = { ...prev, [campo]: valor };
-      // Detecta automaticamente se o parceiro é externo
-      if (campo === 'membro2Tipo') {
-        next.comAmigos = valor !== 'MEMBRO_IASD';
-      }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [campo]: valor }));
   };
 
   const handleSubmit = async (e) => {
@@ -320,15 +306,6 @@ export default function Cadastro() {
             </Campo>
           </div>
 
-          {/* Indicador automático de "com amigos" */}
-          {form.membro2Tipo !== 'MEMBRO_IASD' && (
-            <div className="mt-4 bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-center gap-2">
-              <span>🤝</span>
-              <p className="text-purple-700 text-sm">
-                Esta dupla será registrada como <strong>Dupla com Amigos</strong> por incluir um parceiro externo.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* SEÇÃO 4 — Observações */}
