@@ -6,7 +6,7 @@ const layouts = [
   {
     id: 'avancado',
     nome: 'Modelo Avançado',
-    descricao: 'Navegação hierárquica completa: Regiões → Distritos → Duplas. Ideal para gestão detalhada com filtros e relatórios.',
+    descricao: 'Navegação hierárquica completa: Regiões → Distritos → Duplas. Ideal para filtros e relatórios.',
     icon: (
       <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
@@ -19,7 +19,7 @@ const layouts = [
   {
     id: 'direto',
     nome: 'Modelo Direto',
-    descricao: 'Visualização em cards diretos com master-detail. Todos os dados acessíveis de forma rápida e objetiva.',
+    descricao: 'Visualização em cards diretos. Dados acessíveis de forma rápida e objetiva.',
     icon: (
       <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -85,8 +85,7 @@ export default function EscolhaLayout() {
               Como deseja visualizar?
             </h1>
             <p className="text-white/50 text-sm sm:text-base max-w-lg mx-auto">
-              Selecione o modelo de visualização que melhor se adapta ao seu uso.
-              Você pode alternar a qualquer momento.
+              Selecione o modelo de visualização
             </p>
           </div>
 

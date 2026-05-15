@@ -65,16 +65,16 @@ export default function LayoutDireto() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F4F5F7]">
-      {/* Header superior */}
+      {/* Header superior compacto */}
       <header
         className="flex-shrink-0 shadow-md z-30"
         style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
             {/* Logo + Título */}
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0">
                 <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
               </div>
               <div className="hidden sm:block">
@@ -108,7 +108,7 @@ export default function LayoutDireto() {
             {/* Ações à direita */}
             <div className="flex items-center gap-2">
               {/* Indicador do modelo */}
-              <div className="hidden sm:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-2">
+              <div className="hidden sm:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
                 <div className="w-2 h-2 rounded-full bg-[#C9963A]" />
                 <span className="text-[#C9963A] text-[10px] font-semibold uppercase tracking-wider">
                   Modelo Direto
@@ -212,8 +212,8 @@ export default function LayoutDireto() {
         )}
       </header>
 
-      {/* Conteúdo principal — sem sidebar */}
-      <main className="flex-1 overflow-y-auto">
+      {/* Conteúdo principal — ocupa todo o resto da tela, sem scroll vertical global */}
+      <main className="flex-1 min-h-0 overflow-hidden">
         <Outlet />
       </main>
     </div>

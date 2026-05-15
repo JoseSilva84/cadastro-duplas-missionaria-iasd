@@ -45,10 +45,20 @@ function RotaAdmin({ children }) {
 }
 
 // Redireciona para escolha de layout se não houver layout selecionado
-function RotaComLayout({ children }) {
+// Valida também se o layout atual corresponde ao modelo da rota
+function RotaComLayout({ children, modelo }) {
   const { layout, carregando } = useAuth();
   if (carregando) return null;
   if (!layout) return <Navigate to="/escolha-layout" replace />;
+  
+  // Se o layout não corresponder ao modelo da rota, redireciona para o correto
+  if (modelo === 'avancado' && layout !== 'avancado') {
+    return <Navigate to="/direto/regioes" replace />;
+  }
+  if (modelo === 'direto' && layout !== 'direto') {
+    return <Navigate to="/regioes" replace />;
+  }
+  
   return children;
 }
 
@@ -75,7 +85,7 @@ function AppRoutes() {
         path="/"
         element={
           <RotaProtegida>
-            <RotaComLayout>
+            <RotaComLayout modelo="avancado">
               <Layout />
             </RotaComLayout>
           </RotaProtegida>
@@ -114,7 +124,7 @@ function AppRoutes() {
         path="/direto"
         element={
           <RotaProtegida>
-            <RotaComLayout>
+            <RotaComLayout modelo="direto">
               <LayoutDireto />
             </RotaComLayout>
           </RotaProtegida>

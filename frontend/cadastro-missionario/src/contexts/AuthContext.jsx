@@ -15,7 +15,11 @@ export function AuthProvider({ children }) {
     const usuarioSalvo = localStorage.getItem('usuario');
     const layoutSalvo = localStorage.getItem('layout');
     if (token && usuarioSalvo) {
-      setUsuario(JSON.parse(usuarioSalvo));
+      try {
+        setUsuario(JSON.parse(usuarioSalvo));
+      } catch {
+        localStorage.removeItem('usuario');
+      }
     }
     if (layoutSalvo) {
       setLayoutState(layoutSalvo);
