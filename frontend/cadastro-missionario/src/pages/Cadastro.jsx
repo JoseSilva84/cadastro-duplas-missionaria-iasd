@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 
 const TIPOS_PROJETO = [
@@ -37,6 +37,7 @@ const SecaoHeader = ({ numero, titulo, descricao }) => (
 
 export default function Cadastro() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [distritos, setDistritos] = useState([]);
   const [igrejas, setIgrejas] = useState([]);
   const [enviando, setEnviando] = useState(false);
@@ -89,7 +90,8 @@ export default function Cadastro() {
     try {
       await api.post('/duplas', form);
       setSucesso(true);
-      setTimeout(() => navigate('/duplas'), 2500);
+      const redirectTo = location.pathname.startsWith('/direto') ? '/direto/duplas' : '/duplas';
+      setTimeout(() => navigate(redirectTo), 2500);
     } catch (err) {
       const erros = err.response?.data?.erros;
       setErro(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao salvar a dupla.');

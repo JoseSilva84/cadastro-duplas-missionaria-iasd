@@ -98,8 +98,8 @@ export default function Login() {
           {/* Estatísticas decorativas */}
           <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
             {[
-              { label: 'Regiões', valor: '5+' },
-              { label: 'Distritos', valor: '20+' },
+              { label: 'Regiões', valor: '7' },
+              { label: 'Distritos', valor: '52' },
               { label: 'Duplas', valor: '100+' },
             ].map((item) => (
               <div key={item.label} className="bg-white/10 rounded-lg px-2 py-2 text-center">

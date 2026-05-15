@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 
 const projetoLabel = {
@@ -26,6 +26,8 @@ const InfoRow = ({ label, valor }) => valor ? (
 export default function DadosDupla() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDireto = location.pathname.startsWith('/direto');
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [confirmandoDelete, setConfirmandoDelete] = useState(false);
@@ -61,9 +63,9 @@ export default function DadosDupla() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-6 flex-wrap animate-fade-in-down">
-        <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">Regiões</button>
+        <button onClick={() => navigate(isDireto ? '/direto/regioes' : '/regioes')} className="hover:text-[#1A3A6B] transition-colors">Regiões</button>
         <span className="text-gray-300">/</span>
-        <button onClick={() => navigate(-1)} className="hover:text-[#1A3A6B] transition-colors">Duplas</button>
+        <button onClick={() => navigate(isDireto ? '/direto/duplas' : -1)} className="hover:text-[#1A3A6B] transition-colors">Duplas</button>
         <span className="text-gray-300">/</span>
         <span className="text-[#1A3A6B] font-medium">Detalhes</span>
       </div>
@@ -101,7 +103,7 @@ export default function DadosDupla() {
 
           <div className="flex gap-2">
             <button
-              onClick={() => navigate(`/duplas/${id}/editar`)}
+              onClick={() => navigate(isDireto ? `/direto/duplas/${id}/editar` : `/duplas/${id}/editar`)}
               className="btn-outline text-sm px-4 py-2"
             >
               Editar

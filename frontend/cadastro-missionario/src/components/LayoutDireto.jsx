@@ -60,7 +60,7 @@ export default function LayoutDireto() {
   const navLinks = [
     { to: '/direto/regioes', label: 'Regiões', icon: icons.regioes },
     { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
-    { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
+    { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
   ];
 
   return (

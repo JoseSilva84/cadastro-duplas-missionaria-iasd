@@ -134,6 +134,9 @@ function AppRoutes() {
         <Route path="regioes" element={<RegioesDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
+        <Route path="duplas/nova" element={<Cadastro />} />
+        <Route path="duplas/:id" element={<DadosDupla />} />
+        <Route path="duplas/:id/editar" element={<Cadastro />} />
       </Route>
 
       {/* Fallback */}

@@ -111,7 +111,7 @@ export default function DuplasDireto() {
             </div>
             <button
               type="button"
-              onClick={() => navigate('/duplas/nova')}
+              onClick={() => navigate('/direto/duplas/nova')}
               className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2 flex-shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@ export default function DuplasDireto() {
               <p className="text-sm">Nenhuma dupla encontrada.</p>
               <button
                 type="button"
-                onClick={() => navigate('/duplas/nova')}
+                onClick={() => navigate('/direto/duplas/nova')}
                 className="btn-primary mt-4 text-xs px-4 py-2"
               >
                 Cadastrar dupla
@@ -373,14 +373,14 @@ export default function DuplasDireto() {
               <div className="mt-6 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => navigate(`/duplas/${duplaSelecionada.id}/editar`)}
+                  onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}
                   className="btn-outline text-sm px-4 py-2"
                 >
                   Editar
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate(`/duplas/${duplaSelecionada.id}`)}
+                  onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}`)}
                   className="btn-primary text-sm px-4 py-2"
                 >
                   Ver detalhes completos
