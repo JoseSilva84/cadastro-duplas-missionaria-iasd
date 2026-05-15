@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 
 // Páginas
 import Login from './pages/Login';
+import EscolhaLayout from './pages/EscolhaLayout';
 import Layout from './components/Layout';
 import Regioes from './pages/Regioes';
 import Distritos from './pages/Distritos';
@@ -11,6 +12,12 @@ import Duplas from './pages/Duplas';
 import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
 import Relatorios from './pages/Relatorios';
+
+// Modelo Direto
+import LayoutDireto from './components/LayoutDireto';
+import RegioesDireto from './pages/direto/RegioesDireto';
+import DistritosDireto from './pages/direto/DistritosDireto';
+import DuplasDireto from './pages/direto/DuplasDireto';
 
 // Rota protegida — redireciona para login se não autenticado
 function RotaProtegida({ children }) {
@@ -37,6 +44,94 @@ function RotaAdmin({ children }) {
   return children;
 }
 
+// Redireciona para escolha de layout se não houver layout selecionado
+function RotaComLayout({ children }) {
+  const { layout, carregando } = useAuth();
+  if (carregando) return null;
+  if (!layout) return <Navigate to="/escolha-layout" replace />;
+  return children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Rota pública */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Escolha de layout — após login, antes de qualquer coisa */}
+      <Route
+        path="/escolha-layout"
+        element={
+          <RotaProtegida>
+            <EscolhaLayout />
+          </RotaProtegida>
+        }
+      />
+
+      {/* ============================================
+          MODELO AVANÇADO (padrão hierárquico)
+          ============================================ */}
+      <Route
+        path="/"
+        element={
+          <RotaProtegida>
+            <RotaComLayout>
+              <Layout />
+            </RotaComLayout>
+          </RotaProtegida>
+        }
+      >
+        <Route index element={<Navigate to="/regioes" replace />} />
+
+        {/* Regiões */}
+        <Route path="regioes" element={<Regioes />} />
+        <Route path="regioes/:regiaoId/distritos" element={<Distritos />} />
+
+        {/* Distritos */}
+        <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
+
+        {/* Duplas */}
+        <Route path="duplas" element={<Duplas />} />
+        <Route path="duplas/nova" element={<Cadastro />} />
+        <Route path="duplas/:id" element={<DadosDupla />} />
+        <Route path="duplas/:id/editar" element={<Cadastro />} />
+
+        {/* Relatórios — apenas admin */}
+        <Route
+          path="relatorios"
+          element={
+            <RotaAdmin>
+              <Relatorios />
+            </RotaAdmin>
+          }
+        />
+      </Route>
+
+      {/* ============================================
+          MODELO DIRETO (master-detail em cards)
+          ============================================ */}
+      <Route
+        path="/direto"
+        element={
+          <RotaProtegida>
+            <RotaComLayout>
+              <LayoutDireto />
+            </RotaComLayout>
+          </RotaProtegida>
+        }
+      >
+        <Route index element={<Navigate to="/direto/regioes" replace />} />
+        <Route path="regioes" element={<RegioesDireto />} />
+        <Route path="distritos/:distritoId" element={<DistritosDireto />} />
+        <Route path="duplas" element={<DuplasDireto />} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -52,49 +147,7 @@ function App() {
             },
           }}
         />
-        <Routes>
-          {/* Rota pública */}
-          <Route path="/login" element={<Login />} />
-
-          {/* Rotas protegidas com layout lateral */}
-          <Route
-            path="/"
-            element={
-              <RotaProtegida>
-                <Layout />
-              </RotaProtegida>
-            }
-          >
-            {/* Redireciona raiz para regiões */}
-            <Route index element={<Navigate to="/regioes" replace />} />
-
-            {/* Regiões */}
-            <Route path="regioes" element={<Regioes />} />
-            <Route path="regioes/:regiaoId/distritos" element={<Distritos />} />
-
-            {/* Distritos */}
-            <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
-
-            {/* Duplas */}
-            <Route path="duplas" element={<Duplas />} />
-            <Route path="duplas/nova" element={<Cadastro />} />
-            <Route path="duplas/:id" element={<DadosDupla />} />
-            <Route path="duplas/:id/editar" element={<Cadastro />} />
-
-            {/* Relatórios — apenas admin */}
-            <Route
-              path="relatorios"
-              element={
-                <RotaAdmin>
-                  <Relatorios />
-                </RotaAdmin>
-              }
-            />
-          </Route>
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/regioes" replace />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   );

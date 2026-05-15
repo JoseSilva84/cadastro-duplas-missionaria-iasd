@@ -6,14 +6,19 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
+  const [layout, setLayoutState] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
   // Restaura sessão ao carregar a aplicação
   useEffect(() => {
     const token = localStorage.getItem('token');
     const usuarioSalvo = localStorage.getItem('usuario');
+    const layoutSalvo = localStorage.getItem('layout');
     if (token && usuarioSalvo) {
       setUsuario(JSON.parse(usuarioSalvo));
+    }
+    if (layoutSalvo) {
+      setLayoutState(layoutSalvo);
     }
     setCarregando(false);
   }, []);
@@ -31,11 +36,19 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
+    localStorage.removeItem('layout');
     setUsuario(null);
+    setLayoutState(null);
+  };
+
+  // Define o layout e persiste
+  const setLayout = (novoLayout) => {
+    localStorage.setItem('layout', novoLayout);
+    setLayoutState(novoLayout);
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, carregando }}>
+    <AuthContext.Provider value={{ usuario, login, logout, carregando, layout, setLayout }}>
       {children}
     </AuthContext.Provider>
   );

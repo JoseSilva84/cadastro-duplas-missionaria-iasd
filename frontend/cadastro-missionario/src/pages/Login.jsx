@@ -14,7 +14,7 @@ const Cruz = ({ size = 'w-25 h-25' }) => (
 );
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, layout } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', senha: '' });
   const [erro, setErro] = useState('');
@@ -26,7 +26,14 @@ export default function Login() {
     setCarregando(true);
     try {
       await login(form.email, form.senha);
-      navigate('/regioes');
+      // Se já tem layout salvo, vai direto para o destino
+      if (layout === 'direto') {
+        navigate('/direto/regioes');
+      } else if (layout === 'avancado') {
+        navigate('/regioes');
+      } else {
+        navigate('/escolha-layout');
+      }
     } catch (err) {
       console.error('Erro no login:', err);
       const mensagem = err.response?.data?.erro

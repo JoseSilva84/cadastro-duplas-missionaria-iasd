@@ -38,6 +38,11 @@ const icons = {
       <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
     </div>
   ),
+  trocaLayout: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+    </svg>
+  ),
 };
 
 const perfilLabel = {
@@ -48,7 +53,7 @@ const perfilLabel = {
 };
 
 export default function Layout() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, layout, setLayout } = useAuth();
   const navigate = useNavigate();
   const [sidebarAberta, setSidebarAberta] = useState(false);
 
@@ -57,14 +62,31 @@ export default function Layout() {
     navigate('/login');
   };
 
-  const isAdmin = usuario?.perfil === 'ADMINISTRADOR';
+  const handleTrocarLayout = () => {
+    const novoLayout = layout === 'avancado' ? 'direto' : 'avancado';
+    setLayout(novoLayout);
+    if (novoLayout === 'avancado') {
+      navigate('/regioes');
+    } else {
+      navigate('/direto/regioes');
+    }
+  };
 
-  const navLinks = [
-    { to: '/regioes', label: 'Regiões', icon: icons.regioes },
-    { to: '/duplas', label: 'Duplas', icon: icons.duplas },
-    { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
-    ...(isAdmin ? [{ to: '/relatorios', label: 'Relatórios', icon: icons.relatorios }] : []),
-  ];
+  const isAdmin = usuario?.perfil === 'ADMINISTRADOR';
+  const isDireto = layout === 'direto';
+
+  const navLinks = isDireto
+    ? [
+        { to: '/direto/regioes', label: 'Regiões', icon: icons.regioes },
+        { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
+        { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
+      ]
+    : [
+        { to: '/regioes', label: 'Regiões', icon: icons.regioes },
+        { to: '/duplas', label: 'Duplas', icon: icons.duplas },
+        { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
+        ...(isAdmin ? [{ to: '/relatorios', label: 'Relatórios', icon: icons.relatorios }] : []),
+      ];
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -77,7 +99,9 @@ export default function Layout() {
           usuario={usuario}
           navLinks={navLinks}
           handleLogout={handleLogout}
+          handleTrocarLayout={handleTrocarLayout}
           setSidebarAberta={setSidebarAberta}
+          layout={layout}
         />
       </aside>
 
@@ -95,7 +119,9 @@ export default function Layout() {
             usuario={usuario}
             navLinks={navLinks}
             handleLogout={handleLogout}
+            handleTrocarLayout={handleTrocarLayout}
             setSidebarAberta={setSidebarAberta}
+            layout={layout}
           />
         </aside>
       </div>
@@ -107,6 +133,7 @@ export default function Layout() {
           style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
         >
           <button
+            type="button"
             onClick={() => setSidebarAberta(true)}
             className="text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
           >
@@ -129,7 +156,9 @@ export default function Layout() {
   );
 }
 
-function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
+function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, setSidebarAberta, layout }) {
+  const isDireto = layout === 'direto';
+
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
@@ -143,10 +172,20 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         </div>
       </div>
 
+      {/* Indicador do modelo atual */}
+      <div className="px-3 pt-3">
+        <div className={`rounded-lg px-3 py-2 flex items-center gap-2.5 ${isDireto ? 'bg-[#C9963A]/15 border border-[#C9963A]/20' : 'bg-white/5 border border-white/10'}`}>
+          <div className={`w-2 h-2 rounded-full ${isDireto ? 'bg-[#C9963A]' : 'bg-blue-400'}`} />
+          <span className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">
+            {isDireto ? 'Modelo Direto' : 'Modelo Avançado'}
+          </span>
+        </div>
+      </div>
+
       {/* Navegação */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         <p className="px-4 pt-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
-        {navLinks.map((link, i) => (
+        {navLinks.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
@@ -154,7 +193,6 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
-            style={{ animationDelay: `${i * 50}ms` }}
           >
             {link.icon}
             {link.label}
@@ -162,8 +200,19 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         ))}
       </nav>
 
-      {/* Usuário logado */}
+      {/* Trocar layout + Usuário */}
       <div className="px-3 py-4 border-t border-white/10">
+        {/* Botão trocar layout */}
+        <button
+          type="button"
+          onClick={handleTrocarLayout}
+          className="sidebar-link w-full text-[#C9963A]/80 hover:text-[#C9963A] hover:bg-[#C9963A]/10 mb-2"
+        >
+          {icons.trocaLayout}
+          Trocar para {isDireto ? 'Avançado' : 'Direto'}
+        </button>
+
+        {/* Usuário logado */}
         <div className="bg-white/8 rounded-xl p-3 mb-3 backdrop-blur-sm border border-white/5">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
@@ -179,6 +228,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
           )}
         </div>
         <button
+          type="button"
           onClick={handleLogout}
           className="sidebar-link w-full text-red-300/80 hover:text-red-200 hover:bg-red-500/15"
         >
