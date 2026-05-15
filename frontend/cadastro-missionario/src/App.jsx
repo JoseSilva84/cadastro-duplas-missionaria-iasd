@@ -103,8 +103,8 @@ function AppRoutes() {
         {/* Duplas */}
         <Route path="duplas" element={<Duplas />} />
         <Route path="duplas/nova" element={<Cadastro />} />
-        <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
+        <Route path="duplas/:id" element={<DadosDupla />} />
 
         {/* Relatórios — apenas admin */}
         <Route
@@ -135,8 +135,8 @@ function AppRoutes() {
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />
-        <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
+        <Route path="duplas/:id" element={<DadosDupla />} />
       </Route>
 
       {/* Fallback */}

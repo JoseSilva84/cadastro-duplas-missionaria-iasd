@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import api from '../lib/api';
 
 const TIPOS_PROJETO = [
@@ -35,38 +35,83 @@ const SecaoHeader = ({ numero, titulo, descricao }) => (
   </div>
 );
 
+const formVazio = {
+  regiaoNome: '',
+  distritoId: '',
+  igrejaId: '',
+  bairro: '',
+  tipoProjeto: '',
+  liderNome: '',
+  liderTelefone: '',
+  liderEmail: '',
+  liderIgreja: '',
+  membro2Tipo: 'MEMBRO_IASD',
+  membro2Nome: '',
+  membro2Telefone: '',
+  status: 'ATIVA',
+  pessoasAlcancadas: 0,
+  observacoes: '',
+  dataInicio: new Date().toISOString().split('T')[0],
+};
+
 export default function Cadastro() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
+  const isDireto = location.pathname.startsWith('/direto');
+  const isEdicao = !!id;
+
   const [distritos, setDistritos] = useState([]);
   const [igrejas, setIgrejas] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(isEdicao);
 
-  const [form, setForm] = useState({
-    regiaoNome: '',
-    distritoId: '',
-    igrejaId: '',
-    bairro: '',
-    tipoProjeto: '',
-    liderNome: '',
-    liderTelefone: '',
-    liderEmail: '',
-    liderIgreja: '',
-    membro2Tipo: 'MEMBRO_IASD',
-    membro2Nome: '',
-    membro2Telefone: '',
-    status: 'ATIVA',
-    pessoasAlcancadas: 0,
-    observacoes: '',
-    dataInicio: new Date().toISOString().split('T')[0],
-  });
+  const [form, setForm] = useState({ ...formVazio });
 
+  // Carrega lista de distritos
   useEffect(() => {
     api.get('/distritos').then((r) => setDistritos(r.data));
   }, []);
 
+  // Carrega dados da dupla se for edição
+  useEffect(() => {
+    if (!isEdicao) {
+      setCarregando(false);
+      return;
+    }
+    api.get(`/duplas/${id}`)
+      .then((r) => {
+        const d = r.data;
+        setForm({
+          regiaoNome: d.regiaoNome || d.distrito?.regiao?.nome || '',
+          distritoId: d.distritoId || '',
+          igrejaId: d.igrejaId || '',
+          bairro: d.bairro || '',
+          tipoProjeto: d.tipoProjeto || '',
+          liderNome: d.liderNome || '',
+          liderTelefone: d.liderTelefone || '',
+          liderEmail: d.liderEmail || '',
+          liderIgreja: d.liderIgreja || '',
+          membro2Tipo: d.membro2Tipo || 'MEMBRO_IASD',
+          membro2Nome: d.membro2Nome || '',
+          membro2Telefone: d.membro2Telefone || '',
+          status: d.status || 'ATIVA',
+          pessoasAlcancadas: d.pessoasAlcancadas || 0,
+          observacoes: d.observacoes || '',
+          dataInicio: d.dataInicio ? new Date(d.dataInicio).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        });
+      })
+      .catch(() => {
+        setErro('Erro ao carregar dados da dupla.');
+      })
+      .finally(() => {
+        setCarregando(false);
+      });
+  }, [id, isEdicao]);
+
+  // Carrega igrejas quando distrito muda
   useEffect(() => {
     if (form.distritoId) {
       api.get(`/distritos/${form.distritoId}`).then((r) => {
@@ -74,7 +119,6 @@ export default function Cadastro() {
         setForm((prev) => ({ ...prev, regiaoNome: r.data.regiao?.nome || '' }));
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIgrejas([]);
     }
   }, [form.distritoId]);
@@ -88,17 +132,35 @@ export default function Cadastro() {
     setErro('');
     setEnviando(true);
     try {
-      await api.post('/duplas', form);
+      if (isEdicao) {
+        await api.put(`/duplas/${id}`, form);
+      } else {
+        await api.post('/duplas', form);
+      }
       setSucesso(true);
-      const redirectTo = location.pathname.startsWith('/direto') ? '/direto/duplas' : '/duplas';
+      const redirectTo = isDireto ? '/direto/duplas' : '/duplas';
       setTimeout(() => navigate(redirectTo), 2500);
     } catch (err) {
       const erros = err.response?.data?.erros;
-      setErro(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao salvar a dupla.');
+      setErro(erros ? erros.map((e) => e.msg).join(', ') : `Erro ao ${isEdicao ? 'atualizar' : 'salvar'} a dupla.`);
     } finally {
       setEnviando(false);
     }
   };
+
+  if (carregando) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
+            <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
+          </div>
+          <p className="text-gray-400 text-sm animate-pulse">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (sucesso) {
     return (
@@ -110,7 +172,7 @@ export default function Cadastro() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-            Dupla cadastrada com sucesso!
+            {isEdicao ? 'Dupla atualizada com sucesso!' : 'Dupla cadastrada com sucesso!'}
           </h2>
           <p className="text-gray-500 mt-2 text-sm">Redirecionando para a lista de duplas...</p>
         </div>
@@ -124,12 +186,16 @@ export default function Cadastro() {
       <div className="mb-8 animate-fade-in-down">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Formulário</p>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
+            {isEdicao ? 'Edição' : 'Formulário'}
+          </p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Cadastro de Dupla
+          {isEdicao ? 'Editar Dupla' : 'Cadastro de Dupla'}
         </h1>
-        <p className="text-gray-400 text-xs sm:text-sm mt-1">Preencha os dados da nova dupla missionária</p>
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">
+          {isEdicao ? 'Atualize os dados da dupla missionária' : 'Preencha os dados da nova dupla missionária'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -258,7 +324,7 @@ export default function Cadastro() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Salvar Dupla
+                {isEdicao ? 'Atualizar Dupla' : 'Salvar Dupla'}
               </>
             )}
           </button>
