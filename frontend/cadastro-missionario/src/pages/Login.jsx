@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
+import { toast } from '../lib/toast';
 
 // Logo IASD (PNG) — com background azul escuro para visibilidade
 const Cruz = ({ size = 'w-25 h-25' }) => (
@@ -17,12 +18,10 @@ export default function Login() {
   const { login, layout } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', senha: '' });
-  const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErro('');
     setCarregando(true);
     try {
       await login(form.email, form.senha);
@@ -40,7 +39,7 @@ export default function Login() {
         || err.response?.data?.message
         || err.message
         || 'Erro ao entrar. Verifique suas credenciais.';
-      setErro(`Erro ao entrar: ${mensagem}`);
+      toast.error(`Erro ao entrar: ${mensagem}`);
     } finally {
       setCarregando(false);
     }
@@ -161,12 +160,6 @@ export default function Login() {
                   onChange={(e) => setForm({ ...form, senha: e.target.value })}
                 />
               </div>
-
-              {erro && (
-                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600">
-                  {erro}
-                </div>
-              )}
 
               <button
                 type="submit"
