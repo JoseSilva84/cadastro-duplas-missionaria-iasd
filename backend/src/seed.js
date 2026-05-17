@@ -60,7 +60,7 @@ async function main() {
     where: { email: 'admin@ap.adventistas.org' },
     update: {},
     create: {
-      nome: 'Administrador do Sistema',
+      nome: 'Departamental',
       email: 'admin@ap.adventistas.org',
       senha: senhaHash,
       perfil: 'ADMINISTRADOR',
@@ -73,7 +73,7 @@ async function main() {
     where: { email: 'coord.centro@ap.adventistas.org' },
     update: {},
     create: {
-      nome: 'Coordenador Centro SP',
+      nome: 'Coordenador PG',
       email: 'coord.centro@ap.adventistas.org',
       senha: coordSenha,
       perfil: 'COORDENADOR_REGIONAL',
