@@ -196,7 +196,7 @@ export default function DistritosDireto() {
               <p className="text-sm">Nenhuma dupla neste distrito.</p>
               <button
                 type="button"
-                onClick={() => navigate('/duplas/nova')}
+                onClick={() => navigate('/direto/duplas/nova')}
                 className="btn-primary mt-4 text-xs px-4 py-2"
               >
                 Cadastrar dupla
@@ -208,7 +208,7 @@ export default function DistritosDireto() {
         <div className="flex-shrink-0 p-3 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => navigate('/duplas/nova')}
+            onClick={() => navigate('/direto/duplas/nova')}
             className="btn-primary w-full flex items-center justify-center gap-2 text-sm py-2.5"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,14 +354,14 @@ export default function DistritosDireto() {
               <div className="mt-6 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => navigate(`/duplas/${duplaSelecionada.id}/editar`)}
+                  onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}
                   className="btn-outline text-sm px-4 py-2"
                 >
                   Editar
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate(`/duplas/${duplaSelecionada.id}`)}
+                  onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}`)}
                   className="btn-primary text-sm px-4 py-2"
                 >
                   Ver detalhes completos

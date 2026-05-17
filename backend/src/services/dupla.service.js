@@ -64,7 +64,33 @@ const DuplaService = {
       throw { status: 403, mensagem: 'Sem permissão para editar esta dupla.' };
     }
 
-    return DuplaModel.update(id, { ...data });
+    const dadosAtualizados = {
+      regiaoNome: data.regiaoNome,
+      distritoId: data.distritoId ? Number(data.distritoId) : undefined,
+      igrejaId: data.igrejaId ? Number(data.igrejaId) : null,
+      bairro: data.bairro,
+      tipoProjeto: data.tipoProjeto,
+      liderNome: data.liderNome,
+      liderTelefone: data.liderTelefone,
+      liderEmail: data.liderEmail,
+      liderIgreja: data.liderIgreja,
+      membro2Tipo: data.membro2Tipo,
+      membro2Nome: data.membro2Nome,
+      membro2Telefone: data.membro2Telefone,
+      status: data.status,
+      pessoasAlcancadas: data.pessoasAlcancadas ? Number(data.pessoasAlcancadas) : 0,
+      observacoes: data.observacoes,
+      dataInicio: data.dataInicio ? new Date(data.dataInicio) : undefined,
+    };
+
+    // Remove undefined fields
+    Object.keys(dadosAtualizados).forEach(key => {
+      if (dadosAtualizados[key] === undefined) {
+        delete dadosAtualizados[key];
+      }
+    });
+
+    return DuplaModel.update(id, dadosAtualizados);
   },
 
   // Remove dupla
