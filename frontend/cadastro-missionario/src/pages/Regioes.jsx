@@ -127,6 +127,11 @@ export default function Regioes() {
                       <p className="text-xl font-bold" style={{ color: cor }}>{regiao.totalDuplas}</p>
                       <p className="text-gray-500 text-xs">Duplas</p>
                     </div>
+                    <div className="w-px bg-gray-200/60" />
+                    <div className="text-center">
+                      <p className="text-xl font-bold" style={{ color: cor }}>{(regiao.totalMembros || 0).toLocaleString('pt-BR')}</p>
+                      <p className="text-gray-500 text-xs">Membros</p>
+                    </div>
                   </div>
 
                   <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold group-hover:gap-2.5 transition-all duration-200" style={{ color: cor }}>

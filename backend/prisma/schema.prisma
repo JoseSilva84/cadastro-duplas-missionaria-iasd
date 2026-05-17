@@ -71,6 +71,7 @@ model Distrito {
   id        Int      @id @default(autoincrement())
   nome      String
   regiaoId  Int
+  membros   Int      @default(0)
   criadoEm DateTime @default(now())
 
   regiao   Regiao    @relation(fields: [regiaoId], references: [id])
@@ -84,6 +85,7 @@ model Igreja {
   id         Int      @id @default(autoincrement())
   nome       String
   distritoId Int
+  membros    Int      @default(0)
   criadoEm  DateTime @default(now())
 
   distrito Distrito @relation(fields: [distritoId], references: [id])

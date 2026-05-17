@@ -20,6 +20,7 @@ const RegiaoModel = {
       ...r,
       totalDistritos: r._count.distritos,
       totalDuplas: r.distritos.reduce((acc, d) => acc + d._count.duplas, 0),
+      totalMembros: r.distritos.reduce((acc, d) => acc + (d.membros || 0), 0),
     }));
   },
 

@@ -119,7 +119,7 @@ export default function DistritosDireto() {
                 {distrito.nome}
               </h1>
               <p className="text-gray-400 text-[10px]">
-                {regiaoNome && `Região ${regiaoNome} •`} {igrejas.length} igrejas • {duplas.length} duplas
+                {regiaoNome && `Região ${regiaoNome} •`} {igrejas.length} igrejas • {duplas.length} duplas • {(distrito.membros || 0).toLocaleString('pt-BR')} membros
               </p>
             </div>
           </div>
@@ -127,9 +127,9 @@ export default function DistritosDireto() {
           {igrejas.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {igrejas.map((ig) => (
-                <span key={ig.id} className="inline-flex items-center gap-1 bg-[#1A3A6B]/5 text-[#1A3A6B] text-[10px] font-medium px-2 py-0.5 rounded-full">
+                <span key={ig.id} className="inline-flex items-center gap-1 bg-[#1A3A6B]/5 text-[#1A3A6B] text-[10px] font-medium px-2 py-0.5 rounded-full" title={`${ig.membros || 0} membros`}>
                   <span className="w-1 h-1 rounded-full bg-[#1A3A6B]/40" />
-                  {ig.nome}
+                  {ig.nome} <span className="text-gray-400 opacity-80 ml-0.5">({(ig.membros || 0).toLocaleString('pt-BR')})</span>
                 </span>
               ))}
             </div>

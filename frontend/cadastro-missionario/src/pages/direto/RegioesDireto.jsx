@@ -227,6 +227,14 @@ export default function RegioesDireto() {
                         <p className="text-xs text-gray-400">Igrejas</p>
                       </div>
                     </div>
+                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-gradient-to-br from-[#7B2D8B] to-[#9d4ebd]">
+                        {getDistritos(regiaoSelecionada).reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR')}
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Membros</p>
+                      </div>
+                    </div>
                   </div>
                 );
               })()}
@@ -279,6 +287,10 @@ export default function RegioesDireto() {
                         <span className="flex items-center gap-1">
                           <span className="w-3.5 h-3.5 rounded-full bg-[#C9963A]/10 flex items-center justify-center text-[8px]">👥</span>
                           {distrito._count?.duplas ?? 0} duplas
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-3.5 h-3.5 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center text-[8px]">👨‍👩‍👧‍👦</span>
+                          {(distrito.membros || 0).toLocaleString('pt-BR')}
                         </span>
                       </div>
 

@@ -89,6 +89,10 @@ export default function Distritos() {
                       <span className="w-4 h-4 rounded-full bg-[#C9963A]/10 flex items-center justify-center text-[10px]">👥</span>
                       {distrito._count.duplas} duplas
                     </span>
+                    <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center text-[10px]">👨‍👩‍👧‍👦</span>
+                      {(distrito.membros || 0).toLocaleString('pt-BR')} membros
+                    </span>
                   </div>
                 </div>
               </div>

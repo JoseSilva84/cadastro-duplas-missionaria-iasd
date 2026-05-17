@@ -1,11 +1,4 @@
-# Regiões Administrativas
-
-> \*GP = Grupo
-
----
-
 ## REGIÃO 1
-**Conselheiro Regional: PR. ALEX GONSALVES**
 
 **CENTRAL DE SÃO PAULO**
 - Central de São Paulo
@@ -45,7 +38,6 @@
 ---
 
 ## REGIÃO 2
-**Conselheiro Regional: PR. DANNY BRAVO**
 
 **BROOKLIN**
 - Brooklin
@@ -86,7 +78,6 @@
 ---
 
 ## REGIÃO 3
-**Conselheiro Regional: PR. THIAGO MONTEIRO**
 
 **ATALAIA**
 - Atalaia
@@ -140,7 +131,6 @@
 ---
 
 ## REGIÃO 4
-**Conselheiro Regional: PR. JAIRO OLIVEIRA**
 
 **BAIRRO DO FEITAL**
 - Bairro do Feital
@@ -178,7 +168,6 @@
 ---
 
 ## REGIÃO 5
-**Conselheiro Regional: PR. KEIDSON BRITO**
 
 **ALPHAVILLE**
 - Alphaville
@@ -223,7 +212,6 @@
 ---
 
 ## REGIÃO 6
-**Conselheiro Regional: PR. STEVAN SCHEFFEL**
 
 **CARAPICUÍBA**
 - Carapicuíba
@@ -263,7 +251,6 @@
 ---
 
 ## REGIÃO 7
-**Conselheiro Regional: PR. GEORGES MORA**
 
 **JAGUARÉ**
 - Jaguaré
