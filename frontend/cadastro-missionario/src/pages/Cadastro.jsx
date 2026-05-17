@@ -285,7 +285,7 @@ export default function Cadastro() {
                     />
                     {form.liderTelefone && (
                       <a
-                        href={`https://wa.me/55${form.liderTelefone.replace(/\D/g, '')}`}
+                        href={`https://web.whatsapp.com/send?phone=55${form.liderTelefone.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-2 py-1 rounded-md hover:bg-[#25D366]/20 transition-colors flex items-center gap-1"
@@ -321,7 +321,7 @@ export default function Cadastro() {
                     />
                     {form.membro2Telefone && (
                       <a
-                        href={`https://wa.me/55${form.membro2Telefone.replace(/\D/g, '')}`}
+                        href={`https://web.whatsapp.com/send?phone=55${form.membro2Telefone.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-2 py-1 rounded-md hover:bg-[#25D366]/20 transition-colors flex items-center gap-1"

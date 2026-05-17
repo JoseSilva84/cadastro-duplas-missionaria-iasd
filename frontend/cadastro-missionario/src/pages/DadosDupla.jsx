@@ -172,7 +172,7 @@ export default function DadosDupla() {
               <InfoRow label="WhatsApp" valor={
                 dupla.liderTelefone ? (
                   <a
-                    href={`https://wa.me/55${dupla.liderTelefone.replace(/\D/g, '')}`}
+                    href={`https://web.whatsapp.com/send?phone=55${dupla.liderTelefone.replace(/\D/g, '')}`}
                     target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-[#25D366] font-medium hover:underline"
                   >
@@ -198,7 +198,7 @@ export default function DadosDupla() {
               <InfoRow label="WhatsApp" valor={
                 dupla.membro2Telefone ? (
                   <a
-                    href={`https://wa.me/55${dupla.membro2Telefone.replace(/\D/g, '')}`}
+                    href={`https://web.whatsapp.com/send?phone=55${dupla.membro2Telefone.replace(/\D/g, '')}`}
                     target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-[#25D366] font-medium hover:underline"
                   >
