@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 import { toast } from '../lib/toast';
+import api from '../lib/api';
 
 // Logo IASD (PNG) — com background azul escuro para visibilidade
 const Cruz = ({ size = 'w-25 h-25' }) => (
@@ -19,6 +20,19 @@ export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', senha: '' });
   const [carregando, setCarregando] = useState(false);
+  const [estatisticas, setEstatisticas] = useState({ regioes: '-', distritos: '-', duplas: '-' });
+
+  useEffect(() => {
+    api.get('/public/estatisticas')
+      .then((res) => {
+        setEstatisticas({
+          regioes: res.data.regioes,
+          distritos: res.data.distritos,
+          duplas: res.data.duplas,
+        });
+      })
+      .catch((err) => console.error('Erro ao carregar estatísticas:', err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,12 +108,12 @@ export default function Login() {
           {/* Versículo animado — Mateus 28:19 */}
           <VersiculoHero />
 
-          {/* Estatísticas decorativas */}
+          {/* Estatísticas decorativas dinâmicas */}
           <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
             {[
-              { label: 'Regiões', valor: '7' },
-              { label: 'Distritos', valor: '52' },
-              { label: 'Duplas', valor: '100+' },
+              { label: 'Regiões', valor: estatisticas.regioes },
+              { label: 'Distritos', valor: estatisticas.distritos },
+              { label: 'Duplas', valor: estatisticas.duplas },
             ].map((item) => (
               <div key={item.label} className="bg-white/10 rounded-lg px-2 py-2 text-center">
                 <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>

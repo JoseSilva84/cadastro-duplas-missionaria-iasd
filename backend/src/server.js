@@ -30,9 +30,26 @@ app.use('/api/duplas', duplaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 
+const prisma = require('./lib/prisma');
+
 // Rota de saúde
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', sistema: 'Duplas Missionárias — Associação Paulistana' });
+});
+
+// Rota pública de estatísticas
+app.get('/api/public/estatisticas', async (req, res) => {
+  try {
+    const [regioes, distritos, duplas] = await Promise.all([
+      prisma.regiao.count(),
+      prisma.distrito.count(),
+      prisma.dupla.count(),
+    ]);
+    res.json({ regioes, distritos, duplas });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao buscar estatísticas' });
+  }
 });
 
 // Inicialização do servidor
