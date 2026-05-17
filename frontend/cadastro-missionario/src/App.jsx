@@ -12,6 +12,8 @@ import Duplas from './pages/Duplas';
 import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
 import Relatorios from './pages/Relatorios';
+import ListagemDistritos from './pages/ListagemDistritos';
+import ListagemIgrejas from './pages/ListagemIgrejas';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -93,9 +95,12 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/regioes" replace />} />
 
-        {/* Regiões */}
         <Route path="regioes" element={<Regioes />} />
         <Route path="regioes/:regiaoId/distritos" element={<Distritos />} />
+
+        {/* Global lists */}
+        <Route path="distritos" element={<ListagemDistritos />} />
+        <Route path="igrejas" element={<ListagemIgrejas />} />
 
         {/* Distritos */}
         <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
@@ -132,6 +137,8 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/direto/regioes" replace />} />
         <Route path="regioes" element={<RegioesDireto />} />
+        <Route path="distritos" element={<ListagemDistritos />} />
+        <Route path="igrejas" element={<ListagemIgrejas />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />

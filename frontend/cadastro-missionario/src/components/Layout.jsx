@@ -8,6 +8,16 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
     </svg>
   ),
+  distritos: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  ),
+  igrejas: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
+    </svg>
+  ),
   duplas: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -78,11 +88,15 @@ export default function Layout() {
   const navLinks = isDireto
     ? [
         { to: '/direto/regioes', label: 'Regiões', icon: icons.regioes },
+        { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
+        { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
         { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
       ]
     : [
         { to: '/regioes', label: 'Regiões', icon: icons.regioes },
+        { to: '/distritos', label: 'Distritos', icon: icons.distritos },
+        { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
         ...(isAdmin ? [{ to: '/relatorios', label: 'Relatórios', icon: icons.relatorios }] : []),

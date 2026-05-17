@@ -9,6 +9,7 @@ const distritoRoutes = require('./routes/distritos');
 const duplaRoutes = require('./routes/duplas');
 const relatorioRoutes = require('./routes/relatorios');
 const usuarioRoutes = require('./routes/usuarios');
+const igrejaRoutes = require('./routes/igrejas');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/regioes', regiaoRoutes);
 app.use('/api/distritos', distritoRoutes);
+app.use('/api/igrejas', igrejaRoutes);
 app.use('/api/duplas', duplaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);

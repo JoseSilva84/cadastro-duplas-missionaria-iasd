@@ -9,7 +9,7 @@ const RegiaoModel = {
         _count: { select: { distritos: true } },
         distritos: {
           include: {
-            _count: { select: { duplas: true } },
+            _count: { select: { duplas: true, igrejas: true } },
           },
         },
       },
@@ -20,6 +20,7 @@ const RegiaoModel = {
       ...r,
       totalDistritos: r._count.distritos,
       totalDuplas: r.distritos.reduce((acc, d) => acc + d._count.duplas, 0),
+      totalIgrejas: r.distritos.reduce((acc, d) => acc + d._count.igrejas, 0),
       totalMembros: r.distritos.reduce((acc, d) => acc + (d.membros || 0), 0),
     }));
   },

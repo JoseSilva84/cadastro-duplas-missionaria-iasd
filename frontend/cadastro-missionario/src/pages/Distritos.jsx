@@ -63,6 +63,32 @@ export default function Distritos() {
         </button>
       </div>
 
+      {/* Indicadores gerais da região */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
+        {[
+          { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
+          { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
+          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: '👥', gradient: 'from-[#C9963A] to-[#e5b05a]' },
+          { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="card group cursor-default"
+            style={{ borderTop: `3px solid ${item.cor}` }}
+          >
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl sm:text-2xl shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
+                <p className="text-gray-500 text-xs font-medium">{item.label}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Lista de distritos */}
       <div className="space-y-3 stagger-children">
         {regiao.distritos.map((distrito) => (

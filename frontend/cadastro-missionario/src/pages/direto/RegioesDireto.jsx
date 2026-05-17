@@ -203,44 +203,63 @@ export default function RegioesDireto() {
                 const cor = regiaoSelecionada.cor || coresPadrao[regioes.findIndex(r => r.id === regiaoSelecionada.id) % coresPadrao.length];
                 return (
                   <div className="flex gap-3 mb-6 min-w-0">
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('distritos-grid')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: `linear-gradient(135deg, ${cor}, ${cor}cc)` }}>
                         {regiaoSelecionada.totalDistritos}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Distritos</p>
+                        <p className="text-xs text-gray-500 font-medium text-left">Distritos</p>
                       </div>
-                    </div>
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0">
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/direto/duplas')}
+                      className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: `linear-gradient(135deg, ${cor}, ${cor}cc)` }}>
                         {regiaoSelecionada.totalDuplas}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Duplas</p>
+                        <p className="text-xs text-gray-500 font-medium text-left">Duplas</p>
                       </div>
-                    </div>
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0">
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('distritos-grid')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-gradient-to-br from-[#16a34a] to-[#22c55e]">
                         {regiaoSelecionada.totalIgrejas || 0}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Igrejas</p>
+                        <p className="text-xs text-gray-500 font-medium text-left">Igrejas</p>
                       </div>
-                    </div>
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0">
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('distritos-grid')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-gradient-to-br from-[#7B2D8B] to-[#9d4ebd]">
                         {getDistritos(regiaoSelecionada).reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR')}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Membros</p>
+                        <p className="text-xs text-gray-500 font-medium text-left">Membros</p>
                       </div>
-                    </div>
+                    </button>
                   </div>
                 );
               })()}
 
               {/* Título da seção de distritos */}
-              <div className="flex items-center gap-2 mb-4">
+              <div id="distritos-grid" className="flex items-center gap-2 mb-4 scroll-mt-6">
                 <svg className="w-4 h-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
