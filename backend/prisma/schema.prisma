@@ -116,6 +116,12 @@ model Dupla {
   membro2Nome     String
   membro2Telefone String?
 
+  // Acompanhamento
+  estudoBiblico      String?
+  statusEstudoBiblico String?
+  statusEvangelismo  String?
+  batismos           Int      @default(0)
+
   // Metadados
   status           StatusDupla @default(ATIVA)
   pessoasAlcancadas Int        @default(0)

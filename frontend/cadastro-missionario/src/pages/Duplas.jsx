@@ -90,7 +90,7 @@ export default function Duplas() {
           <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
         <button
-          onClick={() => navigate('/duplas/nova')}
+          onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`)}
           className="btn-primary flex items-center gap-2 self-start"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,6 +98,28 @@ export default function Duplas() {
           </svg>
           Nova Dupla
         </button>
+      </div>
+
+      {/* Indicadores do Distrito/Região */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
+        {[
+          { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: '👥', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
+          ...(distrito ? [
+            { label: 'Igrejas', valor: distrito.igrejas?.length || 0, cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
+            { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' }
+          ] : []),
+          { label: 'Estudos Bíblicos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
+          { label: 'Evangelismos', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]' },
+          { label: 'Batismos', valor: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0), cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">
+            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2 group-hover:scale-110 transition-transform`}>
+              {item.icon}
+            </div>
+            <p className="text-xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">{item.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filtros */}

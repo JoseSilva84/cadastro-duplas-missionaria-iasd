@@ -9,6 +9,7 @@ const DistritoModel = {
       include: {
         regiao: true,
         igrejas: true,
+        duplas: { select: { statusEstudoBiblico: true, statusEvangelismo: true, batismos: true } },
         _count: { select: { duplas: true } },
       },
       orderBy: { nome: 'asc' },

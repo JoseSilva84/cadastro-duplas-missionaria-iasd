@@ -254,6 +254,24 @@ export default function RegioesDireto() {
                         <p className="text-xs text-gray-500 font-medium text-left">Membros</p>
                       </div>
                     </button>
+
+                    {/* Botão extra: Ação Rápida */}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/direto/duplas/nova`)}
+                      className="bg-white rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 flex-shrink-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-[#1A3A6B]/10 hover:border-[#1A3A6B]/30 group"
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#1A3A6B]/10 text-[#1A3A6B] font-bold text-sm group-hover:bg-[#1A3A6B] group-hover:text-white transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#1A3A6B] font-bold text-left uppercase tracking-wider">Nova Dupla</p>
+                        <p className="text-[10px] text-gray-400">Nesta região</p>
+                      </div>
+                    </button>
+
                   </div>
                 );
               })()}

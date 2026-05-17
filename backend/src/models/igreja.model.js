@@ -10,6 +10,7 @@ const IgrejaModel = {
         distrito: {
           include: { regiao: true }
         },
+        duplas: { select: { statusEstudoBiblico: true, statusEvangelismo: true, batismos: true } },
         _count: { select: { duplas: true } },
       },
       orderBy: { nome: 'asc' },

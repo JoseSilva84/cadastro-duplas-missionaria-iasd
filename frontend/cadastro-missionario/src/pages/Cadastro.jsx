@@ -51,6 +51,10 @@ const formVazio = {
   membro2Telefone: '',
   status: 'ATIVA',
   pessoasAlcancadas: 0,
+  estudoBiblico: '',
+  statusEstudoBiblico: '',
+  statusEvangelismo: '',
+  batismos: 0,
   observacoes: '',
   dataInicio: new Date().toISOString().split('T')[0],
 };
@@ -68,6 +72,22 @@ export default function Cadastro() {
   const [carregando, setCarregando] = useState(isEdicao);
 
   const [form, setForm] = useState({ ...formVazio });
+
+  // Pega query params (ex: ?distritoId=...&igrejaId=...)
+  useEffect(() => {
+    if (!isEdicao) {
+      const searchParams = new URLSearchParams(location.search);
+      const distritoId = searchParams.get('distritoId');
+      const igrejaId = searchParams.get('igrejaId');
+      if (distritoId || igrejaId) {
+        setForm(prev => ({
+          ...prev,
+          ...(distritoId && { distritoId }),
+          ...(igrejaId && { igrejaId })
+        }));
+      }
+    }
+  }, [location.search, isEdicao]);
 
   // Carrega lista de distritos
   useEffect(() => {
@@ -98,6 +118,10 @@ export default function Cadastro() {
           membro2Telefone: d.membro2Telefone || '',
           status: d.status || 'ATIVA',
           pessoasAlcancadas: d.pessoasAlcancadas || 0,
+          estudoBiblico: d.estudoBiblico || '',
+          statusEstudoBiblico: d.statusEstudoBiblico || '',
+          statusEvangelismo: d.statusEvangelismo || '',
+          batismos: d.batismos || 0,
           observacoes: d.observacoes || '',
           dataInicio: d.dataInicio ? new Date(d.dataInicio).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         });
@@ -269,9 +293,46 @@ export default function Cadastro() {
               </div>
             </div>
 
-            {/* SEÇÃO 4 — Observações */}
-            <div className={`card animate-fade-in-up flex flex-col ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '400ms' }}>
-              <SecaoHeader numero="4" titulo="Observações" descricao="Informações adicionais sobre a dupla (opcional)" />
+            {/* SEÇÃO 4 — Acompanhamento Missionário */}
+            <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '400ms' }}>
+              <SecaoHeader numero="4" titulo="Acompanhamento" descricao="Métricas e andamento missionário da dupla" />
+              <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
+                <Campo label="Estudo Bíblico" icone="📖">
+                  <select className="input-field" value={form.estudoBiblico} onChange={(e) => set('estudoBiblico', e.target.value)}>
+                    <option value="">Selecione o estudo</option>
+                    <option value="Ouvindo a Voz de Deus">Ouvindo a Voz de Deus</option>
+                    <option value="Apocalipse">Apocalipse</option>
+                    <option value="Bíblia Fácil">Bíblia Fácil</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </Campo>
+
+                <Campo label="Status do Estudo Bíblico" icone="📈">
+                  <select className="input-field" value={form.statusEstudoBiblico} onChange={(e) => set('statusEstudoBiblico', e.target.value)} disabled={!form.estudoBiblico}>
+                    <option value="">Não iniciado</option>
+                    <option value="ATIVO">Em andamento</option>
+                    <option value="DESATIVADO">Desativado / Pausado</option>
+                    <option value="TERMINADO">Concluído</option>
+                  </select>
+                </Campo>
+
+                <Campo label="Evangelismo" icone="📢">
+                  <select className="input-field" value={form.statusEvangelismo} onChange={(e) => set('statusEvangelismo', e.target.value)}>
+                    <option value="">Não iniciado</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="TERMINADO">Terminado</option>
+                  </select>
+                </Campo>
+
+                <Campo label="Quantidade de Batismos" icone="💧">
+                  <input type="number" className="input-field" min="0" placeholder="0" value={form.batismos} onChange={(e) => set('batismos', e.target.value)} />
+                </Campo>
+              </div>
+            </div>
+
+            {/* SEÇÃO 5 — Observações */}
+            <div className={`card animate-fade-in-up flex flex-col ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '500ms' }}>
+              <SecaoHeader numero="5" titulo="Observações" descricao="Informações adicionais sobre a dupla (opcional)" />
               <textarea
                 className="input-field flex-1 resize-none min-h-[120px]"
                 placeholder="Observações sobre a dupla, atividades, histórico..."

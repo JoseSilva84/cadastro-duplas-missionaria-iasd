@@ -20,6 +20,8 @@ import LayoutDireto from './components/LayoutDireto';
 import RegioesDireto from './pages/direto/RegioesDireto';
 import DistritosDireto from './pages/direto/DistritosDireto';
 import DuplasDireto from './pages/direto/DuplasDireto';
+import ListagemDistritosDireto from './pages/direto/ListagemDistritosDireto';
+import ListagemIgrejasDireto from './pages/direto/ListagemIgrejasDireto';
 
 // Rota protegida — redireciona para login se não autenticado
 function RotaProtegida({ children }) {
@@ -137,8 +139,8 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/direto/regioes" replace />} />
         <Route path="regioes" element={<RegioesDireto />} />
-        <Route path="distritos" element={<ListagemDistritos />} />
-        <Route path="igrejas" element={<ListagemIgrejas />} />
+        <Route path="distritos" element={<ListagemDistritosDireto />} />
+        <Route path="igrejas" element={<ListagemIgrejasDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />

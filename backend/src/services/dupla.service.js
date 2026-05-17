@@ -52,6 +52,10 @@ const DuplaService = {
       pessoasAlcancadas: Number(data.pessoasAlcancadas) || 0,
       observacoes: data.observacoes,
       dataInicio: data.dataInicio ? new Date(data.dataInicio) : new Date(),
+      estudoBiblico: data.estudoBiblico,
+      statusEstudoBiblico: data.statusEstudoBiblico,
+      statusEvangelismo: data.statusEvangelismo,
+      batismos: data.batismos ? Number(data.batismos) : 0,
     });
   },
 
@@ -81,6 +85,10 @@ const DuplaService = {
       pessoasAlcancadas: data.pessoasAlcancadas ? Number(data.pessoasAlcancadas) : 0,
       observacoes: data.observacoes,
       dataInicio: data.dataInicio ? new Date(data.dataInicio) : undefined,
+      estudoBiblico: data.estudoBiblico,
+      statusEstudoBiblico: data.statusEstudoBiblico,
+      statusEvangelismo: data.statusEvangelismo,
+      batismos: data.batismos !== undefined ? Number(data.batismos) : undefined,
     };
 
     // Remove undefined fields
