@@ -7,19 +7,29 @@ const DuplaService = {
     const { distritoId, status, regiaoNome } = query;
     const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId } = usuario;
 
-    const filtro = {};
+    // Montamos o filtro como lista de condições AND para evitar conflitos no Prisma
+    const condicoes = [];
 
-    // Restrições por perfil
+    // Restrição por perfil
     if (perfil === 'PASTOR_DISTRITAL') {
-      filtro.distritoId = userDistritoId;
-    } else if (perfil === 'COORDENADOR_REGIONAL') {
-      filtro.distrito = { regiaoId: userRegiaoId };
+      // Campo direto: sem necessidade de relação
+      condicoes.push({ distritoId: userDistritoId });
+    } else if (perfil === 'COORDENADOR_REGIONAL' && userRegiaoId) {
+      // Prisma exige "is" para filtrar campos dentro de uma relação
+      condicoes.push({ distrito: { is: { regiaoId: userRegiaoId } } });
     }
 
     // Filtros opcionais da query
-    if (distritoId) filtro.distritoId = Number(distritoId);
-    if (status) filtro.status = status;
-    if (regiaoNome) filtro.regiaoNome = { contains: regiaoNome, mode: 'insensitive' };
+    if (distritoId) condicoes.push({ distritoId: Number(distritoId) });
+    if (status) condicoes.push({ status });
+    if (regiaoNome) condicoes.push({ regiaoNome: { contains: regiaoNome, mode: 'insensitive' } });
+
+    // Se houver mais de uma condição, usa AND; senão passa o único objeto ou {}
+    const filtro = condicoes.length === 0
+      ? {}
+      : condicoes.length === 1
+        ? condicoes[0]
+        : { AND: condicoes };
 
     return DuplaModel.findAll(filtro);
   },

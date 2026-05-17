@@ -4,26 +4,30 @@ const IgrejaModel = require('../models/igreja.model');
 const IgrejaService = {
   // Lista todas as igrejas aplicando restrições de acesso
   async listar(usuario, query) {
-    const filtro = {};
+    const condicoes = [];
 
-    // Se houver query param, filtra
-    if (query.distritoId) {
-      filtro.distritoId = Number(query.distritoId);
-    }
-    if (query.regiaoId) {
-      filtro.distrito = { regiaoId: Number(query.regiaoId) };
-    }
-
-    // Regras baseadas no perfil do usuário
-    if (usuario.perfil === 'COORDENADOR_REGIONAL') {
-      filtro.distrito = { regiaoId: usuario.regiaoId };
-    } else if (usuario.perfil === 'PAISTOR_DISTRITAL' || usuario.perfil === 'LIDER_DISTRITAL') {
-      filtro.distritoId = usuario.distritoId;
-    } else if (usuario.perfil === 'LIDER_LOCAL') {
-      filtro.id = usuario.igrejaId;
+    // Restrição por perfil — define o escopo máximo permitido
+    if (usuario.perfil === 'COORDENADOR_REGIONAL' && usuario.regiaoId) {
+      // Prisma exige "is" para filtrar campos de uma relação
+      condicoes.push({ distrito: { is: { regiaoId: usuario.regiaoId } } });
+    } else if (usuario.perfil === 'PASTOR_DISTRITAL' && usuario.distritoId) {
+      condicoes.push({ distritoId: usuario.distritoId });
+    } else if (usuario.perfil === 'LIDER_LOCAL' && usuario.igrejaId) {
+      condicoes.push({ id: usuario.igrejaId });
     }
 
-    return IgrejaModel.findAll(filtro);
+    // Filtros opcionais da query (refinam dentro do escopo permitido)
+    if (query.distritoId) condicoes.push({ distritoId: Number(query.distritoId) });
+    if (query.regiaoId) condicoes.push({ distrito: { is: { regiaoId: Number(query.regiaoId) } } });
+
+    // Combina tudo com AND sem conflitos
+    const where = condicoes.length === 0
+      ? {}
+      : condicoes.length === 1
+        ? condicoes[0]
+        : { AND: condicoes };
+
+    return IgrejaModel.findAll(where);
   },
 
   // Busca igreja por ID com validação

@@ -4,20 +4,29 @@ const DistritoModel = require('../models/distrito.model');
 const DistritoService = {
   // Lista distritos com filtro por perfil
   async listar(usuario, query) {
-    const { regiaoId } = query;
+    const { regiaoId, nome } = query;
     const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId } = usuario;
 
-    const filtro = {};
+    const condicoes = [];
 
-    if (perfil === 'PASTOR_DISTRITAL') {
-      filtro.id = userDistritoId;
-    } else if (perfil === 'COORDENADOR_REGIONAL') {
-      filtro.regiaoId = userRegiaoId;
-    } else if (regiaoId) {
-      filtro.regiaoId = Number(regiaoId);
+    // Restrição por perfil
+    if (perfil === 'PASTOR_DISTRITAL' && userDistritoId) {
+      condicoes.push({ id: userDistritoId });
+    } else if (perfil === 'COORDENADOR_REGIONAL' && userRegiaoId) {
+      condicoes.push({ regiaoId: userRegiaoId });
     }
 
-    return DistritoModel.findAll(filtro);
+    // Filtros opcionais da query
+    if (regiaoId) condicoes.push({ regiaoId: Number(regiaoId) });
+    if (nome) condicoes.push({ nome: { contains: nome, mode: 'insensitive' } });
+
+    const where = condicoes.length === 0
+      ? {}
+      : condicoes.length === 1
+        ? condicoes[0]
+        : { AND: condicoes };
+
+    return DistritoModel.findAll(where);
   },
 
   // Busca distrito por ID

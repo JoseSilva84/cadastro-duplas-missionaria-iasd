@@ -7,6 +7,7 @@ export default function ListagemDistritosDireto() {
   const [distritos, setDistritos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     api.get('/distritos')
@@ -19,6 +20,15 @@ export default function ListagemDistritosDireto() {
       .catch((err) => console.error(err))
       .finally(() => setCarregando(false));
   }, []);
+
+  const distritosFiltrados = distritos.filter((d) => {
+    if (!busca) return true;
+    const q = busca.toLowerCase();
+    return (
+      d.nome.toLowerCase().includes(q) ||
+      d.regiao?.nome.toLowerCase().includes(q)
+    );
+  });
 
   if (carregando) {
     return (
@@ -48,11 +58,39 @@ export default function ListagemDistritosDireto() {
             Todos os Distritos
           </h1>
           <p className="text-gray-400 text-[10px] mt-1">{distritos.length} distritos encontrados</p>
+
+          {/* Campo de busca */}
+          <div className="relative mt-3">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por nome ou região..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20 focus:border-[#1A3A6B]/40 bg-gray-50 text-gray-700 placeholder-gray-400 transition-all"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Lista de distritos */}
         <div className="flex-1 overflow-y-auto">
-          {distritos.map((distrito) => {
+          {distritosFiltrados.length === 0 && (
+            <div className="py-10 text-center text-gray-400 text-xs">
+              {busca ? `Nenhum distrito encontrado para "${busca}".` : 'Nenhum distrito cadastrado.'}
+            </div>
+          )}
+          {distritosFiltrados.map((distrito) => {
             const selecionado = distritoSelecionado?.id === distrito.id;
 
             return (
@@ -81,6 +119,9 @@ export default function ListagemDistritosDireto() {
                         {distrito.regiao && (
                           <p className="text-gray-400 text-[10px] truncate uppercase tracking-wide">{distrito.regiao.nome}</p>
                         )}
+                        <p className="text-gray-400 text-[10px] mt-0.5">
+                          ⛪ {(distrito.igrejas || []).length} igrejas &nbsp;·&nbsp; 👥 {distrito._count?.duplas || 0} duplas
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -119,7 +160,7 @@ export default function ListagemDistritosDireto() {
             {/* Conteúdo do detail — scroll horizontal */}
             <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
               <div className="flex gap-4 min-w-0">
-                
+
                 {/* Card: Estatísticas */}
                 <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
                   <div>
@@ -183,6 +224,24 @@ export default function ListagemDistritosDireto() {
                     </div>
                   </div>
                 </div>
+
+                {/* Card: Igrejas do Distrito */}
+                {(distritoSelecionado.igrejas || []).length > 0 && (
+                  <div className="flex-shrink-0 w-80 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs">⛪</div>
+                      <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Igrejas</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {distritoSelecionado.igrejas.map((ig) => (
+                        <div key={ig.id} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 last:border-0">
+                          <span className="text-gray-700 font-medium truncate">{ig.nome}</span>
+                          <span className="text-gray-400 ml-2 flex-shrink-0">{(ig.membros || 0).toLocaleString('pt-BR')} membros</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>
