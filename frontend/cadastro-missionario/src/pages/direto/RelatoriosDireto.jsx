@@ -24,6 +24,7 @@ export default function RelatoriosDireto() {
 
   // 'GERAL' ou o id da regiao
   const [selecionado, setSelecionado] = useState('GERAL');
+  const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -54,7 +55,9 @@ export default function RelatoriosDireto() {
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Menu Master ===== */}
-      <div className="w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+      <div className={`${
+        mostraDetalhe ? 'hidden sm:flex' : 'flex'
+      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
         {/* Cabeçalho do painel */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
@@ -72,7 +75,7 @@ export default function RelatoriosDireto() {
           {/* Item: Associação Geral */}
           <button
             type="button"
-            onClick={() => setSelecionado('GERAL')}
+            onClick={() => { setSelecionado('GERAL'); setMostraDetalhe(true); }}
             className={`w-full text-left transition-all duration-200 border-l-[3px] ${
               selecionado === 'GERAL'
                 ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
@@ -105,7 +108,7 @@ export default function RelatoriosDireto() {
               <button
                 type="button"
                 key={regiao.id}
-                onClick={() => setSelecionado(regiao.id)}
+                onClick={() => { setSelecionado(regiao.id); setMostraDetalhe(true); }}
                 className={`w-full text-left transition-all duration-200 border-l-[3px] ${
                   isSel
                     ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
@@ -134,11 +137,24 @@ export default function RelatoriosDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes do Relatório (Detail) ===== */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F5F7]">
+      <div className={`${
+        mostraDetalhe ? 'flex' : 'hidden sm:flex'
+      } flex-1 flex-col h-full overflow-hidden bg-[#F4F5F7]`}>
         {selecionado === 'GERAL' ? (
           /* RELATÓRIO GERAL */
           <div className="flex flex-col h-full animate-slide-in-right">
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm">
+              {/* Botão voltar (mobile) */}
+              <button
+                type="button"
+                onClick={() => setMostraDetalhe(false)}
+                className="sm:hidden flex items-center gap-1.5 text-xs text-[#1A3A6B] font-semibold mb-3 hover:text-[#C9963A] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Voltar
+              </button>
               <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider mb-1">Relatório Global</p>
               <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                 Associação Paulistana
@@ -199,8 +215,19 @@ export default function RelatoriosDireto() {
         ) : regiaoSelecionada ? (
           /* RELATÓRIO POR REGIÃO */
           <div className="flex flex-col h-full animate-slide-in-right">
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-sm flex items-center justify-between">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm flex items-center justify-between">
               <div>
+                {/* Botão voltar (mobile) */}
+                <button
+                  type="button"
+                  onClick={() => setMostraDetalhe(false)}
+                  className="sm:hidden flex items-center gap-1.5 text-xs text-[#1A3A6B] font-semibold mb-3 hover:text-[#C9963A] transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Voltar
+                </button>
                 <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider mb-1">Relatório Regional</p>
                 <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {regiaoSelecionada.nome}

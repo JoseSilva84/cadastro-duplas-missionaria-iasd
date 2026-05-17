@@ -8,7 +8,6 @@ const validarDupla = [
   body('tipoProjeto').notEmpty().withMessage('Tipo de projeto obrigatório.'),
   body('liderNome').notEmpty().withMessage('Nome do líder obrigatório.'),
   body('membro2Nome').notEmpty().withMessage('Nome do segundo membro obrigatório.'),
-  body('membro2Tipo').notEmpty().withMessage('Tipo do segundo membro obrigatório.'),
   body('distritoId').isInt().withMessage('Distrito obrigatório.'),
 ];
 

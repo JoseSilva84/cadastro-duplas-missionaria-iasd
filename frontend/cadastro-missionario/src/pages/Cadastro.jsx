@@ -10,9 +10,13 @@ const TIPOS_PROJETO = [
   { value: 'EVANGELISMO_PUBLICO', label: 'Evangelismo Público', icon: '📢' },
 ];
 
-const TIPOS_MEMBRO2 = [
-  { value: 'MEMBRO_IASD', label: 'Membro da IASD', icon: '✝️' },
-];
+
+// Ícone oficial do WhatsApp
+const WhatsAppIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 inline-block" fill="currentColor" style={{ color: '#25D366' }}>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+  </svg>
+);
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
   <div className="group/campo">
@@ -49,6 +53,7 @@ const formVazio = {
   membro2Tipo: 'MEMBRO_IASD',
   membro2Nome: '',
   membro2Telefone: '',
+  membro2Email: '',
   status: 'ATIVA',
   pessoasAlcancadas: 0,
   estudoBiblico: '',
@@ -116,6 +121,7 @@ export default function Cadastro() {
           membro2Tipo: d.membro2Tipo || 'MEMBRO_IASD',
           membro2Nome: d.membro2Nome || '',
           membro2Telefone: d.membro2Telefone || '',
+          membro2Email: d.membro2Email || '',
           status: d.status || 'ATIVA',
           pessoasAlcancadas: d.pessoasAlcancadas || 0,
           estudoBiblico: d.estudoBiblico || '',
@@ -147,7 +153,15 @@ export default function Cadastro() {
   }, [form.distritoId]);
 
   const set = (campo, valor) => {
-    setForm((prev) => ({ ...prev, [campo]: valor }));
+    setForm((prev) => {
+      const novoForm = { ...prev, [campo]: valor };
+      // Quando a igreja muda, atualiza automaticamente o liderIgreja
+      if (campo === 'igrejaId') {
+        const igrejaSelecionada = igrejas.find((ig) => String(ig.id) === String(valor));
+        novoForm.liderIgreja = igrejaSelecionada?.nome || '';
+      }
+      return novoForm;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -260,14 +274,31 @@ export default function Cadastro() {
                 <Campo label="Nome Completo" obrigatorio icone="👤">
                   <input type="text" className="input-field" placeholder="Nome do líder" value={form.liderNome} onChange={(e) => set('liderNome', e.target.value)} required />
                 </Campo>
-                <Campo label="Telefone" icone="📱">
-                  <input type="tel" className="input-field" placeholder="(11) 99999-0000" value={form.liderTelefone} onChange={(e) => set('liderTelefone', e.target.value)} />
+                <Campo label="WhatsApp" icone={<WhatsAppIcon />}>
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      className="input-field pr-24"
+                      placeholder="(11) 99999-0000"
+                      value={form.liderTelefone}
+                      onChange={(e) => set('liderTelefone', e.target.value)}
+                    />
+                    {form.liderTelefone && (
+                      <a
+                        href={`https://wa.me/55${form.liderTelefone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-2 py-1 rounded-md hover:bg-[#25D366]/20 transition-colors flex items-center gap-1"
+                        title="Abrir no WhatsApp"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        Enviar
+                      </a>
+                    )}
+                  </div>
                 </Campo>
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="lider@email.com" value={form.liderEmail} onChange={(e) => set('liderEmail', e.target.value)} />
-                </Campo>
-                <Campo label="Igreja / Congregação" icone="⛪">
-                  <input type="text" className="input-field" placeholder="Igreja do líder" value={form.liderIgreja} onChange={(e) => set('liderIgreja', e.target.value)} />
                 </Campo>
               </div>
             </div>
@@ -276,16 +307,34 @@ export default function Cadastro() {
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '300ms' }}>
               <SecaoHeader numero="3" titulo="Membro 2 — Parceiro" descricao="Dados do parceiro da dupla" />
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
-                <Campo label="Tipo do Parceiro" obrigatorio icone="🏷️">
-                  <select className="input-field" value={form.membro2Tipo} onChange={(e) => set('membro2Tipo', e.target.value)} required>
-                    {TIPOS_MEMBRO2.map((t) => (<option key={t.value} value={t.value}>{t.icon} {t.label}</option>))}
-                  </select>
-                </Campo>
                 <Campo label="Nome Completo" obrigatorio icone="👤">
                   <input type="text" className="input-field" placeholder="Nome do parceiro" value={form.membro2Nome} onChange={(e) => set('membro2Nome', e.target.value)} required />
                 </Campo>
-                <Campo label="Telefone" icone="📱">
-                  <input type="tel" className="input-field" placeholder="(11) 99999-0000" value={form.membro2Telefone} onChange={(e) => set('membro2Telefone', e.target.value)} />
+                <Campo label="WhatsApp" icone={<WhatsAppIcon />}>
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      className="input-field pr-24"
+                      placeholder="(11) 99999-0000"
+                      value={form.membro2Telefone}
+                      onChange={(e) => set('membro2Telefone', e.target.value)}
+                    />
+                    {form.membro2Telefone && (
+                      <a
+                        href={`https://wa.me/55${form.membro2Telefone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-2 py-1 rounded-md hover:bg-[#25D366]/20 transition-colors flex items-center gap-1"
+                        title="Abrir no WhatsApp"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        Enviar
+                      </a>
+                    )}
+                  </div>
+                </Campo>
+                <Campo label="E-mail" icone="✉️">
+                  <input type="email" className="input-field" placeholder="parceiro@email.com" value={form.membro2Email} onChange={(e) => set('membro2Email', e.target.value)} />
                 </Campo>
                 <Campo label="Pessoas Alcançadas" icone="🙏">
                   <input type="number" className="input-field" min="0" value={form.pessoasAlcancadas} onChange={(e) => set('pessoasAlcancadas', e.target.value)} />
@@ -301,7 +350,7 @@ export default function Cadastro() {
                   <select className="input-field" value={form.estudoBiblico} onChange={(e) => set('estudoBiblico', e.target.value)}>
                     <option value="">Selecione o estudo</option>
                     <option value="Ouvindo a Voz de Deus">Ouvindo a Voz de Deus</option>
-                    <option value="Apocalipse">Apocalipse</option>
+                    <option value="Apocalipse - A Resposta">Apocalipse - A Resposta</option>
                     <option value="Bíblia Fácil">Bíblia Fácil</option>
                     <option value="Outro">Outro</option>
                   </select>

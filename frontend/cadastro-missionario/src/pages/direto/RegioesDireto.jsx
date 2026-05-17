@@ -12,6 +12,7 @@ export default function RegioesDireto() {
   const [regiaoSelecionada, setRegiaoSelecionada] = useState(null);
   const [distritosDetalhados, setDistritosDetalhados] = useState({});
   const [carregandoDistritos, setCarregandoDistritos] = useState(false);
+  const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -35,6 +36,7 @@ export default function RegioesDireto() {
 
   async function selecionarRegiao(regiao) {
     setRegiaoSelecionada(regiao);
+    setMostraDetalhe(true);
 
     if (!distritosDetalhados[regiao.id]) {
       setCarregandoDistritos(true);
@@ -76,7 +78,9 @@ export default function RegioesDireto() {
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Lista de Regiões (Master) ===== */}
-      <div className="w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+      <div className={`${
+        mostraDetalhe ? 'hidden sm:flex' : 'flex'
+      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
         {/* Cabeçalho do painel */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
@@ -168,7 +172,9 @@ export default function RegioesDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes da Região (Detail) ===== */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F5F7]">
+      <div className={`${
+        mostraDetalhe ? 'flex' : 'hidden sm:flex'
+      } flex-1 flex-col h-full overflow-hidden bg-[#F4F5F7]`}>
         {!regiaoSelecionada ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
@@ -180,7 +186,18 @@ export default function RegioesDireto() {
         ) : (
           <div key={regiaoSelecionada.id} className="flex flex-col h-full animate-slide-in-right">
             {/* Cabeçalho do detail */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+              {/* Botão voltar (mobile) */}
+              <button
+                type="button"
+                onClick={() => setMostraDetalhe(false)}
+                className="sm:hidden flex items-center gap-1.5 text-xs text-[#1A3A6B] font-semibold mb-3 hover:text-[#C9963A] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Voltar às regiões
+              </button>
               <div className="flex items-center gap-2 mb-1">
                 {(() => {
                   const cor = regiaoSelecionada.cor || coresPadrao[regioes.findIndex(r => r.id === regiaoSelecionada.id) % coresPadrao.length];

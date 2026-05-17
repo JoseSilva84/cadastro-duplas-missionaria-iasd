@@ -115,6 +115,7 @@ model Dupla {
   membro2Tipo     TipoMembro2
   membro2Nome     String
   membro2Telefone String?
+  membro2Email    String?
 
   // Acompanhamento
   estudoBiblico      String?

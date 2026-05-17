@@ -8,6 +8,7 @@ export default function ListagemDistritosDireto() {
   const [carregando, setCarregando] = useState(true);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
   const [busca, setBusca] = useState('');
+  const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
   useEffect(() => {
     api.get('/distritos')
@@ -47,7 +48,9 @@ export default function ListagemDistritosDireto() {
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Lista de Distritos (Master) ===== */}
-      <div className="w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+      <div className={`${
+        mostraDetalhe ? 'hidden sm:flex' : 'flex'
+      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
         {/* Cabeçalho do painel */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
@@ -97,7 +100,7 @@ export default function ListagemDistritosDireto() {
               <button
                 type="button"
                 key={distrito.id}
-                onClick={() => setDistritoSelecionado(distrito)}
+                onClick={() => { setDistritoSelecionado(distrito); setMostraDetalhe(true); }}
                 className={`w-full text-left transition-all duration-200 border-l-[3px] ${
                   selecionado
                     ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
@@ -133,7 +136,9 @@ export default function ListagemDistritosDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes do Distrito (Detail) ===== */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F5F7]">
+      <div className={`${
+        mostraDetalhe ? 'flex' : 'hidden sm:flex'
+      } flex-1 flex-col h-full overflow-hidden bg-[#F4F5F7]`}>
         {!distritoSelecionado ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
@@ -145,7 +150,18 @@ export default function ListagemDistritosDireto() {
         ) : (
           <div key={distritoSelecionado.id} className="flex flex-col h-full animate-slide-in-right">
             {/* Cabeçalho do detail */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+              {/* Botão voltar (mobile) */}
+              <button
+                type="button"
+                onClick={() => setMostraDetalhe(false)}
+                className="sm:hidden flex items-center gap-1.5 text-xs text-[#1A3A6B] font-semibold mb-3 hover:text-[#C9963A] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Voltar à lista
+              </button>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Resumo do Distrito</span>
               </div>
