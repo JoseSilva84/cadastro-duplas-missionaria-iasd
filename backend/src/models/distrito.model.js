@@ -9,7 +9,16 @@ const DistritoModel = {
       include: {
         regiao: true,
         igrejas: true,
-        duplas: { select: { statusEstudoBiblico: true, statusEvangelismo: true, batismos: true } },
+        duplas: { select: {
+          id: true,
+          liderNome: true,
+          membro2Nome: true,
+          estudoBiblico: true,
+          statusEstudoBiblico: true,
+          statusEvangelismo: true,
+          batismos: true,
+          status: true,
+        }},
         _count: { select: { duplas: true } },
       },
       orderBy: { nome: 'asc' },
@@ -23,6 +32,7 @@ const DistritoModel = {
       include: {
         regiao: true,
         igrejas: true,
+        _count: { select: { duplas: true } },
         duplas: {
           include: { igreja: true },
           orderBy: { criadoEm: 'desc' },

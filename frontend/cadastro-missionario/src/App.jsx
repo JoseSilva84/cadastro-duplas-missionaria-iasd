@@ -22,6 +22,7 @@ import DistritosDireto from './pages/direto/DistritosDireto';
 import DuplasDireto from './pages/direto/DuplasDireto';
 import ListagemDistritosDireto from './pages/direto/ListagemDistritosDireto';
 import ListagemIgrejasDireto from './pages/direto/ListagemIgrejasDireto';
+import RelatoriosDireto from './pages/direto/RelatoriosDireto';
 
 // Rota protegida — redireciona para login se não autenticado
 function RotaProtegida({ children }) {
@@ -146,6 +147,7 @@ function AppRoutes() {
         <Route path="duplas/nova" element={<Cadastro />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
+        <Route path="relatorios" element={<RelatoriosDireto />} />
       </Route>
 
       {/* Fallback */}

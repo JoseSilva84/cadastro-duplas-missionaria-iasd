@@ -2,14 +2,18 @@
 const prisma = require('../lib/prisma');
 
 const RelatorioModel = {
-  // Resumo geral do sistema
   async resumo() {
     const [totalDuplas, totalAtivas, totalPendentes, totalInativas, totalPessoas] = await Promise.all([
       prisma.dupla.count(),
       prisma.dupla.count({ where: { status: 'ATIVA' } }),
       prisma.dupla.count({ where: { status: 'PENDENTE' } }),
       prisma.dupla.count({ where: { status: 'INATIVA' } }),
-      prisma.dupla.aggregate({ _sum: { pessoasAlcancadas: true } }),
+      prisma.dupla.aggregate({ _sum: { pessoasAlcancadas: true, batismos: true } }),
+    ]);
+
+    const [estudosAtivos, evangelismosAtivos] = await Promise.all([
+      prisma.dupla.count({ where: { statusEstudoBiblico: 'ATIVO' } }),
+      prisma.dupla.count({ where: { statusEvangelismo: 'ATIVO' } }),
     ]);
 
     const porProjeto = await prisma.dupla.groupBy({
@@ -23,6 +27,9 @@ const RelatorioModel = {
       totalPendentes,
       totalInativas,
       totalPessoasAlcancadas: totalPessoas._sum.pessoasAlcancadas || 0,
+      totalBatismos: totalPessoas._sum.batismos || 0,
+      estudosAtivos,
+      evangelismosAtivos,
       porProjeto,
     };
   },
@@ -40,15 +47,30 @@ const RelatorioModel = {
       },
     });
 
-    return regioes.map((r) => ({
-      id: r.id,
-      nome: r.nome,
-      cor: r.cor,
-      totalDistritos: r.distritos.length,
-      totalDuplas: r.distritos.reduce((acc, d) => acc + d._count.duplas, 0),
-      totalPessoas: r.distritos.reduce((acc, d) =>
-        acc + d.duplas.reduce((a, dupla) => a + dupla.pessoasAlcancadas, 0), 0),
-    }));
+    return regioes.map((r) => {
+      const todasDuplas = r.distritos.flatMap(d => d.duplas);
+
+      return {
+        id: r.id,
+        nome: r.nome,
+        cor: r.cor,
+        totalDistritos: r.distritos.length,
+        totalDuplas: todasDuplas.length,
+        ativas: todasDuplas.filter(d => d.status === 'ATIVA').length,
+        pendentes: todasDuplas.filter(d => d.status === 'PENDENTE').length,
+        inativas: todasDuplas.filter(d => d.status === 'INATIVA').length,
+        estudosAtivos: todasDuplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length,
+        evangelismosAtivos: todasDuplas.filter(d => d.statusEvangelismo === 'ATIVO').length,
+        totalBatismos: todasDuplas.reduce((a, d) => a + (d.batismos || 0), 0),
+        totalPessoas: todasDuplas.reduce((a, d) => a + (d.pessoasAlcancadas || 0), 0),
+        distritos: r.distritos.map(d => ({
+          id: d.id,
+          nome: d.nome,
+          totalDuplas: d._count.duplas,
+          totalPessoas: d.duplas.reduce((a, dupla) => a + (dupla.pessoasAlcancadas || 0), 0)
+        })).sort((a, b) => b.totalDuplas - a.totalDuplas)
+      };
+    });
   },
 
   // Relatório de um distrito específico
