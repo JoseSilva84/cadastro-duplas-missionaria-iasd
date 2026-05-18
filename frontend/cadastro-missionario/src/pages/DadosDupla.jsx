@@ -17,9 +17,9 @@ const StatusBadge = ({ status }) => {
 };
 
 const InfoRow = ({ label, valor }) => valor ? (
-  <div className="flex flex-col sm:flex-row sm:items-center gap-1 py-3.5 border-b border-gray-50 last:border-0 group/row">
+  <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50 last:border-0 group/row">
     <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0 group-hover/row:text-[#1A3A6B] transition-colors">{label}</dt>
-    <dd className="text-sm text-gray-800 font-medium">{valor}</dd>
+    <dd className="text-sm text-gray-800 font-medium min-w-0 break-all">{valor}</dd>
   </div>
 ) : null;
 
