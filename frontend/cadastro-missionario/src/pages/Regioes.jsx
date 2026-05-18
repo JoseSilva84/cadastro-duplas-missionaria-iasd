@@ -48,9 +48,9 @@ export default function Regioes() {
         <p className="text-gray-400 text-xs sm:text-sm mt-1">Associação Paulistana — Igreja Adventista do Sétimo Dia</p>
       </div>
 
-      {/* Indicadores gerais */}
-      {resumo && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 stagger-children">
+       {/* Indicadores gerais */}
+       {resumo && (
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 stagger-children">
           {[
             { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
             { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]' },

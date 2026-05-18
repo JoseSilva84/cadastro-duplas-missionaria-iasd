@@ -119,53 +119,55 @@ export default function Layout() {
         />
       </aside>
 
-      {/* Sidebar mobile */}
-      <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarAberta ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-        <div
-          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sidebarAberta ? 'opacity-100' : 'opacity-0'}`}
-          onClick={() => setSidebarAberta(false)}
-        />
-        <aside
-          className={`absolute left-0 top-0 bottom-0 w-72 flex flex-col z-50 transition-transform duration-300 ease-out ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'}`}
-          style={{ background: 'linear-gradient(180deg, #0b1a36 0%, #1A3A6B 40%, #162d54 100%)' }}
-        >
-          <SidebarContent
-            usuario={usuario}
-            navLinks={navLinks}
-            handleLogout={handleLogout}
-            handleTrocarLayout={handleTrocarLayout}
-            setSidebarAberta={setSidebarAberta}
-            layout={layout}
-          />
-        </aside>
-      </div>
+       {/* Sidebar mobile */}
+       <div className={`fixed inset-0 z-40 lg:hidden transition-all duration-300 ${sidebarAberta ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+         <div
+           className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sidebarAberta ? 'opacity-100' : 'opacity-0'}`}
+           onClick={() => setSidebarAberta(false)}
+         />
+         <aside
+           className={`absolute left-0 top-0 bottom-0 w-[280px] max-w-[80vw] flex flex-col z-50 transition-transform duration-300 ease-out ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'}`}
+           style={{ background: 'linear-gradient(180deg, #0b1a36 0%, #1A3A6B 40%, #162d54 100%)' }}
+         >
+           <SidebarContent
+             usuario={usuario}
+             navLinks={navLinks}
+             handleLogout={handleLogout}
+             handleTrocarLayout={handleTrocarLayout}
+             setSidebarAberta={setSidebarAberta}
+             layout={layout}
+           />
+         </aside>
+       </div>
 
-      {/* Conteúdo principal */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Header mobile */}
-        <header className="lg:hidden flex items-center justify-between px-3 py-3 shadow-md gap-2"
-          style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
-        >
-          <button
-            type="button"
-            onClick={() => setSidebarAberta(true)}
-            className="text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
-          >
-            {icons.menu}
-          </button>
-          <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
-            {icons.logoIasd}
-            <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
-              Duplas Missionárias
-            </span>
-          </div>
-          <div className="w-9 flex-shrink-0" />
-        </header>
+       {/* Conteúdo principal */}
+       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+         {/* Header mobile */}
+         <header className="lg:hidden flex items-center justify-between px-3 py-3 shadow-md gap-2"
+           style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
+         >
+           <button
+             type="button"
+             onClick={() => setSidebarAberta(true)}
+             className="text-white p-3 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+           >
+             {icons.menu}
+           </button>
+           <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
+             {icons.logoIasd}
+             <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
+               Duplas Missionárias
+             </span>
+           </div>
+           <div className="w-9 flex-shrink-0" />
+         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#F4F5F7]">
-          <Outlet />
-        </main>
-      </div>
+         <main className="flex-1 overflow-y-auto bg-[#F4F5F7]">
+           <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+             <Outlet />
+           </div>
+         </main>
+       </div>
     </div>
   );
 }

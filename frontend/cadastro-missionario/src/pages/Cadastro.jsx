@@ -201,8 +201,8 @@ export default function Cadastro() {
 
 
 
-  return (
-    <div className={isDireto ? "flex flex-col h-full animate-fade-in" : "p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in"}>
+   return (
+     <div className={isDireto ? "flex flex-col h-full animate-fade-in" : "p-3 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in"}>
       {/* Cabeçalho */}
       <div className={isDireto ? "flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 z-10" : "mb-8 animate-fade-in-down"}>
         <div className="flex items-center gap-2 mb-2">
@@ -220,7 +220,7 @@ export default function Cadastro() {
       </div>
 
       <form onSubmit={handleSubmit} className={isDireto ? "flex-1 flex flex-col min-h-0" : "space-y-6"}>
-        <div className={isDireto ? "flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 bg-[#F4F5F7] master-detail-scroll" : ""}>
+             <div className={isDireto ? "flex-1 overflow-x-auto overflow-y-auto p-3 sm:p-4 bg-[#F4F5F7] master-detail-scroll" : ""}>
           <div className={isDireto ? "flex gap-4 w-max min-h-full pb-2" : "space-y-6"}>
             {/* SEÇÃO 1 — Localização */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '100ms' }}>

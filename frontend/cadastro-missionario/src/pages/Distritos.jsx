@@ -63,8 +63,8 @@ export default function Distritos() {
         </button>
       </div>
 
-      {/* Indicadores gerais da região */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
+       {/* Indicadores gerais da região */}
+       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
         {[
           { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
           { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
