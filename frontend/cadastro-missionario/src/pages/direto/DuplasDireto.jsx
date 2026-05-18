@@ -2,6 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 
+// ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
+function getMedalha(dupla) {
+  const estudoAtivo = dupla.statusEstudoBiblico === 'ATIVO';
+  const temBatismo  = (dupla.batismos || 0) > 0;
+  const temPessoas  = (dupla.pessoasAlcancadas || 0) > 0;
+  if (estudoAtivo && temBatismo && temPessoas) return 'ouro';
+  if (estudoAtivo && !temBatismo && temPessoas) return 'prata';
+  return 'bronze';
+}
+
+const medalhaConfig = {
+  ouro:   { emoji: '🥇', label: 'Ouro',   cor: '#C9963A', bg: '#C9963A18' },
+  prata:  { emoji: '🥈', label: 'Prata',  cor: '#6b7280', bg: '#6b728018' },
+  bronze: { emoji: '🥉', label: 'Bronze', cor: '#92400e', bg: '#92400e15' },
+};
+
+const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
+
 // Link clicável do WhatsApp Web
 const WhatsAppLink = ({ numero }) => {
   if (!numero) return null;
@@ -44,8 +62,9 @@ export default function DuplasDireto() {
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
-  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/PENDENTE/INATIVA) ou medalha (ouro/prata/bronze)
   const [busca, setBusca] = useState('');
+  const [buscaFocada, setBuscaFocada] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
   useEffect(() => {
@@ -62,18 +81,38 @@ export default function DuplasDireto() {
     return () => { ativo = false; };
   }, []);
 
+  // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
+  const duplasComMedalha = useMemo(() =>
+    [...duplas]
+      .map(d => ({ ...d, _medalha: getMedalha(d) }))
+      .sort((a, b) => medalhaOrder[a._medalha] - medalhaOrder[b._medalha]),
+    [duplas]
+  );
+
+  // Contagem por medalha para os chips de filtro
+  const contagemMedalha = useMemo(() => {
+    const c = { ouro: 0, prata: 0, bronze: 0 };
+    duplasComMedalha.forEach(d => { c[d._medalha] = (c[d._medalha] || 0) + 1; });
+    return c;
+  }, [duplasComMedalha]);
+
   // Filtra as duplas com base nos critérios de busca (memoizado)
   const duplasFiltradas = useMemo(() => {
     const termo = busca.toLowerCase().trim();
-    return duplas.filter((d) => {
-      const matchStatus = !filtroStatus || d.status === filtroStatus;
+    const isMedalha = ['ouro', 'prata', 'bronze'].includes(filtro);
+    return duplasComMedalha.filter((d) => {
+      const matchFiltro = !filtro
+        ? true
+        : isMedalha
+          ? d._medalha === filtro
+          : d.status === filtro;
       const matchBusca = !termo ||
         (d.liderNome || '').toLowerCase().includes(termo) ||
         (d.membro2Nome || '').toLowerCase().includes(termo) ||
         (d.bairro || '').toLowerCase().includes(termo);
-      return matchStatus && matchBusca;
+      return matchFiltro && matchBusca;
     });
-  }, [duplas, filtroStatus, busca]);
+  }, [duplasComMedalha, filtro, busca]);
 
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
@@ -143,30 +182,125 @@ export default function DuplasDireto() {
             </button>
           </div>
 
-          {/* Filtros */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Chips de medalha com contagem */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {/* Chip "Todas" */}
+            <button
+              type="button"
+              onClick={() => setFiltro('')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200 ${
+                filtro === ''
+                  ? 'bg-[#1A3A6B] text-white border-[#1A3A6B] shadow-sm'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-[#1A3A6B]/30'
+              }`}
+            >
+              Todas
+              <span
+                className="rounded-full px-1.5 py-px text-[9px] font-bold"
+                style={{
+                  backgroundColor: filtro === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                  color: filtro === '' ? 'white' : '#6b7280',
+                }}
+              >
+                {duplas.length}
+              </span>
+            </button>
+
+            {/* Chips ouro / prata / bronze */}
+            {(['ouro', 'prata', 'bronze']).map((m) => {
+              const cfg = medalhaConfig[m];
+              const ativo = filtro === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setFiltro(ativo ? '' : m)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200"
+                  style={ativo
+                    ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
+                    : { backgroundColor: cfg.bg, borderColor: cfg.cor + '55', color: cfg.cor }}
+                >
+                  {cfg.emoji}
+                  {cfg.label}
+                  <span
+                    className="rounded-full px-1.5 py-px text-[9px] font-bold"
+                    style={{
+                      backgroundColor: ativo ? 'rgba(255,255,255,0.25)' : cfg.cor + '25',
+                      color: ativo ? 'white' : cfg.cor,
+                    }}
+                  >
+                    {contagemMedalha[m] || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filtros de busca e filtro unificado */}
+          <div className="flex gap-2 transition-all duration-300">
+            {/* Campo de busca — expande ao focar */}
+            <div className={`relative transition-all duration-300 ${buscaFocada ? 'flex-1' : 'flex-1'}`}>
+              <svg
+                className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors duration-200 ${buscaFocada ? 'text-[#1A3A6B]' : 'text-gray-400'}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 type="text"
-                placeholder="Buscar..."
-                className="input-field pl-8 text-xs py-2"
+                placeholder={buscaFocada ? 'Digite nome, bairro ou parceiro...' : 'Buscar...'}
+                className={`input-field pl-8 text-xs py-2 transition-all duration-300 ${
+                  buscaFocada
+                    ? 'ring-2 ring-[#1A3A6B]/30 border-[#1A3A6B]/50 placeholder-gray-400'
+                    : ''
+                }`}
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
+                onFocus={() => setBuscaFocada(true)}
+                onBlur={() => setBuscaFocada(false)}
               />
+              {/* Botão limpar — só aparece quando há texto */}
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  title="Limpar busca"
+                >
+                  <svg className="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <select
-              className="input-field text-xs py-2 w-28"
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
+
+            {/* Select — esconde suavemente ao focar na busca */}
+            <div
+              className="transition-all duration-300 overflow-hidden"
+              style={{
+                maxWidth: buscaFocada ? '0px' : '128px',
+                opacity: buscaFocada ? 0 : 1,
+                pointerEvents: buscaFocada ? 'none' : 'auto',
+              }}
             >
-              <option value="">Todos</option>
-              <option value="ATIVA">Ativa</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="INATIVA">Inativa</option>
-            </select>
+              <select
+                className="input-field text-xs py-2 w-32"
+                value={filtro}
+                onChange={(e) => setFiltro(e.target.value)}
+              >
+                <option value="">Todos</option>
+                <optgroup label="Status">
+                  <option value="ATIVA">Ativa</option>
+                  <option value="PENDENTE">Pendente</option>
+                  <option value="INATIVA">Inativa</option>
+                </optgroup>
+                <optgroup label="Medalha">
+                  <option value="ouro">Ouro</option>
+                  <option value="prata">Prata</option>
+                  <option value="bronze">Bronze</option>
+                </optgroup>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -175,6 +309,7 @@ export default function DuplasDireto() {
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const cor = statusColors[dupla.status] || '#9ca3af';
+            const mcfg = medalhaConfig[dupla._medalha];
 
             return (
               <button
@@ -183,9 +318,10 @@ export default function DuplasDireto() {
                 onClick={() => { setDuplaSelecionadaId(dupla.id); setMostraDetalhe(true); }}
                 className={`w-full text-left transition-all duration-200 border-l-[3px] ${
                   selecionada
-                    ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
-                    : 'bg-white border-l-transparent hover:bg-gray-50 hover:border-l-gray-300'
+                    ? 'bg-[#1A3A6B]/5'
+                    : 'bg-white hover:bg-gray-50'
                 }`}
+                style={{ borderLeftColor: selecionada ? mcfg.cor : mcfg.cor + '60' }}
               >
                 <div className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
@@ -209,14 +345,18 @@ export default function DuplasDireto() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      {/* Medalha de gamificação */}
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
+                      >
+                        {mcfg.emoji} {mcfg.label}
+                      </span>
                       <span
                         className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                         style={{ backgroundColor: cor + '20', color: cor }}
                       >
                         {statusLabels[dupla.status] || dupla.status || '—'}
-                      </span>
-                      <span className="text-[9px] text-gray-400">
-                        {projetoIcon[dupla.tipoProjeto] || '📋'}
                       </span>
                     </div>
                   </div>

@@ -95,13 +95,13 @@ async function main() {
     },
   });
 
-  console.log('✅ Usuários criados.');
-  console.log('');
-  console.log('📋 Credenciais de acesso:');
-  console.log('   Admin: admin@ap.adventistas.org / Admin@123');
-  console.log('   Coordenador: coord.centro@ap.adventistas.org / Coord@123');
-  console.log('   Pastor: pastor.santos@ap.adventistas.org / Pastor@123');
-  console.log('');
+  // console.log('✅ Usuários criados.');
+  // console.log('');
+  // console.log('📋 Credenciais de acesso:');
+  // console.log('   Admin: admin@ap.adventistas.org / Admin@123');
+  // console.log('   Coordenador: coord.centro@ap.adventistas.org / Coord@123');
+  // console.log('   Pastor: pastor.santos@ap.adventistas.org / Pastor@123');
+  // console.log('');
 
   // Duplas de exemplo
   await prisma.dupla.createMany({
