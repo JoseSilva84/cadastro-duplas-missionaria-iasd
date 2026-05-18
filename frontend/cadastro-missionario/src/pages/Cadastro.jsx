@@ -202,7 +202,7 @@ export default function Cadastro() {
 
 
    return (
-     <div className={isDireto ? "flex flex-col h-full animate-fade-in" : "p-3 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in"}>
+     <div className={isDireto ? "flex flex-col h-full animate-fade-in" : "min-h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in"}>
       {/* Cabeçalho */}
       <div className={isDireto ? "flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 z-10" : "mb-8 animate-fade-in-down"}>
         <div className="flex items-center gap-2 mb-2">
@@ -219,7 +219,7 @@ export default function Cadastro() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className={isDireto ? "flex-1 flex flex-col min-h-0" : "space-y-6"}>
+       <form onSubmit={handleSubmit} className={isDireto ? "flex-1 flex flex-col min-h-0" : "flex-1 flex flex-col space-y-6"}>
              <div className={isDireto ? "flex-1 overflow-x-auto overflow-y-auto p-3 sm:p-4 bg-[#F4F5F7] master-detail-scroll" : ""}>
           <div className={isDireto ? "flex gap-4 w-max min-h-full pb-2" : "space-y-6"}>
             {/* SEÇÃO 1 — Localização */}
@@ -394,8 +394,8 @@ export default function Cadastro() {
 
 
 
-        {/* Botões */}
-        <div className={isDireto ? "flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3 z-10" : "flex gap-3 justify-end pb-6 animate-fade-in-up"}>
+         {/* Botões */}
+         <div className={isDireto ? "flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3 z-10" : "flex gap-3 justify-end pb-8 mb-4 animate-fade-in-up"}>
           <button type="button" onClick={() => navigate(-1)} className="btn-outline">
             Cancelar
           </button>
