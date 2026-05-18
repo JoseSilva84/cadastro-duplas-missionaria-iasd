@@ -102,6 +102,10 @@ model Dupla {
   igrejaId    Int?
   bairro      String
 
+  // Fotos (armazenadas como base64 no Firebase Storage)
+  fotoLider   String?
+  fotoMembro2 String?
+
   // Tipo de projeto
   tipoProjeto TipoProjeto
 
