@@ -91,15 +91,30 @@ export default function Layout() {
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
-        { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
+        { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
+          { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
+          { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/direto/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+        ] },
+        { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+        ] },
       ]
     : [
         { to: '/regioes', label: 'Regiões', icon: icons.regioes },
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
-        { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
-        ...(isAdmin ? [{ to: '/relatorios', label: 'Relatórios', icon: icons.relatorios }] : []),
+        { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
+          { to: '/duplas/nova', label: 'Nova Dupla', icon: '+' },
+          { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+        ] },
+        ...(isAdmin ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: '/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+        ] }] : []),
       ];
 
   return (
@@ -174,6 +189,7 @@ export default function Layout() {
 
 function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, setSidebarAberta, layout }) {
   const isDireto = layout === 'direto';
+  const [submenuAberto, setSubmenuAberto] = useState(null);
 
   return (
     <div className="flex flex-col h-full">
@@ -201,19 +217,59 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
       {/* Navegação */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         <p className="px-4 pt-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
-        {navLinks.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            onClick={() => setSidebarAberta(false)}
-            className={({ isActive }) =>
-              `sidebar-link ${isActive ? 'active' : ''}`
-            }
-          >
-            {link.icon}
-            {link.label}
-          </NavLink>
-        ))}
+        {navLinks.map((link) => {
+          if (link.type === 'dropdown') {
+            const aberto = submenuAberto === link.key;
+            return (
+              <div key={link.key}>
+                <button
+                  type="button"
+                  onClick={() => setSubmenuAberto(aberto ? null : link.key)}
+                  className={`sidebar-link w-full justify-between ${aberto ? 'active' : ''}`}
+                >
+                  <span className="flex items-center gap-2">
+                    {link.icon}
+                    {link.label}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${aberto ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {aberto && (
+                  <div className="space-y-1 pl-10 mt-1">
+                    {link.items.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => { setSidebarAberta(false); setSubmenuAberto(null); }}
+                        className={({ isActive }) =>
+                          `sidebar-link text-sm ${isActive ? 'active' : 'text-white/70 hover:text-white'}`
+                        }
+                      >
+                        <span>{item.icon}</span>
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={() => setSidebarAberta(false)}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''}`
+              }
+            >
+              {link.icon}
+              {link.label}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Trocar layout + Usuário */}
