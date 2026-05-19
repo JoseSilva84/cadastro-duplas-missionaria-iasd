@@ -91,7 +91,7 @@ export default function Layout() {
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
-        { to: '/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
+        { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
       ]
     : [
         { to: '/regioes', label: 'Regiões', icon: icons.regioes },
