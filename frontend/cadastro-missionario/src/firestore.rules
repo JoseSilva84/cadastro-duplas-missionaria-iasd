@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Coleção de contatos — visitante envia, mas não lê nem deleta
+    match /contatos/{id} {
+      allow read: if false;
+      allow create: if true;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /fotos_membros/{membroId} {
+      // Qualquer um usando o sistema pode ver as fotos (leitura liberada)
+      allow read: if true; 
+      
+      // Regras de Escrita (Adição e Edição)
+      // A regra garante que a string da foto exista e limite o tamanho
+      // (900.000 bytes garante que o documento não vai passar de ~1MB no total)
+      allow write: if 
+        request.resource.data.foto is string && 
+        request.resource.data.foto.size() < 900000;
+        
+      // Permitir exclusão de fotos
+      // NOTA: Como você faz autenticação com JWT prório via Neon DB em vez 
+      // do Firebase Auth, a validação de quem pode excluir acaba vindo do seu 
+      // próprio app frontend. Se desejar mais segurança, pode permitir isso 'if true'
+      // mas escondendo o botão excluir apenas para perfis autorizados (Pastor/Admin) no React.
+      allow delete: if true; 
+    }
+  }
+}

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
+import AvatarUpload from '../components/AvatarUpload';
+import { FotoService } from '../foto.service';
 
 const TIPOS_PROJETO = [
   { value: 'CASA_A_CASA', label: 'Casa a Casa', icon: '🏠' },
@@ -46,10 +48,12 @@ const formVazio = {
   igrejaId: '',
   bairro: '',
   tipoProjeto: '',
+  fotoLider: '',
   liderNome: '',
   liderTelefone: '',
   liderEmail: '',
   liderIgreja: '',
+  fotoMembro2: '',
   membro2Tipo: 'MEMBRO_IASD',
   membro2Nome: '',
   membro2Telefone: '',
@@ -77,6 +81,8 @@ export default function Cadastro() {
   const [carregando, setCarregando] = useState(isEdicao);
 
   const [form, setForm] = useState({ ...formVazio });
+  const [fotoRefs, setFotoRefs] = useState({ fotoLider: '', fotoMembro2: '' });
+  const [fotoPreviewsOriginais, setFotoPreviewsOriginais] = useState({ fotoLider: '', fotoMembro2: '' });
 
   // Pega query params (ex: ?distritoId=...&igrejaId=...)
   useEffect(() => {
@@ -106,9 +112,22 @@ export default function Cadastro() {
       return;
     }
     api.get(`/duplas/${id}`)
-      .then((r) => {
+      .then(async (r) => {
         const d = r.data;
+        const [fotoLider, fotoMembro2] = await Promise.all([
+          FotoService.resolverFotoParaPreview(d.fotoLider),
+          FotoService.resolverFotoParaPreview(d.fotoMembro2),
+        ]);
+
+        setFotoRefs({
+          fotoLider: d.fotoLider || '',
+          fotoMembro2: d.fotoMembro2 || '',
+        });
+        setFotoPreviewsOriginais({ fotoLider, fotoMembro2 });
+
         setForm({
+          fotoLider,
+          fotoMembro2,
           regiaoNome: d.regiaoNome || d.distrito?.regiao?.nome || '',
           distritoId: d.distritoId || '',
           igrejaId: d.igrejaId || '',
@@ -168,18 +187,50 @@ export default function Cadastro() {
     e.preventDefault();
     setEnviando(true);
     try {
+      const montarPayload = (fotoLiderRef = fotoRefs.fotoLider, fotoMembro2Ref = fotoRefs.fotoMembro2) => ({
+        ...form,
+        fotoLider: fotoLiderRef || null,
+        fotoMembro2: fotoMembro2Ref || null,
+      });
+
+      const salvarFotoSeNecessario = async (campo, tipo, duplaId) => {
+        const valor = form[campo];
+        const refAtual = fotoRefs[campo];
+
+        if (!valor) return '';
+        if (isEdicao && refAtual && valor === fotoPreviewsOriginais[campo]) {
+          return refAtual;
+        }
+
+        return FotoService.salvarFotoDaDupla(duplaId, tipo, valor);
+      };
+
       if (isEdicao) {
-        await api.put(`/duplas/${id}`, form);
+        const [fotoLiderRef, fotoMembro2Ref] = await Promise.all([
+          salvarFotoSeNecessario('fotoLider', 'lider', id),
+          salvarFotoSeNecessario('fotoMembro2', 'membro2', id),
+        ]);
+
+        await api.put(`/duplas/${id}`, montarPayload(fotoLiderRef, fotoMembro2Ref));
         toast.success('Dupla atualizada com sucesso!');
       } else {
-        await api.post('/duplas', form);
+        const { data: duplaCriada } = await api.post('/duplas', montarPayload('', ''));
+        const [fotoLiderRef, fotoMembro2Ref] = await Promise.all([
+          salvarFotoSeNecessario('fotoLider', 'lider', duplaCriada.id),
+          salvarFotoSeNecessario('fotoMembro2', 'membro2', duplaCriada.id),
+        ]);
+
+        if (fotoLiderRef || fotoMembro2Ref) {
+          await api.put(`/duplas/${duplaCriada.id}`, montarPayload(fotoLiderRef, fotoMembro2Ref));
+        }
         toast.success('Dupla cadastrada com sucesso!');
       }
       const redirectTo = isDireto ? '/direto/duplas' : '/duplas';
       setTimeout(() => navigate(redirectTo), 1000);
     } catch (err) {
       const erros = err.response?.data?.erros;
-      toast.error(erros ? erros.map((e) => e.msg).join(', ') : `Erro ao ${isEdicao ? 'atualizar' : 'salvar'} a dupla.`);
+      const mensagem = err.response?.data?.erro || err.message;
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : mensagem || `Erro ao ${isEdicao ? 'atualizar' : 'salvar'} a dupla.`);
     } finally {
       setEnviando(false);
     }
@@ -270,6 +321,9 @@ export default function Cadastro() {
             {/* SEÇÃO 2 — Líder */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '200ms' }}>
               <SecaoHeader numero="2" titulo="Membro 1 — Líder" descricao="Dados do líder responsável pela dupla" />
+              <div className="flex justify-center w-full mb-4">
+                <AvatarUpload value={form.fotoLider} onChange={(val) => set('fotoLider', val)} label="Foto do Líder" />
+              </div>
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
                 <Campo label="Nome Completo" obrigatorio icone="👤">
                   <input type="text" className="input-field" placeholder="Nome do líder" value={form.liderNome} onChange={(e) => set('liderNome', e.target.value)} required />
@@ -306,6 +360,9 @@ export default function Cadastro() {
             {/* SEÇÃO 3 — Parceiro */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '300ms' }}>
               <SecaoHeader numero="3" titulo="Membro 2 — Parceiro" descricao="Dados do parceiro da dupla" />
+              <div className="flex justify-center w-full mb-4">
+                <AvatarUpload value={form.fotoMembro2} onChange={(val) => set('fotoMembro2', val)} label="Foto do Parceiro" />
+              </div>
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
                 <Campo label="Nome Completo" obrigatorio icone="👤">
                   <input type="text" className="input-field" placeholder="Nome do parceiro" value={form.membro2Nome} onChange={(e) => set('membro2Nome', e.target.value)} required />
