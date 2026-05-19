@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { FotoService } from '../foto.service';
 
 const projetoLabel = {
   CASA_A_CASA: 'Casa em Casa',
@@ -41,6 +42,49 @@ const medalhaConfig = {
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
 
+const resolverFotosDaDupla = async (dupla) => {
+  const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
+    FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
+    FotoService.resolverFotoParaPreview(dupla.fotoMembro2).catch(() => ''),
+  ]);
+
+  return { ...dupla, fotoLiderPreview, fotoMembro2Preview };
+};
+
+const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
+  const inicial = (nome || '?').charAt(0);
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={nome || 'Foto do membro'}
+        className={`${className} object-cover bg-gray-100 ${onPreview ? 'cursor-zoom-in hover:ring-2 hover:ring-[#C9963A]/60 transition' : ''}`}
+        role={onPreview ? 'button' : undefined}
+        tabIndex={onPreview ? 0 : undefined}
+        title={onPreview ? 'Clique para ampliar' : undefined}
+        onClick={(event) => {
+          if (!onPreview) return;
+          event.stopPropagation();
+          onPreview(src, nome);
+        }}
+        onKeyDown={(event) => {
+          if (!onPreview || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onPreview(src, nome);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className={`${className} ${fallbackClassName} flex items-center justify-center text-white font-bold`}>
+      {inicial}
+    </div>
+  );
+};
+
 export default function Duplas() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
@@ -52,13 +96,22 @@ export default function Duplas() {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
+    let ativo = true;
+
     Promise.all([
       api.get('/duplas', { params: { distritoId } }),
       distritoId ? api.get(`/distritos/${distritoId}`) : Promise.resolve({ data: null }),
-    ]).then(([d, dist]) => {
-      setDuplas(d.data);
+    ]).then(async ([d, dist]) => {
+      if (!ativo) return;
+      const lista = Array.isArray(d.data) ? d.data : [];
+      const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
+      setDuplas(listaComFotos);
       setDistrito(dist.data);
-    }).finally(() => setCarregando(false));
+    }).finally(() => {
+      setCarregando(false);
+    });
+
+    return () => { ativo = false; };
   }, [distritoId]);
 
   // Duplas com medalha calculada e ordenadas por medalha
@@ -300,12 +353,18 @@ export default function Duplas() {
                   {/* Avatar da dupla + medalha */}
                   <div className="flex-shrink-0">
                     <div className="relative">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition-shadow duration-300">
-                        {dupla.liderNome.charAt(0)}
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white font-bold text-xs absolute -bottom-1 -right-1.5 border-2 border-white shadow-md">
-                        {dupla.membro2Nome.charAt(0)}
-                      </div>
+                      <FotoPessoa
+                        src={dupla.fotoLiderPreview}
+                        nome={dupla.liderNome}
+                        className="w-11 h-11 rounded-full shadow-md"
+                        fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                      />
+                      <FotoPessoa
+                        src={dupla.fotoMembro2Preview}
+                        nome={dupla.membro2Nome}
+                        className="w-8 h-8 rounded-full absolute -bottom-1 -right-1.5 border-2 border-white shadow-md"
+                        fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-xs"
+                      />
                     </div>
                   </div>
 
