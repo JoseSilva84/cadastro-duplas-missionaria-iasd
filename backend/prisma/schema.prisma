@@ -136,6 +136,44 @@ model Dupla {
   atualizadoEm    DateTime    @updatedAt
 
   // Relacionamentos
-  distrito Distrito @relation(fields: [distritoId], references: [id])
-  igreja   Igreja?  @relation(fields: [igrejaId], references: [id])
+  distrito       Distrito          @relation(fields: [distritoId], references: [id])
+  igreja         Igreja?           @relation(fields: [igrejaId], references: [id])
+  estudosBiblicos EstudoBiblico[]
+  evangelismos   Evangelismo[]
+}
+
+// Estudos Bíblicos cadastrados para acompanhamento
+model EstudoBiblico {
+  id             Int      @id @default(autoincrement())
+  nomeEstudante  String
+  endereco       String
+  cidade         String
+  estado         String
+  whatsapp       String
+  diaEstudo      String
+  duplaId        Int
+  serie          String
+  licaoAtual     Int
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  dupla Dupla @relation(fields: [duplaId], references: [id])
+}
+
+// Cadastros de evangelismo
+model Evangelismo {
+  id              Int      @id @default(autoincrement())
+  nomePessoa      String
+  endereco        String
+  cidade          String
+  estado          String
+  whatsapp        String
+  diaEvangelismo  String
+  duplaId         Int
+  serie           String
+  estudoAtual     Int
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  dupla Dupla @relation(fields: [duplaId], references: [id])
 }

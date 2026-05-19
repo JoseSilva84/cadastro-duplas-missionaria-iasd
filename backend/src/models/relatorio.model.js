@@ -97,6 +97,43 @@ const RelatorioModel = {
       pessoasAlcancadas: distrito.duplas.reduce((acc, d) => acc + d.pessoasAlcancadas, 0),
     };
   },
+
+  async estudosBiblicos(query = {}) {
+    const where = {};
+    if (query.duplaId) where.duplaId = Number(query.duplaId);
+    if (query.serie) where.serie = query.serie;
+    if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
+    if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
+    if (query.dataInicio || query.dataFim) {
+      where.criadoEm = {};
+      if (query.dataInicio) where.criadoEm.gte = new Date(query.dataInicio);
+      if (query.dataFim) where.criadoEm.lte = new Date(`${query.dataFim}T23:59:59.999Z`);
+    }
+
+    const estudos = await prisma.estudoBiblico.findMany({
+      where,
+      include: {
+        dupla: {
+          select: {
+            id: true,
+            liderNome: true,
+            membro2Nome: true,
+            bairro: true,
+            distrito: { select: { nome: true, regiao: { select: { nome: true } } } },
+          },
+        },
+      },
+      orderBy: { criadoEm: 'desc' },
+    });
+
+    const porSerie = await prisma.estudoBiblico.groupBy({
+      by: ['serie'],
+      where,
+      _count: { serie: true },
+    });
+
+    return { total: estudos.length, porSerie, estudos };
+  },
 };
 
 module.exports = RelatorioModel;

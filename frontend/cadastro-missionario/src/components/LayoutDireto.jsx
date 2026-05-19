@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import DropdownMenu from './DropdownMenu';
 
 const icons = {
   regioes: (
@@ -61,6 +62,7 @@ export default function LayoutDireto() {
   const { usuario, logout, setLayout } = useAuth();
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [mobileSubmenu, setMobileSubmenu] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -72,13 +74,24 @@ export default function LayoutDireto() {
     navigate('/regioes');
   };
 
+  const cadastroItems = [
+    { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
+    { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+    { to: '/direto/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+  ];
+
+  const relatorioItems = [
+    { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+    { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+  ];
+
   const navLinks = [
     { to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes },
     { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
-    { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: icons.cadastro },
-    { to: '/direto/relatorios', label: 'Relat\u00f3rios', icon: icons.relatorios },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItems },
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItems },
   ];
 
   return (
@@ -105,7 +118,9 @@ export default function LayoutDireto() {
 
             {/* Navegação desktop — centro */}
             <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => link.type === 'dropdown' ? (
+                <DropdownMenu key={link.key} label={link.label} icon={link.icon} items={link.items} />
+              ) : (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -181,7 +196,35 @@ export default function LayoutDireto() {
         {menuAberto && (
           <div className="md:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in">
             <div className="px-4 py-3 space-y-1">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => link.type === 'dropdown' ? (
+                <div key={link.key}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSubmenu(mobileSubmenu === link.key ? null : link.key)}
+                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/8 w-full transition-all duration-200"
+                  >
+                    <span className="flex items-center gap-3">{link.icon}{link.label}</span>
+                    <svg className={`w-4 h-4 transition-transform ${mobileSubmenu === link.key ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {mobileSubmenu === link.key && (
+                    <div className="ml-8 mt-1 space-y-1">
+                      {link.items.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => { setMenuAberto(false); setMobileSubmenu(null); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8"
+                        >
+                          <span>{item.icon}</span>
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <NavLink
                   key={link.to}
                   to={link.to}

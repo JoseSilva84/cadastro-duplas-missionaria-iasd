@@ -14,4 +14,7 @@ router.get('/por-regiao', autenticar, autorizar('ADMINISTRADOR', 'LIDER_REGIOES'
 // GET /api/relatorios/por-distrito/:distritoId
 router.get('/por-distrito/:distritoId', autenticar, RelatorioController.porDistrito);
 
+// GET /api/relatorios/estudos-biblicos — Relatório consolidado de estudos bíblicos
+router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
+
 module.exports = router;

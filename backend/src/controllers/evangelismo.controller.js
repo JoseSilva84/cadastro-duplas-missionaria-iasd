@@ -1,0 +1,65 @@
+const { body, validationResult } = require('express-validator');
+const EvangelismoService = require('../services/evangelismo.service');
+
+const validarEvangelismo = [
+  body('nomePessoa').notEmpty().withMessage('Nome da pessoa obrigatório.'),
+  body('endereco').notEmpty().withMessage('Endereço obrigatório.'),
+  body('cidade').notEmpty().withMessage('Cidade obrigatória.'),
+  body('estado').isLength({ min: 2, max: 2 }).withMessage('Estado obrigatório.'),
+  body('whatsapp').notEmpty().withMessage('WhatsApp obrigatório.'),
+  body('diaEvangelismo').notEmpty().withMessage('Dia do evangelismo obrigatório.'),
+  body('duplaId').isInt().withMessage('Dupla obrigatória.'),
+  body('serie').notEmpty().withMessage('Série obrigatória.'),
+  body('estudoAtual').isInt({ min: 1 }).withMessage('Estudo atual obrigatório.'),
+];
+
+const EvangelismoController = {
+  async listar(req, res) {
+    try {
+      res.json(await EvangelismoService.listar(req.query));
+    } catch (err) {
+      res.status(500).json({ erro: 'Erro ao listar evangelismos.' });
+    }
+  },
+
+  async buscarPorId(req, res) {
+    try {
+      res.json(await EvangelismoService.buscarPorId(req.params.id));
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar evangelismo.' });
+    }
+  },
+
+  async criar(req, res) {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
+
+    try {
+      res.status(201).json(await EvangelismoService.criar(req.body));
+    } catch (err) {
+      res.status(500).json({ erro: 'Erro ao cadastrar evangelismo.' });
+    }
+  },
+
+  async atualizar(req, res) {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
+
+    try {
+      res.json(await EvangelismoService.atualizar(req.params.id, req.body));
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar evangelismo.' });
+    }
+  },
+
+  async remover(req, res) {
+    try {
+      await EvangelismoService.remover(req.params.id);
+      res.json({ mensagem: 'Evangelismo removido com sucesso.' });
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover evangelismo.' });
+    }
+  },
+};
+
+module.exports = { EvangelismoController, validarEvangelismo };

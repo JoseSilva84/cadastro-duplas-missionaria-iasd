@@ -20,6 +20,10 @@ const RelatorioService = {
     }
     return resultado;
   },
+
+  async estudosBiblicos(query) {
+    return RelatorioModel.estudosBiblicos(query);
+  },
 };
 
 module.exports = RelatorioService;

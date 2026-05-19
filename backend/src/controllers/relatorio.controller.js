@@ -32,6 +32,16 @@ const RelatorioController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao gerar relatório do distrito.' });
     }
   },
+
+  // GET /api/relatorios/estudos-biblicos
+  async estudosBiblicos(req, res) {
+    try {
+      const resultado = await RelatorioService.estudosBiblicos(req.query);
+      res.json(resultado);
+    } catch (err) {
+      res.status(500).json({ erro: 'Erro ao gerar relatório de estudos bíblicos.' });
+    }
+  },
 };
 
 module.exports = RelatorioController;

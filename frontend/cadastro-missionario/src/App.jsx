@@ -11,7 +11,9 @@ import Distritos from './pages/Distritos';
 import Duplas from './pages/Duplas';
 import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
+import CadastroAcompanhamento from './pages/CadastroAcompanhamento';
 import Relatorios from './pages/Relatorios';
+import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
 
@@ -111,6 +113,8 @@ function AppRoutes() {
         {/* Duplas */}
         <Route path="duplas" element={<Duplas />} />
         <Route path="duplas/nova" element={<Cadastro />} />
+        <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
+        <Route path="cadastro/evangelismo" element={<CadastroAcompanhamento tipo="evangelismo" />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
 
@@ -123,6 +127,7 @@ function AppRoutes() {
             </RotaAdmin>
           }
         />
+        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
       </Route>
 
       {/* ============================================
@@ -145,9 +150,12 @@ function AppRoutes() {
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />
+        <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
+        <Route path="cadastro/evangelismo" element={<CadastroAcompanhamento tipo="evangelismo" />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="relatorios" element={<RelatoriosDireto />} />
+        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
       </Route>
 
       {/* Fallback */}
