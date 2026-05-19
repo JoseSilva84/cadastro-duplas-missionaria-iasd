@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
+import { FotoService } from '../../foto.service';
 
 // ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
 function getMedalha(dupla) {
@@ -57,6 +58,49 @@ const projetoIcon = {
 const statusColors = { ATIVA: '#16a34a', PENDENTE: '#C9963A', INATIVA: '#9ca3af' };
 const statusLabels = { ATIVA: 'Ativa', PENDENTE: 'Pendente', INATIVA: 'Inativa' };
 
+const resolverFotosDaDupla = async (dupla) => {
+  const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
+    FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
+    FotoService.resolverFotoParaPreview(dupla.fotoMembro2).catch(() => ''),
+  ]);
+
+  return { ...dupla, fotoLiderPreview, fotoMembro2Preview };
+};
+
+const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
+  const inicial = (nome || '?').charAt(0);
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={nome || 'Foto do membro'}
+        className={`${className} object-cover bg-gray-100 ${onPreview ? 'cursor-zoom-in hover:ring-2 hover:ring-[#C9963A]/60 transition' : ''}`}
+        role={onPreview ? 'button' : undefined}
+        tabIndex={onPreview ? 0 : undefined}
+        title={onPreview ? 'Clique para ampliar' : undefined}
+        onClick={(event) => {
+          if (!onPreview) return;
+          event.stopPropagation();
+          onPreview(src, nome);
+        }}
+        onKeyDown={(event) => {
+          if (!onPreview || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onPreview(src, nome);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className={`${className} ${fallbackClassName} flex items-center justify-center text-white font-bold`}>
+      {inicial}
+    </div>
+  );
+};
+
 export default function DuplasDireto() {
   const navigate = useNavigate();
   const [duplas, setDuplas] = useState([]);
@@ -66,13 +110,17 @@ export default function DuplasDireto() {
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
+  const [fotoAmpliada, setFotoAmpliada] = useState(null);
+
+  const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
   useEffect(() => {
     let ativo = true;
-    api.get('/duplas').then((d) => {
+    api.get('/duplas').then(async (d) => {
       if (!ativo) return;
       const lista = Array.isArray(d.data) ? d.data : [];
-      setDuplas(lista);
+      const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
+      if (ativo) setDuplas(listaComFotos);
     }).catch(() => {
       if (ativo) setDuplas([]);
     }).finally(() => {
@@ -152,6 +200,7 @@ export default function DuplasDireto() {
   }
 
   return (
+    <>
     <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
       <div className={`${
@@ -327,12 +376,20 @@ export default function DuplasDireto() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="flex-shrink-0 relative">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
-                          {(dupla.liderNome || '?').charAt(0)}
-                        </div>
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white font-bold text-[8px] absolute -bottom-0.5 -right-1 border border-white shadow-sm">
-                          {(dupla.membro2Nome || '?').charAt(0)}
-                        </div>
+                        <FotoPessoa
+                          src={dupla.fotoLiderPreview}
+                          nome={dupla.liderNome}
+                          className="w-8 h-8 rounded-full shadow-sm"
+                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
+                          onPreview={abrirFoto}
+                        />
+                        <FotoPessoa
+                          src={dupla.fotoMembro2Preview}
+                          nome={dupla.membro2Nome}
+                          className="w-5 h-5 rounded-full absolute -bottom-0.5 -right-1 border border-white shadow-sm"
+                          fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[8px]"
+                          onPreview={abrirFoto}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className={`text-xs font-semibold truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>
@@ -426,12 +483,20 @@ export default function DuplasDireto() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-sm shadow-md">
-                      {(duplaSelecionada.liderNome || '?').charAt(0)}
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white font-bold text-[10px] absolute -bottom-1 -right-1 border-2 border-white shadow-sm">
-                      {(duplaSelecionada.membro2Nome || '?').charAt(0)}
-                    </div>
+                    <FotoPessoa
+                      src={duplaSelecionada.fotoLiderPreview}
+                      nome={duplaSelecionada.liderNome}
+                      className="w-12 h-12 rounded-full shadow-md"
+                      fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                      onPreview={abrirFoto}
+                    />
+                    <FotoPessoa
+                      src={duplaSelecionada.fotoMembro2Preview}
+                      nome={duplaSelecionada.membro2Nome}
+                      className="w-8 h-8 rounded-full absolute -bottom-1 -right-1 border-2 border-white shadow-sm"
+                      fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[10px]"
+                      onPreview={abrirFoto}
+                    />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -507,7 +572,19 @@ export default function DuplasDireto() {
                         <span className="text-xs font-semibold text-[#1A3A6B]">Líder</span>
                       </div>
                       <div className="space-y-2.5 text-sm">
-                        <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.liderNome || '—'}</p></div>
+                        <div className="flex items-center gap-3">
+                          <FotoPessoa
+                            src={duplaSelecionada.fotoLiderPreview}
+                            nome={duplaSelecionada.liderNome}
+                            className="w-11 h-11 rounded-full flex-shrink-0 ring-2 ring-[#1A3A6B]/10"
+                            fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                            onPreview={abrirFoto}
+                          />
+                          <div className="min-w-0">
+                            <span className="text-gray-400 text-xs">Nome:</span>
+                            <p className="text-gray-700 font-medium truncate">{duplaSelecionada.liderNome || '—'}</p>
+                          </div>
+                        </div>
                         {duplaSelecionada.liderTelefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.liderTelefone} /></div>}
                         {duplaSelecionada.liderEmail && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.liderEmail}</p></div>}
                         {duplaSelecionada.liderIgreja && <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja}</p></div>}
@@ -521,7 +598,19 @@ export default function DuplasDireto() {
                         <span className="text-xs font-semibold text-[#1A3A6B]">Parceiro</span>
                       </div>
                       <div className="space-y-2.5 text-sm">
-                        <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.membro2Nome || '—'}</p></div>
+                        <div className="flex items-center gap-3">
+                          <FotoPessoa
+                            src={duplaSelecionada.fotoMembro2Preview}
+                            nome={duplaSelecionada.membro2Nome}
+                            className="w-11 h-11 rounded-full flex-shrink-0 ring-2 ring-[#C9963A]/20"
+                            fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-sm"
+                            onPreview={abrirFoto}
+                          />
+                          <div className="min-w-0">
+                            <span className="text-gray-400 text-xs">Nome:</span>
+                            <p className="text-gray-700 font-medium truncate">{duplaSelecionada.membro2Nome || '—'}</p>
+                          </div>
+                        </div>
                         {duplaSelecionada.membro2Telefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.membro2Telefone} /></div>}
                         {duplaSelecionada.membro2Email && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.membro2Email}</p></div>}
                       </div>
@@ -585,5 +674,38 @@ export default function DuplasDireto() {
         )}
       </div>
     </div>
+    {fotoAmpliada && (
+      <div
+        className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        onClick={() => setFotoAmpliada(null)}
+      >
+        <div
+          className="relative w-full max-w-2xl flex flex-col items-center gap-4"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => setFotoAmpliada(null)}
+            className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/95 text-[#1A3A6B] flex items-center justify-center shadow-lg hover:bg-white transition"
+            title="Fechar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={fotoAmpliada.src}
+            alt={fotoAmpliada.nome || 'Foto ampliada'}
+            className="max-h-[78vh] max-w-full rounded-2xl object-contain bg-white shadow-2xl"
+          />
+          {fotoAmpliada.nome && (
+            <div className="px-4 py-2 rounded-full bg-white/95 text-[#1A3A6B] text-sm font-semibold shadow-lg">
+              {fotoAmpliada.nome}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
