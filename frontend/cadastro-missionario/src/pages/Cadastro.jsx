@@ -6,7 +6,8 @@ import AvatarUpload from '../components/AvatarUpload';
 import { FotoService } from '../foto.service';
 
 const TIPOS_PROJETO = [
-  { value: 'CASA_A_CASA', label: 'Casa a Casa', icon: '🏠' },
+  { value: 'CASA_A_CASA', label: 'Visitação', icon: '🏠' },
+  { value: 'ESTUDO_BIBLICO', label: 'Estudo Bíblico', icon: '📖' },
   { value: 'PEQUENOS_GRUPOS', label: 'Pequenos Grupos', icon: '👥' },
   { value: 'ACAO_SOCIAL', label: 'Ação Social', icon: '🤲' },
   { value: 'EVANGELISMO_PUBLICO', label: 'Evangelismo Público', icon: '📢' },
@@ -64,6 +65,8 @@ const formVazio = {
   statusEstudoBiblico: '',
   statusEvangelismo: '',
   batismos: 0,
+  metaBatismos: 0,
+  metaEstudosBiblicos: 0,
   observacoes: '',
   dataInicio: new Date().toISOString().split('T')[0],
 };
@@ -393,9 +396,6 @@ export default function Cadastro() {
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="parceiro@email.com" value={form.membro2Email} onChange={(e) => set('membro2Email', e.target.value)} />
                 </Campo>
-                <Campo label="Metas de Contatos" icone="🙏">
-                  <input type="number" className="input-field" min="0" value={form.pessoasAlcancadas} onChange={(e) => set('pessoasAlcancadas', e.target.value)} />
-                </Campo>
               </div>
             </div>
 
@@ -430,7 +430,19 @@ export default function Cadastro() {
                   </select>
                 </Campo>
 
-                <Campo label="Quantidade de Batismos" icone="💧">
+                <Campo label="Metas de Contatos" icone="🙏">
+                  <input type="number" className="input-field" min="0" value={form.pessoasAlcancadas} onChange={(e) => set('pessoasAlcancadas', e.target.value)} />
+                </Campo>
+
+                <Campo label="Meta de batismo" icone="💧">
+                  <input type="number" className="input-field" min="0" value={form.metaBatismos} onChange={(e) => set('metaBatismos', e.target.value)} />
+                </Campo>
+
+                <Campo label="Meta de estudos bíblicos" icone="📚">
+                  <input type="number" className="input-field" min="0" value={form.metaEstudosBiblicos} onChange={(e) => set('metaEstudosBiblicos', e.target.value)} />
+                </Campo>
+
+                <Campo label="Batismos Alcançados" icone="💧">
                   <input type="number" className="input-field" min="0" placeholder="0" value={form.batismos} onChange={(e) => set('batismos', e.target.value)} />
                 </Campo>
               </div>

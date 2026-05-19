@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 
 const projetoLabel = {
-  CASA_A_CASA: 'Casa em Casa',
+  CASA_A_CASA: 'Visitação',
+  ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
   EVANGELISMO_PUBLICO: 'Evangelismo Público',
@@ -11,6 +12,7 @@ const projetoLabel = {
 
 const projetoIcon = {
   CASA_A_CASA: '🏠',
+  ESTUDO_BIBLICO: '📖',
   PEQUENOS_GRUPOS: '👥',
   ACAO_SOCIAL: '🤲',
   EVANGELISMO_PUBLICO: '📢',
