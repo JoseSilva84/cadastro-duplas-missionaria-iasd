@@ -135,7 +135,7 @@ export default function DadosDupla() {
               <span className="text-3xl animate-float">🙏</span>
               <div>
                 <p className="text-[#C9963A] font-bold text-2xl">{dupla.pessoasAlcancadas}</p>
-                <p className="text-gray-500 text-xs">pessoas alcançadas</p>
+                <p className="text-gray-500 text-xs">Meta de Contatos</p>
               </div>
             </div>
           )}

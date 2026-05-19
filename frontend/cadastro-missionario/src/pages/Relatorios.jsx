@@ -63,7 +63,7 @@ export default function Relatorios() {
             { label: 'Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]' },
             { label: 'Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]' },
             { label: 'Inativas', valor: resumo.totalInativas, cor: '#9ca3af', icon: '⏸️', gradient: 'from-gray-400 to-gray-500' },
-            { label: 'Pessoas Alcançadas', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
+            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
           ].map((item) => (
             <div
               key={item.label}

@@ -172,7 +172,7 @@ export default function RelatoriosDireto() {
                     { label: 'Estudos Bíblicos Ativos', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
                     { label: 'Evangelismos Ativos', valor: resumo.evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
                     { label: 'Batismos Realizados', valor: resumo.totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
-                    { label: 'Pessoas Alcançadas', valor: resumo.totalPessoasAlcancadas, icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
+                    { label: 'Metas de contatos', valor: resumo.totalPessoasAlcancadas, icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
                   ].map((item) => (
                     <div key={item.label} className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300" style={{ borderLeft: `3px solid ${item.cor}` }}>
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg shadow-md flex-shrink-0`}>{item.icon}</div>
@@ -250,7 +250,7 @@ export default function RelatoriosDireto() {
                     { label: 'Estudos Bíblicos Ativos', valor: regiaoSelecionada.estudosAtivos, icon: '📖' },
                     { label: 'Evangelismos Ativos', valor: regiaoSelecionada.evangelismosAtivos, icon: '📢' },
                     { label: 'Batismos Realizados', valor: regiaoSelecionada.totalBatismos, icon: '💧' },
-                    { label: 'Pessoas Alcançadas', valor: regiaoSelecionada.totalPessoas, icon: '🙏' },
+                    { label: 'metas de contatos', valor: regiaoSelecionada.totalPessoas, icon: '🙏' },
                   ].map((item) => (
                     <div key={item.label} className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-md flex-shrink-0" style={{ background: `linear-gradient(135deg, ${regiaoSelecionada.cor}, ${regiaoSelecionada.cor}cc)` }}>

@@ -393,7 +393,7 @@ export default function Cadastro() {
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="parceiro@email.com" value={form.membro2Email} onChange={(e) => set('membro2Email', e.target.value)} />
                 </Campo>
-                <Campo label="Pessoas Alcançadas" icone="🙏">
+                <Campo label="Metas de Contatos" icone="🙏">
                   <input type="number" className="input-field" min="0" value={form.pessoasAlcancadas} onChange={(e) => set('pessoasAlcancadas', e.target.value)} />
                 </Campo>
               </div>

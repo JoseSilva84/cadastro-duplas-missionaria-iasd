@@ -352,7 +352,7 @@ export default function DistritosDireto() {
                         <span className="text-lg">🙏</span>
                         <div>
                           <p className="text-[#C9963A] font-bold">{duplaSelecionada.pessoasAlcancadas}</p>
-                          <p className="text-gray-400 text-[10px]">pessoas alcançadas</p>
+                          <p className="text-gray-400 text-[10px]">Meta de Contatos</p>
                         </div>
                       </div>
                     )}
