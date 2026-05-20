@@ -358,11 +358,11 @@ export default function DistritosDireto() {
               </div>
             </div>
 
-            {/* Conteúdo do detail — scroll horizontal se necessário */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
-              <div className="flex gap-4 min-w-0">
+            {/* Conteúdo do detail — painel de cards com quebra responsiva */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0 items-start">
                 {/* Card: Líder */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-[10px] font-bold">1</div>
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Líder</h4>
@@ -376,7 +376,7 @@ export default function DistritosDireto() {
                 </div>
 
                 {/* Card: Parceiro */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[10px] font-bold">2</div>
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Parceiro</h4>
@@ -388,21 +388,8 @@ export default function DistritosDireto() {
                   </div>
                 </div>
 
-                {/* Card: Localização */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs">📍</div>
-                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Localização</h4>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    {duplaSelecionada.igreja?.nome && <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.igreja.nome}</p></div>}
-                    <div><span className="text-gray-400 text-xs">Bairro:</span><p className="text-gray-700 font-medium">{duplaSelecionada.bairro || '—'}</p></div>
-                    {duplaSelecionada.dataInicio && <div><span className="text-gray-400 text-xs">Início:</span><p className="text-gray-700">{new Date(duplaSelecionada.dataInicio).toLocaleDateString('pt-BR')}</p></div>}
-                  </div>
-                </div>
-
                 {/* Card: Projeto */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                <div className="w-full sm:col-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs">📋</div>
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Projeto</h4>
@@ -427,9 +414,22 @@ export default function DistritosDireto() {
                   </div>
                 </div>
 
+                {/* Card: Localização */}
+                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs">📍</div>
+                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Localização</h4>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    {duplaSelecionada.igreja?.nome && <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.igreja.nome}</p></div>}
+                    <div><span className="text-gray-400 text-xs">Bairro:</span><p className="text-gray-700 font-medium">{duplaSelecionada.bairro || '—'}</p></div>
+                    {duplaSelecionada.dataInicio && <div><span className="text-gray-400 text-xs">Início:</span><p className="text-gray-700">{new Date(duplaSelecionada.dataInicio).toLocaleDateString('pt-BR')}</p></div>}
+                  </div>
+                </div>
+
                 {/* Card: Observações */}
                 {duplaSelecionada.observacoes && (
-                  <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                  <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs">📝</div>
                       <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Observações</h4>
