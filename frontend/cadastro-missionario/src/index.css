@@ -489,6 +489,29 @@
   }
 }
 
+/* Efeito de chamas para o texto do versículo */
+@keyframes flame-flicker {
+  0% {
+    text-shadow: 0 0 6px rgba(255, 200, 80, 0.45), 0 0 18px rgba(255,130,0,0.12);
+    transform: translateY(0);
+  }
+  25% {
+    text-shadow: 0 0 10px rgba(255,230,120,0.8), 0 0 26px rgba(255,150,20,0.2);
+    transform: translateY(-1px);
+  }
+  50% {
+    text-shadow: 0 0 6px rgba(255,180,70,0.6), 0 0 14px rgba(255,120,0,0.12);
+    transform: translateY(0);
+  }
+  75% {
+    text-shadow: 0 0 12px rgba(255,240,150,0.9), 0 0 30px rgba(255,170,30,0.25);
+    transform: translateY(-0.5px);
+  }
+  100% {
+    text-shadow: 0 0 6px rgba(255,200,80,0.45), 0 0 18px rgba(255,130,0,0.12);
+    transform: translateY(0);
+  }
+}
 @keyframes ref-line-grow {
   from {
     width: 0;
@@ -641,10 +664,10 @@
   z-index: -1;
 }
 
-@keyframes border-spin {
+/* @keyframes border-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
+} */
 
 .versiculo-icon {
   width: 44px;
@@ -664,21 +687,43 @@
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 0.925rem;
   line-height: 1.85;
-  color: rgba(255, 255, 255, 0.92);
   text-align: center;
   font-style: italic;
   letter-spacing: 0.01em;
   margin: 0;
   animation: fade-in-up 0.8s ease 0.7s both;
+  /* Gradiente + clip para o preenchimento colorido do texto */
+  background: linear-gradient(90deg, #ffe4a2 0%, #ffb74b 30%, #ff8c00 55%, #ffd85c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* animação de flicker para simular chama */
+  animation: fade-in-up 0.8s ease 0.7s both, flame-flicker 3.2s ease-in-out infinite;
 }
 
 .versiculo-highlight {
-  color: #C9963A;
-  font-weight: 600;
+  font-weight: 700;
   font-style: italic;
-  animation: highlight-word 1s ease both;
   position: relative;
   white-space: nowrap;
+  background: linear-gradient(90deg, #ffe39d 0%, #ff9c3f 25%, #ff6600 55%, #ffd96b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: highlight-word 1s ease both, flame-flicker 2.8s ease-in-out infinite;
+}
+
+/* Deixa a referência em caixa alta com leve brilho da chama */
+.versiculo-ref-text {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #C9963A;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(201,150,58,0.18);
+  animation: flame-flicker 3.2s ease-in-out infinite;
 }
 
 .versiculo-reference {

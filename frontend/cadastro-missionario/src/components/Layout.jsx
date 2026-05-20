@@ -198,7 +198,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-            Duplas Missionárias
+            PCM
           </p>
           <p className="text-[#C9963A] text-xs font-medium mt-0.5">Assoc. Paulistana</p>
         </div>

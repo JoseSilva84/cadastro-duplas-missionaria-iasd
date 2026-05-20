@@ -89,10 +89,10 @@ export default function Login() {
             <div className="flex flex-col items-center gap-0.5">
               <div className="w-28 h-0.5 rounded-full bg-[#C9963A]" />
               <h1 className="text-2xl font-bold text-white mt-1" style={{ fontFamily: 'Georgia, serif' }}>
-                Cadastro
+                PROGRAMA
               </h1>
               <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>
-                Duplas Missionárias
+                CAPACITAÇÃO MISSIONÁRIA
               </h1>
               <p className="text-[#C9963A] font-semibold text-base tracking-wide mt-0.5">
                 Associação Paulistana

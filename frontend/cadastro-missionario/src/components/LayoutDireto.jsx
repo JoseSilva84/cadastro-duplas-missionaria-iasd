@@ -110,7 +110,7 @@ export default function LayoutDireto() {
               </div>
               <div className="hidden sm:block">
                 <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-                  Duplas Missionárias
+                  PCM
                 </p>
                 <p className="text-[#C9963A] text-[10px] font-medium">Assoc. Paulistana</p>
               </div>
