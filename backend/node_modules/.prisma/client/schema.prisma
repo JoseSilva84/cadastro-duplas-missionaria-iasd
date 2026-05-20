@@ -32,6 +32,7 @@ enum TipoMembro2 {
 // Tipo de projeto missionário
 enum TipoProjeto {
   CASA_A_CASA
+  ESTUDO_BIBLICO
   PEQUENOS_GRUPOS
   ACAO_SOCIAL
   EVANGELISMO_PUBLICO

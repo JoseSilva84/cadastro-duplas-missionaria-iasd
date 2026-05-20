@@ -84,7 +84,7 @@ export default function EscolhaLayout() {
             {/* <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Georgia, serif' }}>
               Como deseja visualizar?
             </h1> */}
-KC          </div>
+          </div>
 
           {/* Cards de escolha */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 stagger-children">
