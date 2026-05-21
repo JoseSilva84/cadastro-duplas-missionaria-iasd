@@ -122,15 +122,30 @@ Ao selecionar uma Igreja, exibir uma tela de **capa da igreja** com 4 colunas de
 
 ### Classificação da Dupla
 
-O sistema deve classificar cada dupla em uma de três categorias:
+O sistema deve classificar cada dupla em **uma de três categorias principais**:
 
-- **(A) Já levou pessoa ao batismo**
-- **(B) Já deu estudo, mas não levou ao batismo**
-- **(C) Nunca deu estudo bíblico**
+| Classe | Critério |
+|---|---|
+| **(A)** | Já levou pelo menos uma pessoa ao batismo |
+| **(B)** | Já deu estudo bíblico, mas a pessoa não concluiu/não se batizou |
+| **(C)** | Nunca deu estudo bíblico |
 
-> informações adicionais laterais:
-> - `# Está estudando com alguém` — indica dupla ativa em estudo
-> - `# Não está dando estudo` — indica dupla sem atividade
+> **Detalhe importante:** Uma dupla com classificação A pode ter levado alguém ao batismo no passado, mas **atualmente não estar dando estudo para ninguém**. Por isso existe a subclassificação de atividade.
+
+### Subclassificação de Atividade da Dupla
+
+Independente da classificação principal (A/B/C), cada dupla deve ter também uma **subclassificação de atividade atual**:
+
+| Subclasse | Significado |
+|---|---|
+| **Ativa** | Está estudando a Bíblia com alguém atualmente |
+| **Inativa** | Não tem estudo bíblico em andamento no momento |
+
+Essas duas informações devem aparecer juntas no card/faixa da dupla. Exemplo:
+- `Classe A · Ativa` (São requisitos que devem ser lidos pelo sistema: "já levou ao batismo e ainda está estudando")
+- `Classe A · Inativa` (São requisitos que devem ser lidos pelo sistema: "já levou ao batismo, mas hoje não está dando estudo")
+- `Classe B · Ativa` (São requisitos que devem ser lidos pelo sistema: "deu estudo sem concluir, e tem estudo em andamento")
+- `Classe C · Inativa` (São requisitos que devem ser lidos pelo sistema: "nunca deu estudo e não tem nenhum em andamento")
 
 ---
 
@@ -277,8 +292,41 @@ Campos:
 26. A Vida no Espírito
 27. Um Ministério para Todos
 
-**Regra especial:**
-> Quando a classificação for **B ou C**, o sistema deve **abrir um campo adicional** para que o usuário explique o motivo da classificação.
+**Regra especial — Classe Bíblica:**
+> Quando a classificação do participante for **B ou C**, o sistema deve **abrir um campo adicional** para que o usuário explique o motivo da classificação.
+
+---
+
+## Classificação dos Interessados (Estudantes)
+
+Cada pessoa que está recebendo estudo bíblico (interessado) deve ser classificada em **uma de três categorias**, com base na sua situação atual em relação ao batismo:
+
+| Classe | Critério |
+|---|---|
+| **(A)** | Quer se batizar **e pode** se batizar — está pronta para o batismo |
+| **(B)** | Quer se batizar, **mas não pode** ainda — há algum impedimento |
+| **(C)** | **Não quer e não pode** se batizar no momento |
+
+### Campo de Motivo — Classe B
+
+Quando a classificação do interessado for **B** (quer batizar mas não pode), o sistema deve **abrir automaticamente um campo de texto** para registrar o motivo do impedimento.
+
+Exemplos de motivos comuns a registrar:
+- Precisa se casar (situação conjugal irregular)
+- Precisa parar de fumar
+- Problema com bebida alcoólica
+- Questões familiares
+- Dificuldade com o sábado no trabalho
+- Outros impedimentos específicos
+
+> **Objetivo:** Com o motivo registrado, os líderes e a dupla missionária podem acompanhar e trabalhar especificamente cada caso, sabendo exatamente o que impede a pessoa de se batizar e traçando um plano de ação adequado.
+
+### Regra Visual
+
+A classificação do interessado deve aparecer de forma clara no cadastro e no relatório:
+- 🟢 **A** — Pronto para o batismo
+- 🟡 **B** — Quer, mas tem impedimento (com campo de motivo)
+- 🔴 **C** — Não está pronto
 
 ---
 
