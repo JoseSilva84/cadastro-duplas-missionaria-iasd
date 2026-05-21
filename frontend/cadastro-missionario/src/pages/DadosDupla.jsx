@@ -89,11 +89,12 @@ export default function DadosDupla() {
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1A3A6B] via-[#C9963A] to-[#1A3A6B] animate-gradient" style={{ backgroundSize: '200% 100%' }} />
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-3">
             <div className="flex items-center gap-4">
-              <div className="relative flex-shrink-0">
+              {/* Fotos/iniciais lado a lado, mesmo tamanho e cor */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-xl shadow-lg">
                   {dupla.liderNome.charAt(0)}
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white font-bold text-sm absolute -bottom-1 -right-2 border-2 border-white shadow-md">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-xl shadow-lg">
                   {dupla.membro2Nome.charAt(0)}
                 </div>
               </div>
@@ -103,7 +104,7 @@ export default function DadosDupla() {
                     {dupla.liderNome}
                   </h1>
                   <span className="text-gray-300">+</span>
-                  <h2 className="text-lg font-semibold text-gray-700">{dupla.membro2Nome}</h2>
+                  <h2 className="text-xl font-bold text-[#1A3A6B]">{dupla.membro2Nome}</h2>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <StatusBadge status={dupla.status} />

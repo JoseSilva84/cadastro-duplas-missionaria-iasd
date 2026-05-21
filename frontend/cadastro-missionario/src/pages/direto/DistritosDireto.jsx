@@ -232,7 +232,8 @@ export default function DistritosDireto() {
                 <div className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex-shrink-0 relative">
+                      {/* Fotos lado a lado, mesmo tamanho */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <FotoPessoa
                           src={dupla.fotoLiderPreview}
                           nome={dupla.liderNome}
@@ -243,8 +244,8 @@ export default function DistritosDireto() {
                         <FotoPessoa
                           src={dupla.fotoMembro2Preview}
                           nome={dupla.membro2Nome}
-                          className="w-5 h-5 rounded-full absolute -bottom-0.5 -right-1 border border-white shadow-sm"
-                          fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[8px]"
+                          className="w-8 h-8 rounded-full shadow-sm"
+                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
                           onPreview={abrirFoto}
                         />
                       </div>
@@ -252,7 +253,7 @@ export default function DistritosDireto() {
                         <p className={`text-xs font-semibold truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>
                           {dupla.liderNome || 'Sem nome'}
                         </p>
-                        <p className="text-[10px] text-gray-400 truncate">+ {dupla.membro2Nome || 'Sem nome'}</p>
+                        <p className={`text-[10px] font-medium truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>+ {dupla.membro2Nome || 'Sem nome'}</p>
                       </div>
                     </div>
 
@@ -314,19 +315,20 @@ export default function DistritosDireto() {
             {/* Cabeçalho do detail */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="relative flex-shrink-0">
+                {/* Fotos lado a lado no cabeçalho */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <FotoPessoa
                     src={duplaSelecionada.fotoLiderPreview}
                     nome={duplaSelecionada.liderNome}
-                    className="w-12 h-12 rounded-full shadow-md"
+                    className="w-11 h-11 rounded-full shadow-md"
                     fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
                     onPreview={abrirFoto}
                   />
                   <FotoPessoa
                     src={duplaSelecionada.fotoMembro2Preview}
                     nome={duplaSelecionada.membro2Nome}
-                    className="w-8 h-8 rounded-full absolute -bottom-1 -right-1 border-2 border-white shadow-sm"
-                    fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[10px]"
+                    className="w-11 h-11 rounded-full shadow-md"
+                    fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
                     onPreview={abrirFoto}
                   />
                 </div>
@@ -336,7 +338,7 @@ export default function DistritosDireto() {
                       {duplaSelecionada.liderNome || 'Sem nome'}
                     </h2>
                     <span className="text-gray-300">+</span>
-                    <h2 className="text-lg font-medium text-gray-600">
+                    <h2 className="text-lg font-bold text-[#1A3A6B]">
                       {duplaSelecionada.membro2Nome || 'Sem nome'}
                     </h2>
                   </div>
@@ -361,11 +363,11 @@ export default function DistritosDireto() {
             {/* Conteúdo do detail — painel de cards com quebra responsiva */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0 items-start">
-                {/* Card: Líder */}
+                {/* Card: Membro 1 */}
                 <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-[10px] font-bold">1</div>
-                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Líder</h4>
+                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Membro 1</h4>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.liderNome || '—'}</p></div>
@@ -375,11 +377,11 @@ export default function DistritosDireto() {
                   </div>
                 </div>
 
-                {/* Card: Parceiro */}
+                {/* Card: Membro 2 */}
                 <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[10px] font-bold">2</div>
-                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Parceiro</h4>
+                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Membro 2</h4>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.membro2Nome || '—'}</p></div>

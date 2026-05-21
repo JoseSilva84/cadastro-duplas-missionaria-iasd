@@ -485,19 +485,20 @@ export default function DuplasDireto() {
               </button>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-shrink-0">
+                  {/* Fotos lado a lado, mesmo tamanho */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <FotoPessoa
                       src={duplaSelecionada.fotoLiderPreview}
                       nome={duplaSelecionada.liderNome}
-                      className="w-12 h-12 rounded-full shadow-md"
+                      className="w-11 h-11 rounded-full shadow-md"
                       fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
                       onPreview={abrirFoto}
                     />
                     <FotoPessoa
                       src={duplaSelecionada.fotoMembro2Preview}
                       nome={duplaSelecionada.membro2Nome}
-                      className="w-8 h-8 rounded-full absolute -bottom-1 -right-1 border-2 border-white shadow-sm"
-                      fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[10px]"
+                      className="w-11 h-11 rounded-full shadow-md"
+                      fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
                       onPreview={abrirFoto}
                     />
                   </div>
@@ -507,7 +508,7 @@ export default function DuplasDireto() {
                         {duplaSelecionada.liderNome || 'Sem nome'}
                       </h2>
                       <span className="text-gray-300">+</span>
-                      <h2 className="text-lg font-medium text-gray-600">
+                      <h2 className="text-lg font-bold text-[#1A3A6B]">
                         {duplaSelecionada.membro2Nome || 'Sem nome'}
                       </h2>
                     </div>
