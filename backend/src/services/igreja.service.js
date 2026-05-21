@@ -44,10 +44,17 @@ const IgrejaService = {
     return IgrejaModel.create(data);
   },
 
-  // Atualiza igreja
+  // Atualiza igreja (suporta update parcial via PATCH)
   async atualizar(id, data) {
     await this.buscarPorId(id);
-    return IgrejaModel.update(id, data);
+    const campos = {};
+    if (data.nome !== undefined)                    campos.nome = data.nome;
+    if (data.membros !== undefined)                 campos.membros = Number(data.membros);
+    if (data.distritoId !== undefined)              campos.distritoId = Number(data.distritoId);
+    if (data.fotoCoordInteressados !== undefined)   campos.fotoCoordInteressados = data.fotoCoordInteressados;
+    if (data.nomeCoordInteressados !== undefined)   campos.nomeCoordInteressados = data.nomeCoordInteressados;
+    if (data.cargoCoordInteressados !== undefined)  campos.cargoCoordInteressados = data.cargoCoordInteressados;
+    return IgrejaModel.update(id, campos);
   },
 };
 

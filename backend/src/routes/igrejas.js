@@ -14,7 +14,10 @@ router.get('/:id', autenticar, IgrejaController.buscarPorId);
 // POST /api/igrejas — Cria nova igreja
 router.post('/', autenticar, autorizar('ADMINISTRADOR', 'COORDENADOR_REGIONAL'), IgrejaController.criar);
 
-// PUT /api/igrejas/:id — Atualiza igreja
+// PUT /api/igrejas/:id — Atualiza igreja completa
 router.put('/:id', autenticar, autorizar('ADMINISTRADOR', 'COORDENADOR_REGIONAL'), IgrejaController.atualizar);
+
+// PATCH /api/igrejas/:id — Atualiza campos parciais (foto/nome do coordenador de interessados)
+router.patch('/:id', autenticar, autorizar('ADMINISTRADOR', 'COORDENADOR_REGIONAL', 'PASTOR_DISTRITAL'), IgrejaController.atualizar);
 
 module.exports = router;

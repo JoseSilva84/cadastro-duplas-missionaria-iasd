@@ -96,6 +96,7 @@ export default function Layout() {
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/direto/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
           { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
+          { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
         { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
@@ -112,6 +113,7 @@ export default function Layout() {
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
           { to: '/registro-saida', label: 'Registro de Saída', icon: '✅' },
+          { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
         ...(isAdmin ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },

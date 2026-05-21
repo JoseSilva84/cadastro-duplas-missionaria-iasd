@@ -84,13 +84,17 @@ export default function CadastroPastores() {
   // Carrega distritos quando região muda
   useEffect(() => {
     if (!regiaoId) { setDistritos([]); setDistritoId(''); return; }
-    api.get(`/regioes/${regiaoId}/distritos`).then((r) => setDistritos(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    api.get('/distritos', { params: { regiaoId } })
+      .then((r) => setDistritos(Array.isArray(r.data) ? r.data : []))
+      .catch(() => {});
   }, [regiaoId]);
 
   // Carrega igrejas quando distrito muda
   useEffect(() => {
     if (!distritoId) { setIgrejas([]); setIgrejaId(''); return; }
-    api.get('/igrejas', { params: { distritoId } }).then((r) => setIgrejas(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    api.get(`/distritos/${distritoId}`)
+      .then((r) => setIgrejas(r.data.igrejas || []))
+      .catch(() => {});
   }, [distritoId]);
 
   // Zera os selects ao mudar o tipo

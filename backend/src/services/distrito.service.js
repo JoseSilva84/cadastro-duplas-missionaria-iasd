@@ -46,10 +46,17 @@ const DistritoService = {
     });
   },
 
-  // Atualiza distrito
+  // Atualiza distrito (suporta update parcial via PATCH)
   async atualizar(id, data) {
     await this.buscarPorId(id);
-    return DistritoModel.update(id, { nome: data.nome });
+    // Monta apenas os campos permitidos que vieram no body
+    const campos = {};
+    if (data.nome !== undefined)        campos.nome = data.nome;
+    if (data.membros !== undefined)     campos.membros = Number(data.membros);
+    if (data.fotoPastor !== undefined)  campos.fotoPastor = data.fotoPastor;
+    if (data.nomePastor !== undefined)  campos.nomePastor = data.nomePastor;
+    if (data.cargoPastor !== undefined) campos.cargoPastor = data.cargoPastor;
+    return DistritoModel.update(id, campos);
   },
 };
 

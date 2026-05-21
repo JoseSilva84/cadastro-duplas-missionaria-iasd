@@ -21,10 +21,17 @@ const RegiaoService = {
     return RegiaoModel.create(data);
   },
 
-  // Atualiza região
+  // Atualiza região (suporta update parcial via PATCH)
   async atualizar(id, data) {
     await this.buscarPorId(id);
-    return RegiaoModel.update(id, data);
+    const campos = {};
+    if (data.nome !== undefined)             campos.nome = data.nome;
+    if (data.descricao !== undefined)        campos.descricao = data.descricao;
+    if (data.cor !== undefined)              campos.cor = data.cor;
+    if (data.fotoConselheiro !== undefined)  campos.fotoConselheiro = data.fotoConselheiro;
+    if (data.nomeConselheiro !== undefined)  campos.nomeConselheiro = data.nomeConselheiro;
+    if (data.cargoConselheiro !== undefined) campos.cargoConselheiro = data.cargoConselheiro;
+    return RegiaoModel.update(id, campos);
   },
 
   // Remove região
