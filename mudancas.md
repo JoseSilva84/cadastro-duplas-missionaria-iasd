@@ -299,3 +299,5 @@ Campos:
 | 11 | Campos de perfil: sexo do estudante, "está indo à igreja?", lê a Bíblia?, faz culto familiar?, etc. | 🆕 Novo |
 | 12 | Foto do pastor no detalhe do distrito | 🆕 Novo |
 | 13 | Foto e dados do coordenado missionário e diretor de ministério pessoal na capa da Igreja | 🆕 Novo |
+
+**Importante**: Não altere o UI e layout já feito, a não ser que seja uma boa melhoria. Mantenha os dois tipos de visualização (modo avançado e o modo direto). Não use ícones padronizadas de IA. Use no lugar, ícones do tailwind (os mais bonitos elegantes). Tarabalhe sempre com boa responsividade.
