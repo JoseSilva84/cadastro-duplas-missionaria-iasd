@@ -190,7 +190,7 @@ export default function DadosDupla() {
           <div className={`card ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`}>
             <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-xs font-bold shadow-sm">1</div>
-              Líder (Membro 1)
+              Membro 1
             </h3>
             <dl>
               <InfoRow label="Nome" valor={dupla.liderNome} />
@@ -219,7 +219,7 @@ export default function DadosDupla() {
           <div className={`card ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`}>
             <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold shadow-sm">2</div>
-              Parceiro (Membro 2)
+              Membro 2
             </h3>
             <dl>
               <InfoRow label="Nome" valor={dupla.membro2Nome} />

@@ -377,7 +377,8 @@ export default function DuplasDireto() {
                 <div className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex-shrink-0 relative">
+                      {/* Fotos lado a lado, mesmo tamanho, sem sobreposição */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <FotoPessoa
                           src={dupla.fotoLiderPreview}
                           nome={dupla.liderNome}
@@ -388,8 +389,8 @@ export default function DuplasDireto() {
                         <FotoPessoa
                           src={dupla.fotoMembro2Preview}
                           nome={dupla.membro2Nome}
-                          className="w-5 h-5 rounded-full absolute -bottom-0.5 -right-1 border border-white shadow-sm"
-                          fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[8px]"
+                          className="w-8 h-8 rounded-full shadow-sm"
+                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
                           onPreview={abrirFoto}
                         />
                       </div>
@@ -398,7 +399,7 @@ export default function DuplasDireto() {
                           {dupla.liderNome || 'Sem nome'}
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] text-gray-400 truncate">+ {dupla.membro2Nome || 'Sem nome'}</span>
+                          <span className={`text-[10px] font-medium truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>+ {dupla.membro2Nome || 'Sem nome'}</span>
                         </div>
                       </div>
                     </div>
@@ -571,7 +572,7 @@ export default function DuplasDireto() {
                     <div>
                       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
                         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-[9px] font-bold">1</div>
-                        <span className="text-xs font-semibold text-[#1A3A6B]">Líder</span>
+                        <span className="text-xs font-semibold text-[#1A3A6B]">Membro</span>
                       </div>
                       <div className="space-y-2.5 text-sm">
                         <div className="flex items-center gap-3">
@@ -597,7 +598,7 @@ export default function DuplasDireto() {
                     <div>
                       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
                         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[9px] font-bold">2</div>
-                        <span className="text-xs font-semibold text-[#1A3A6B]">Parceiro</span>
+                        <span className="text-xs font-semibold text-[#1A3A6B]">Membro</span>
                       </div>
                       <div className="space-y-2.5 text-sm">
                         <div className="flex items-center gap-3">

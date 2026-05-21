@@ -92,6 +92,11 @@ model Regiao {
   cor       String   @default("#1A3A6B") // cor identificadora do card
   criadoEm DateTime @default(now())
 
+  // Pastor Regional
+  fotoConselheiro  String? // base64 ou URL
+  nomeConselheiro  String?
+  cargoConselheiro String? // ex: "Pastor Regional", "Conselheiro"
+
   distritos Distrito[]
   usuarios  Usuario[]
 }
@@ -103,6 +108,11 @@ model Distrito {
   regiaoId  Int
   membros   Int      @default(0)
   criadoEm DateTime @default(now())
+
+  // Pastor Distrital
+  fotoPastor  String? // base64 ou URL
+  nomePastor  String?
+  cargoPastor String? // ex: "Pastor Distrital"
 
   regiao   Regiao    @relation(fields: [regiaoId], references: [id])
   duplas   Dupla[]
@@ -117,6 +127,11 @@ model Igreja {
   distritoId Int
   membros    Int      @default(0)
   criadoEm  DateTime @default(now())
+
+  // Coordenador de Interessados
+  fotoCoordInteressados  String? // base64 ou URL
+  nomeCoordInteressados  String?
+  cargoCoordInteressados String? @default("Coordenador de Interessados")
 
   distrito Distrito @relation(fields: [distritoId], references: [id])
   duplas   Dupla[]

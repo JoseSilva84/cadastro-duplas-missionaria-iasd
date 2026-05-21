@@ -14,8 +14,11 @@ router.get('/:id', autenticar, RegiaoController.buscarPorId);
 // POST /api/regioes — Cria nova região (admin)
 router.post('/', autenticar, autorizar('ADMINISTRADOR'), RegiaoController.criar);
 
-// PUT /api/regioes/:id — Atualiza região (admin)
+// PUT /api/regioes/:id — Atualiza região completa (admin)
 router.put('/:id', autenticar, autorizar('ADMINISTRADOR'), RegiaoController.atualizar);
+
+// PATCH /api/regioes/:id — Atualiza campos parciais (foto/nome do pastor regional)
+router.patch('/:id', autenticar, autorizar('ADMINISTRADOR', 'COORDENADOR_REGIONAL'), RegiaoController.atualizar);
 
 // DELETE /api/regioes/:id — Remove região (admin)
 router.delete('/:id', autenticar, autorizar('ADMINISTRADOR'), RegiaoController.remover);
