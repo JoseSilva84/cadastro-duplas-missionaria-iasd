@@ -38,6 +38,33 @@ enum TipoProjeto {
   EVANGELISMO_PUBLICO
 }
 
+// Classificação principal da dupla (histórico missionário)
+enum ClassificacaoDupla {
+  A // Já levou pelo menos uma pessoa ao batismo
+  B // Já deu estudo bíblico, mas a pessoa não concluiu/não se batizou
+  C // Nunca deu estudo bíblico
+}
+
+// Subclassificação de atividade atual
+enum AtividadeDupla {
+  ATIVA   // Está estudando a Bíblia com alguém atualmente
+  INATIVA // Não tem estudo bíblico em andamento no momento
+}
+
+// Tipo de Estudo Bíblico
+enum TipoEstudo {
+  UNICO
+  PONTO
+  CLASSE
+}
+
+// Classificação do interessado no estudo bíblico
+enum ClassificacaoInteressado {
+  A // Quer se batizar E pode batizar
+  B // Quer se batizar, MAS não pode (tem impedimento)
+  C // Não quer e não pode se batizar
+}
+
 // Usuários do sistema
 model Usuario {
   id        Int      @id @default(autoincrement())
@@ -53,6 +80,8 @@ model Usuario {
   distritoId Int?
   regiao     Regiao?   @relation(fields: [regiaoId], references: [id])
   distrito   Distrito? @relation(fields: [distritoId], references: [id])
+
+  acompanhamentos AcompanhamentoDupla[]
 }
 
 // Regiões da Associação Paulistana
@@ -128,6 +157,25 @@ model Dupla {
   statusEvangelismo  String?
   batismos           Int      @default(0)
 
+  // Classificação missionária
+  classificacaoDupla   ClassificacaoDupla?
+  atividadeDupla       AtividadeDupla?
+
+  // Membro 1 — campos extras
+  liderDataNascimento  DateTime?
+  liderDataBatismo     DateTime?
+  liderSexo            String?
+  liderEndereco        String?
+
+  // Membro 2 — campos extras
+  membro2DataNascimento DateTime?
+  membro2DataBatismo    DateTime?
+  membro2Sexo           String?
+  membro2Endereco       String?
+
+  // Acompanhamento do coordenador
+  ultimoAcompanhamento  DateTime?
+
   // Metadados
   status           StatusDupla @default(ATIVA)
   pessoasAlcancadas Int        @default(0)
@@ -141,6 +189,7 @@ model Dupla {
   igreja         Igreja?           @relation(fields: [igrejaId], references: [id])
   estudosBiblicos EstudoBiblico[]
   evangelismos   Evangelismo[]
+  acompanhamentos DuplaAcompanhamento[]
 }
 
 // Estudos Bíblicos cadastrados para acompanhamento
@@ -155,10 +204,35 @@ model EstudoBiblico {
   duplaId        Int
   serie          String
   licaoAtual     Int
+  tipoEstudo               TipoEstudo               @default(UNICO)
+  sexo                     String?
+  classificacaoInteressado ClassificacaoInteressado?
+  motivoImpedimento        String?
+  vaIgreja                 Boolean?
+  leBiblia                 Boolean?
+  estudaLicao              Boolean?
+  devolveDizimos           Boolean?
+  cultoFamiliar            Boolean?
   criadoEm       DateTime @default(now())
   atualizadoEm   DateTime @updatedAt
 
-  dupla Dupla @relation(fields: [duplaId], references: [id])
+  dupla        Dupla          @relation(fields: [duplaId], references: [id])
+  participantes Participante[]
+}
+
+// Participantes de Ponto de Estudo e Classe Bíblica
+model Participante {
+  id                       Int                      @id @default(autoincrement())
+  estudoBiblicoId          Int
+  nome                     String
+  whatsapp                 String?
+  sexo                     String?
+  endereco                 String?
+  classificacaoInteressado ClassificacaoInteressado?
+  motivoImpedimento        String?
+  criadoEm                DateTime                 @default(now())
+
+  estudo EstudoBiblico @relation(fields: [estudoBiblicoId], references: [id], onDelete: Cascade)
 }
 
 // Cadastros de evangelismo
@@ -177,4 +251,26 @@ model Evangelismo {
   atualizadoEm    DateTime @updatedAt
 
   dupla Dupla @relation(fields: [duplaId], references: [id])
+}
+
+// Registro de saída/acompanhamento do Coordenador Missionário
+model AcompanhamentoDupla {
+  id            Int      @id @default(autoincrement())
+  dataSaida     DateTime
+  coordenadorId Int
+  observacoes   String?
+  criadoEm     DateTime @default(now())
+
+  coordenador Usuario               @relation(fields: [coordenadorId], references: [id])
+  duplas      DuplaAcompanhamento[]
+}
+
+// Tabela de junção dupla <-> acompanhamento
+model DuplaAcompanhamento {
+  id               Int @id @default(autoincrement())
+  acompanhamentoId Int
+  duplaId          Int
+
+  acompanhamento AcompanhamentoDupla @relation(fields: [acompanhamentoId], references: [id], onDelete: Cascade)
+  dupla          Dupla               @relation(fields: [duplaId], references: [id])
 }

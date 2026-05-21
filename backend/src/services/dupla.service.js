@@ -69,6 +69,21 @@ const DuplaService = {
       statusEstudoBiblico: data.statusEstudoBiblico,
       statusEvangelismo: data.statusEvangelismo,
       batismos: data.batismos ? Number(data.batismos) : 0,
+      // Fase 1 — Classificação missionária
+      classificacaoDupla: data.classificacaoDupla || null,
+      atividadeDupla: data.atividadeDupla || null,
+      // Fase 1 — Membro 1 extras
+      liderDataNascimento: data.liderDataNascimento ? new Date(data.liderDataNascimento) : null,
+      liderDataBatismo: data.liderDataBatismo ? new Date(data.liderDataBatismo) : null,
+      liderSexo: data.liderSexo || null,
+      liderEndereco: data.liderEndereco || null,
+      // Fase 1 — Membro 2 extras
+      membro2DataNascimento: data.membro2DataNascimento ? new Date(data.membro2DataNascimento) : null,
+      membro2DataBatismo: data.membro2DataBatismo ? new Date(data.membro2DataBatismo) : null,
+      membro2Sexo: data.membro2Sexo || null,
+      membro2Endereco: data.membro2Endereco || null,
+      // Fase 6 — Acompanhamento
+      ultimoAcompanhamento: data.ultimoAcompanhamento ? new Date(data.ultimoAcompanhamento) : null,
     });
   },
 
@@ -84,7 +99,7 @@ const DuplaService = {
     const dadosAtualizados = {
       regiaoNome: data.regiaoNome,
       distritoId: data.distritoId ? Number(data.distritoId) : undefined,
-      igrejaId: data.igrejaId ? Number(data.igrejaId) : null,
+      igrejaId: data.igrejaId !== undefined ? (data.igrejaId ? Number(data.igrejaId) : null) : undefined,
       bairro: data.bairro,
       fotoLider: data.fotoLider,
       fotoMembro2: data.fotoMembro2,
@@ -105,6 +120,21 @@ const DuplaService = {
       statusEstudoBiblico: data.statusEstudoBiblico,
       statusEvangelismo: data.statusEvangelismo,
       batismos: data.batismos !== undefined ? Number(data.batismos) : undefined,
+      // Fase 1 — Classificação missionária
+      classificacaoDupla: data.classificacaoDupla,
+      atividadeDupla: data.atividadeDupla,
+      // Fase 1 — Membro 1 extras
+      liderDataNascimento: data.liderDataNascimento ? new Date(data.liderDataNascimento) : undefined,
+      liderDataBatismo: data.liderDataBatismo ? new Date(data.liderDataBatismo) : undefined,
+      liderSexo: data.liderSexo,
+      liderEndereco: data.liderEndereco,
+      // Fase 1 — Membro 2 extras
+      membro2DataNascimento: data.membro2DataNascimento ? new Date(data.membro2DataNascimento) : undefined,
+      membro2DataBatismo: data.membro2DataBatismo ? new Date(data.membro2DataBatismo) : undefined,
+      membro2Sexo: data.membro2Sexo,
+      membro2Endereco: data.membro2Endereco,
+      // Fase 6 — Acompanhamento
+      ultimoAcompanhamento: data.ultimoAcompanhamento ? new Date(data.ultimoAcompanhamento) : undefined,
     };
 
     // Remove undefined fields

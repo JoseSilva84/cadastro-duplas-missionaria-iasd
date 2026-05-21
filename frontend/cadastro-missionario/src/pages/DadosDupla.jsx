@@ -17,6 +17,17 @@ const StatusBadge = ({ status }) => {
   return <span className={map[status]}>{label[status]}</span>;
 };
 
+const classeConfig = {
+  A: { label: 'Classe A', cor: '#16a34a', bg: '#dcfce7' },
+  B: { label: 'Classe B', cor: '#b45309', bg: '#fef3c7' },
+  C: { label: 'Classe C', cor: '#dc2626', bg: '#fee2e2' },
+};
+
+const atividadeConfig = {
+  ATIVA:   { label: 'Estudando',  cor: '#16a34a', bg: '#dcfce7', dot: '#22c55e' },
+  INATIVA: { label: 'Sem estudo', cor: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
+};
+
 const InfoRow = ({ label, valor }) => valor ? (
   <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50 last:border-0 group/row">
     <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0 group-hover/row:text-[#1A3A6B] transition-colors">{label}</dt>
@@ -96,6 +107,19 @@ export default function DadosDupla() {
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <StatusBadge status={dupla.status} />
+                  {dupla.classificacaoDupla && classeConfig[dupla.classificacaoDupla] && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                      style={{ backgroundColor: classeConfig[dupla.classificacaoDupla].bg, color: classeConfig[dupla.classificacaoDupla].cor, borderColor: classeConfig[dupla.classificacaoDupla].cor + '40' }}>
+                      {classeConfig[dupla.classificacaoDupla].label}
+                    </span>
+                  )}
+                  {dupla.atividadeDupla && atividadeConfig[dupla.atividadeDupla] && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                      style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].bg, color: atividadeConfig[dupla.atividadeDupla].cor, borderColor: atividadeConfig[dupla.atividadeDupla].cor + '40' }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].dot }} />
+                      {atividadeConfig[dupla.atividadeDupla].label}
+                    </span>
+                  )}
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
                     {dupla.bairro}
@@ -170,6 +194,10 @@ export default function DadosDupla() {
             </h3>
             <dl>
               <InfoRow label="Nome" valor={dupla.liderNome} />
+              <InfoRow label="Sexo" valor={dupla.liderSexo === 'M' ? 'Masculino' : dupla.liderSexo === 'F' ? 'Feminino' : null} />
+              <InfoRow label="Nasc." valor={dupla.liderDataNascimento ? new Date(dupla.liderDataNascimento).toLocaleDateString('pt-BR') : null} />
+              <InfoRow label="Batismo" valor={dupla.liderDataBatismo ? new Date(dupla.liderDataBatismo).toLocaleDateString('pt-BR') : null} />
+              <InfoRow label="Endereço" valor={dupla.liderEndereco} />
               <InfoRow label="WhatsApp" valor={
                 dupla.liderTelefone ? (
                   <a
@@ -196,6 +224,10 @@ export default function DadosDupla() {
             <dl>
               <InfoRow label="Nome" valor={dupla.membro2Nome} />
               <InfoRow label="Tipo" valor={membro2Label[dupla.membro2Tipo]} />
+              <InfoRow label="Sexo" valor={dupla.membro2Sexo === 'M' ? 'Masculino' : dupla.membro2Sexo === 'F' ? 'Feminino' : null} />
+              <InfoRow label="Nasc." valor={dupla.membro2DataNascimento ? new Date(dupla.membro2DataNascimento).toLocaleDateString('pt-BR') : null} />
+              <InfoRow label="Batismo" valor={dupla.membro2DataBatismo ? new Date(dupla.membro2DataBatismo).toLocaleDateString('pt-BR') : null} />
+              <InfoRow label="Endereço" valor={dupla.membro2Endereco} />
               <InfoRow label="WhatsApp" valor={
                 dupla.membro2Telefone ? (
                   <a
@@ -211,6 +243,49 @@ export default function DadosDupla() {
               <InfoRow label="E-mail" valor={dupla.membro2Email} />
             </dl>
           </div>
+
+          {/* Classificação Missionária */}
+          {(dupla.classificacaoDupla || dupla.ultimoAcompanhamento) && (
+            <div className={`card ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`}>
+              <h3 className="font-bold text-[#1A3A6B] mb-3 flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-sm">🏅</span>
+                Classificação Missionária
+              </h3>
+              <dl>
+                {dupla.classificacaoDupla && (
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50">
+                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">Classe</dt>
+                    <dd>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border"
+                        style={{ backgroundColor: classeConfig[dupla.classificacaoDupla]?.bg, color: classeConfig[dupla.classificacaoDupla]?.cor, borderColor: (classeConfig[dupla.classificacaoDupla]?.cor || '#000') + '40' }}>
+                        {classeConfig[dupla.classificacaoDupla]?.label} — {dupla.classificacaoDupla === 'A' ? 'Já levou ao batismo' : dupla.classificacaoDupla === 'B' ? 'Deu estudo, sem batismo' : 'Nunca deu estudo'}
+                      </span>
+                    </dd>
+                  </div>
+                )}
+                {dupla.atividadeDupla && (
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50">
+                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">Atividade</dt>
+                    <dd>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                        style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.bg, color: atividadeConfig[dupla.atividadeDupla]?.cor, borderColor: (atividadeConfig[dupla.atividadeDupla]?.cor || '#000') + '40' }}>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.dot }} />
+                        {atividadeConfig[dupla.atividadeDupla]?.label}
+                      </span>
+                    </dd>
+                  </div>
+                )}
+                {dupla.ultimoAcompanhamento && (
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5">
+                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">Última Visita</dt>
+                    <dd className="text-sm text-emerald-700 font-semibold">
+                      {new Date(dupla.ultimoAcompanhamento).toLocaleDateString('pt-BR')}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
 
           {/* Observações */}
           {dupla.observacoes && (

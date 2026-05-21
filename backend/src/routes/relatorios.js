@@ -1,6 +1,7 @@
 // Rotas de Relatórios
 const express = require('express');
 const RelatorioController = require('../controllers/relatorio.controller');
+const { AcompanhamentoController } = require('../controllers/acompanhamento.controller');
 const { autenticar, autorizar } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -16,5 +17,8 @@ router.get('/por-distrito/:distritoId', autenticar, RelatorioController.porDistr
 
 // GET /api/relatorios/estudos-biblicos — Relatório consolidado de estudos bíblicos
 router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
+
+// GET /api/relatorios/acompanhamento — Relatório de saídas do coordenador
+router.get('/acompanhamento', autenticar, AcompanhamentoController.relatorio);
 
 module.exports = router;

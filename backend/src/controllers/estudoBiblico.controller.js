@@ -11,6 +11,17 @@ const validarEstudoBiblico = [
   body('duplaId').isInt().withMessage('Dupla obrigatória.'),
   body('serie').notEmpty().withMessage('Série obrigatória.'),
   body('licaoAtual').isInt({ min: 1 }).withMessage('Lição atual obrigatória.'),
+  // Fase 2 — novos campos opcionais
+  body('tipoEstudo').optional().isIn(['UNICO', 'PONTO', 'CLASSE']).withMessage('Tipo de estudo inválido.'),
+  body('sexo').optional().isString(),
+  body('classificacaoInteressado').optional().isIn(['A', 'B', 'C']).withMessage('Classificação inválida.'),
+  body('motivoImpedimento').optional().isString(),
+  body('vaIgreja').optional().isBoolean(),
+  body('leBiblia').optional().isBoolean(),
+  body('estudaLicao').optional().isBoolean(),
+  body('devolveDizimos').optional().isBoolean(),
+  body('cultoFamiliar').optional().isBoolean(),
+  body('participantes').optional().isArray().withMessage('Participantes deve ser um array.'),
 ];
 
 const EstudoBiblicoController = {
@@ -37,6 +48,7 @@ const EstudoBiblicoController = {
     try {
       res.status(201).json(await EstudoBiblicoService.criar(req.body));
     } catch (err) {
+      console.error(err);
       res.status(500).json({ erro: 'Erro ao cadastrar estudo bíblico.' });
     }
   },

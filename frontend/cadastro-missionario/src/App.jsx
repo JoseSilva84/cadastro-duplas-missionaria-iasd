@@ -12,6 +12,7 @@ import Duplas from './pages/Duplas';
 import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
 import CadastroAcompanhamento from './pages/CadastroAcompanhamento';
+import RegistroSaida from './pages/RegistroSaida';
 import Relatorios from './pages/Relatorios';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
 import ListagemDistritos from './pages/ListagemDistritos';
@@ -117,6 +118,7 @@ function AppRoutes() {
         <Route path="cadastro/evangelismo" element={<CadastroAcompanhamento tipo="evangelismo" />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
+        <Route path="registro-saida" element={<RegistroSaida />} />
 
         {/* Relatórios — apenas admin */}
         <Route
@@ -154,6 +156,7 @@ function AppRoutes() {
         <Route path="cadastro/evangelismo" element={<CadastroAcompanhamento tipo="evangelismo" />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
+        <Route path="registro-saida" element={<RegistroSaida />} />
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
       </Route>

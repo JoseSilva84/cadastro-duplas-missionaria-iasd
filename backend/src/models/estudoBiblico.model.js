@@ -16,7 +16,7 @@ const EstudoBiblicoModel = {
   findAll(where = {}) {
     return prisma.estudoBiblico.findMany({
       where,
-      include: includeDupla,
+      include: { ...includeDupla, participantes: true },
       orderBy: { criadoEm: 'desc' },
     });
   },
@@ -24,14 +24,14 @@ const EstudoBiblicoModel = {
   findById(id) {
     return prisma.estudoBiblico.findUnique({
       where: { id: Number(id) },
-      include: includeDupla,
+      include: { ...includeDupla, participantes: true },
     });
   },
 
   create(data) {
     return prisma.estudoBiblico.create({
       data,
-      include: includeDupla,
+      include: { ...includeDupla, participantes: true },
     });
   },
 
@@ -39,7 +39,7 @@ const EstudoBiblicoModel = {
     return prisma.estudoBiblico.update({
       where: { id: Number(id) },
       data,
-      include: includeDupla,
+      include: { ...includeDupla, participantes: true },
     });
   },
 

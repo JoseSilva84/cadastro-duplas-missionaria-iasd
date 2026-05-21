@@ -54,11 +54,23 @@ const formVazio = {
   liderTelefone: '',
   liderEmail: '',
   liderIgreja: '',
+  liderSexo: '',
+  liderDataNascimento: '',
+  liderDataBatismo: '',
+  liderEndereco: '',
   fotoMembro2: '',
   membro2Tipo: 'MEMBRO_IASD',
   membro2Nome: '',
   membro2Telefone: '',
   membro2Email: '',
+  membro2Sexo: '',
+  membro2DataNascimento: '',
+  membro2DataBatismo: '',
+  membro2Endereco: '',
+  // Classificação missionaria
+  classificacaoDupla: '',
+  atividadeDupla: '',
+  // Acompanhamento
   status: 'ATIVA',
   pessoasAlcancadas: 0,
   estudoBiblico: '',
@@ -140,10 +152,20 @@ export default function Cadastro() {
           liderTelefone: d.liderTelefone || '',
           liderEmail: d.liderEmail || '',
           liderIgreja: d.liderIgreja || '',
+          liderSexo: d.liderSexo || '',
+          liderDataNascimento: d.liderDataNascimento ? new Date(d.liderDataNascimento).toISOString().split('T')[0] : '',
+          liderDataBatismo: d.liderDataBatismo ? new Date(d.liderDataBatismo).toISOString().split('T')[0] : '',
+          liderEndereco: d.liderEndereco || '',
           membro2Tipo: d.membro2Tipo || 'MEMBRO_IASD',
           membro2Nome: d.membro2Nome || '',
           membro2Telefone: d.membro2Telefone || '',
           membro2Email: d.membro2Email || '',
+          membro2Sexo: d.membro2Sexo || '',
+          membro2DataNascimento: d.membro2DataNascimento ? new Date(d.membro2DataNascimento).toISOString().split('T')[0] : '',
+          membro2DataBatismo: d.membro2DataBatismo ? new Date(d.membro2DataBatismo).toISOString().split('T')[0] : '',
+          membro2Endereco: d.membro2Endereco || '',
+          classificacaoDupla: d.classificacaoDupla || '',
+          atividadeDupla: d.atividadeDupla || '',
           status: d.status || 'ATIVA',
           pessoasAlcancadas: d.pessoasAlcancadas || 0,
           estudoBiblico: d.estudoBiblico || '',
@@ -357,6 +379,22 @@ export default function Cadastro() {
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="lider@email.com" value={form.liderEmail} onChange={(e) => set('liderEmail', e.target.value)} />
                 </Campo>
+                <Campo label="Sexo" icone="📋">
+                  <select className="input-field" value={form.liderSexo} onChange={(e) => set('liderSexo', e.target.value)}>
+                    <option value="">Não informado</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
+                  </select>
+                </Campo>
+                <Campo label="Data de Nascimento" icone="🎂">
+                  <input type="date" className="input-field" value={form.liderDataNascimento} onChange={(e) => set('liderDataNascimento', e.target.value)} />
+                </Campo>
+                <Campo label="Data de Batismo" icone="💧">
+                  <input type="date" className="input-field" value={form.liderDataBatismo} onChange={(e) => set('liderDataBatismo', e.target.value)} />
+                </Campo>
+                <Campo label="Endereço Residencial" icone="📍">
+                  <input type="text" className="input-field" placeholder="Rua, número, bairro" value={form.liderEndereco} onChange={(e) => set('liderEndereco', e.target.value)} />
+                </Campo>
               </div>
             </div>
 
@@ -396,12 +434,97 @@ export default function Cadastro() {
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="parceiro@email.com" value={form.membro2Email} onChange={(e) => set('membro2Email', e.target.value)} />
                 </Campo>
+                <Campo label="Sexo" icone="📋">
+                  <select className="input-field" value={form.membro2Sexo} onChange={(e) => set('membro2Sexo', e.target.value)}>
+                    <option value="">Não informado</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
+                  </select>
+                </Campo>
+                <Campo label="Data de Nascimento" icone="🎂">
+                  <input type="date" className="input-field" value={form.membro2DataNascimento} onChange={(e) => set('membro2DataNascimento', e.target.value)} />
+                </Campo>
+                <Campo label="Data de Batismo" icone="💧">
+                  <input type="date" className="input-field" value={form.membro2DataBatismo} onChange={(e) => set('membro2DataBatismo', e.target.value)} />
+                </Campo>
+                <Campo label="Endereço Residencial" icone="📍">
+                  <input type="text" className="input-field" placeholder="Rua, número, bairro" value={form.membro2Endereco} onChange={(e) => set('membro2Endereco', e.target.value)} />
+                </Campo>
               </div>
             </div>
 
-            {/* SEÇÃO 4 — Acompanhamento Missionário */}
+            {/* SEÇÃO 4 — Classificação Missionária */}
+            <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '380ms' }}>
+              <SecaoHeader numero="4" titulo="Classificação Missionária" descricao="Histórico e atividade atual da dupla" />
+              <div className="space-y-5">
+                {/* Classe principal A/B/C */}
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-3">Classe da Dupla</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { value: 'A', label: 'Classe A', desc: 'Já levou alguém ao batismo', cor: 'green' },
+                      { value: 'B', label: 'Classe B', desc: 'Deu estudo, mas sem batismo', cor: 'amber' },
+                      { value: 'C', label: 'Classe C', desc: 'Nunca deu estudo bíblico', cor: 'red' },
+                    ].map(({ value, label, desc, cor }) => {
+                      const ativo = form.classificacaoDupla === value;
+                      const cores = {
+                        green: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+                        amber: { border: 'border-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+                        red:   { border: 'border-red-500', bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+                      };
+                      const c = cores[cor];
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => set('classificacaoDupla', ativo ? '' : value)}
+                          className={`rounded-xl border-2 p-3 text-left transition-all duration-200 ${ativo ? `${c.border} ${c.bg}` : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${ativo ? `${c.border} ${c.bg}` : 'border-gray-300 bg-white'}`}>
+                              {ativo && <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />}
+                            </span>
+                            <span className={`font-bold text-sm ${ativo ? c.text : 'text-gray-700'}`}>{label}</span>
+                          </div>
+                          <p className={`text-xs pl-7 ${ativo ? c.text : 'text-gray-400'}`}>{desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Subclassificação Ativa/Inativa */}
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-3">Atividade Atual</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'ATIVA',   label: 'Estudando', desc: 'Tem estudo bíblico em andamento', dot: 'bg-green-500', border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-700' },
+                      { value: 'INATIVA', label: 'Sem estudo', desc: 'Sem estudo bíblico no momento', dot: 'bg-gray-400', border: 'border-gray-400', bg: 'bg-gray-50', text: 'text-gray-600' },
+                    ].map(({ value, label, desc, dot, border, bg, text }) => {
+                      const ativo = form.atividadeDupla === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => set('atividadeDupla', ativo ? '' : value)}
+                          className={`rounded-xl border-2 p-3 text-left transition-all duration-200 ${ativo ? `${border} ${bg}` : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ativo ? dot : 'bg-gray-300'}`} />
+                            <span className={`font-semibold text-sm ${ativo ? text : 'text-gray-700'}`}>{label}</span>
+                          </div>
+                          <p className={`text-xs pl-[18px] ${ativo ? text : 'text-gray-400'}`}>{desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SEÇÃO 5 — Acompanhamento Missionário */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '400ms' }}>
-              <SecaoHeader numero="4" titulo="Acompanhamento" descricao="Métricas e andamento missionário da dupla" />
+              <SecaoHeader numero="5" titulo="Acompanhamento" descricao="Métricas e andamento missionário da dupla" />
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
                 <Campo label="Estudo Bíblico" icone="📖">
                   <select className="input-field" value={form.estudoBiblico} onChange={(e) => set('estudoBiblico', e.target.value)}>
