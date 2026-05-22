@@ -22,6 +22,27 @@ const validarEstudoBiblico = [
   body('devolveDizimos').optional().isBoolean(),
   body('cultoFamiliar').optional().isBoolean(),
   body('participantes').optional().isArray().withMessage('Participantes deve ser um array.'),
+  body('participantes').custom((participantes, { req }) => {
+    if (req.body.tipoEstudo !== 'CLASSE') return true;
+    if (!Array.isArray(participantes) || participantes.length === 0) {
+      throw new Error('Classe Bíblica precisa ter pelo menos um participante.');
+    }
+    if (participantes.length > 10) {
+      throw new Error('Classe Bíblica permite no máximo 10 participantes.');
+    }
+    participantes.forEach((participante, index) => {
+      if (!participante.nome) {
+        throw new Error(`Nome do participante ${index + 1} obrigatório.`);
+      }
+      if (!['A', 'B', 'C'].includes(participante.classificacaoInteressado)) {
+        throw new Error(`Classificação do participante ${index + 1} inválida.`);
+      }
+      if (['B', 'C'].includes(participante.classificacaoInteressado) && !participante.motivoImpedimento) {
+        throw new Error(`Motivo da classificação do participante ${index + 1} obrigatório.`);
+      }
+    });
+    return true;
+  }),
 ];
 
 const EstudoBiblicoController = {

@@ -77,7 +77,7 @@ export default function LayoutDireto() {
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
     { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
-    { to: '/direto/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+    { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
   ];

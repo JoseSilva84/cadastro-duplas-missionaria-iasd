@@ -94,7 +94,7 @@ export default function Layout() {
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
-          { to: '/direto/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+          { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
           { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
@@ -112,7 +112,7 @@ export default function Layout() {
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/duplas/nova', label: 'Nova Dupla', icon: '+' },
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
-          { to: '/cadastro/evangelismo', label: 'Evangelismo', icon: '📢' },
+          { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/registro-saida', label: 'Registro de Saída', icon: '✅' },
           { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
