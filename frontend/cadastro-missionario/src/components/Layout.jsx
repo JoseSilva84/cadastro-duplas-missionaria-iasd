@@ -100,6 +100,7 @@ export default function Layout() {
         ] },
         { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
         ] },
       ]
@@ -117,6 +118,7 @@ export default function Layout() {
         ] },
         ...(isAdmin ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
         ] }] : []),
       ];

@@ -84,6 +84,7 @@ export default function LayoutDireto() {
 
   const relatorioItems = [
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+    { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
   ];
 

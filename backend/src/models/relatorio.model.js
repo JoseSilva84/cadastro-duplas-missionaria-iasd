@@ -134,6 +134,107 @@ const RelatorioModel = {
 
     return { total: estudos.length, porSerie, estudos };
   },
+
+  async dashboardAssociacao() {
+    const [
+      atasDuplas,
+      quantidadeEstudos,
+      quantidadeClasses,
+      quantidadePontosEstudos,
+      pessoasEstudandoUnico,
+      pessoasEstudandoGrupos,
+      classesDuplas,
+      escolaSabatinaResumo,
+      pequenosGruposPorDuplas,
+    ] = await Promise.all([
+      prisma.ataDupla.count(),
+      prisma.estudoBiblico.count(),
+      prisma.estudoBiblico.count({ where: { tipoEstudo: 'CLASSE' } }),
+      prisma.estudoBiblico.count({ where: { tipoEstudo: 'PONTO' } }),
+      prisma.estudoBiblico.count({ where: { tipoEstudo: 'UNICO' } }),
+      prisma.participante.count({
+        where: {
+          estudo: {
+            tipoEstudo: { in: ['PONTO', 'CLASSE'] },
+          },
+        },
+      }),
+      prisma.dupla.groupBy({
+        by: ['classificacaoDupla'],
+        where: { classificacaoDupla: { not: null } },
+        _count: { classificacaoDupla: true },
+      }),
+      prisma.escolaSabatinaResumo.findUnique({ where: { id: 1 } }),
+      prisma.dupla.count({ where: { tipoProjeto: 'PEQUENOS_GRUPOS' } }),
+    ]);
+
+    const classes = { A: 0, B: 0, C: 0 };
+    classesDuplas.forEach((item) => {
+      if (item.classificacaoDupla) {
+        classes[item.classificacaoDupla] = item._count.classificacaoDupla;
+      }
+    });
+
+    const escolaSabatina = escolaSabatinaResumo || {
+      unidadesAcao: 0,
+      classeProfessores: 0,
+      classeInteressados: 0,
+      visitasDiretores: 0,
+      visitasProfessores: 0,
+      visitasAlunos: 0,
+      quantidadePequenosGrupos: pequenosGruposPorDuplas,
+    };
+
+    return {
+      ministerioPessoal: {
+        atasDuplas,
+        quantidadeEstudos,
+        quantidadeClasses,
+        quantidadePontosEstudos,
+        quantidadePessoasEstudando: pessoasEstudandoUnico + pessoasEstudandoGrupos,
+        classes,
+      },
+      escolaSabatina: {
+        unidadesAcao: escolaSabatina.unidadesAcao,
+        classeProfessores: escolaSabatina.classeProfessores,
+        classeInteressados: escolaSabatina.classeInteressados,
+        visitasRealizadas: {
+          diretores: escolaSabatina.visitasDiretores,
+          professores: escolaSabatina.visitasProfessores,
+          alunos: escolaSabatina.visitasAlunos,
+          total: escolaSabatina.visitasDiretores + escolaSabatina.visitasProfessores + escolaSabatina.visitasAlunos,
+        },
+        quantidadePequenosGrupos: escolaSabatina.quantidadePequenosGrupos || pequenosGruposPorDuplas,
+      },
+    };
+  },
+
+  async atualizarEscolaSabatinaResumo(data = {}) {
+    const inteiro = (valor) => Math.max(Number(valor || 0), 0);
+
+    return prisma.escolaSabatinaResumo.upsert({
+      where: { id: 1 },
+      update: {
+        unidadesAcao: inteiro(data.unidadesAcao),
+        classeProfessores: inteiro(data.classeProfessores),
+        classeInteressados: inteiro(data.classeInteressados),
+        visitasDiretores: inteiro(data.visitasDiretores),
+        visitasProfessores: inteiro(data.visitasProfessores),
+        visitasAlunos: inteiro(data.visitasAlunos),
+        quantidadePequenosGrupos: inteiro(data.quantidadePequenosGrupos),
+      },
+      create: {
+        id: 1,
+        unidadesAcao: inteiro(data.unidadesAcao),
+        classeProfessores: inteiro(data.classeProfessores),
+        classeInteressados: inteiro(data.classeInteressados),
+        visitasDiretores: inteiro(data.visitasDiretores),
+        visitasProfessores: inteiro(data.visitasProfessores),
+        visitasAlunos: inteiro(data.visitasAlunos),
+        quantidadePequenosGrupos: inteiro(data.quantidadePequenosGrupos),
+      },
+    });
+  },
 };
 
 module.exports = RelatorioModel;

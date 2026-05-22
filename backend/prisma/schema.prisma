@@ -205,6 +205,18 @@ model Dupla {
   estudosBiblicos EstudoBiblico[]
   evangelismos   Evangelismo[]
   acompanhamentos DuplaAcompanhamento[]
+  atas            AtaDupla[]
+}
+
+// Atas geradas pelas duplas missionarias
+model AtaDupla {
+  id        Int      @id @default(autoincrement())
+  duplaId   Int
+  titulo    String?
+  conteudo  String?
+  criadoEm  DateTime @default(now())
+
+  dupla Dupla @relation(fields: [duplaId], references: [id], onDelete: Cascade)
 }
 
 // Estudos Bíblicos cadastrados para acompanhamento
@@ -288,4 +300,17 @@ model DuplaAcompanhamento {
 
   acompanhamento AcompanhamentoDupla @relation(fields: [acompanhamentoId], references: [id], onDelete: Cascade)
   dupla          Dupla               @relation(fields: [duplaId], references: [id])
+}
+
+// Indicadores consolidados da Escola Sabatina
+model EscolaSabatinaResumo {
+  id                    Int      @id @default(1)
+  unidadesAcao          Int      @default(0)
+  classeProfessores     Int      @default(0)
+  classeInteressados    Int      @default(0)
+  visitasDiretores      Int      @default(0)
+  visitasProfessores    Int      @default(0)
+  visitasAlunos         Int      @default(0)
+  quantidadePequenosGrupos Int   @default(0)
+  atualizadoEm          DateTime @updatedAt
 }

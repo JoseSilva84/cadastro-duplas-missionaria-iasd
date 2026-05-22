@@ -17,6 +17,8 @@ router.get('/por-distrito/:distritoId', autenticar, RelatorioController.porDistr
 
 // GET /api/relatorios/estudos-biblicos — Relatório consolidado de estudos bíblicos
 router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
+router.get('/dashboard-associacao', autenticar, RelatorioController.dashboardAssociacao);
+router.patch('/escola-sabatina-resumo', autenticar, autorizar('ADMINISTRADOR', 'LIDER_REGIOES'), RelatorioController.atualizarEscolaSabatinaResumo);
 
 // GET /api/relatorios/acompanhamento — Relatório de saídas do coordenador
 router.get('/acompanhamento', autenticar, AcompanhamentoController.relatorio);

@@ -16,6 +16,7 @@ import RegistroSaida from './pages/RegistroSaida';
 import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
+import DashboardAssociacao from './pages/DashboardAssociacao';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
 
@@ -131,6 +132,7 @@ function AppRoutes() {
             </RotaAdmin>
           }
         />
+        <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
       </Route>
 
@@ -161,6 +163,7 @@ function AppRoutes() {
         <Route path="registro-saida" element={<RegistroSaida />} />
         <Route path="cadastro/liderancas" element={<CadastroPastores />} />
         <Route path="relatorios" element={<RelatoriosDireto />} />
+        <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
       </Route>
 

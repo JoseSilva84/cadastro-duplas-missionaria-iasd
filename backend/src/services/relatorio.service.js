@@ -24,6 +24,14 @@ const RelatorioService = {
   async estudosBiblicos(query) {
     return RelatorioModel.estudosBiblicos(query);
   },
+
+  async dashboardAssociacao() {
+    return RelatorioModel.dashboardAssociacao();
+  },
+
+  async atualizarEscolaSabatinaResumo(data) {
+    return RelatorioModel.atualizarEscolaSabatinaResumo(data);
+  },
 };
 
 module.exports = RelatorioService;
