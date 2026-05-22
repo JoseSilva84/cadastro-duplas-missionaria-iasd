@@ -1,6 +1,35 @@
 // Service de Dupla — Regras de negócio
 const DuplaModel = require('../models/dupla.model');
 
+const comoBoolean = (valor) => {
+  if (valor === undefined || valor === null || valor === '') return null;
+  if (typeof valor === 'boolean') return valor;
+  return String(valor).toLowerCase() === 'true';
+};
+
+const calcularClassificacao = (data) => {
+  const levouPessoaBatismo = comoBoolean(data.levouPessoaBatismo);
+  const jaDeuEstudoBiblico = comoBoolean(data.jaDeuEstudoBiblico);
+  const estudoAtualEmAndamento = comoBoolean(data.estudoAtualEmAndamento);
+
+  let classificacaoDupla = null;
+  if (levouPessoaBatismo === true) {
+    classificacaoDupla = 'A';
+  } else if (jaDeuEstudoBiblico === true) {
+    classificacaoDupla = 'B';
+  } else if (levouPessoaBatismo !== null || jaDeuEstudoBiblico !== null) {
+    classificacaoDupla = 'C';
+  }
+
+  return {
+    levouPessoaBatismo,
+    jaDeuEstudoBiblico,
+    estudoAtualEmAndamento,
+    classificacaoDupla,
+    atividadeDupla: estudoAtualEmAndamento === null ? null : estudoAtualEmAndamento ? 'ATIVA' : 'INATIVA',
+  };
+};
+
 const DuplaService = {
   // Lista duplas com filtros e restrições por perfil
   async listar(usuario, query) {
@@ -45,6 +74,8 @@ const DuplaService = {
 
   // Cria nova dupla
   async criar(data) {
+    const classificacao = calcularClassificacao(data);
+
     return DuplaModel.create({
       regiaoNome: data.regiaoNome || '',
       distritoId: Number(data.distritoId),
@@ -70,8 +101,11 @@ const DuplaService = {
       statusEvangelismo: data.statusEvangelismo,
       batismos: data.batismos ? Number(data.batismos) : 0,
       // Fase 1 — Classificação missionária
-      classificacaoDupla: data.classificacaoDupla || null,
-      atividadeDupla: data.atividadeDupla || null,
+      classificacaoDupla: classificacao.classificacaoDupla,
+      atividadeDupla: classificacao.atividadeDupla,
+      levouPessoaBatismo: classificacao.levouPessoaBatismo,
+      jaDeuEstudoBiblico: classificacao.jaDeuEstudoBiblico,
+      estudoAtualEmAndamento: classificacao.estudoAtualEmAndamento,
       // Fase 1 — Membro 1 extras
       liderDataNascimento: data.liderDataNascimento ? new Date(data.liderDataNascimento) : null,
       liderDataBatismo: data.liderDataBatismo ? new Date(data.liderDataBatismo) : null,
@@ -90,6 +124,7 @@ const DuplaService = {
   // Atualiza dupla (com verificação de permissão por perfil)
   async atualizar(id, data, usuario) {
     const dupla = await this.buscarPorId(id);
+    const classificacao = calcularClassificacao(data);
 
     // Pastores só editam duplas do próprio distrito
     if (usuario.perfil === 'PASTOR_DISTRITAL' && dupla.distritoId !== usuario.distritoId) {
@@ -121,8 +156,11 @@ const DuplaService = {
       statusEvangelismo: data.statusEvangelismo,
       batismos: data.batismos !== undefined ? Number(data.batismos) : undefined,
       // Fase 1 — Classificação missionária
-      classificacaoDupla: data.classificacaoDupla,
-      atividadeDupla: data.atividadeDupla,
+      classificacaoDupla: classificacao.classificacaoDupla,
+      atividadeDupla: classificacao.atividadeDupla,
+      levouPessoaBatismo: classificacao.levouPessoaBatismo,
+      jaDeuEstudoBiblico: classificacao.jaDeuEstudoBiblico,
+      estudoAtualEmAndamento: classificacao.estudoAtualEmAndamento,
       // Fase 1 — Membro 1 extras
       liderDataNascimento: data.liderDataNascimento ? new Date(data.liderDataNascimento) : undefined,
       liderDataBatismo: data.liderDataBatismo ? new Date(data.liderDataBatismo) : undefined,

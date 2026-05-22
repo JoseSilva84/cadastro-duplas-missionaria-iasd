@@ -15,7 +15,7 @@ router.get('/:id', autenticar, DuplaController.buscarPorId);
 router.post('/', autenticar, validarDupla, DuplaController.criar);
 
 // PUT /api/duplas/:id — Atualiza dupla
-router.put('/:id', autenticar, DuplaController.atualizar);
+router.put('/:id', autenticar, validarDupla, DuplaController.atualizar);
 
 // DELETE /api/duplas/:id — Remove dupla (admin/coordenador)
 router.delete('/:id', autenticar, autorizar('ADMINISTRADOR', 'COORDENADOR_REGIONAL'), DuplaController.remover);

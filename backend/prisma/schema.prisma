@@ -175,6 +175,9 @@ model Dupla {
   // Classificação missionária
   classificacaoDupla   ClassificacaoDupla?
   atividadeDupla       AtividadeDupla?
+  levouPessoaBatismo   Boolean?
+  jaDeuEstudoBiblico   Boolean?
+  estudoAtualEmAndamento Boolean?
 
   // Membro 1 — campos extras
   liderDataNascimento  DateTime?

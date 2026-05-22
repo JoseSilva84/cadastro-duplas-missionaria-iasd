@@ -43,6 +43,35 @@ const SecaoHeader = ({ numero, titulo, descricao }) => (
   </div>
 );
 
+const PerguntaSimNao = ({ pergunta, ajuda, valor, onChange }) => (
+  <div className="rounded-xl border border-gray-100 bg-white p-4">
+    <p className="text-sm font-bold text-[#1A3A6B] leading-snug">{pergunta}</p>
+    {ajuda && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{ajuda}</p>}
+    <div className="grid grid-cols-2 gap-2 mt-3">
+      {[
+        { value: true, label: 'Sim' },
+        { value: false, label: 'Não' },
+      ].map((opcao) => {
+        const ativo = valor === opcao.value;
+        return (
+          <button
+            key={String(opcao.value)}
+            type="button"
+            onClick={() => onChange(opcao.value)}
+            className={`h-11 rounded-lg border text-sm font-semibold transition-all duration-200 ${
+              ativo
+                ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-sm'
+                : 'border-gray-200 bg-[#F4F5F7] text-gray-600 hover:border-[#1A3A6B]/40 hover:bg-white'
+            }`}
+          >
+            {opcao.label}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const formVazio = {
   regiaoNome: '',
   distritoId: '',
@@ -68,8 +97,9 @@ const formVazio = {
   membro2DataBatismo: '',
   membro2Endereco: '',
   // Classificação missionaria
-  classificacaoDupla: '',
-  atividadeDupla: '',
+  levouPessoaBatismo: '',
+  jaDeuEstudoBiblico: '',
+  estudoAtualEmAndamento: '',
   // Acompanhamento
   status: 'ATIVA',
   pessoasAlcancadas: 0,
@@ -164,8 +194,9 @@ export default function Cadastro() {
           membro2DataNascimento: d.membro2DataNascimento ? new Date(d.membro2DataNascimento).toISOString().split('T')[0] : '',
           membro2DataBatismo: d.membro2DataBatismo ? new Date(d.membro2DataBatismo).toISOString().split('T')[0] : '',
           membro2Endereco: d.membro2Endereco || '',
-          classificacaoDupla: d.classificacaoDupla || '',
-          atividadeDupla: d.atividadeDupla || '',
+          levouPessoaBatismo: d.levouPessoaBatismo ?? (d.classificacaoDupla === 'A' ? true : d.classificacaoDupla ? false : ''),
+          jaDeuEstudoBiblico: d.jaDeuEstudoBiblico ?? (['A', 'B'].includes(d.classificacaoDupla) ? true : d.classificacaoDupla === 'C' ? false : ''),
+          estudoAtualEmAndamento: d.estudoAtualEmAndamento ?? (d.atividadeDupla === 'ATIVA' ? true : d.atividadeDupla === 'INATIVA' ? false : ''),
           status: d.status || 'ATIVA',
           pessoasAlcancadas: d.pessoasAlcancadas || 0,
           estudoBiblico: d.estudoBiblico || '',
@@ -210,6 +241,10 @@ export default function Cadastro() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if ([form.levouPessoaBatismo, form.jaDeuEstudoBiblico, form.estudoAtualEmAndamento].some((valor) => valor === '')) {
+      toast.error('Responda as perguntas de classificação missionária antes de salvar.');
+      return;
+    }
     setEnviando(true);
     try {
       const montarPayload = (fotoLiderRef = fotoRefs.fotoLider, fotoMembro2Ref = fotoRefs.fotoMembro2) => ({
@@ -274,7 +309,6 @@ export default function Cadastro() {
       </div>
     );
   }
-
 
 
    return (
@@ -454,70 +488,38 @@ export default function Cadastro() {
             </div>
 
             {/* SEÇÃO 4 — Classificação Missionária */}
-            <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '380ms' }}>
-              <SecaoHeader numero="4" titulo="Classificação Missionária" descricao="Histórico e atividade atual da dupla" />
+            <div className={`card animate-fade-in-up ${isDireto ? 'w-[520px] sm:w-[600px] flex-shrink-0' : ''}`} style={{ animationDelay: '380ms' }}>
+              <SecaoHeader numero="4" titulo="Classificação Missionária" descricao="O sistema classifica a dupla a partir das respostas" />
               <div className="space-y-5">
-                {/* Classe principal A/B/C */}
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-3">Classe da Dupla</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      { value: 'A', label: 'Classe A', desc: 'Já levou alguém ao batismo', cor: 'green' },
-                      { value: 'B', label: 'Classe B', desc: 'Deu estudo, mas sem batismo', cor: 'amber' },
-                      { value: 'C', label: 'Classe C', desc: 'Nunca deu estudo bíblico', cor: 'red' },
-                    ].map(({ value, label, desc, cor }) => {
-                      const ativo = form.classificacaoDupla === value;
-                      const cores = {
-                        green: { border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-                        amber: { border: 'border-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-                        red:   { border: 'border-red-500', bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
-                      };
-                      const c = cores[cor];
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => set('classificacaoDupla', ativo ? '' : value)}
-                          className={`rounded-xl border-2 p-3 text-left transition-all duration-200 ${ativo ? `${c.border} ${c.bg}` : 'border-gray-200 hover:border-gray-300 bg-white'}`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${ativo ? `${c.border} ${c.bg}` : 'border-gray-300 bg-white'}`}>
-                              {ativo && <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />}
-                            </span>
-                            <span className={`font-bold text-sm ${ativo ? c.text : 'text-gray-700'}`}>{label}</span>
-                          </div>
-                          <p className={`text-xs pl-7 ${ativo ? c.text : 'text-gray-400'}`}>{desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="rounded-xl bg-[#F4F5F7] border border-gray-100 p-4">
+                  <p className="text-sm font-bold text-[#1A3A6B] mb-1">Responda o histórico da dupla</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    A classificação A/B/C não é escolhida manualmente. Ela será calculada automaticamente e aparecerá nos relatórios administrativos.
+                  </p>
                 </div>
 
-                {/* Subclassificação Ativa/Inativa */}
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-3">Atividade Atual</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { value: 'ATIVA',   label: 'Estudando', desc: 'Tem estudo bíblico em andamento', dot: 'bg-green-500', border: 'border-green-500', bg: 'bg-green-50', text: 'text-green-700' },
-                      { value: 'INATIVA', label: 'Sem estudo', desc: 'Sem estudo bíblico no momento', dot: 'bg-gray-400', border: 'border-gray-400', bg: 'bg-gray-50', text: 'text-gray-600' },
-                    ].map(({ value, label, desc, dot, border, bg, text }) => {
-                      const ativo = form.atividadeDupla === value;
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => set('atividadeDupla', ativo ? '' : value)}
-                          className={`rounded-xl border-2 p-3 text-left transition-all duration-200 ${ativo ? `${border} ${bg}` : 'border-gray-200 hover:border-gray-300 bg-white'}`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ativo ? dot : 'bg-gray-300'}`} />
-                            <span className={`font-semibold text-sm ${ativo ? text : 'text-gray-700'}`}>{label}</span>
-                          </div>
-                          <p className={`text-xs pl-[18px] ${ativo ? text : 'text-gray-400'}`}>{desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className={`grid grid-cols-1 ${isDireto ? 'sm:grid-cols-2' : 'lg:grid-cols-3'} gap-3`}>
+                  <PerguntaSimNao
+                    pergunta="A dupla já levou pelo menos uma pessoa ao batismo?"
+                    ajuda="Se sim, o sistema entende que há histórico de fruto missionário."
+                    valor={form.levouPessoaBatismo}
+                    onChange={(valor) => {
+                      set('levouPessoaBatismo', valor);
+                      if (valor === true) set('jaDeuEstudoBiblico', true);
+                    }}
+                  />
+                  <PerguntaSimNao
+                    pergunta="A dupla já deu estudo bíblico para alguém?"
+                    ajuda="Considere estudos concluídos ou não concluídos."
+                    valor={form.jaDeuEstudoBiblico}
+                    onChange={(valor) => set('jaDeuEstudoBiblico', valor)}
+                  />
+                  <PerguntaSimNao
+                    pergunta="A dupla está estudando a Bíblia com alguém atualmente?"
+                    ajuda="Essa resposta define a atividade atual da dupla."
+                    valor={form.estudoAtualEmAndamento}
+                    onChange={(valor) => set('estudoAtualEmAndamento', valor)}
+                  />
                 </div>
               </div>
             </div>

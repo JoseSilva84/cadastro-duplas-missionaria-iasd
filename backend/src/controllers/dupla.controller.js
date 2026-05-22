@@ -9,6 +9,9 @@ const validarDupla = [
   body('liderNome').notEmpty().withMessage('Nome do líder obrigatório.'),
   body('membro2Nome').notEmpty().withMessage('Nome do segundo membro obrigatório.'),
   body('distritoId').isInt().withMessage('Distrito obrigatório.'),
+  body('levouPessoaBatismo').isBoolean().withMessage('Informe se a dupla já levou alguém ao batismo.'),
+  body('jaDeuEstudoBiblico').isBoolean().withMessage('Informe se a dupla já deu estudo bíblico.'),
+  body('estudoAtualEmAndamento').isBoolean().withMessage('Informe se a dupla está estudando com alguém atualmente.'),
 ];
 
 const DuplaController = {
@@ -52,6 +55,11 @@ const DuplaController = {
 
   // PUT /api/duplas/:id
   async atualizar(req, res) {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) {
+      return res.status(400).json({ erros: erros.array() });
+    }
+
     try {
       const dupla = await DuplaService.atualizar(req.params.id, req.body, req.usuario);
       res.json(dupla);
