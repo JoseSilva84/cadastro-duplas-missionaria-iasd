@@ -54,9 +54,11 @@ const TIPOS = [
   },
 ];
 
-const CARGOS_REGIONAL = ['Pastor Regional', 'Conselheiro Regional', 'Administrador Regional'];
-const CARGOS_DISTRITAL = ['Pastor Distrital', 'Líder Distrital'];
-const CARGOS_COORD = ['Coordenador de Interessados', 'Auxiliar de Interessados'];
+const CARGO_POR_TIPO = {
+  regional: 'Pastor Regional',
+  distrital: 'Pastor Distrital',
+  coordenador: 'Coordenador de Interessados',
+};
 
 export default function CadastroPastores() {
   const navigate = useNavigate();
@@ -66,7 +68,7 @@ export default function CadastroPastores() {
   const [tipo, setTipo] = useState('regional');
   const [foto, setFoto] = useState('');
   const [nome, setNome] = useState('');
-  const [cargo, setCargo] = useState('');
+  const [cargo, setCargo] = useState(CARGO_POR_TIPO.regional);
   const [regiaoId, setRegiaoId] = useState('');
   const [distritoId, setDistritoId] = useState('');
   const [igrejaId, setIgrejaId] = useState('');
@@ -103,12 +105,12 @@ export default function CadastroPastores() {
     setRegiaoId('');
     setDistritoId('');
     setIgrejaId('');
-    setCargo('');
+    setCargo(CARGO_POR_TIPO[t]);
     setFoto('');
     setNome('');
   };
 
-  const cargosDisponiveis = tipo === 'regional' ? CARGOS_REGIONAL : tipo === 'distrital' ? CARGOS_DISTRITAL : CARGOS_COORD;
+  const cargoAtual = CARGO_POR_TIPO[tipo];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,25 +125,25 @@ export default function CadastroPastores() {
         await api.patch(`/regioes/${regiaoId}`, {
           fotoConselheiro: foto || null,
           nomeConselheiro: nome,
-          cargoConselheiro: cargo || 'Pastor Regional',
+          cargoConselheiro: cargoAtual,
         });
       } else if (tipo === 'distrital') {
         await api.patch(`/distritos/${distritoId}`, {
           fotoPastor: foto || null,
           nomePastor: nome,
-          cargoPastor: cargo || 'Pastor Distrital',
+          cargoPastor: cargoAtual,
         });
       } else {
         await api.patch(`/igrejas/${igrejaId}`, {
           fotoCoordInteressados: foto || null,
           nomeCoordInteressados: nome,
-          cargoCoordInteressados: cargo || 'Coordenador de Interessados',
+          cargoCoordInteressados: cargoAtual,
         });
       }
       toast.success('Liderança cadastrada com sucesso!');
       setFoto('');
       setNome('');
-      setCargo('');
+      setCargo(cargoAtual);
       setRegiaoId('');
       setDistritoId('');
       setIgrejaId('');
@@ -230,12 +232,13 @@ export default function CadastroPastores() {
                     </Campo>
                   </div>
                   <Campo label="Cargo / Função" icone="🏷️">
-                    <select className="input-field" value={cargo} onChange={(e) => setCargo(e.target.value)}>
-                      <option value="">Selecione o cargo</option>
-                      {cargosDisponiveis.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      className="input-field bg-gray-50 text-[#1A3A6B] font-semibold cursor-not-allowed"
+                      value={cargo}
+                      readOnly
+                      aria-readonly="true"
+                    />
                   </Campo>
                 </div>
               </div>

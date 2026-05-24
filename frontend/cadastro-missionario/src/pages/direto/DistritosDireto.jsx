@@ -169,16 +169,13 @@ export default function DistritosDireto() {
       <div className="w-full sm:w-80 lg:w-[340px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
         {/* Breadcrumb */}
         <div className="flex-shrink-0 px-4 pt-4 pb-2">
-          <button
-            type="button"
-            onClick={() => navigate('/direto/regioes')}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#1A3A6B] transition-colors"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Associação / {regiaoNome || 'Região'} / {distrito.nome}
-          </button>
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
+            <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">Associação</button>
+            <span className="text-gray-300">/</span>
+            <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
+            <span className="text-gray-300">/</span>
+            <span className="text-[#1A3A6B] font-semibold">{distrito.nome}</span>
+          </div>
         </div>
 
         {/* Info do distrito — compacta */}
@@ -198,17 +195,6 @@ export default function DistritosDireto() {
               </p>
             </div>
           </div>
-
-          {igrejas.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {igrejas.map((ig) => (
-                <span key={ig.id} className="inline-flex items-center gap-1 bg-[#1A3A6B]/5 text-[#1A3A6B] text-[10px] font-medium px-2 py-0.5 rounded-full" title={`${ig.membros || 0} membros`}>
-                  <span className="w-1 h-1 rounded-full bg-[#1A3A6B]/40" />
-                  {ig.nome} <span className="text-gray-400 opacity-80 ml-0.5">({(ig.membros || 0).toLocaleString('pt-BR')})</span>
-                </span>
-              ))}
-            </div>
-          )}
 
           <div className="mt-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Igrejas do Distrito</p>
