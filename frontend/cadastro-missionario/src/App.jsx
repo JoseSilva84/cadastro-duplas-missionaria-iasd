@@ -13,6 +13,7 @@ import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
 import CadastroAcompanhamento from './pages/CadastroAcompanhamento';
 import CadastroClasseBiblica from './pages/CadastroClasseBiblica';
+import CadastroEscolaSabatina from './pages/CadastroEscolaSabatina';
 import RegistroSaida from './pages/RegistroSaida';
 import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
@@ -119,6 +120,7 @@ function AppRoutes() {
         <Route path="duplas/nova" element={<Cadastro />} />
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
+        <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
@@ -159,6 +161,7 @@ function AppRoutes() {
         <Route path="duplas/nova" element={<Cadastro />} />
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
+        <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />

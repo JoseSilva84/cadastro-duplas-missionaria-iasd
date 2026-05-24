@@ -145,6 +145,7 @@ const RelatorioModel = {
       pessoasEstudandoGrupos,
       classesDuplas,
       escolaSabatinaResumo,
+      escolaSabatinaCadastros,
       pequenosGruposPorDuplas,
     ] = await Promise.all([
       prisma.ataDupla.count(),
@@ -165,6 +166,17 @@ const RelatorioModel = {
         _count: { classificacaoDupla: true },
       }),
       prisma.escolaSabatinaResumo.findUnique({ where: { id: 1 } }),
+      prisma.escolaSabatinaCadastro.findMany({
+        select: {
+          unidadesAcao: true,
+          classeProfessores: true,
+          classeInteressados: true,
+          visitasDiretores: true,
+          visitasProfessores: true,
+          visitasAlunos: true,
+          quantidadePequenosGrupos: true,
+        },
+      }),
       prisma.dupla.count({ where: { tipoProjeto: 'PEQUENOS_GRUPOS' } }),
     ]);
 
@@ -175,7 +187,25 @@ const RelatorioModel = {
       }
     });
 
-    const escolaSabatina = escolaSabatinaResumo || {
+    const escolaSabatina = escolaSabatinaCadastros.length > 0
+      ? escolaSabatinaCadastros.reduce((acc, item) => ({
+        unidadesAcao: acc.unidadesAcao + item.unidadesAcao,
+        classeProfessores: acc.classeProfessores + item.classeProfessores,
+        classeInteressados: acc.classeInteressados + item.classeInteressados,
+        visitasDiretores: acc.visitasDiretores + item.visitasDiretores,
+        visitasProfessores: acc.visitasProfessores + item.visitasProfessores,
+        visitasAlunos: acc.visitasAlunos + item.visitasAlunos,
+        quantidadePequenosGrupos: acc.quantidadePequenosGrupos + item.quantidadePequenosGrupos,
+      }), {
+        unidadesAcao: 0,
+        classeProfessores: 0,
+        classeInteressados: 0,
+        visitasDiretores: 0,
+        visitasProfessores: 0,
+        visitasAlunos: 0,
+        quantidadePequenosGrupos: 0,
+      })
+      : escolaSabatinaResumo || {
       unidadesAcao: 0,
       classeProfessores: 0,
       classeInteressados: 0,
@@ -204,7 +234,7 @@ const RelatorioModel = {
           alunos: escolaSabatina.visitasAlunos,
           total: escolaSabatina.visitasDiretores + escolaSabatina.visitasProfessores + escolaSabatina.visitasAlunos,
         },
-        quantidadePequenosGrupos: escolaSabatina.quantidadePequenosGrupos || pequenosGruposPorDuplas,
+        quantidadePequenosGrupos: escolaSabatina.quantidadePequenosGrupos ?? pequenosGruposPorDuplas,
       },
     };
   },

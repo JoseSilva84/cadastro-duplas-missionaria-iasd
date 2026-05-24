@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
+import { FotoService } from '../../foto.service';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
+
+const FotoConselheiro = ({ src, nome }) => {
+  const inicial = (nome || '?').charAt(0).toUpperCase();
+  if (src) return <img src={src} alt={nome || 'Conselheiro'} className="w-14 h-14 rounded-xl object-cover bg-gray-100 shadow-sm" />;
+  return (
+    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-lg font-bold shadow-sm">
+      {inicial}
+    </div>
+  );
+};
 
 export default function RegioesDireto() {
   const navigate = useNavigate();
@@ -11,6 +22,7 @@ export default function RegioesDireto() {
   const [carregando, setCarregando] = useState(true);
   const [regiaoSelecionada, setRegiaoSelecionada] = useState(null);
   const [distritosDetalhados, setDistritosDetalhados] = useState({});
+  const [fotosConselheiro, setFotosConselheiro] = useState({});
   const [carregandoDistritos, setCarregandoDistritos] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
@@ -23,6 +35,12 @@ export default function RegioesDireto() {
       if (!ativo) return;
       setRegioes(r.data);
       setResumo(s.data);
+      r.data.forEach(async (regiao) => {
+        const foto = await FotoService.resolverFotoParaPreview(regiao.fotoConselheiro).catch(() => '');
+        if (ativo) {
+          setFotosConselheiro((prev) => ({ ...prev, [regiao.id]: foto }));
+        }
+      });
       if (r.data.length > 0) {
         setRegiaoSelecionada(r.data[0]);
       }
@@ -215,6 +233,21 @@ export default function RegioesDireto() {
 
             {/* Conteúdo do detail — scroll horizontal se necessário */}
             <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
+              <div className="mb-6 flex justify-start">
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md">
+                  <div className="flex items-center gap-4">
+                    <FotoConselheiro src={fotosConselheiro[regiaoSelecionada.id]} nome={regiaoSelecionada.nomeConselheiro} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pr. Departamental / Conselheiro</p>
+                      <h3 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                        {regiaoSelecionada.nomeConselheiro || 'Nao informado'}
+                      </h3>
+                      <p className="text-xs text-gray-400 truncate">{regiaoSelecionada.cargoConselheiro || 'Conselheiro Regional'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Cards de resumo da região */}
               {(() => {
                 const cor = regiaoSelecionada.cor || coresPadrao[regioes.findIndex(r => r.id === regiaoSelecionada.id) % coresPadrao.length];

@@ -13,6 +13,7 @@ const igrejaRoutes = require('./routes/igrejas');
 const estudosBiblicosRoutes = require('./routes/estudosBiblicos');
 const evangelismosRoutes = require('./routes/evangelismos');
 const acompanhamentosRoutes = require('./routes/acompanhamentos');
+const escolaSabatinaRoutes = require('./routes/escolaSabatina');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,6 +34,7 @@ app.use('/api/duplas', duplaRoutes);
 app.use('/api/estudos-biblicos', estudosBiblicosRoutes);
 app.use('/api/evangelismos', evangelismosRoutes);
 app.use('/api/acompanhamentos', acompanhamentosRoutes);
+app.use('/api/escola-sabatina', escolaSabatinaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 

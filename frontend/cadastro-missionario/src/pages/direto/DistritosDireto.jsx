@@ -76,6 +76,7 @@ export default function DistritosDireto() {
   const [duplaSelecionada, setDuplaSelecionada] = useState(null);
   const [erro, setErro] = useState(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
+  const [fotoPastorPreview, setFotoPastorPreview] = useState('');
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
@@ -87,6 +88,8 @@ export default function DistritosDireto() {
     ]).then(async ([d, p]) => {
       if (!ativo) return;
       setDistrito(d.data);
+      const fotoPastor = await FotoService.resolverFotoParaPreview(d.data?.fotoPastor).catch(() => '');
+      if (ativo) setFotoPastorPreview(fotoPastor);
       const listaDuplas = Array.isArray(p.data) ? p.data : [];
       const listaComFotos = await Promise.all(listaDuplas.map(resolverFotosDaDupla));
       if (ativo) {
@@ -174,7 +177,7 @@ export default function DistritosDireto() {
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Regiões
+            Associação / {regiaoNome || 'Região'} / {distrito.nome}
           </button>
         </div>
 
@@ -206,6 +209,50 @@ export default function DistritosDireto() {
               ))}
             </div>
           )}
+
+          <div className="mt-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Igrejas do Distrito</p>
+            {igrejas.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2">
+                {igrejas.map((ig) => (
+                  <div key={ig.id} className="rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#1A3A6B] truncate" title={ig.nome}>{ig.nome}</p>
+                        <p className="text-[10px] text-gray-400">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-3 text-center text-[11px] text-gray-400">
+                Nenhuma igreja cadastrada.
+              </div>
+            )}
+
+            <div className="mt-3 rounded-lg border border-gray-100 bg-white p-3">
+              <div className="flex items-center gap-3">
+                <FotoPessoa
+                  src={fotoPastorPreview}
+                  nome={distrito.nomePastor}
+                  className="w-12 h-12 rounded-xl shadow-sm"
+                  fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                  onPreview={fotoPastorPreview ? abrirFoto : undefined}
+                />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor responsável</p>
+                  <p className="text-sm font-bold text-[#1A3A6B] truncate">{distrito.nomePastor || 'Nao informado'}</p>
+                  <p className="text-[11px] text-gray-400 truncate">{distrito.cargoPastor || 'Pastor Distrital'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex-shrink-0 px-4 pt-3 pb-2">

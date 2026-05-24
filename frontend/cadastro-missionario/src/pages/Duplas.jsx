@@ -112,6 +112,7 @@ export default function Duplas() {
   const navigate = useNavigate();
   const [duplas, setDuplas] = useState([]);
   const [distrito, setDistrito] = useState(null);
+  const [fotoPastorPreview, setFotoPastorPreview] = useState('');
   const [filtro, setFiltro] = useState('');
   const [filtroClasse, setFiltroClasse] = useState('');
   const [filtroAtividade, setFiltroAtividade] = useState('');
@@ -128,8 +129,10 @@ export default function Duplas() {
       if (!ativo) return;
       const lista = Array.isArray(d.data) ? d.data : [];
       const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
+      const fotoPastor = await FotoService.resolverFotoParaPreview(dist.data?.fotoPastor).catch(() => '');
       setDuplas(listaComFotos);
       setDistrito(dist.data);
+      if (ativo) setFotoPastorPreview(fotoPastor);
     }).finally(() => { setCarregando(false); });
     return () => { ativo = false; };
   }, [distritoId]);
@@ -180,7 +183,7 @@ export default function Duplas() {
       {/* Breadcrumb */}
       {distrito && (
         <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-6 flex-wrap animate-fade-in-down">
-          <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">Regiões</button>
+          <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">Associação</button>
           <span className="text-gray-300">/</span>
           <button onClick={() => navigate(`/regioes/${distrito.regiao?.id}/distritos`)} className="hover:text-[#1A3A6B] transition-colors">
             {distrito.regiao?.nome}
@@ -214,6 +217,56 @@ export default function Duplas() {
           Nova Dupla
         </button>
       </div>
+
+      {distrito && (
+        <div className="mb-6 animate-fade-in-down" style={{ animationDelay: '125ms' }}>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-sm font-bold text-[#1A3A6B] uppercase tracking-widest">Igrejas do Distrito</h2>
+            <span className="text-xs text-gray-400">{(distrito.igrejas || []).length} igreja(s)</span>
+          </div>
+          {(distrito.igrejas || []).length === 0 ? (
+            <div className="bg-white rounded-lg border border-gray-100 p-5 text-center text-sm text-gray-400">
+              Nenhuma igreja cadastrada neste distrito.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {distrito.igrejas.map((igreja) => (
+                <div key={igreja.id} className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 hover:border-[#1A3A6B]/20 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#1A3A6B] text-sm truncate" title={igreja.nome}>{igreja.nome}</p>
+                      <p className="text-xs text-gray-400 mt-1">{(igreja.membros || 0).toLocaleString('pt-BR')} membros</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 bg-white rounded-lg border border-gray-100 shadow-sm p-4 w-full sm:max-w-md">
+            <div className="flex items-center gap-4">
+              <FotoPessoa
+                src={fotoPastorPreview}
+                nome={distrito.nomePastor}
+                className="w-16 h-16 rounded-xl shadow-sm"
+                fallbackGradient="from-[#1A3A6B] to-[#2a5298]"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Pastor responsável</p>
+                <h3 className="text-lg font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                  {distrito.nomePastor || 'Nao informado'}
+                </h3>
+                <p className="text-sm text-gray-400 truncate">{distrito.cargoPastor || 'Pastor Distrital'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>

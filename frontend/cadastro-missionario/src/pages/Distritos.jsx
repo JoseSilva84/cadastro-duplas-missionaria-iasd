@@ -1,17 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { FotoService } from '../foto.service';
+
+const FotoConselheiro = ({ src, nome }) => {
+  const inicial = (nome || '?').charAt(0).toUpperCase();
+  if (src) return <img src={src} alt={nome || 'Conselheiro'} className="w-16 h-16 rounded-xl object-cover bg-gray-100 shadow-sm" />;
+  return (
+    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-xl font-bold shadow-sm">
+      {inicial}
+    </div>
+  );
+};
 
 export default function Distritos() {
   const { regiaoId } = useParams();
   const navigate = useNavigate();
   const [regiao, setRegiao] = useState(null);
+  const [fotoConselheiro, setFotoConselheiro] = useState('');
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
+    let ativo = true;
     api.get(`/regioes/${regiaoId}`)
-      .then((r) => setRegiao(r.data))
-      .finally(() => setCarregando(false));
+      .then(async (r) => {
+        if (!ativo) return;
+        setRegiao(r.data);
+        const foto = await FotoService.resolverFotoParaPreview(r.data.fotoConselheiro).catch(() => '');
+        if (ativo) setFotoConselheiro(foto);
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+    return () => { ativo = false; };
   }, [regiaoId]);
 
   if (carregando) {
@@ -64,6 +85,21 @@ export default function Distritos() {
       </div>
 
        {/* Indicadores gerais da região */}
+      <div className="mb-8 flex justify-start animate-fade-in-down" style={{ animationDelay: '125ms' }}>
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 w-full sm:max-w-md">
+          <div className="flex items-center gap-4">
+            <FotoConselheiro src={fotoConselheiro} nome={regiao.nomeConselheiro} />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Pr. Departamental / Conselheiro</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                {regiao.nomeConselheiro || 'Nao informado'}
+              </h2>
+              <p className="text-sm text-gray-400 truncate">{regiao.cargoConselheiro || 'Conselheiro Regional'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
         {[
           { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },

@@ -78,6 +78,7 @@ export default function LayoutDireto() {
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
     { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
     { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
+    { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
     { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
   ];
