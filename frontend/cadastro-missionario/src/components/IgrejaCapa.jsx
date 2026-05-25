@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
+import { toast } from '../lib/toast';
 import AvatarUpload from './AvatarUpload';
 
 const formatarNumero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
@@ -111,17 +112,28 @@ const gerarPdf = (relatorio) => {
   janela.document.close();
 };
 
-const FotoBloco = ({ src, alt, tipo }) => (
-  <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-[#F4F5F7] border border-gray-100 flex items-center justify-center">
+const FotoBloco = ({ src, alt, tipo, onClick }) => (
+  <button
+    type="button"
+    onClick={src ? onClick : undefined}
+    disabled={!src}
+    className={`group relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-[#F4F5F7] border border-gray-100 flex items-center justify-center transition-all duration-200 ${src ? 'cursor-zoom-in hover:-translate-y-0.5 hover:border-[#C9963A] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/50' : 'cursor-default'}`}
+  >
     {src ? (
-      <img src={src} alt={alt} className="h-full w-full object-cover" />
+      <>
+        <img src={src} alt={alt} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        <span className="absolute inset-0 bg-[#1A3A6B]/0 transition-colors duration-200 group-hover:bg-[#1A3A6B]/18" />
+        <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#1A3A6B] opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
+          Ampliar
+        </span>
+      </>
     ) : (
       <div className="text-center px-4">
         <div className="text-3xl text-gray-300 mb-2">{tipo === 'templo' ? '⛪' : '👤'}</div>
         <p className="text-xs text-gray-400">Sem foto cadastrada</p>
       </div>
     )}
-  </div>
+  </button>
 );
 
 const InfoLinha = ({ label, valor }) => (
@@ -131,13 +143,13 @@ const InfoLinha = ({ label, valor }) => (
   </div>
 );
 
-const ColunaPessoa = ({ titulo, cargo, pessoa, foto }) => (
+const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
   <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
     <div className="mb-3">
       <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo}</p>
       <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
     </div>
-    <FotoBloco src={foto} alt={pessoa.nome || titulo} />
+    <FotoBloco src={foto} alt={pessoa.nome || titulo} onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
     <div className="mt-3">
       <InfoLinha label="Nome" valor={pessoa.nome} />
       <InfoLinha label="Endereço" valor={pessoa.endereco} />
@@ -222,6 +234,9 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
         coordenador: form.fotoCoordInteressados,
         igreja: form.fotoIgreja,
       });
+      toast.success('Dados da igreja salvos com sucesso!');
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao salvar os dados da igreja.');
     } finally {
       setSalvando(false);
     }
@@ -307,6 +322,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
   const [fotos, setFotos] = useState({});
   const [editando, setEditando] = useState(false);
+  const [fotoAmpliada, setFotoAmpliada] = useState(null);
 
   useEffect(() => {
     let ativo = true;
@@ -416,16 +432,21 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
-        <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} />
-        <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} />
-        <ColunaPessoa titulo="Coordenador Missionário" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} />
+        <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} onFotoClick={setFotoAmpliada} />
+        <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onFotoClick={setFotoAmpliada} />
+        <ColunaPessoa titulo="Coordenador Missionário" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
 
         <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
           <div className="mb-3">
             <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Coluna 4</p>
             <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
           </div>
-          <FotoBloco src={fotos.igreja} alt={igrejaAtual.nome} tipo="templo" />
+          <FotoBloco
+            src={fotos.igreja}
+            alt={igrejaAtual.nome}
+            tipo="templo"
+            onClick={() => setFotoAmpliada({ src: fotos.igreja, titulo: 'Dados da Igreja', nome: igrejaAtual.nome })}
+          />
           <div className="mt-3 grid grid-cols-1 gap-0">
             <InfoLinha label="Quantidade de membros" valor={formatarNumero(indicadores.quantidadeMembros)} />
             <InfoLinha label="Endereço da igreja" valor={igrejaAtual.endereco} />
@@ -451,6 +472,36 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
             setRelatorio(null);
           }}
         />
+      )}
+
+      {fotoAmpliada && (
+        <div
+          className="fixed inset-0 z-[60] bg-[#0B1220]/85 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setFotoAmpliada(null)}
+        >
+          <div className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between gap-3 text-white">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-[#D8A23A] font-bold">{fotoAmpliada.titulo}</p>
+                <h3 className="text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>{fotoAmpliada.nome}</h3>
+              </div>
+              <button
+                type="button"
+                className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50"
+                onClick={() => setFotoAmpliada(null)}
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="max-h-[78vh] overflow-hidden rounded-xl bg-white/5 shadow-2xl ring-1 ring-white/15">
+              <img
+                src={fotoAmpliada.src}
+                alt={fotoAmpliada.nome || 'Imagem ampliada'}
+                className="mx-auto max-h-[78vh] w-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
