@@ -39,6 +39,7 @@ const normalizarEstudo = (data) => ({
   estudaLicao: data.estudaLicao !== undefined ? Boolean(data.estudaLicao) : null,
   devolveDizimos: data.devolveDizimos !== undefined ? Boolean(data.devolveDizimos) : null,
   cultoFamiliar: data.cultoFamiliar !== undefined ? Boolean(data.cultoFamiliar) : null,
+  observacoes: data.observacoes || null,
 });
 
 const EstudoBiblicoService = {

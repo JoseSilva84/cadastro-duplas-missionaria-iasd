@@ -261,7 +261,14 @@ const RelatorioModel = {
     if (query.duplaId) where.duplaId = Number(query.duplaId);
     if (query.serie) where.serie = query.serie;
     if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
+    if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;
     if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
+    if (query.nome) {
+      where.OR = [
+        { nomeEstudante: { contains: query.nome, mode: 'insensitive' } },
+        { participantes: { some: { nome: { contains: query.nome, mode: 'insensitive' } } } },
+      ];
+    }
     if (query.dataInicio || query.dataFim) {
       where.criadoEm = {};
       if (query.dataInicio) where.criadoEm.gte = new Date(query.dataInicio);
@@ -282,6 +289,7 @@ const RelatorioModel = {
             distrito: { select: { nome: true, regiao: { select: { nome: true } } } },
           },
         },
+        participantes: true,
       },
       orderBy: { criadoEm: 'desc' },
     });

@@ -100,7 +100,7 @@ export default function RegistroSaida() {
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Coordenador</p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Registro de Saída
+          Registro de Saída (Coordenador Regional)
         </h1>
         <p className="text-gray-400 text-sm mt-1">Marque as duplas que você visitou/acompanhou hoje</p>
       </div>
@@ -142,7 +142,7 @@ export default function RegistroSaida() {
               <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-sm shadow-md">2</div>
                 <div>
-                  <h2 className="font-bold text-[#1A3A6B]">Duplas Visitadas</h2>
+                  <h2 className="font-bold text-[#1A3A6B]">Duplas Acompanhadas</h2>
                   {duplasSelecionadas.length > 0 && (
                     <p className="text-xs text-[#C9963A] font-medium">{duplasSelecionadas.length} selecionada(s)</p>
                   )}

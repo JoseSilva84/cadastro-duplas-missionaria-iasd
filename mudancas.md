@@ -245,7 +245,7 @@ Campos:
 **OBS.** — campo de observação livre.
 
 ---
-
+Parei aqui:
 ## Página 8 — Classe Bíblica
 
 A **Classe Bíblica** é uma reunião com múltiplos participantes (até ~10 nomes).

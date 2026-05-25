@@ -120,6 +120,7 @@ function AppRoutes() {
         <Route path="duplas" element={<Duplas />} />
         <Route path="duplas/nova" element={<Cadastro />} />
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
+        <Route path="cadastro/ponto-estudo" element={<CadastroAcompanhamento tipo="ponto" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
         <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
@@ -137,7 +138,8 @@ function AppRoutes() {
           }
         />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
-        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
+        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
+        <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 
@@ -162,6 +164,7 @@ function AppRoutes() {
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
+        <Route path="cadastro/ponto-estudo" element={<CadastroAcompanhamento tipo="ponto" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
         <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
@@ -170,7 +173,8 @@ function AppRoutes() {
         <Route path="cadastro/liderancas" element={<CadastroPastores />} />
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
-        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
+        <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
+        <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 

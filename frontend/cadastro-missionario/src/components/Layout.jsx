@@ -94,15 +94,17 @@ export default function Layout() {
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
-          { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
+          { to: '/direto/registro-saida', label: 'Registro de Saída (Coor. Reg.)', icon: '✅' },
           { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
         { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
           { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
-          { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+          { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] },
       ]
@@ -114,15 +116,17 @@ export default function Layout() {
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/duplas/nova', label: 'Nova Dupla', icon: '+' },
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
-          { to: '/registro-saida', label: 'Registro de Saída', icon: '✅' },
+          { to: '/registro-saida', label: 'Registro de Saída (Coor. Reg.)', icon: '✅' },
           { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
         ] },
         ...(isAdmin ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
           { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
-          { to: '/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+          { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] }] : []),
       ];

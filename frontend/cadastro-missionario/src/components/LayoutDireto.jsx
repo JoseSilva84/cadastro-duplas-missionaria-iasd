@@ -77,16 +77,18 @@ export default function LayoutDireto() {
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
     { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+    { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
     { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
-    { to: '/direto/registro-saida', label: 'Registro de Saída', icon: '✅' },
+    { to: '/direto/registro-saida', label: 'Registro de Saída (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
   ];
 
   const relatorioItems = [
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
     { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
-    { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+    { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+    { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
     { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
   ];
 
