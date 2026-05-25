@@ -60,6 +60,42 @@ const projetoIcon = {
 const statusColors = { ATIVA: '#16a34a', PENDENTE: '#C9963A', INATIVA: '#9ca3af' };
 const statusLabels = { ATIVA: 'Ativa', PENDENTE: 'Pendente', INATIVA: 'Inativa' };
 
+const classeConfig = {
+  A: { label: 'Classe A', cor: '#1A3A6B', bg: '#1A3A6B14' },
+  B: { label: 'Classe B', cor: '#C9963A', bg: '#C9963A18' },
+  C: { label: 'Classe C', cor: '#6b7280', bg: '#6b728014' },
+};
+
+const atividadeConfig = {
+  ATIVA: { label: 'Ativa', cor: '#16a34a', bg: '#16a34a18' },
+  INATIVA: { label: 'Inativa', cor: '#6b7280', bg: '#6b728014' },
+};
+
+const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+
+const getClassificacaoAtividadeText = (dupla) => {
+  const classe = classeConfig[dupla?.classificacaoDupla]?.label || 'Sem classe';
+  const atividade = atividadeConfig[dupla?.atividadeDupla]?.label || 'Sem atividade';
+  return `${classe} · ${atividade}`;
+};
+
+const ClassificacaoAtividadeBadge = ({ dupla, compact = false }) => {
+  const classe = classeConfig[dupla?.classificacaoDupla];
+  const atividade = atividadeConfig[dupla?.atividadeDupla];
+  const cor = classe?.cor || atividade?.cor || '#6b7280';
+  const bg = classe?.bg || atividade?.bg || '#f3f4f6';
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border font-semibold ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}
+      style={{ backgroundColor: bg, color: cor, borderColor: `${cor}35` }}
+    >
+      {getClassificacaoAtividadeText(dupla)}
+    </span>
+  );
+};
+
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
     FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
@@ -359,8 +395,9 @@ export default function DuplasDireto() {
         <div className="flex-1 overflow-y-auto">
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
-            const cor = statusColors[dupla.status] || '#9ca3af';
             const mcfg = medalhaConfig[dupla._medalha];
+            const classCfg = classeConfig[dupla.classificacaoDupla];
+            const borderColor = classCfg?.cor || mcfg.cor;
 
             return (
               <button
@@ -372,7 +409,7 @@ export default function DuplasDireto() {
                     ? 'bg-[#1A3A6B]/5'
                     : 'bg-white hover:bg-gray-50'
                 }`}
-                style={{ borderLeftColor: selecionada ? mcfg.cor : mcfg.cor + '60' }}
+                style={{ borderLeftColor: selecionada ? borderColor : borderColor + '60' }}
               >
                 <div className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
@@ -404,37 +441,22 @@ export default function DuplasDireto() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      {/* Medalha de gamificação */}
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
-                      >
-                        {mcfg.emoji} {mcfg.label}
-                      </span>
-                      <span
-                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: cor + '20', color: cor }}
-                      >
-                        {statusLabels[dupla.status] || dupla.status || '—'}
-                      </span>
-                    </div>
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
+                    >
+                      {mcfg.emoji} {mcfg.label}
+                    </span>
                   </div>
 
-                  {/* Info extra quando selecionada */}
-                  {selecionada && (
-                    <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>{dupla.bairro || 'Sem bairro'}</span>
-                      <span className="w-1 h-1 rounded-full bg-gray-300" />
-                      <span>{projetoLabel[dupla.tipoProjeto] || dupla.tipoProjeto || '—'}</span>
-                      {dupla.pessoasAlcancadas > 0 && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-gray-300" />
-                          <span className="text-[#C9963A] font-semibold">🙏 {dupla.pessoasAlcancadas}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <div className={`mt-2 pt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400 ${selecionada ? 'border-t border-gray-100' : ''}`}>
+                    <span>{dupla.distrito?.nome || 'Sem distrito'}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span>Estudos {getEstudosCount(dupla)}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span>Visitações {getVisitacoesCount(dupla)}</span>
+                    <ClassificacaoAtividadeBadge dupla={dupla} compact />
+                  </div>
                 </div>
               </button>
             );
@@ -513,6 +535,7 @@ export default function DuplasDireto() {
                       </h2>
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <ClassificacaoAtividadeBadge dupla={duplaSelecionada} />
                       {(() => {
                         const cor = statusColors[duplaSelecionada.status] || '#9ca3af';
                         return (
@@ -524,7 +547,9 @@ export default function DuplasDireto() {
                           </span>
                         );
                       })()}
-                      <span className="text-[10px] text-gray-400">{duplaSelecionada.bairro || 'Sem bairro'}</span>
+                      <span className="text-[10px] text-gray-400">{duplaSelecionada.distrito?.nome || 'Sem distrito'}</span>
+                      <span className="text-[10px] text-gray-400">Estudos {getEstudosCount(duplaSelecionada)}</span>
+                      <span className="text-[10px] text-gray-400">Visitações {getVisitacoesCount(duplaSelecionada)}</span>
                       <span className="text-[10px] text-gray-400">
                         {projetoIcon[duplaSelecionada.tipoProjeto] || '📋'} {projetoLabel[duplaSelecionada.tipoProjeto] || duplaSelecionada.tipoProjeto || '—'}
                       </span>
@@ -644,6 +669,9 @@ export default function DuplasDireto() {
                   </div>
                   <div className="space-y-2.5 text-sm">
                     <div><span className="text-gray-400 text-xs">Tipo:</span><p className="text-gray-700 font-medium">{projetoLabel[duplaSelecionada.tipoProjeto] || duplaSelecionada.tipoProjeto || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeText(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudos bíblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Visitações:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     {(() => {
                       const cor = statusColors[duplaSelecionada.status] || '#9ca3af';
                       return (

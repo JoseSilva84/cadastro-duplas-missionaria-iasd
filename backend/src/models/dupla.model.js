@@ -9,6 +9,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
+        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
       orderBy: { criadoEm: 'desc' },
     });
@@ -21,6 +22,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
+        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
     });
   },
@@ -32,6 +34,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
+        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
     });
   },
@@ -44,6 +47,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
+        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
     });
   },

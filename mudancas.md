@@ -148,6 +148,7 @@ Essas duas informações devem aparecer juntas no card/faixa da dupla. Exemplo:
 - `Classe C · Inativa` (São requisitos que devem ser lidos pelo sistema: "nunca deu estudo e não tem nenhum em andamento")
 
 ---
+Obs: parei aqui, indo para o cadastro da dupla, logo após abaixo:
 
 ### Cadastro da Dupla — Membro 1
 
