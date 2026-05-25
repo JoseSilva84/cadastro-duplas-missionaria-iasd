@@ -83,6 +83,7 @@ const formVazio = {
   liderTelefone: '',
   liderEmail: '',
   liderIgreja: '',
+  liderDistrito: '',
   liderSexo: '',
   liderDataNascimento: '',
   liderDataBatismo: '',
@@ -92,6 +93,8 @@ const formVazio = {
   membro2Nome: '',
   membro2Telefone: '',
   membro2Email: '',
+  membro2Igreja: '',
+  membro2Distrito: '',
   membro2Sexo: '',
   membro2DataNascimento: '',
   membro2DataBatismo: '',
@@ -181,7 +184,8 @@ export default function Cadastro() {
           liderNome: d.liderNome || '',
           liderTelefone: d.liderTelefone || '',
           liderEmail: d.liderEmail || '',
-          liderIgreja: d.liderIgreja || '',
+          liderIgreja: d.liderIgreja || d.igreja?.nome || '',
+          liderDistrito: d.liderDistrito || d.distrito?.nome || '',
           liderSexo: d.liderSexo || '',
           liderDataNascimento: d.liderDataNascimento ? new Date(d.liderDataNascimento).toISOString().split('T')[0] : '',
           liderDataBatismo: d.liderDataBatismo ? new Date(d.liderDataBatismo).toISOString().split('T')[0] : '',
@@ -190,6 +194,8 @@ export default function Cadastro() {
           membro2Nome: d.membro2Nome || '',
           membro2Telefone: d.membro2Telefone || '',
           membro2Email: d.membro2Email || '',
+          membro2Igreja: d.membro2Igreja || d.igreja?.nome || '',
+          membro2Distrito: d.membro2Distrito || d.distrito?.nome || '',
           membro2Sexo: d.membro2Sexo || '',
           membro2DataNascimento: d.membro2DataNascimento ? new Date(d.membro2DataNascimento).toISOString().split('T')[0] : '',
           membro2DataBatismo: d.membro2DataBatismo ? new Date(d.membro2DataBatismo).toISOString().split('T')[0] : '',
@@ -219,8 +225,14 @@ export default function Cadastro() {
   useEffect(() => {
     if (form.distritoId) {
       api.get(`/distritos/${form.distritoId}`).then((r) => {
+        const nomeDistrito = r.data.nome || '';
         setIgrejas(r.data.igrejas || []);
-        setForm((prev) => ({ ...prev, regiaoNome: r.data.regiao?.nome || '' }));
+        setForm((prev) => ({
+          ...prev,
+          regiaoNome: r.data.regiao?.nome || '',
+          liderDistrito: prev.liderDistrito || nomeDistrito,
+          membro2Distrito: prev.membro2Distrito || nomeDistrito,
+        }));
       });
     } else {
       setIgrejas([]);
@@ -233,7 +245,9 @@ export default function Cadastro() {
       // Quando a igreja muda, atualiza automaticamente o liderIgreja
       if (campo === 'igrejaId') {
         const igrejaSelecionada = igrejas.find((ig) => String(ig.id) === String(valor));
-        novoForm.liderIgreja = igrejaSelecionada?.nome || '';
+        const nomeIgreja = igrejaSelecionada?.nome || '';
+        novoForm.liderIgreja = nomeIgreja;
+        novoForm.membro2Igreja = nomeIgreja;
       }
       return novoForm;
     });
@@ -413,6 +427,12 @@ export default function Cadastro() {
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="lider@email.com" value={form.liderEmail} onChange={(e) => set('liderEmail', e.target.value)} />
                 </Campo>
+                <Campo label="Igreja">
+                  <input type="text" className="input-field" placeholder="Igreja do membro 1" value={form.liderIgreja} onChange={(e) => set('liderIgreja', e.target.value)} />
+                </Campo>
+                <Campo label="Distrito">
+                  <input type="text" className="input-field" placeholder="Distrito do membro 1" value={form.liderDistrito} onChange={(e) => set('liderDistrito', e.target.value)} />
+                </Campo>
                 <Campo label="Sexo" icone="📋">
                   <select className="input-field" value={form.liderSexo} onChange={(e) => set('liderSexo', e.target.value)}>
                     <option value="">Não informado</option>
@@ -467,6 +487,12 @@ export default function Cadastro() {
                 </Campo>
                 <Campo label="E-mail" icone="✉️">
                   <input type="email" className="input-field" placeholder="parceiro@email.com" value={form.membro2Email} onChange={(e) => set('membro2Email', e.target.value)} />
+                </Campo>
+                <Campo label="Igreja">
+                  <input type="text" className="input-field" placeholder="Igreja do membro 2" value={form.membro2Igreja} onChange={(e) => set('membro2Igreja', e.target.value)} />
+                </Campo>
+                <Campo label="Distrito">
+                  <input type="text" className="input-field" placeholder="Distrito do membro 2" value={form.membro2Distrito} onChange={(e) => set('membro2Distrito', e.target.value)} />
                 </Campo>
                 <Campo label="Sexo" icone="📋">
                   <select className="input-field" value={form.membro2Sexo} onChange={(e) => set('membro2Sexo', e.target.value)}>

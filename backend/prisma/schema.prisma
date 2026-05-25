@@ -174,12 +174,15 @@ model Dupla {
   liderTelefone String?
   liderEmail   String?
   liderIgreja  String?
+  liderDistrito String?
 
   // Membro 2
   membro2Tipo     TipoMembro2
   membro2Nome     String
   membro2Telefone String?
   membro2Email    String?
+  membro2Igreja   String?
+  membro2Distrito String?
 
   // Acompanhamento
   estudoBiblico      String?

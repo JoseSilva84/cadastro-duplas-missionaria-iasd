@@ -59,6 +59,13 @@ const projetoIcon = {
 
 const statusColors = { ATIVA: '#16a34a', PENDENTE: '#C9963A', INATIVA: '#9ca3af' };
 const statusLabels = { ATIVA: 'Ativa', PENDENTE: 'Pendente', INATIVA: 'Inativa' };
+const statusAcompanhamentoLabels = {
+  ATIVO: 'Ativo',
+  INATIVO: 'Inativo',
+  EM_ANDAMENTO: 'Em andamento',
+  CONCLUIDO: 'Concluído',
+  PENDENTE: 'Pendente',
+};
 
 const classeConfig = {
   A: { label: 'Classe A', cor: '#1A3A6B', bg: '#1A3A6B14' },
@@ -73,6 +80,13 @@ const atividadeConfig = {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+
+const formatarData = (valor) => {
+  if (!valor) return null;
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return null;
+  return data.toLocaleDateString('pt-BR');
+};
 
 const getClassificacaoAtividadeText = (dupla) => {
   const classe = classeConfig[dupla?.classificacaoDupla]?.label || 'Sem classe';
@@ -616,7 +630,11 @@ export default function DuplasDireto() {
                         </div>
                         {duplaSelecionada.liderTelefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.liderTelefone} /></div>}
                         {duplaSelecionada.liderEmail && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.liderEmail}</p></div>}
-                        {duplaSelecionada.liderIgreja && <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja}</p></div>}
+                        <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.liderDistrito || duplaSelecionada.distrito?.nome || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Data de nascimento:</span><p className="text-gray-700">{formatarData(duplaSelecionada.liderDataNascimento) || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Endereço de correspondência:</span><p className="text-gray-700 break-words">{duplaSelecionada.liderEndereco || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Data de batismo:</span><p className="text-gray-700">{formatarData(duplaSelecionada.liderDataBatismo) || '—'}</p></div>
                       </div>
                     </div>
 
@@ -642,6 +660,11 @@ export default function DuplasDireto() {
                         </div>
                         {duplaSelecionada.membro2Telefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.membro2Telefone} /></div>}
                         {duplaSelecionada.membro2Email && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.membro2Email}</p></div>}
+                        <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.membro2Igreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.membro2Distrito || duplaSelecionada.distrito?.nome || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Data de nascimento:</span><p className="text-gray-700">{formatarData(duplaSelecionada.membro2DataNascimento) || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Endereço de correspondência:</span><p className="text-gray-700 break-words">{duplaSelecionada.membro2Endereco || '—'}</p></div>
+                        <div><span className="text-gray-400 text-xs">Data de batismo:</span><p className="text-gray-700">{formatarData(duplaSelecionada.membro2DataBatismo) || '—'}</p></div>
                       </div>
                     </div>
                   </div>
@@ -691,6 +714,24 @@ export default function DuplasDireto() {
                 </div>
 
                 {/* Card: Observações */}
+                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm md:col-span-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs font-bold text-[#1A3A6B]">AC</div>
+                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Acompanhamento</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
+                    <div><span className="text-gray-400 text-xs">Estudo bíblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status do evangelismo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudos bíblicos cadastrados:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Visitações registradas:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Pessoas alcançadas:</span><p className="text-gray-700 font-medium">{duplaSelecionada.pessoasAlcancadas ?? 0}</p></div>
+                    <div><span className="text-gray-400 text-xs">Batismos:</span><p className="text-gray-700 font-medium">{duplaSelecionada.batismos ?? 0}</p></div>
+                    <div><span className="text-gray-400 text-xs">Último acompanhamento:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.ultimoAcompanhamento) || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Início da dupla:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.dataInicio) || '—'}</p></div>
+                  </div>
+                </div>
+
                 {duplaSelecionada.observacoes && (
                   <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm md:col-span-2">
                     <div className="flex items-center gap-2 mb-4">
