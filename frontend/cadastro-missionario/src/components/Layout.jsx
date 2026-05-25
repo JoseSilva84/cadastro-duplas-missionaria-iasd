@@ -103,6 +103,7 @@ export default function Layout() {
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
           { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] },
       ]
     : [
@@ -122,6 +123,7 @@ export default function Layout() {
           { to: '/relatorios', label: 'Geral', icon: '📊' },
           { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] }] : []),
       ];
 

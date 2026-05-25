@@ -90,7 +90,7 @@ export default function Distritos() {
           <div className="flex items-center gap-4">
             <FotoConselheiro src={fotoConselheiro} nome={regiao.nomeConselheiro} />
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Pr. Departamental / Conselheiro</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Pastor Regional</p>
               <h2 className="text-lg font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
                 {regiao.nomeConselheiro || 'Nao informado'}
               </h2>

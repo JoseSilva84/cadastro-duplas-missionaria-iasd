@@ -129,11 +129,23 @@ model Igreja {
   distritoId Int
   membros    Int      @default(0)
   criadoEm  DateTime @default(now())
+  endereco   String?
+  fotoIgreja String? // base64 ou URL/referencia Firebase
+
+  // Diretor de Ministerio Pessoal
+  fotoDiretorMinisterioPessoal String? // base64 ou URL/referencia Firebase
+  nomeDiretorMinisterioPessoal String?
+  enderecoDiretorMinisterioPessoal String?
+  whatsappDiretorMinisterioPessoal String?
+  dataNascimentoDiretorMinisterioPessoal DateTime?
 
   // Coordenador de Interessados
   fotoCoordInteressados  String? // base64 ou URL
   nomeCoordInteressados  String?
   cargoCoordInteressados String? @default("Coordenador de Interessados")
+  telefoneCoordInteressados String?
+  enderecoCoordInteressados String?
+  dataNascimentoCoordInteressados DateTime?
 
   distrito Distrito @relation(fields: [distritoId], references: [id])
   duplas   Dupla[]
@@ -235,6 +247,7 @@ model EstudoBiblico {
   estado         String
   whatsapp       String
   diaEstudo      String
+  horarioEstudo  String?
   duplaId        Int
   serie          String
   licaoAtual     Int

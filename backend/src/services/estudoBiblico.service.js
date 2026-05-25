@@ -25,6 +25,7 @@ const normalizarEstudo = (data) => ({
   estado: data.estado,
   whatsapp: data.whatsapp,
   diaEstudo: data.diaEstudo,
+  horarioEstudo: data.horarioEstudo || null,
   duplaId: Number(data.duplaId),
   serie: data.serie,
   licaoAtual: Number(data.licaoAtual),

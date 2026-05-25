@@ -18,6 +18,7 @@ import RegistroSaida from './pages/RegistroSaida';
 import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
+import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
 import DashboardAssociacao from './pages/DashboardAssociacao';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
@@ -137,6 +138,7 @@ function AppRoutes() {
         />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
+        <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 
       {/* ============================================
@@ -169,6 +171,7 @@ function AppRoutes() {
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos />} />
+        <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 
       {/* Fallback */}

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import AvatarUpload from '../components/AvatarUpload';
+import { FotoService } from '../foto.service';
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
   <div className="group/campo">
@@ -46,18 +47,36 @@ const TIPOS = [
   },
   {
     value: 'coordenador',
-    label: 'Coordenador de Interessados',
-    descricao: 'Responsável por acompanhar os interessados de uma Igreja',
+    label: 'Coordenador Missionário',
+    descricao: 'Responsável pelo acompanhamento missionário de uma Igreja',
     icon: '👤',
     cor: '#C9963A',
     bg: '#C9963A18',
+  },
+  {
+    value: 'diretor_mp',
+    label: 'Diretor Ministério Pessoal',
+    descricao: 'Responsável pelo Ministério Pessoal de uma Igreja',
+    icon: 'MP',
+    cor: '#0d9488',
+    bg: '#0d948818',
+  },
+  {
+    value: 'igreja',
+    label: 'Dados da Igreja',
+    descricao: 'Foto, endereço e dados do templo local',
+    icon: '⛪',
+    cor: '#16a34a',
+    bg: '#16a34a18',
   },
 ];
 
 const CARGO_POR_TIPO = {
   regional: 'Pastor Regional',
   distrital: 'Pastor Distrital',
-  coordenador: 'Coordenador de Interessados',
+  coordenador: 'Coordenador Missionário',
+  diretor_mp: 'Diretor de Ministério Pessoal',
+  igreja: 'Igreja Local',
 };
 
 export default function CadastroPastores() {
@@ -69,6 +88,9 @@ export default function CadastroPastores() {
   const [foto, setFoto] = useState('');
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState(CARGO_POR_TIPO.regional);
+  const [endereco, setEndereco] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
   const [regiaoId, setRegiaoId] = useState('');
   const [distritoId, setDistritoId] = useState('');
   const [igrejaId, setIgrejaId] = useState('');
@@ -108,41 +130,69 @@ export default function CadastroPastores() {
     setCargo(CARGO_POR_TIPO[t]);
     setFoto('');
     setNome('');
+    setEndereco('');
+    setTelefone('');
+    setDataNascimento('');
   };
 
   const cargoAtual = CARGO_POR_TIPO[tipo];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nome.trim()) { toast.error('Informe o nome da liderança.'); return; }
+    if (tipo !== 'igreja' && !nome.trim()) { toast.error('Informe o nome da liderança.'); return; }
     if (tipo === 'regional' && !regiaoId) { toast.error('Selecione a Região.'); return; }
     if (tipo === 'distrital' && !distritoId) { toast.error('Selecione o Distrito.'); return; }
     if (tipo === 'coordenador' && (!distritoId || !igrejaId)) { toast.error('Selecione Distrito e Igreja.'); return; }
+    if ((tipo === 'diretor_mp' || tipo === 'igreja') && (!distritoId || !igrejaId)) { toast.error('Selecione Distrito e Igreja.'); return; }
 
     setEnviando(true);
     try {
       if (tipo === 'regional') {
+        const fotoRef = await FotoService.salvarFotoPorReferencia('regiao', regiaoId, 'conselheiro', foto);
         await api.patch(`/regioes/${regiaoId}`, {
-          fotoConselheiro: foto || null,
+          fotoConselheiro: fotoRef || null,
           nomeConselheiro: nome,
           cargoConselheiro: cargoAtual,
         });
       } else if (tipo === 'distrital') {
+        const fotoRef = await FotoService.salvarFotoPorReferencia('distrito', distritoId, 'pastor', foto);
         await api.patch(`/distritos/${distritoId}`, {
-          fotoPastor: foto || null,
+          fotoPastor: fotoRef || null,
           nomePastor: nome,
           cargoPastor: cargoAtual,
         });
-      } else {
+      } else if (tipo === 'coordenador') {
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'coordenador', foto);
         await api.patch(`/igrejas/${igrejaId}`, {
-          fotoCoordInteressados: foto || null,
+          fotoCoordInteressados: fotoRef || null,
           nomeCoordInteressados: nome,
           cargoCoordInteressados: cargoAtual,
+          telefoneCoordInteressados: telefone || null,
+          enderecoCoordInteressados: endereco || null,
+          dataNascimentoCoordInteressados: dataNascimento || null,
+        });
+      } else if (tipo === 'diretor_mp') {
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'diretor_mp', foto);
+        await api.patch(`/igrejas/${igrejaId}`, {
+          fotoDiretorMinisterioPessoal: fotoRef || null,
+          nomeDiretorMinisterioPessoal: nome,
+          enderecoDiretorMinisterioPessoal: endereco || null,
+          whatsappDiretorMinisterioPessoal: telefone || null,
+          dataNascimentoDiretorMinisterioPessoal: dataNascimento || null,
+        });
+      } else {
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'templo', foto);
+        await api.patch(`/igrejas/${igrejaId}`, {
+          fotoIgreja: fotoRef || null,
+          endereco: endereco || null,
         });
       }
-      toast.success('Liderança cadastrada com sucesso!');
+      toast.success(tipo === 'igreja' ? 'Dados da igreja salvos com sucesso!' : 'Liderança cadastrada com sucesso!');
       setFoto('');
       setNome('');
+      setEndereco('');
+      setTelefone('');
+      setDataNascimento('');
       setCargo(cargoAtual);
       setRegiaoId('');
       setDistritoId('');
@@ -219,27 +269,53 @@ export default function CadastroPastores() {
                 </div>
                 {/* Campos */}
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <Campo label="Nome Completo" obrigatorio icone="👤">
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder={`Nome do ${tipoSelecionado?.label}`}
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        required
-                      />
-                    </Campo>
-                  </div>
-                  <Campo label="Cargo / Função" icone="🏷️">
-                    <input
-                      type="text"
-                      className="input-field bg-gray-50 text-[#1A3A6B] font-semibold cursor-not-allowed"
-                      value={cargo}
-                      readOnly
-                      aria-readonly="true"
-                    />
-                  </Campo>
+                  {tipo !== 'igreja' && (
+                    <>
+                      <div className="sm:col-span-2">
+                        <Campo label="Nome Completo" obrigatorio icone="👤">
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder={`Nome do ${tipoSelecionado?.label}`}
+                            value={nome}
+                            onChange={(e) => setNome(e.target.value)}
+                            required
+                          />
+                        </Campo>
+                      </div>
+                      <Campo label="Cargo / Função" icone="🏷️">
+                        <input
+                          type="text"
+                          className="input-field bg-gray-50 text-[#1A3A6B] font-semibold cursor-not-allowed"
+                          value={cargo}
+                          readOnly
+                          aria-readonly="true"
+                        />
+                      </Campo>
+                    </>
+                  )}
+                  {(tipo === 'coordenador' || tipo === 'diretor_mp') && (
+                    <>
+                      <Campo label="WhatsApp" icone="☎">
+                        <input type="text" className="input-field" placeholder="(11) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                      </Campo>
+                      <div className="sm:col-span-2">
+                        <Campo label="Endereço" icone="⌂">
+                          <input type="text" className="input-field" placeholder="Endereço residencial" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+                        </Campo>
+                      </div>
+                      <Campo label="Data de nascimento" icone="📅">
+                        <input type="date" className="input-field" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+                      </Campo>
+                    </>
+                  )}
+                  {tipo === 'igreja' && (
+                    <div className="sm:col-span-2">
+                      <Campo label="Endereço da Igreja" icone="⌂">
+                        <input type="text" className="input-field" placeholder="Endereço do templo" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+                      </Campo>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -254,7 +330,7 @@ export default function CadastroPastores() {
                     ? 'Selecione a Região que esta liderança pastoral'
                     : tipo === 'distrital'
                     ? 'Selecione o Distrito que este pastor serve'
-                    : 'Selecione o Distrito e a Igreja onde o coordenador atua'
+                    : 'Selecione o Distrito e a Igreja'
                 }
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -273,8 +349,8 @@ export default function CadastroPastores() {
                   </select>
                 </Campo>
 
-                {/* Distrito — visível para distrital e coordenador */}
-                {(tipo === 'distrital' || tipo === 'coordenador') && (
+                {/* Distrito — visível para itens distritais/locais */}
+                {(tipo === 'distrital' || tipo === 'coordenador' || tipo === 'diretor_mp' || tipo === 'igreja') && (
                   <Campo label="Distrito" obrigatorio icone="⛪">
                     <select
                       className="input-field"
@@ -291,8 +367,8 @@ export default function CadastroPastores() {
                   </Campo>
                 )}
 
-                {/* Igreja — visível apenas para coordenador */}
-                {tipo === 'coordenador' && (
+                {/* Igreja — visível para dados locais */}
+                {(tipo === 'coordenador' || tipo === 'diretor_mp' || tipo === 'igreja') && (
                   <Campo label="Igreja" obrigatorio icone="🏠">
                     <select
                       className="input-field"

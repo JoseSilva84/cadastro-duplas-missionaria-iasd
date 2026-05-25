@@ -51,9 +51,27 @@ const IgrejaService = {
     if (data.nome !== undefined)                    campos.nome = data.nome;
     if (data.membros !== undefined)                 campos.membros = Number(data.membros);
     if (data.distritoId !== undefined)              campos.distritoId = Number(data.distritoId);
+    if (data.endereco !== undefined)                 campos.endereco = data.endereco;
+    if (data.fotoIgreja !== undefined)               campos.fotoIgreja = data.fotoIgreja;
+    if (data.fotoDiretorMinisterioPessoal !== undefined)     campos.fotoDiretorMinisterioPessoal = data.fotoDiretorMinisterioPessoal;
+    if (data.nomeDiretorMinisterioPessoal !== undefined)     campos.nomeDiretorMinisterioPessoal = data.nomeDiretorMinisterioPessoal;
+    if (data.enderecoDiretorMinisterioPessoal !== undefined) campos.enderecoDiretorMinisterioPessoal = data.enderecoDiretorMinisterioPessoal;
+    if (data.whatsappDiretorMinisterioPessoal !== undefined) campos.whatsappDiretorMinisterioPessoal = data.whatsappDiretorMinisterioPessoal;
+    if (data.dataNascimentoDiretorMinisterioPessoal !== undefined) {
+      campos.dataNascimentoDiretorMinisterioPessoal = data.dataNascimentoDiretorMinisterioPessoal
+        ? new Date(data.dataNascimentoDiretorMinisterioPessoal)
+        : null;
+    }
     if (data.fotoCoordInteressados !== undefined)   campos.fotoCoordInteressados = data.fotoCoordInteressados;
     if (data.nomeCoordInteressados !== undefined)   campos.nomeCoordInteressados = data.nomeCoordInteressados;
     if (data.cargoCoordInteressados !== undefined)  campos.cargoCoordInteressados = data.cargoCoordInteressados;
+    if (data.telefoneCoordInteressados !== undefined) campos.telefoneCoordInteressados = data.telefoneCoordInteressados;
+    if (data.enderecoCoordInteressados !== undefined) campos.enderecoCoordInteressados = data.enderecoCoordInteressados;
+    if (data.dataNascimentoCoordInteressados !== undefined) {
+      campos.dataNascimentoCoordInteressados = data.dataNascimentoCoordInteressados
+        ? new Date(data.dataNascimentoCoordInteressados)
+        : null;
+    }
     return IgrejaModel.update(id, campos);
   },
 };

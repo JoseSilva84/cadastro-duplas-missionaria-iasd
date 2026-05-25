@@ -8,6 +8,7 @@ const validarEstudoBiblico = [
   body('estado').isLength({ min: 2, max: 2 }).withMessage('Estado obrigatório.'),
   body('whatsapp').notEmpty().withMessage('WhatsApp obrigatório.'),
   body('diaEstudo').notEmpty().withMessage('Dia do estudo obrigatório.'),
+  body('horarioEstudo').optional().isString(),
   body('duplaId').isInt().withMessage('Dupla obrigatória.'),
   body('serie').notEmpty().withMessage('Série obrigatória.'),
   body('licaoAtual').isInt({ min: 1 }).withMessage('Lição atual obrigatória.'),
@@ -34,11 +35,8 @@ const validarEstudoBiblico = [
       if (!participante.nome) {
         throw new Error(`Nome do participante ${index + 1} obrigatório.`);
       }
-      if (!['A', 'B', 'C'].includes(participante.classificacaoInteressado)) {
+      if (participante.classificacaoInteressado && !['A', 'B', 'C'].includes(participante.classificacaoInteressado)) {
         throw new Error(`Classificação do participante ${index + 1} inválida.`);
-      }
-      if (['B', 'C'].includes(participante.classificacaoInteressado) && !participante.motivoImpedimento) {
-        throw new Error(`Motivo da classificação do participante ${index + 1} obrigatório.`);
       }
     });
     return true;

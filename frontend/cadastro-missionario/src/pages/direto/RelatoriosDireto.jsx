@@ -186,6 +186,31 @@ export default function RelatoriosDireto() {
                   ))}
                 </div>
 
+                {resumo?.classesBiblicas && (
+                  <div className="w-[380px] flex-shrink-0 space-y-3">
+                    <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Classe Bíblica</h2>
+                    {['A', 'B', 'C'].map((classe) => (
+                      <div key={classe} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-bold text-[#1A3A6B]">Estudos Classe {classe}</p>
+                          <span className="text-xl font-bold text-[#C9963A]">{resumo.classesBiblicas[classe]?.total || 0}</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                          {(resumo.classesBiblicas[classe]?.igrejas || []).map((igreja) => (
+                            <div key={igreja.id || igreja.nome} className="flex items-center justify-between gap-3 text-xs">
+                              <span className="text-gray-600 truncate">{igreja.nome}</span>
+                              <span className="font-bold text-[#1A3A6B]">{igreja.total}</span>
+                            </div>
+                          ))}
+                          {(resumo.classesBiblicas[classe]?.igrejas || []).length === 0 && (
+                            <p className="text-xs text-gray-400">Nenhuma igreja nesta classe.</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Painel: Distribuição por Projetos */}
                 {resumo?.porProjeto?.length > 0 && (
                   <div className="w-[300px] flex-shrink-0 space-y-3">

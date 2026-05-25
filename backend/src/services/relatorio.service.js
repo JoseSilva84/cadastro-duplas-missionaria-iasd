@@ -21,6 +21,14 @@ const RelatorioService = {
     return resultado;
   },
 
+  async porIgreja(igrejaId) {
+    const resultado = await RelatorioModel.porIgreja(igrejaId);
+    if (!resultado) {
+      throw { status: 404, mensagem: 'Igreja nao encontrada.' };
+    }
+    return resultado;
+  },
+
   async estudosBiblicos(query) {
     return RelatorioModel.estudosBiblicos(query);
   },

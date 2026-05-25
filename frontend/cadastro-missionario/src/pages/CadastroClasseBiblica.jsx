@@ -10,8 +10,6 @@ const criarParticipante = (ordem) => ({
   whatsapp: '',
   sexo: '',
   endereco: '',
-  classificacaoInteressado: '',
-  motivoImpedimento: '',
 });
 
 const estadoInicial = {
@@ -20,16 +18,11 @@ const estadoInicial = {
   cidade: '',
   estado: 'SP',
   diaEstudo: '',
+  horarioEstudo: '',
   duplaId: '',
   serie: '',
   licaoAtual: '',
 };
-
-const classificacoes = [
-  { value: 'A', label: 'A', desc: 'Pronto para o batismo', cor: '#16a34a', bg: '#dcfce7' },
-  { value: 'B', label: 'B', desc: 'Quer, mas tem impedimento', cor: '#b45309', bg: '#fef3c7' },
-  { value: 'C', label: 'C', desc: 'Não está pronto', cor: '#dc2626', bg: '#fee2e2' },
-];
 
 const Campo = ({ label, children, obrigatorio }) => (
   <label className="block">
@@ -78,17 +71,11 @@ export default function CadastroClasseBiblica() {
   };
 
   const setParticipante = (index, campo, valor) => {
-    setParticipantes((prev) => prev.map((item, i) => {
-      if (i !== index) return item;
-      const novo = {
-        ...item,
-        [campo]: campo === 'whatsapp' ? formatarWhatsApp(valor) : valor,
-      };
-      if (campo === 'classificacaoInteressado' && valor === 'A') {
-        novo.motivoImpedimento = '';
-      }
-      return novo;
-    }));
+    setParticipantes((prev) => prev.map((item, i) => (
+      i === index
+        ? { ...item, [campo]: campo === 'whatsapp' ? formatarWhatsApp(valor) : valor }
+        : item
+    )));
   };
 
   const adicionarParticipante = () => {
@@ -105,19 +92,7 @@ export default function CadastroClasseBiblica() {
   const validarParticipantes = () => {
     const preenchidos = participantes.filter((p) => p.nome.trim());
     if (preenchidos.length === 0) {
-      toast.error('Informe pelo menos um participante da classe bíblica.');
-      return null;
-    }
-
-    const incompletos = preenchidos.filter((p) => !p.classificacaoInteressado);
-    if (incompletos.length > 0) {
-      toast.error('Classifique todos os participantes preenchidos como A, B ou C.');
-      return null;
-    }
-
-    const semMotivo = preenchidos.filter((p) => ['B', 'C'].includes(p.classificacaoInteressado) && !p.motivoImpedimento.trim());
-    if (semMotivo.length > 0) {
-      toast.error('Participantes B ou C precisam ter o motivo informado.');
+      toast.error('Informe pelo menos um estudante da classe bíblica.');
       return null;
     }
 
@@ -126,8 +101,6 @@ export default function CadastroClasseBiblica() {
       whatsapp: p.whatsapp.replace(/\D/g, '') || null,
       sexo: p.sexo || null,
       endereco: p.endereco.trim() || null,
-      classificacaoInteressado: p.classificacaoInteressado,
-      motivoImpedimento: p.motivoImpedimento.trim() || null,
     }));
   };
 
@@ -145,6 +118,7 @@ export default function CadastroClasseBiblica() {
         estado: form.estado,
         whatsapp: participantesValidos[0]?.whatsapp || '00000000000',
         diaEstudo: form.diaEstudo,
+        horarioEstudo: form.horarioEstudo,
         duplaId: form.duplaId,
         serie: form.serie,
         licaoAtual: form.licaoAtual,
@@ -174,7 +148,7 @@ export default function CadastroClasseBiblica() {
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Classe Bíblica
         </h1>
-        <p className="text-gray-400 text-sm mt-1">Registre a classe, a série de estudos e até 10 participantes.</p>
+        <p className="text-gray-400 text-sm mt-1">Registre a classe, horário, série de estudos e até 10 estudantes.</p>
       </div>
 
       <form onSubmit={handleSubmit} className={isDireto ? 'flex-1 flex flex-col min-h-0' : 'space-y-6'}>
@@ -210,6 +184,9 @@ export default function CadastroClasseBiblica() {
                     {DIAS_SEMANA.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
                   </select>
                 </Campo>
+                <Campo label="Horário da Classe" obrigatorio>
+                  <input type="time" className="input-field" value={form.horarioEstudo} onChange={(e) => set('horarioEstudo', e.target.value)} required />
+                </Campo>
               </div>
             </Secao>
 
@@ -232,19 +209,19 @@ export default function CadastroClasseBiblica() {
               </div>
             </Secao>
 
-            <Secao numero="3" titulo="Participantes">
+            <Secao numero="3" titulo="Estudantes">
               <div className="space-y-4">
                 {participantes.map((participante, index) => (
                   <div key={participante.ordem} className="rounded-lg border border-gray-100 bg-[#F4F5F7] p-4">
                     <div className="flex items-center justify-between gap-3 mb-4">
-                      <h3 className="text-sm font-bold text-[#1A3A6B]">Participante {index + 1}</h3>
+                      <h3 className="text-sm font-bold text-[#1A3A6B]">Estudante {index + 1}</h3>
                       {participantes.length > 1 && (
                         <button type="button" className="text-xs font-semibold text-red-500 hover:text-red-600" onClick={() => removerParticipante(index)}>
                           Remover
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                       <Campo label="Nome" obrigatorio={index === 0}>
                         <input className="input-field" value={participante.nome} onChange={(e) => setParticipante(index, 'nome', e.target.value)} required={index === 0} />
                       </Campo>
@@ -258,38 +235,19 @@ export default function CadastroClasseBiblica() {
                           <option value="MASCULINO">Masculino</option>
                         </select>
                       </Campo>
-                      <Campo label="Classificação" obrigatorio={Boolean(participante.nome.trim())}>
-                        <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)}>
-                          <option value="">A, B ou C</option>
-                          {classificacoes.map((item) => <option key={item.value} value={item.value}>{item.label} - {item.desc}</option>)}
-                        </select>
-                      </Campo>
                       <div className="md:col-span-2">
-                        <Campo label="Endereço do participante">
+                        <Campo label="Endereço do estudante">
                           <input className="input-field" value={participante.endereco} onChange={(e) => setParticipante(index, 'endereco', e.target.value)} />
                         </Campo>
                       </div>
-                      {['B', 'C'].includes(participante.classificacaoInteressado) && (
-                        <div className="md:col-span-2">
-                          <Campo label={`Motivo da Classe ${participante.classificacaoInteressado}`} obrigatorio>
-                            <input
-                              className="input-field"
-                              value={participante.motivoImpedimento}
-                              onChange={(e) => setParticipante(index, 'motivoImpedimento', e.target.value)}
-                              placeholder="Ex.: precisa se casar, dificuldade com sábado, ainda não decidiu..."
-                              required
-                            />
-                          </Campo>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs text-gray-400">{participantes.length}/10 participantes adicionados</p>
+                  <p className="text-xs text-gray-400">{participantes.length}/10 estudantes adicionados</p>
                   <button type="button" className="btn-outline text-sm px-4 py-2" onClick={adicionarParticipante} disabled={participantes.length >= 10}>
-                    Adicionar participante
+                    Adicionar estudante
                   </button>
                 </div>
               </div>

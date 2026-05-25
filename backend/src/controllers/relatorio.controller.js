@@ -33,6 +33,17 @@ const RelatorioController = {
     }
   },
 
+  // GET /api/relatorios/por-igreja/:igrejaId
+  async porIgreja(req, res) {
+    try {
+      const resultado = await RelatorioService.porIgreja(req.params.igrejaId);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao gerar relatorio da igreja.' });
+    }
+  },
+
   // GET /api/relatorios/estudos-biblicos
   async estudosBiblicos(req, res) {
     try {

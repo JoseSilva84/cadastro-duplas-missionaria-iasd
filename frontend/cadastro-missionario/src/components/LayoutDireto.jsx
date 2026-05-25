@@ -87,6 +87,7 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
     { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+    { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
   ];
 
   const navLinks = [

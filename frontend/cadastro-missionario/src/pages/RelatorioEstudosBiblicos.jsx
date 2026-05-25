@@ -4,7 +4,7 @@ import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 
 const baixarCsv = (linhas) => {
-  const cabecalho = ['Estudante', 'Cidade/Estado', 'WhatsApp', 'Serie', 'Licao Atual', 'Dupla', 'Dia do Estudo'];
+  const cabecalho = ['Estudante', 'Cidade/Estado', 'WhatsApp', 'Serie', 'Licao Atual', 'Dupla', 'Dia do Estudo', 'Horario'];
   const corpo = linhas.map((item) => [
     item.nomeEstudante,
     `${item.cidade}/${item.estado}`,
@@ -13,6 +13,7 @@ const baixarCsv = (linhas) => {
     getLicaoLabel(item.serie, item.licaoAtual),
     `${item.dupla?.liderNome || ''} + ${item.dupla?.membro2Nome || ''}`.trim(),
     item.diaEstudo,
+    item.horarioEstudo,
   ]);
 
   const csv = [cabecalho, ...corpo]
@@ -126,6 +127,7 @@ export default function RelatorioEstudosBiblicos() {
                     <th className="text-left px-4 py-3">Lição Atual</th>
                     <th className="text-left px-4 py-3">Dupla</th>
                     <th className="text-left px-4 py-3">Dia</th>
+                    <th className="text-left px-4 py-3">Horário</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -138,10 +140,11 @@ export default function RelatorioEstudosBiblicos() {
                       <td className="px-4 py-3 text-gray-600">{getLicaoLabel(estudo.serie, estudo.licaoAtual)}</td>
                       <td className="px-4 py-3 text-gray-600">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
                       <td className="px-4 py-3 text-gray-600">{estudo.diaEstudo}</td>
+                      <td className="px-4 py-3 text-gray-600">{estudo.horarioEstudo || '—'}</td>
                     </tr>
                   ))}
                   {resultado.estudos.length === 0 && (
-                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan="7">Nenhum estudo encontrado.</td></tr>
+                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan="8">Nenhum estudo encontrado.</td></tr>
                   )}
                 </tbody>
               </table>

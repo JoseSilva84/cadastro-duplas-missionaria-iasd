@@ -73,6 +73,14 @@ export const FotoService = {
     return criarReferencia(fotoId);
   },
 
+  async salvarFotoPorReferencia(prefixo, id, tipo, base64String) {
+    if (!isBase64Image(base64String)) return base64String || "";
+
+    const fotoId = `${prefixo}_${id}_${tipo}`;
+    await this.salvarFoto(fotoId, base64String);
+    return criarReferencia(fotoId);
+  },
+
   async obterFoto(fotoIdOuReferencia) {
     assertFirebaseConfig();
 

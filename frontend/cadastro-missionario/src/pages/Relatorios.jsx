@@ -82,6 +82,38 @@ export default function Relatorios() {
         </div>
       )}
 
+      {resumo?.classesBiblicas && (
+        <div className="card mb-6 animate-fade-in-up">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0d9488] to-[#14b8a6] flex items-center justify-center text-white text-sm shadow-sm">CB</div>
+            <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Classe Bíblica
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {['A', 'B', 'C'].map((classe) => (
+              <div key={classe} className="rounded-lg border border-gray-100 bg-[#F4F5F7] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-bold text-[#1A3A6B]">Estudos Classe {classe}</p>
+                  <span className="text-xl font-bold text-[#C9963A]">{resumo.classesBiblicas[classe]?.total || 0}</span>
+                </div>
+                <div className="space-y-2">
+                  {(resumo.classesBiblicas[classe]?.igrejas || []).slice(0, 8).map((igreja) => (
+                    <div key={igreja.id || igreja.nome} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-gray-600 truncate">{igreja.nome}</span>
+                      <span className="font-bold text-[#1A3A6B]">{igreja.total}</span>
+                    </div>
+                  ))}
+                  {(resumo.classesBiblicas[classe]?.igrejas || []).length === 0 && (
+                    <p className="text-sm text-gray-400">Nenhuma igreja nesta classe.</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabela por Região */}
       <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center gap-2 mb-5">

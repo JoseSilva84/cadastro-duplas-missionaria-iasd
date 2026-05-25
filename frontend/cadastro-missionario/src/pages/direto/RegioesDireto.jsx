@@ -238,7 +238,7 @@ export default function RegioesDireto() {
                   <div className="flex items-center gap-4">
                     <FotoConselheiro src={fotosConselheiro[regiaoSelecionada.id]} nome={regiaoSelecionada.nomeConselheiro} />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pr. Departamental / Conselheiro</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor regional</p>
                       <h3 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
                         {regiaoSelecionada.nomeConselheiro || 'Nao informado'}
                       </h3>

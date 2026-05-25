@@ -1,0 +1,10 @@
+ALTER TABLE "Igreja" ADD COLUMN "endereco" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "fotoIgreja" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "fotoDiretorMinisterioPessoal" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "nomeDiretorMinisterioPessoal" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "enderecoDiretorMinisterioPessoal" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "whatsappDiretorMinisterioPessoal" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "dataNascimentoDiretorMinisterioPessoal" TIMESTAMP(3);
+ALTER TABLE "Igreja" ADD COLUMN "telefoneCoordInteressados" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "enderecoCoordInteressados" TEXT;
+ALTER TABLE "Igreja" ADD COLUMN "dataNascimentoCoordInteressados" TIMESTAMP(3);
