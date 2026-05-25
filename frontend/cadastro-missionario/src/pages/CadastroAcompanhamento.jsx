@@ -52,6 +52,7 @@ const participanteVazio = () => ({
   sexo: '',
   endereco: '',
   classificacaoInteressado: '',
+  motivoImpedimento: '',
 });
 
 const estadoInicial = {
@@ -63,6 +64,7 @@ const estadoInicial = {
   whatsapp: '',
   sexo: '',
   classificacaoInteressado: '',
+  motivoImpedimento: '',
   vaIgreja: '',
   leBiblia: '',
   estudaLicao: '',
@@ -177,12 +179,20 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
       toast.error('Informe a classificação A, B ou C de cada estudante preenchido.');
       return null;
     }
+    const classeBSemMotivo = preenchidos.find((participante) => (
+      participante.classificacaoInteressado === 'B' && !participante.motivoImpedimento.trim()
+    ));
+    if (classeBSemMotivo) {
+      toast.error('Informe o motivo do impedimento para estudantes classificados como B.');
+      return null;
+    }
     return preenchidos.map((participante) => ({
       nome: participante.nome.trim(),
       whatsapp: participante.whatsapp.replace(/\D/g, '') || null,
       sexo: participante.sexo || null,
       endereco: participante.endereco.trim() || null,
       classificacaoInteressado: participante.classificacaoInteressado || null,
+      motivoImpedimento: participante.classificacaoInteressado === 'B' ? participante.motivoImpedimento.trim() : null,
     }));
   };
 
@@ -190,6 +200,10 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
     event.preventDefault();
     const participantesValidos = montarParticipantes();
     if (participantesValidos === null) return;
+    if (isEstudo && form.classificacaoInteressado === 'B' && !form.motivoImpedimento.trim()) {
+      toast.error('Informe o motivo do impedimento para a classe B.');
+      return;
+    }
 
     setEnviando(true);
     try {
@@ -265,11 +279,24 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                   <Campo label="Classificação do estudante" obrigatorio>
                     <select className="input-field" value={form.classificacaoInteressado} onChange={(e) => set('classificacaoInteressado', e.target.value)} required>
                       <option value="">Selecione</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
+                      <option value="A">A - Pronto para o batismo</option>
+                      <option value="B">B - Quer, mas tem impedimento</option>
+                      <option value="C">C - Nao esta pronto</option>
                     </select>
                   </Campo>
+                  {form.classificacaoInteressado === 'B' && (
+                    <div className="md:col-span-2">
+                      <Campo label="Motivo do impedimento" obrigatorio>
+                        <textarea
+                          className="input-field min-h-24 resize-y"
+                          value={form.motivoImpedimento}
+                          onChange={(e) => set('motivoImpedimento', e.target.value)}
+                          placeholder="Ex.: precisa se casar, parar de fumar, dificuldade com o sabado no trabalho..."
+                          required
+                        />
+                      </Campo>
+                    </div>
+                  )}
                 </>
               )}
               <Campo label={isPonto ? 'Endereço / Local do ponto' : 'Endereço'} obrigatorio>
@@ -365,11 +392,24 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                       <Campo label="Classificação A/B/C" obrigatorio={Boolean(participante.nome)}>
                         <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)} required={Boolean(participante.nome)}>
                           <option value="">Selecione</option>
-                          <option value="A">A</option>
-                          <option value="B">B</option>
-                          <option value="C">C</option>
+                          <option value="A">A - Pronto para o batismo</option>
+                          <option value="B">B - Quer, mas tem impedimento</option>
+                          <option value="C">C - Nao esta pronto</option>
                         </select>
                       </Campo>
+                      {participante.classificacaoInteressado === 'B' && (
+                        <div className="md:col-span-2 xl:col-span-3">
+                          <Campo label="Motivo do impedimento" obrigatorio>
+                            <textarea
+                              className="input-field min-h-20 resize-y"
+                              value={participante.motivoImpedimento}
+                              onChange={(e) => setParticipante(index, 'motivoImpedimento', e.target.value)}
+                              placeholder="Ex.: precisa se casar, parar de fumar, dificuldade com o sabado no trabalho..."
+                              required
+                            />
+                          </Campo>
+                        </div>
+                      )}
                       <div className="md:col-span-2">
                         <Campo label="Endereço">
                           <input className="input-field" value={participante.endereco} onChange={(e) => setParticipante(index, 'endereco', e.target.value)} />

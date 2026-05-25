@@ -17,6 +17,23 @@ const formatarBooleano = (valor) => {
   return 'Não informado';
 };
 
+const classeInfo = {
+  A: { label: 'A - Pronto para o batismo', dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  B: { label: 'B - Quer, mas tem impedimento', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  C: { label: 'C - Nao esta pronto', dot: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+};
+
+const ClassificacaoBadge = ({ classe, motivo }) => {
+  const info = classeInfo[classe];
+  if (!info) return <span className="text-sm text-gray-400">Sem classificacao</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${info.bg} ${info.text} ${info.border}`} title={motivo || info.label}>
+      <span className={`w-2 h-2 rounded-full ${info.dot}`} />
+      {info.label}
+    </span>
+  );
+};
+
 const Info = ({ label, valor }) => (
   <div className="rounded-lg bg-[#F4F5F7] px-4 py-3">
     <p className="text-xs text-gray-400">{label}</p>
@@ -31,6 +48,45 @@ const KanbanCard = ({ titulo, children }) => (
   </section>
 );
 
+const valorBooleano = (valor) => {
+  if (valor === 'true') return true;
+  if (valor === 'false') return false;
+  return '';
+};
+
+const booleanSelectValue = (valor) => {
+  if (valor === true) return 'true';
+  if (valor === false) return 'false';
+  return '';
+};
+
+const montarForm = (estudo) => ({
+  nomeEstudante: estudo?.nomeEstudante || '',
+  whatsapp: estudo?.whatsapp || '',
+  endereco: estudo?.endereco || '',
+  cidade: estudo?.cidade || '',
+  estado: estudo?.estado || '',
+  sexo: estudo?.sexo || '',
+  diaEstudo: estudo?.diaEstudo || '',
+  horarioEstudo: estudo?.horarioEstudo || '',
+  classificacaoInteressado: estudo?.classificacaoInteressado || '',
+  motivoImpedimento: estudo?.motivoImpedimento || '',
+  observacoes: estudo?.observacoes || '',
+  vaIgreja: estudo?.vaIgreja ?? '',
+  leBiblia: estudo?.leBiblia ?? '',
+  estudaLicao: estudo?.estudaLicao ?? '',
+  devolveDizimos: estudo?.devolveDizimos ?? '',
+  cultoFamiliar: estudo?.cultoFamiliar ?? '',
+  participantes: (estudo?.participantes || []).map((participante) => ({
+    nome: participante.nome || '',
+    whatsapp: participante.whatsapp || '',
+    sexo: participante.sexo || '',
+    endereco: participante.endereco || '',
+    classificacaoInteressado: participante.classificacaoInteressado || '',
+    motivoImpedimento: participante.motivoImpedimento || '',
+  })),
+});
+
 export default function EstudanteDashboard() {
   const { id } = useParams();
   const location = useLocation();
@@ -40,6 +96,9 @@ export default function EstudanteDashboard() {
   const [licaoAtual, setLicaoAtual] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [salvandoDados, setSalvandoDados] = useState(false);
+  const [form, setForm] = useState(montarForm(null));
 
   const isPonto = estudo?.tipoEstudo === 'PONTO';
   const licoes = useMemo(() => (
@@ -52,6 +111,7 @@ export default function EstudanteDashboard() {
       .then((res) => {
         setEstudo(res.data);
         setLicaoAtual(String(res.data.licaoAtual || ''));
+        setForm(montarForm(res.data));
       })
       .catch(() => toast.error('Erro ao carregar detalhes do estudo.'))
       .finally(() => setCarregando(false));
@@ -76,6 +136,7 @@ export default function EstudanteDashboard() {
         sexo: estudo.sexo || '',
         classificacaoInteressado: estudo.classificacaoInteressado || '',
         observacoes: estudo.observacoes || '',
+        motivoImpedimento: estudo.motivoImpedimento || '',
         participantes: estudo.participantes || undefined,
       };
       const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, payload);
@@ -87,6 +148,77 @@ export default function EstudanteDashboard() {
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao atualizar lição.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const alterarCampo = (campo, valor) => {
+    setForm((atual) => ({ ...atual, [campo]: valor }));
+  };
+
+  const alterarParticipante = (index, campo, valor) => {
+    setForm((atual) => ({
+      ...atual,
+      participantes: atual.participantes.map((participante, participanteIndex) => (
+        participanteIndex === index ? { ...participante, [campo]: valor } : participante
+      )),
+    }));
+  };
+
+  const montarPayload = (dadosForm = form, licao = licaoAtual) => ({
+    nomeEstudante: dadosForm.nomeEstudante,
+    endereco: dadosForm.endereco,
+    cidade: dadosForm.cidade,
+    estado: dadosForm.estado,
+    whatsapp: dadosForm.whatsapp || dadosForm.participantes?.[0]?.whatsapp || estudo.whatsapp,
+    diaEstudo: dadosForm.diaEstudo,
+    horarioEstudo: dadosForm.horarioEstudo || '',
+    duplaId: estudo.duplaId,
+    serie: estudo.serie,
+    licaoAtual: licao,
+    tipoEstudo: estudo.tipoEstudo,
+    sexo: dadosForm.sexo || '',
+    classificacaoInteressado: dadosForm.classificacaoInteressado || '',
+    motivoImpedimento: dadosForm.classificacaoInteressado === 'B' ? dadosForm.motivoImpedimento : '',
+    vaIgreja: dadosForm.vaIgreja === '' ? undefined : dadosForm.vaIgreja,
+    leBiblia: dadosForm.leBiblia === '' ? undefined : dadosForm.leBiblia,
+    estudaLicao: dadosForm.estudaLicao === '' ? undefined : dadosForm.estudaLicao,
+    devolveDizimos: dadosForm.devolveDizimos === '' ? undefined : dadosForm.devolveDizimos,
+    cultoFamiliar: dadosForm.cultoFamiliar === '' ? undefined : dadosForm.cultoFamiliar,
+    observacoes: dadosForm.observacoes || '',
+    participantes: estudo.tipoEstudo === 'PONTO' ? dadosForm.participantes.map((participante) => ({
+      ...participante,
+      motivoImpedimento: participante.classificacaoInteressado === 'B' ? participante.motivoImpedimento : '',
+    })) : undefined,
+  });
+
+  const salvarDados = async () => {
+    if (!estudo) return;
+    if (form.classificacaoInteressado === 'B' && !form.motivoImpedimento.trim()) {
+      toast.error('Informe o motivo do impedimento para estudante classe B.');
+      return;
+    }
+
+    const participanteSemMotivo = form.participantes.findIndex((participante) => (
+      participante.classificacaoInteressado === 'B' && !participante.motivoImpedimento.trim()
+    ));
+    if (participanteSemMotivo >= 0) {
+      toast.error(`Informe o motivo do impedimento do estudante ${participanteSemMotivo + 1}.`);
+      return;
+    }
+
+    setSalvandoDados(true);
+    try {
+      const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, montarPayload());
+      setEstudo(data);
+      setForm(montarForm(data));
+      setLicaoAtual(String(data.licaoAtual || ''));
+      setEditando(false);
+      toast.success('Dados do estudante atualizados.');
+    } catch (err) {
+      const erros = err.response?.data?.erros;
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao atualizar dados do estudante.');
+    } finally {
+      setSalvandoDados(false);
     }
   };
 
@@ -114,9 +246,19 @@ export default function EstudanteDashboard() {
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h1>
             <p className="text-gray-400 text-sm mt-1">{getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)}</p>
           </div>
-          <div className="w-full lg:w-72">
+          <div className="w-full lg:w-72 space-y-3">
             <div className="flex items-center justify-between text-sm mb-1"><span>Progresso geral</span><strong>{percentual}%</strong></div>
             <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${percentual}%` }} /></div>
+            <button
+              type="button"
+              className="w-full rounded-lg border border-[#1A3A6B] px-4 py-2 text-sm font-semibold text-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white transition-colors"
+              onClick={() => {
+                setForm(montarForm(estudo));
+                setEditando((valor) => !valor);
+              }}
+            >
+              {editando ? 'Fechar edicao' : 'Editar dados'}
+            </button>
           </div>
         </div>
       </div>
@@ -126,7 +268,14 @@ export default function EstudanteDashboard() {
           <div className="card"><p className="text-xs text-gray-400">Lição atual</p><p className="text-2xl font-bold text-[#1A3A6B]">{estudo.licaoAtual}</p></div>
           <div className="card"><p className="text-xs text-gray-400">Total da série</p><p className="text-2xl font-bold text-[#1A3A6B]">{totalLicoes(estudo.serie)}</p></div>
           <div className="card"><p className="text-xs text-gray-400">Progresso</p><p className="text-2xl font-bold text-[#C9963A]">{percentual}%</p></div>
-          <div className="card"><p className="text-xs text-gray-400">Classificação</p><p className="text-2xl font-bold text-emerald-600">{estudo.classificacaoInteressado || (isPonto ? `${estudo.participantes?.length || 0}` : '—')}</p></div>
+          <div className="card">
+            <p className="text-xs text-gray-400">{isPonto ? 'Estudantes' : 'Classificacao'}</p>
+            {isPonto ? (
+              <p className="text-2xl font-bold text-emerald-600">{estudo.participantes?.length || 0}</p>
+            ) : (
+              <div className="mt-2"><ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} /></div>
+            )}
+          </div>
         </div>
 
         <div className="card">
@@ -142,6 +291,167 @@ export default function EstudanteDashboard() {
             </button>
           </div>
         </div>
+
+        {editando && (
+          <div className="card">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Editar dados {isPonto ? 'do ponto de estudo' : 'do estudante'}</h2>
+                <p className="text-sm text-gray-400">Atualize cadastro, acompanhamento e decisao em um so lugar.</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-[#1A3A6B] px-4 py-2 text-sm font-semibold text-[#1A3A6B]"
+                  onClick={() => {
+                    setForm(montarForm(estudo));
+                    setEditando(false);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button type="button" className="btn-primary px-5 py-2" onClick={salvarDados} disabled={salvandoDados}>
+                  {salvandoDados ? 'Salvando...' : 'Salvar dados'}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">{isPonto ? 'Nome do ponto' : 'Nome do estudante'}</span>
+                <input className="input-field" value={form.nomeEstudante} onChange={(e) => alterarCampo('nomeEstudante', e.target.value)} />
+              </label>
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">WhatsApp</span>
+                <input className="input-field" value={form.whatsapp} onChange={(e) => alterarCampo('whatsapp', e.target.value)} />
+              </label>
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">Cidade</span>
+                <input className="input-field" value={form.cidade} onChange={(e) => alterarCampo('cidade', e.target.value)} />
+              </label>
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">Estado</span>
+                <input className="input-field uppercase" maxLength={2} value={form.estado} onChange={(e) => alterarCampo('estado', e.target.value.toUpperCase())} />
+              </label>
+              <label className="md:col-span-2">
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">Endereco</span>
+                <input className="input-field" value={form.endereco} onChange={(e) => alterarCampo('endereco', e.target.value)} />
+              </label>
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">Dia do estudo</span>
+                <input className="input-field" value={form.diaEstudo} onChange={(e) => alterarCampo('diaEstudo', e.target.value)} />
+              </label>
+              <label>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">Horario</span>
+                <input className="input-field" value={form.horarioEstudo} onChange={(e) => alterarCampo('horarioEstudo', e.target.value)} />
+              </label>
+
+              {!isPonto && (
+                <>
+                  <label>
+                    <span className="block text-sm font-medium text-gray-600 mb-1.5">Sexo</span>
+                    <select className="input-field" value={form.sexo} onChange={(e) => alterarCampo('sexo', e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="Feminino">Feminino</option>
+                      <option value="Masculino">Masculino</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="block text-sm font-medium text-gray-600 mb-1.5">Classificacao</span>
+                    <select className="input-field" value={form.classificacaoInteressado} onChange={(e) => alterarCampo('classificacaoInteressado', e.target.value)}>
+                      <option value="">Sem classificacao</option>
+                      <option value="A">A - Pronto para o batismo</option>
+                      <option value="B">B - Quer, mas tem impedimento</option>
+                      <option value="C">C - Nao esta pronto</option>
+                    </select>
+                  </label>
+                  {form.classificacaoInteressado === 'B' && (
+                    <label className="md:col-span-2">
+                      <span className="block text-sm font-medium text-gray-600 mb-1.5">Motivo do impedimento</span>
+                      <textarea className="input-field min-h-24" value={form.motivoImpedimento} onChange={(e) => alterarCampo('motivoImpedimento', e.target.value)} />
+                    </label>
+                  )}
+                </>
+              )}
+            </div>
+
+            {!isPonto && (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-5">
+                {[
+                  ['vaIgreja', 'Vai a igreja?'],
+                  ['leBiblia', 'Le a Biblia?'],
+                  ['estudaLicao', 'Estuda a licao?'],
+                  ['devolveDizimos', 'Devolve dizimos?'],
+                  ['cultoFamiliar', 'Culto familiar?'],
+                ].map(([campo, label]) => (
+                  <label key={campo}>
+                    <span className="block text-sm font-medium text-gray-600 mb-1.5">{label}</span>
+                    <select className="input-field" value={booleanSelectValue(form[campo])} onChange={(e) => alterarCampo(campo, valorBooleano(e.target.value))}>
+                      <option value="">Nao informado</option>
+                      <option value="true">Sim</option>
+                      <option value="false">Nao</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {isPonto && (
+              <div className="mt-6">
+                <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">Estudantes do ponto</h3>
+                <div className="space-y-4">
+                  {form.participantes.map((participante, index) => (
+                    <div key={`${participante.nome}-${index}`} className="rounded-xl bg-[#F4F5F7] p-4">
+                      <p className="font-bold text-[#1A3A6B] mb-3">Estudante {index + 1}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                        <label>
+                          <span className="block text-sm font-medium text-gray-600 mb-1.5">Nome</span>
+                          <input className="input-field" value={participante.nome} onChange={(e) => alterarParticipante(index, 'nome', e.target.value)} />
+                        </label>
+                        <label>
+                          <span className="block text-sm font-medium text-gray-600 mb-1.5">WhatsApp</span>
+                          <input className="input-field" value={participante.whatsapp} onChange={(e) => alterarParticipante(index, 'whatsapp', e.target.value)} />
+                        </label>
+                        <label>
+                          <span className="block text-sm font-medium text-gray-600 mb-1.5">Sexo</span>
+                          <select className="input-field" value={participante.sexo} onChange={(e) => alterarParticipante(index, 'sexo', e.target.value)}>
+                            <option value="">Selecione</option>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Masculino">Masculino</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span className="block text-sm font-medium text-gray-600 mb-1.5">Classificacao</span>
+                          <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => alterarParticipante(index, 'classificacaoInteressado', e.target.value)}>
+                            <option value="">Sem classificacao</option>
+                            <option value="A">A - Pronto para o batismo</option>
+                            <option value="B">B - Quer, mas tem impedimento</option>
+                            <option value="C">C - Nao esta pronto</option>
+                          </select>
+                        </label>
+                        <label className="md:col-span-2">
+                          <span className="block text-sm font-medium text-gray-600 mb-1.5">Endereco</span>
+                          <input className="input-field" value={participante.endereco} onChange={(e) => alterarParticipante(index, 'endereco', e.target.value)} />
+                        </label>
+                        {participante.classificacaoInteressado === 'B' && (
+                          <label className="md:col-span-2">
+                            <span className="block text-sm font-medium text-gray-600 mb-1.5">Motivo do impedimento</span>
+                            <textarea className="input-field min-h-24" value={participante.motivoImpedimento} onChange={(e) => alterarParticipante(index, 'motivoImpedimento', e.target.value)} />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <label className="block mt-5">
+              <span className="block text-sm font-medium text-gray-600 mb-1.5">Observacoes</span>
+              <textarea className="input-field min-h-24" value={form.observacoes} onChange={(e) => alterarCampo('observacoes', e.target.value)} />
+            </label>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <KanbanCard titulo="Cadastro">
@@ -168,12 +478,24 @@ export default function EstudanteDashboard() {
           <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : 'Decisão'}>
             {isPonto ? (
               estudo.participantes?.map((participante) => (
-                <Info key={participante.id} label={`Classe ${participante.classificacaoInteressado || '-'}`} valor={participante.nome} />
+                <div key={participante.id} className="rounded-lg bg-[#F4F5F7] px-4 py-3">
+                  <p className="text-xs text-gray-400 mb-1">{participante.nome}</p>
+                  <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} />
+                  {participante.classificacaoInteressado === 'B' && participante.motivoImpedimento && (
+                    <p className="text-xs text-amber-700 mt-2">Motivo: {participante.motivoImpedimento}</p>
+                  )}
+                </div>
               ))
             ) : (
               <>
-                <Info label="Classificação" valor={estudo.classificacaoInteressado} />
-                <Info label="Motivo / observação" valor={estudo.motivoImpedimento || estudo.observacoes} />
+                <div className="rounded-lg bg-[#F4F5F7] px-4 py-3">
+                  <p className="text-xs text-gray-400 mb-1">Classificacao</p>
+                  <ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} />
+                </div>
+                {estudo.classificacaoInteressado === 'B' && (
+                  <Info label="Motivo do impedimento" valor={estudo.motivoImpedimento} />
+                )}
+                <Info label="Observacao" valor={estudo.observacoes} />
               </>
             )}
           </KanbanCard>

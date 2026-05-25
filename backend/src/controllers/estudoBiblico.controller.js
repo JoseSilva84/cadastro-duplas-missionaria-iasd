@@ -16,6 +16,12 @@ const validarEstudoBiblico = [
   body('sexo').optional({ checkFalsy: true }).isString(),
   body('classificacaoInteressado').optional({ checkFalsy: true }).isIn(['A', 'B', 'C']).withMessage('Classificacao invalida.'),
   body('motivoImpedimento').optional({ checkFalsy: true }).isString(),
+  body('motivoImpedimento').custom((motivo, { req }) => {
+    if (req.body.classificacaoInteressado === 'B' && !String(motivo || '').trim()) {
+      throw new Error('Motivo do impedimento obrigatorio para estudantes classe B.');
+    }
+    return true;
+  }),
   body('vaIgreja').optional({ checkFalsy: true }).isBoolean(),
   body('leBiblia').optional({ checkFalsy: true }).isBoolean(),
   body('estudaLicao').optional({ checkFalsy: true }).isBoolean(),
@@ -42,6 +48,9 @@ const validarEstudoBiblico = [
       }
       if (participante.classificacaoInteressado && !['A', 'B', 'C'].includes(participante.classificacaoInteressado)) {
         throw new Error(`Classificacao do estudante ${index + 1} invalida.`);
+      }
+      if (participante.classificacaoInteressado === 'B' && !String(participante.motivoImpedimento || '').trim()) {
+        throw new Error(`Motivo do impedimento do estudante ${index + 1} obrigatorio.`);
       }
     });
     return true;

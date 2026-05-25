@@ -17,6 +17,23 @@ const participantesResumo = (estudo) => (
     : estudo.nomeEstudante
 );
 
+const classeInfo = {
+  A: { label: 'A - Pronto para o batismo', curto: 'A', dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  B: { label: 'B - Quer, mas tem impedimento', curto: 'B', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  C: { label: 'C - Nao esta pronto', curto: 'C', dot: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+};
+
+const ClassificacaoBadge = ({ classe, motivo, compacto = false }) => {
+  const info = classeInfo[classe];
+  if (!info) return <span className="text-xs text-gray-400">Sem classificacao</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${compacto ? 'px-2 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'} ${info.bg} ${info.text} ${info.border}`} title={motivo || info.label}>
+      <span className={`w-2 h-2 rounded-full ${info.dot}`} />
+      {compacto ? info.curto : info.label}
+    </span>
+  );
+};
+
 const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   const linhas = estudos.map((item) => `
     <tr>
@@ -24,6 +41,7 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
       <td>${item.cidade || ''}/${item.estado || ''}</td>
       <td>${getSerieNome(item.serie)}</td>
       <td>${getLicaoLabel(item.serie, item.licaoAtual)}</td>
+      <td>${tipoRelatorio === 'PONTO' ? (item.participantes || []).map((p) => `${p.nome}: ${p.classificacaoInteressado || '-'}`).join(', ') : (classeInfo[item.classificacaoInteressado]?.label || '-')}</td>
       <td>${progresso(item)}%</td>
       <td>${item.dupla?.liderNome || ''} + ${item.dupla?.membro2Nome || ''}</td>
       <td>${item.diaEstudo || ''}</td>
@@ -49,7 +67,7 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
         <h1>${titulo}</h1>
         <p>${estudos.length} registro(s) exportado(s)</p>
         <table>
-          <thead><tr><th>Nome</th><th>Cidade/UF</th><th>Série</th><th>Lição</th><th>Progresso</th><th>Dupla</th><th>Dia</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Cidade/UF</th><th>Série</th><th>Lição</th><th>Classificação</th><th>Progresso</th><th>Dupla</th><th>Dia</th></tr></thead>
           <tbody>${linhas || '<tr><td colspan="7">Nenhum registro encontrado.</td></tr>'}</tbody>
         </table>
       </body>
@@ -133,6 +151,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       sexo: estudo.sexo || '',
       classificacaoInteressado: estudo.classificacaoInteressado || '',
       observacoes: estudo.observacoes || '',
+      motivoImpedimento: estudo.motivoImpedimento || '',
       participantes: estudo.participantes || undefined,
     });
     toast.success('Lição atualizada.');
@@ -220,10 +239,21 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             {isPonto && selecionado.participantes?.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {selecionado.participantes.map((participante) => (
-                  <span key={participante.id} className="px-3 py-1 rounded-full bg-[#1A3A6B]/10 text-[#1A3A6B] text-xs font-semibold">
-                    {participante.nome} · Classe {participante.classificacaoInteressado || '-'}
+                  <span key={participante.id} className="inline-flex items-center gap-2 rounded-full bg-[#1A3A6B]/5 px-2 py-1">
+                    <span className="text-xs font-semibold text-[#1A3A6B]">{participante.nome}</span>
+                    <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
                   </span>
                 ))}
+              </div>
+            )}
+            {!isPonto && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <ClassificacaoBadge classe={selecionado.classificacaoInteressado} motivo={selecionado.motivoImpedimento} />
+                {selecionado.classificacaoInteressado === 'B' && selecionado.motivoImpedimento && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+                    Motivo: {selecionado.motivoImpedimento}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -241,6 +271,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     <th className="text-left px-4 py-3">Cidade/Estado</th>
                     <th className="text-left px-4 py-3">Série</th>
                     <th className="text-left px-4 py-3">Lição Atual</th>
+                    <th className="text-left px-4 py-3">Classificação</th>
                     <th className="text-left px-4 py-3">Progresso</th>
                     <th className="text-left px-4 py-3">Dupla</th>
                     <th className="text-left px-4 py-3">Ação</th>
@@ -260,6 +291,17 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           </select>
                         </td>
                         <td className="px-4 py-3 text-gray-600">
+                          {isPonto ? (
+                            <div className="flex flex-wrap gap-1">
+                              {(estudo.participantes || []).map((participante) => (
+                                <ClassificacaoBadge key={participante.id} classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
+                              ))}
+                            </div>
+                          ) : (
+                            <ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} compacto />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
                           <div className="min-w-28"><div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(estudo)}%` }} /></div><span className="text-xs">{progresso(estudo)}%</span></div>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
@@ -273,7 +315,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     );
                   })}
                   {resultado.estudos.length === 0 && (
-                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan="7">Nenhum registro encontrado.</td></tr>
+                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan="8">Nenhum registro encontrado.</td></tr>
                   )}
                 </tbody>
               </table>
