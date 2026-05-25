@@ -174,11 +174,11 @@ export default function ListagemDistritosDireto() {
             </div>
 
             {/* Conteúdo do detail — scroll horizontal */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
-              <div className="flex gap-4 min-w-0">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(280px,360px)_minmax(260px,1fr)_minmax(260px,1fr)] gap-4 max-w-6xl">
 
                 {/* Card: Estatísticas */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs">📊</div>
@@ -193,7 +193,7 @@ export default function ListagemDistritosDireto() {
                 </div>
 
                 {/* Card: Acompanhamento Missionário */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-[#0ea5e9]/10 flex items-center justify-center text-xs">📈</div>
@@ -208,7 +208,7 @@ export default function ListagemDistritosDireto() {
                 </div>
 
                 {/* Card: Ações Rápidas */}
-                <div className="flex-shrink-0 w-72 bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs">⚡</div>
@@ -243,16 +243,16 @@ export default function ListagemDistritosDireto() {
 
                 {/* Card: Igrejas do Distrito */}
                 {(distritoSelecionado.igrejas || []).length > 0 && (
-                  <div className="flex-shrink-0 w-80 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                  <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm xl:col-start-1 xl:row-start-2">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs">⛪</div>
                       <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Igrejas</h4>
                     </div>
                     <div className="space-y-2">
                       {distritoSelecionado.igrejas.map((ig) => (
-                        <div key={ig.id} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 last:border-0">
-                          <span className="text-gray-700 font-medium truncate">{ig.nome}</span>
-                          <span className="text-gray-400 ml-2 flex-shrink-0">{(ig.membros || 0).toLocaleString('pt-BR')} membros</span>
+                        <div key={ig.id} className="text-xs py-1.5 border-b border-gray-50 last:border-0">
+                          <p className="text-gray-700 font-medium break-words">{ig.nome}</p>
+                          <p className="text-gray-400 mt-0.5">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
                         </div>
                       ))}
                     </div>
