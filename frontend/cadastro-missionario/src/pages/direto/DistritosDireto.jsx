@@ -201,7 +201,12 @@ export default function DistritosDireto() {
             {igrejas.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {igrejas.map((ig) => (
-                  <div key={ig.id} className="rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-2">
+                  <button
+                    type="button"
+                    key={ig.id}
+                    onClick={() => navigate(`/direto/igrejas/${ig.id}`)}
+                    className="w-full text-left rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-2 transition-all hover:border-[#C9963A]/40 hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                  >
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +218,7 @@ export default function DistritosDireto() {
                         <p className="text-[10px] text-gray-400">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (

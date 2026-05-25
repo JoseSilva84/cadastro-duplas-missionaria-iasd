@@ -206,7 +206,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
   const [submenuAberto, setSubmenuAberto] = useState(null);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Logo */}
       <div className="flex items-start gap-3 px-5 py-6 border-b border-white/10">
         {icons.logoIasd}
@@ -229,7 +229,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 pr-2 space-y-1 sidebar-scroll">
         <p className="px-4 pt-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
         {navLinks.map((link) => {
           if (link.type === 'dropdown') {
@@ -287,7 +287,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
       </nav>
 
       {/* Trocar layout + Usuário */}
-      <div className="px-3 py-4 border-t border-white/10">
+      <div className="flex-shrink-0 px-3 py-4 border-t border-white/10 bg-[#162d54]/40 backdrop-blur-sm">
         {/* Botão trocar layout */}
         <button
           type="button"

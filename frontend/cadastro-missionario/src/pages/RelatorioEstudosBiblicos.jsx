@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
@@ -62,6 +62,7 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
 
 export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
   const isPonto = tipoRelatorio === 'PONTO';
   const titulo = isPonto ? 'Pontos de Estudo Bíblico' : 'Estudantes Bíblicos';
@@ -147,6 +148,10 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     ? Math.round(resultado.estudos.reduce((acc, estudo) => acc + progresso(estudo), 0) / resultado.estudos.length)
     : 0;
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
+  const detalhesPath = (id) => {
+    const base = isDireto ? '/direto/relatorios' : '/relatorios';
+    return `${base}/${isPonto ? 'pontos-estudo' : 'estudos-biblicos'}/${id}`;
+  };
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -195,16 +200,21 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         </div>
 
         {selecionado && (
-          <div className="card">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+          <div className="card border-l-4 border-l-[#C9963A]">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-5 justify-between">
               <div>
                 <p className="text-xs text-gray-400">{isPonto ? 'Ponto selecionado' : 'Estudante selecionado'}</p>
                 <h2 className="text-xl font-bold text-[#1A3A6B]">{isPonto ? selecionado.nomeEstudante : participantesResumo(selecionado)}</h2>
                 <p className="text-sm text-gray-500">{getSerieNome(selecionado.serie)} · {getLicaoLabel(selecionado.serie, selecionado.licaoAtual)}</p>
               </div>
-              <div className="min-w-[220px]">
-                <div className="flex items-center justify-between text-sm mb-1"><span>Progresso</span><strong>{progresso(selecionado)}%</strong></div>
-                <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="min-w-[220px]">
+                  <div className="flex items-center justify-between text-sm mb-1"><span>Progresso</span><strong>{progresso(selecionado)}%</strong></div>
+                  <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
+                </div>
+                <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado.id))}>
+                  Ver detalhes
+                </button>
               </div>
             </div>
             {isPonto && selecionado.participantes?.length > 0 && (
@@ -253,7 +263,12 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           <div className="min-w-28"><div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(estudo)}%` }} /></div><span className="text-xs">{progresso(estudo)}%</span></div>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><button type="button" className="btn-outline text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button></td>
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-col gap-2 min-w-28">
+                            <button type="button" className="btn-outline text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo.id))}>Detalhes</button>
+                            <button type="button" className="btn-primary text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}

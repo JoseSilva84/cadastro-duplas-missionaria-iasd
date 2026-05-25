@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../lib/api';
 import IgrejaCapa from '../../components/IgrejaCapa';
 
 export default function ListagemIgrejasDireto() {
   const navigate = useNavigate();
+  const { igrejaId } = useParams();
   const [igrejas, setIgrejas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);
@@ -15,11 +16,17 @@ export default function ListagemIgrejasDireto() {
     api.get('/igrejas')
       .then((res) => {
         setIgrejas(res.data);
-        if (res.data.length > 0) setIgrejaSelecionada(res.data[0]);
+        if (res.data.length > 0) {
+          const igrejaDaRota = igrejaId
+            ? res.data.find((igreja) => String(igreja.id) === String(igrejaId))
+            : null;
+          setIgrejaSelecionada(igrejaDaRota || res.data[0]);
+          setMostraDetalhe(Boolean(igrejaDaRota));
+        }
       })
       .catch((err) => console.error(err))
       .finally(() => setCarregando(false));
-  }, []);
+  }, [igrejaId]);
 
   const igrejasFiltradas = igrejas.filter((ig) => {
     const q = busca.toLowerCase();
@@ -89,7 +96,11 @@ export default function ListagemIgrejasDireto() {
               <button
                 type="button"
                 key={igreja.id}
-                onClick={() => { setIgrejaSelecionada(igreja); setMostraDetalhe(true); }}
+                onClick={() => {
+                  setIgrejaSelecionada(igreja);
+                  setMostraDetalhe(true);
+                  navigate(`/direto/igrejas/${igreja.id}`);
+                }}
                 className={`w-full text-left transition-all duration-200 border-l-[3px] ${
                   selecionado
                     ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'

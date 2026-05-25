@@ -18,6 +18,7 @@ import RegistroSaida from './pages/RegistroSaida';
 import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
+import EstudanteDashboard from './pages/EstudanteDashboard';
 import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
 import DashboardAssociacao from './pages/DashboardAssociacao';
 import ListagemDistritos from './pages/ListagemDistritos';
@@ -139,7 +140,9 @@ function AppRoutes() {
         />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
+        <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
+        <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 
@@ -160,6 +163,7 @@ function AppRoutes() {
         <Route path="regioes" element={<RegioesDireto />} />
         <Route path="distritos" element={<ListagemDistritosDireto />} />
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />
+        <Route path="igrejas/:igrejaId" element={<ListagemIgrejasDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
         <Route path="duplas/nova" element={<Cadastro />} />
@@ -174,7 +178,9 @@ function AppRoutes() {
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
+        <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
+        <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
       </Route>
 
