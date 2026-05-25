@@ -10,6 +10,8 @@ const criarParticipante = (ordem) => ({
   whatsapp: '',
   sexo: '',
   endereco: '',
+  classificacaoInteressado: '',
+  motivoImpedimento: '',
 });
 
 const estadoInicial = {
@@ -73,7 +75,11 @@ export default function CadastroClasseBiblica() {
   const setParticipante = (index, campo, valor) => {
     setParticipantes((prev) => prev.map((item, i) => (
       i === index
-        ? { ...item, [campo]: campo === 'whatsapp' ? formatarWhatsApp(valor) : valor }
+        ? {
+          ...item,
+          [campo]: campo === 'whatsapp' ? formatarWhatsApp(valor) : valor,
+          ...(campo === 'classificacaoInteressado' && !['B', 'C'].includes(valor) ? { motivoImpedimento: '' } : {}),
+        }
         : item
     )));
   };
@@ -96,11 +102,25 @@ export default function CadastroClasseBiblica() {
       return null;
     }
 
+    const semClassificacao = preenchidos.find((p) => !p.classificacaoInteressado);
+    if (semClassificacao) {
+      toast.error(`Informe a classificacao de ${semClassificacao.nome}.`);
+      return null;
+    }
+
+    const semMotivo = preenchidos.find((p) => ['B', 'C'].includes(p.classificacaoInteressado) && !p.motivoImpedimento.trim());
+    if (semMotivo) {
+      toast.error(`Informe o motivo da classificacao ${semMotivo.classificacaoInteressado} de ${semMotivo.nome}.`);
+      return null;
+    }
+
     return preenchidos.map((p) => ({
       nome: p.nome.trim(),
       whatsapp: p.whatsapp.replace(/\D/g, '') || null,
       sexo: p.sexo || null,
       endereco: p.endereco.trim() || null,
+      classificacaoInteressado: p.classificacaoInteressado || null,
+      motivoImpedimento: ['B', 'C'].includes(p.classificacaoInteressado) ? p.motivoImpedimento.trim() : null,
     }));
   };
 
@@ -129,7 +149,7 @@ export default function CadastroClasseBiblica() {
       toast.success('Classe Bíblica cadastrada com sucesso.');
       setForm(estadoInicial);
       setParticipantes([criarParticipante(1)]);
-      setTimeout(() => navigate(isDireto ? '/direto/relatorios/estudos-biblicos' : '/relatorios/estudos-biblicos'), 500);
+      setTimeout(() => navigate(isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas'), 500);
     } catch (err) {
       const erros = err.response?.data?.erros;
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : err.response?.data?.erro || 'Erro ao salvar classe bíblica.');
@@ -231,8 +251,21 @@ export default function CadastroClasseBiblica() {
                       <Campo label="Sexo">
                         <select className="input-field" value={participante.sexo} onChange={(e) => setParticipante(index, 'sexo', e.target.value)}>
                           <option value="">Selecione</option>
-                          <option value="FEMININO">Feminino</option>
-                          <option value="MASCULINO">Masculino</option>
+                          <option value="Feminino">Feminino</option>
+                          <option value="Masculino">Masculino</option>
+                        </select>
+                      </Campo>
+                      <Campo label="Classificacao A/B/C" obrigatorio={Boolean(participante.nome)}>
+                        <select
+                          className="input-field"
+                          value={participante.classificacaoInteressado}
+                          onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)}
+                          required={Boolean(participante.nome)}
+                        >
+                          <option value="">Selecione</option>
+                          <option value="A">A - Pronto para o batismo</option>
+                          <option value="B">B - Quer, mas tem impedimento</option>
+                          <option value="C">C - Nao esta pronto</option>
                         </select>
                       </Campo>
                       <div className="md:col-span-2">
@@ -240,6 +273,21 @@ export default function CadastroClasseBiblica() {
                           <input className="input-field" value={participante.endereco} onChange={(e) => setParticipante(index, 'endereco', e.target.value)} />
                         </Campo>
                       </div>
+                      {['B', 'C'].includes(participante.classificacaoInteressado) && (
+                        <div className="md:col-span-2 xl:col-span-3">
+                          <Campo label={`Motivo da classe ${participante.classificacaoInteressado}`} obrigatorio>
+                            <textarea
+                              className="input-field min-h-24"
+                              value={participante.motivoImpedimento}
+                              onChange={(e) => setParticipante(index, 'motivoImpedimento', e.target.value)}
+                              placeholder={participante.classificacaoInteressado === 'B'
+                                ? 'Ex.: quer se batizar, mas precisa resolver casamento, trabalho no sabado ou outro impedimento.'
+                                : 'Ex.: ainda nao deseja o batismo, nao decidiu continuar ou outro motivo pastoral.'}
+                              required
+                            />
+                          </Campo>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

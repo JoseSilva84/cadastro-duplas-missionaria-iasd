@@ -10,7 +10,7 @@ async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
   // Cores para as regiões
-  const cores = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
+  const cores = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34', '#0d9488', '#b45309'];
 
   // Criação das regiões
   const regioes = await Promise.all([
@@ -19,6 +19,8 @@ async function main() {
     prisma.regiao.upsert({ where: { nome: 'Osasco' }, update: {}, create: { nome: 'Osasco', descricao: 'Região de Osasco e entorno', cor: cores[2] } }),
     prisma.regiao.upsert({ where: { nome: 'Cotia e ABCD' }, update: {}, create: { nome: 'Cotia e ABCD', descricao: 'Grande ABCD e Cotia', cor: cores[3] } }),
     prisma.regiao.upsert({ where: { nome: 'Barueri' }, update: {}, create: { nome: 'Barueri', descricao: 'Região de Barueri e Alphaville', cor: cores[4] } }),
+    prisma.regiao.upsert({ where: { nome: 'Sul Paulistana' }, update: {}, create: { nome: 'Sul Paulistana', descricao: 'Regiao sul da Associacao Paulistana', cor: cores[5] } }),
+    prisma.regiao.upsert({ where: { nome: 'Oeste Paulistana' }, update: {}, create: { nome: 'Oeste Paulistana', descricao: 'Regiao oeste da Associacao Paulistana', cor: cores[6] } }),
   ]);
 
   console.log(`✅ ${regioes.length} regiões criadas.`);
@@ -40,6 +42,12 @@ async function main() {
     // Barueri
     prisma.distrito.upsert({ where: { id: 9 }, update: {}, create: { nome: 'Barueri', regiaoId: regioes[4].id } }),
     prisma.distrito.upsert({ where: { id: 10 }, update: {}, create: { nome: 'Granja Viana', regiaoId: regioes[4].id } }),
+    // Sul Paulistana
+    prisma.distrito.upsert({ where: { id: 11 }, update: {}, create: { nome: 'Campo Limpo', regiaoId: regioes[5].id } }),
+    prisma.distrito.upsert({ where: { id: 12 }, update: {}, create: { nome: 'Santo Amaro', regiaoId: regioes[5].id } }),
+    // Oeste Paulistana
+    prisma.distrito.upsert({ where: { id: 13 }, update: {}, create: { nome: 'Butanta', regiaoId: regioes[6].id } }),
+    prisma.distrito.upsert({ where: { id: 14 }, update: {}, create: { nome: 'Pinheiros', regiaoId: regioes[6].id } }),
   ]);
 
   console.log(`✅ ${distritos.length} distritos criados.`);

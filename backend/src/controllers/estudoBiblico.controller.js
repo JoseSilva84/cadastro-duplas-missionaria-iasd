@@ -49,8 +49,11 @@ const validarEstudoBiblico = [
       if (participante.classificacaoInteressado && !['A', 'B', 'C'].includes(participante.classificacaoInteressado)) {
         throw new Error(`Classificacao do estudante ${index + 1} invalida.`);
       }
-      if (participante.classificacaoInteressado === 'B' && !String(participante.motivoImpedimento || '').trim()) {
-        throw new Error(`Motivo do impedimento do estudante ${index + 1} obrigatorio.`);
+      const exigeMotivo = req.body.tipoEstudo === 'CLASSE'
+        ? ['B', 'C'].includes(participante.classificacaoInteressado)
+        : participante.classificacaoInteressado === 'B';
+      if (exigeMotivo && !String(participante.motivoImpedimento || '').trim()) {
+        throw new Error(`Motivo da classificacao do estudante ${index + 1} obrigatorio.`);
       }
     });
     return true;
