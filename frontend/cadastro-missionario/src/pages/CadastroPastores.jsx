@@ -83,6 +83,7 @@ export default function CadastroPastores() {
   const navigate = useNavigate();
   const location = useLocation();
   const isDireto = location.pathname.startsWith('/direto');
+  const tipoUrl = new URLSearchParams(location.search).get('tipo');
 
   const [tipo, setTipo] = useState('regional');
   const [foto, setFoto] = useState('');
@@ -104,6 +105,11 @@ export default function CadastroPastores() {
   useEffect(() => {
     api.get('/regioes').then((r) => setRegioes(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!tipoUrl || !CARGO_POR_TIPO[tipoUrl]) return;
+    handleTipo(tipoUrl);
+  }, [tipoUrl]);
 
   // Carrega distritos quando região muda
   useEffect(() => {
