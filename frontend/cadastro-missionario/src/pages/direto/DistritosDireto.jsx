@@ -2,6 +2,58 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
+import AvatarUpload from '../../components/AvatarUpload';
+import { toast } from '../../lib/toast';
+
+const projetoLabel = {
+  CASA_A_CASA: 'Casa a casa',
+  ESTUDO_BIBLICO: 'Estudo Biblico',
+  PEQUENOS_GRUPOS: 'Pequenos Grupos',
+  ACAO_SOCIAL: 'Acao Social',
+  EVANGELISMO_PUBLICO: 'Evangelismo Publico',
+};
+
+const statusAcompanhamentoLabels = {
+  ATIVO: 'Ativo',
+  PAUSADO: 'Pausado',
+  CONCLUIDO: 'Concluido',
+  SEM_ATIVIDADE: 'Sem atividade',
+};
+
+const formatarData = (valor) => {
+  if (!valor) return '';
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+};
+
+const valorDataInput = (valor) => {
+  if (!valor) return '';
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toISOString().slice(0, 10);
+};
+
+const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+
+const getClassificacaoAtividadeText = (dupla) => {
+  if (!dupla?.classificacaoDupla) return 'Sem classe';
+  return `Classe ${dupla.classificacaoDupla}${dupla.atividadeDupla ? ` · ${dupla.atividadeDupla === 'ATIVA' ? 'Ativa' : 'Inativa'}` : ''}`;
+};
+
+const boolLabel = (valor) => {
+  if (valor === true) return 'Sim';
+  if (valor === false) return 'Nao';
+  return 'Nao informado';
+};
+
+const CampoModal = ({ label, children }) => (
+  <label className="block">
+    <span className="block text-xs font-bold uppercase tracking-wide text-gray-400 mb-1.5">{label}</span>
+    {children}
+  </label>
+);
 
 // Link clicável do WhatsApp Web
 const resolverFotosDaDupla = async (dupla) => {
@@ -67,6 +119,93 @@ const WhatsAppLink = ({ numero }) => {
   );
 };
 
+const ModalPastorDistrital = ({ distrito, fotoPreview, onClose, onSaved }) => {
+  const [form, setForm] = useState(() => ({
+    fotoPastor: fotoPreview || '',
+    nomePastor: distrito.nomePastor || '',
+    cargoPastor: distrito.cargoPastor || 'Pastor Distrital',
+    telefonePastor: distrito.telefonePastor || '',
+    enderecoPastor: distrito.enderecoPastor || '',
+    dataNascimentoPastor: valorDataInput(distrito.dataNascimentoPastor),
+  }));
+  const [salvando, setSalvando] = useState(false);
+
+  const set = (campo, valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
+
+  const salvar = async (event) => {
+    event.preventDefault();
+    setSalvando(true);
+    try {
+      const fotoRef = await FotoService.salvarFotoPorReferencia('distrito', distrito.id, 'pastor', form.fotoPastor);
+      const { data } = await api.patch(`/distritos/${distrito.id}`, {
+        fotoPastor: fotoRef || null,
+        nomePastor: form.nomePastor || null,
+        cargoPastor: form.cargoPastor || 'Pastor Distrital',
+        telefonePastor: form.telefonePastor || null,
+        enderecoPastor: form.enderecoPastor || null,
+        dataNascimentoPastor: form.dataNascimentoPastor || null,
+      });
+      toast.success('Cadastro do pastor distrital atualizado.');
+      onSaved(data, form.fotoPastor);
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao atualizar pastor distrital.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl rounded-xl bg-white border border-gray-100 shadow-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[#C9963A] text-xs font-bold uppercase tracking-wider">Cadastro</p>
+            <h3 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Pastor Distrital</h3>
+            <p className="text-xs text-gray-400 mt-1">{distrito.nome}</p>
+          </div>
+          <button type="button" className="btn-outline text-sm" onClick={onClose}>Fechar</button>
+        </div>
+
+        <form onSubmit={salvar} className="p-5 bg-[#F4F5F7]">
+          <div className="bg-white rounded-lg border border-gray-100 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] gap-5">
+              <AvatarUpload value={form.fotoPastor} onChange={(valor) => set('fotoPastor', valor)} label="Foto" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <CampoModal label="Nome completo">
+                    <input className="input-field" value={form.nomePastor} onChange={(e) => set('nomePastor', e.target.value)} placeholder="Nome do pastor distrital" />
+                  </CampoModal>
+                </div>
+                <CampoModal label="Cargo">
+                  <input className="input-field" value={form.cargoPastor} onChange={(e) => set('cargoPastor', e.target.value)} />
+                </CampoModal>
+                <CampoModal label="WhatsApp">
+                  <input className="input-field" value={form.telefonePastor} onChange={(e) => set('telefonePastor', e.target.value)} placeholder="(11) 99999-9999" />
+                </CampoModal>
+                <div className="sm:col-span-2">
+                  <CampoModal label="Endereco">
+                    <input className="input-field" value={form.enderecoPastor} onChange={(e) => set('enderecoPastor', e.target.value)} placeholder="Endereco residencial" />
+                  </CampoModal>
+                </div>
+                <CampoModal label="Data de nascimento">
+                  <input type="date" className="input-field" value={form.dataNascimentoPastor} onChange={(e) => set('dataNascimentoPastor', e.target.value)} />
+                </CampoModal>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-5">
+            <button type="button" className="btn-outline" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={salvando}>
+              {salvando ? 'Salvando...' : 'Salvar cadastro'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export default function DistritosDireto() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
@@ -77,8 +216,15 @@ export default function DistritosDireto() {
   const [erro, setErro] = useState(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
+  const [editandoPastor, setEditandoPastor] = useState(false);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
+
+  const atualizarPastorDistrital = (distritoAtualizado, fotoPreview) => {
+    setDistrito((atual) => ({ ...atual, ...distritoAtualizado }));
+    setFotoPastorPreview(fotoPreview);
+    setEditandoPastor(false);
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -227,22 +373,29 @@ export default function DistritosDireto() {
               </div>
             )}
 
-            <div className="mt-3 rounded-lg border border-gray-100 bg-white p-3">
+            <button
+              type="button"
+              onClick={() => setEditandoPastor(true)}
+              title="Abrir cadastro do pastor distrital"
+              className="group mt-3 w-full text-left rounded-lg border border-gray-100 bg-white p-3 hover:border-[#C9963A]/50 hover:shadow-sm transition-all"
+            >
               <div className="flex items-center gap-3">
                 <FotoPessoa
                   src={fotoPastorPreview}
                   nome={distrito.nomePastor}
                   className="w-12 h-12 rounded-xl shadow-sm"
                   fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
-                  onPreview={fotoPastorPreview ? abrirFoto : undefined}
                 />
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor responsável</p>
                   <p className="text-sm font-bold text-[#1A3A6B] truncate">{distrito.nomePastor || 'Nao informado'}</p>
                   <p className="text-[11px] text-gray-400 truncate">{distrito.cargoPastor || 'Pastor Distrital'}</p>
+                  <p className="text-[10px] font-semibold text-[#1A3A6B] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Ver e editar cadastro
+                  </p>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -411,7 +564,11 @@ export default function DistritosDireto() {
                     <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.liderNome || '—'}</p></div>
                     {duplaSelecionada.liderTelefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.liderTelefone} /></div>}
                     {duplaSelecionada.liderEmail && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.liderEmail}</p></div>}
-                    {duplaSelecionada.liderIgreja && <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja}</p></div>}
+                    <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.liderDistrito || duplaSelecionada.distrito?.nome || distrito.nome || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Data de nascimento:</span><p className="text-gray-700">{formatarData(duplaSelecionada.liderDataNascimento) || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Endereco de correspondencia:</span><p className="text-gray-700 break-words">{duplaSelecionada.liderEndereco || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Data de batismo:</span><p className="text-gray-700">{formatarData(duplaSelecionada.liderDataBatismo) || '—'}</p></div>
                   </div>
                 </div>
 
@@ -425,6 +582,11 @@ export default function DistritosDireto() {
                     <div><span className="text-gray-400 text-xs">Nome:</span><p className="text-gray-700 font-medium">{duplaSelecionada.membro2Nome || '—'}</p></div>
                     {duplaSelecionada.membro2Telefone && <div><span className="text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.membro2Telefone} /></div>}
                     {duplaSelecionada.membro2Email && <div><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700">{duplaSelecionada.membro2Email}</p></div>}
+                    <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.membro2Igreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.membro2Distrito || duplaSelecionada.distrito?.nome || distrito.nome || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Data de nascimento:</span><p className="text-gray-700">{formatarData(duplaSelecionada.membro2DataNascimento) || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Endereco de correspondencia:</span><p className="text-gray-700 break-words">{duplaSelecionada.membro2Endereco || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Data de batismo:</span><p className="text-gray-700">{formatarData(duplaSelecionada.membro2DataBatismo) || '—'}</p></div>
                   </div>
                 </div>
 
@@ -436,6 +598,9 @@ export default function DistritosDireto() {
                   </div>
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Tipo:</span><p className="text-gray-700 font-medium">{duplaSelecionada.tipoProjeto?.replace(/_/g, ' ') || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeText(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudos biblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Visitacoes:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     {(() => {
                       const cor = statusColors[duplaSelecionada.status] || '#9ca3af';
                       return (
@@ -468,6 +633,23 @@ export default function DistritosDireto() {
                 </div>
 
                 {/* Card: Observações */}
+                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs font-bold text-[#1A3A6B]">AC</div>
+                    <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Acompanhamento</h4>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div><span className="text-gray-400 text-xs">Estudo biblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status do evangelismo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Levou pessoa ao batismo?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.levouPessoaBatismo)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Ja deu estudo biblico?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.jaDeuEstudoBiblico)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudo em andamento?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.estudoAtualEmAndamento)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Batismos:</span><p className="text-gray-700 font-medium">{duplaSelecionada.batismos ?? 0}</p></div>
+                    <div><span className="text-gray-400 text-xs">Ultimo acompanhamento:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.ultimoAcompanhamento) || '—'}</p></div>
+                  </div>
+                </div>
+
                 {duplaSelecionada.observacoes && (
                   <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
@@ -501,6 +683,15 @@ export default function DistritosDireto() {
         )}
         </div>
     </div>
+
+    {editandoPastor && distrito && (
+      <ModalPastorDistrital
+        distrito={distrito}
+        fotoPreview={fotoPastorPreview}
+        onClose={() => setEditandoPastor(false)}
+        onSaved={atualizarPastorDistrital}
+      />
+    )}
 
     {/* Modal: Foto Ampliada */}
     {fotoAmpliada && (

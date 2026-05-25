@@ -31,6 +31,13 @@ const RegiaoService = {
     if (data.fotoConselheiro !== undefined)  campos.fotoConselheiro = data.fotoConselheiro;
     if (data.nomeConselheiro !== undefined)  campos.nomeConselheiro = data.nomeConselheiro;
     if (data.cargoConselheiro !== undefined) campos.cargoConselheiro = data.cargoConselheiro;
+    if (data.telefoneConselheiro !== undefined) campos.telefoneConselheiro = data.telefoneConselheiro;
+    if (data.enderecoConselheiro !== undefined) campos.enderecoConselheiro = data.enderecoConselheiro;
+    if (data.dataNascimentoConselheiro !== undefined) {
+      campos.dataNascimentoConselheiro = data.dataNascimentoConselheiro
+        ? new Date(data.dataNascimentoConselheiro)
+        : null;
+    }
     return RegiaoModel.update(id, campos);
   },
 

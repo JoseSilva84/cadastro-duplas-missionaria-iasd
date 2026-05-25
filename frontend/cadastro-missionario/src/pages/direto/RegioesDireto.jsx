@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
+import AvatarUpload from '../../components/AvatarUpload';
+import { toast } from '../../lib/toast';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -11,6 +13,109 @@ const FotoConselheiro = ({ src, nome }) => {
   return (
     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-lg font-bold shadow-sm">
       {inicial}
+    </div>
+  );
+};
+
+const valorDataInput = (valor) => {
+  if (!valor) return '';
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toISOString().slice(0, 10);
+};
+
+const CampoCredencial = ({ label, children }) => (
+  <label className="block">
+    <span className="block text-xs font-bold uppercase tracking-wide text-gray-400 mb-1.5">{label}</span>
+    {children}
+  </label>
+);
+
+const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
+  const [form, setForm] = useState(() => ({
+    fotoConselheiro: fotoPreview || '',
+    nomeConselheiro: regiao.nomeConselheiro || '',
+    cargoConselheiro: regiao.cargoConselheiro || 'Pastor Regional',
+    telefoneConselheiro: regiao.telefoneConselheiro || '',
+    enderecoConselheiro: regiao.enderecoConselheiro || '',
+    dataNascimentoConselheiro: valorDataInput(regiao.dataNascimentoConselheiro),
+  }));
+  const [salvando, setSalvando] = useState(false);
+
+  const set = (campo, valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
+
+  const salvar = async (event) => {
+    event.preventDefault();
+    setSalvando(true);
+    try {
+      const fotoRef = await FotoService.salvarFotoPorReferencia('regiao', regiao.id, 'conselheiro', form.fotoConselheiro);
+      const { data } = await api.patch(`/regioes/${regiao.id}`, {
+        fotoConselheiro: fotoRef || null,
+        nomeConselheiro: form.nomeConselheiro || null,
+        cargoConselheiro: form.cargoConselheiro || 'Pastor Regional',
+        telefoneConselheiro: form.telefoneConselheiro || null,
+        enderecoConselheiro: form.enderecoConselheiro || null,
+        dataNascimentoConselheiro: form.dataNascimentoConselheiro || null,
+      });
+      toast.success('Credenciais do pastor regional atualizadas.');
+      onSaved(data, form.fotoConselheiro);
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao atualizar pastor regional.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl rounded-xl bg-white border border-gray-100 shadow-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[#C9963A] text-xs font-bold uppercase tracking-wider">Credenciais</p>
+            <h3 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Pastor Regional
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">{regiao.nome}</p>
+          </div>
+          <button type="button" className="btn-outline text-sm" onClick={onClose}>Fechar</button>
+        </div>
+
+        <form onSubmit={salvar} className="p-5 bg-[#F4F5F7]">
+          <div className="bg-white rounded-lg border border-gray-100 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] gap-5">
+              <AvatarUpload value={form.fotoConselheiro} onChange={(valor) => set('fotoConselheiro', valor)} label="Foto" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <CampoCredencial label="Nome completo">
+                    <input className="input-field" value={form.nomeConselheiro} onChange={(e) => set('nomeConselheiro', e.target.value)} placeholder="Nome do pastor regional" />
+                  </CampoCredencial>
+                </div>
+                <CampoCredencial label="Cargo">
+                  <input className="input-field" value={form.cargoConselheiro} onChange={(e) => set('cargoConselheiro', e.target.value)} placeholder="Pastor Regional" />
+                </CampoCredencial>
+                <CampoCredencial label="WhatsApp">
+                  <input className="input-field" value={form.telefoneConselheiro} onChange={(e) => set('telefoneConselheiro', e.target.value)} placeholder="(11) 99999-9999" />
+                </CampoCredencial>
+                <div className="sm:col-span-2">
+                  <CampoCredencial label="Endereco">
+                    <input className="input-field" value={form.enderecoConselheiro} onChange={(e) => set('enderecoConselheiro', e.target.value)} placeholder="Endereco residencial" />
+                  </CampoCredencial>
+                </div>
+                <CampoCredencial label="Data de nascimento">
+                  <input type="date" className="input-field" value={form.dataNascimentoConselheiro} onChange={(e) => set('dataNascimentoConselheiro', e.target.value)} />
+                </CampoCredencial>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-5">
+            <button type="button" className="btn-outline" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={salvando}>
+              {salvando ? 'Salvando...' : 'Salvar credenciais'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
@@ -25,6 +130,7 @@ export default function RegioesDireto() {
   const [fotosConselheiro, setFotosConselheiro] = useState({});
   const [carregandoDistritos, setCarregandoDistritos] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
+  const [editandoPastor, setEditandoPastor] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -55,6 +161,7 @@ export default function RegioesDireto() {
   async function selecionarRegiao(regiao) {
     setRegiaoSelecionada(regiao);
     setMostraDetalhe(true);
+    setEditandoPastor(false);
 
     if (!distritosDetalhados[regiao.id]) {
       setCarregandoDistritos(true);
@@ -77,6 +184,15 @@ export default function RegioesDireto() {
 
   function getDistritos(regiao) {
     return distritosDetalhados[regiao.id] ?? regiao.distritos ?? [];
+  }
+
+  function atualizarPastorRegional(regiaoAtualizada, fotoPreview) {
+    setRegiaoSelecionada((atual) => (atual?.id === regiaoAtualizada.id ? { ...atual, ...regiaoAtualizada } : atual));
+    setRegioes((atuais) => atuais.map((regiao) => (
+      regiao.id === regiaoAtualizada.id ? { ...regiao, ...regiaoAtualizada } : regiao
+    )));
+    setFotosConselheiro((atuais) => ({ ...atuais, [regiaoAtualizada.id]: fotoPreview }));
+    setEditandoPastor(false);
   }
 
   if (carregando) {
@@ -234,7 +350,12 @@ export default function RegioesDireto() {
             {/* Conteúdo do detail — scroll horizontal se necessário */}
             <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
               <div className="mb-6 flex justify-start">
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setEditandoPastor(true)}
+                  title="Abrir credenciais do pastor regional"
+                  className="group bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md text-left hover:border-[#C9963A]/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                >
                   <div className="flex items-center gap-4">
                     <FotoConselheiro src={fotosConselheiro[regiaoSelecionada.id]} nome={regiaoSelecionada.nomeConselheiro} />
                     <div className="min-w-0">
@@ -243,9 +364,12 @@ export default function RegioesDireto() {
                         {regiaoSelecionada.nomeConselheiro || 'Nao informado'}
                       </h3>
                       <p className="text-xs text-gray-400 truncate">{regiaoSelecionada.cargoConselheiro || 'Conselheiro Regional'}</p>
+                      <p className="text-[10px] font-semibold text-[#1A3A6B] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Ver e editar credenciais
+                      </p>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Cards de resumo da região */}
@@ -402,6 +526,14 @@ export default function RegioesDireto() {
           </div>
         )}
       </div>
+      {editandoPastor && regiaoSelecionada && (
+        <ModalPastorRegional
+          regiao={regiaoSelecionada}
+          fotoPreview={fotosConselheiro[regiaoSelecionada.id]}
+          onClose={() => setEditandoPastor(false)}
+          onSaved={atualizarPastorRegional}
+        />
+      )}
     </div>
   );
 }

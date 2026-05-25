@@ -56,6 +56,13 @@ const DistritoService = {
     if (data.fotoPastor !== undefined)  campos.fotoPastor = data.fotoPastor;
     if (data.nomePastor !== undefined)  campos.nomePastor = data.nomePastor;
     if (data.cargoPastor !== undefined) campos.cargoPastor = data.cargoPastor;
+    if (data.telefonePastor !== undefined) campos.telefonePastor = data.telefonePastor;
+    if (data.enderecoPastor !== undefined) campos.enderecoPastor = data.enderecoPastor;
+    if (data.dataNascimentoPastor !== undefined) {
+      campos.dataNascimentoPastor = data.dataNascimentoPastor
+        ? new Date(data.dataNascimentoPastor)
+        : null;
+    }
     return DistritoModel.update(id, campos);
   },
 };

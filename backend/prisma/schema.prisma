@@ -97,6 +97,9 @@ model Regiao {
   fotoConselheiro  String? // base64 ou URL
   nomeConselheiro  String?
   cargoConselheiro String? // ex: "Pastor Regional", "Conselheiro"
+  telefoneConselheiro String?
+  enderecoConselheiro String?
+  dataNascimentoConselheiro DateTime?
 
   distritos Distrito[]
   usuarios  Usuario[]
@@ -114,6 +117,9 @@ model Distrito {
   fotoPastor  String? // base64 ou URL
   nomePastor  String?
   cargoPastor String? // ex: "Pastor Distrital"
+  telefonePastor String?
+  enderecoPastor String?
+  dataNascimentoPastor DateTime?
 
   regiao   Regiao    @relation(fields: [regiaoId], references: [id])
   duplas   Dupla[]

@@ -153,6 +153,9 @@ export default function CadastroPastores() {
           fotoConselheiro: fotoRef || null,
           nomeConselheiro: nome,
           cargoConselheiro: cargoAtual,
+          telefoneConselheiro: telefone || null,
+          enderecoConselheiro: endereco || null,
+          dataNascimentoConselheiro: dataNascimento || null,
         });
       } else if (tipo === 'distrital') {
         const fotoRef = await FotoService.salvarFotoPorReferencia('distrito', distritoId, 'pastor', foto);
@@ -160,6 +163,9 @@ export default function CadastroPastores() {
           fotoPastor: fotoRef || null,
           nomePastor: nome,
           cargoPastor: cargoAtual,
+          telefonePastor: telefone || null,
+          enderecoPastor: endereco || null,
+          dataNascimentoPastor: dataNascimento || null,
         });
       } else if (tipo === 'coordenador') {
         const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'coordenador', foto);
@@ -294,7 +300,7 @@ export default function CadastroPastores() {
                       </Campo>
                     </>
                   )}
-                  {(tipo === 'coordenador' || tipo === 'diretor_mp') && (
+                  {(tipo === 'regional' || tipo === 'distrital' || tipo === 'coordenador' || tipo === 'diretor_mp') && (
                     <>
                       <Campo label="WhatsApp" icone="☎">
                         <input type="text" className="input-field" placeholder="(11) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} />

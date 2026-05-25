@@ -164,6 +164,9 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
     fotoPastor: fotos.pastor || '',
     nomePastor: igreja.distrito?.nomePastor || '',
     cargoPastor: igreja.distrito?.cargoPastor || 'Pastor Distrital',
+    telefonePastor: igreja.distrito?.telefonePastor || '',
+    enderecoPastor: igreja.distrito?.enderecoPastor || '',
+    dataNascimentoPastor: valorDataInput(igreja.distrito?.dataNascimentoPastor),
     fotoCoordInteressados: fotos.coordenador || '',
     nomeCoordInteressados: igreja.nomeCoordInteressados || '',
     telefoneCoordInteressados: igreja.telefoneCoordInteressados || '',
@@ -192,6 +195,9 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
           fotoPastor,
           nomePastor: form.nomePastor || null,
           cargoPastor: form.cargoPastor || null,
+          telefonePastor: form.telefonePastor || null,
+          enderecoPastor: form.enderecoPastor || null,
+          dataNascimentoPastor: form.dataNascimentoPastor || null,
         }),
         api.patch(`/igrejas/${igreja.id}`, {
           fotoDiretorMinisterioPessoal: fotoDiretor,
@@ -254,6 +260,11 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Campo label="Nome"><input className="input-field" value={form.nomePastor} onChange={(e) => set('nomePastor', e.target.value)} /></Campo>
                   <Campo label="Cargo"><input className="input-field" value={form.cargoPastor} onChange={(e) => set('cargoPastor', e.target.value)} /></Campo>
+                  <Campo label="WhatsApp"><input className="input-field" value={form.telefonePastor} onChange={(e) => set('telefonePastor', e.target.value)} /></Campo>
+                  <Campo label="Nascimento"><input type="date" className="input-field" value={form.dataNascimentoPastor} onChange={(e) => set('dataNascimentoPastor', e.target.value)} /></Campo>
+                  <div className="sm:col-span-2">
+                    <Campo label="Endereço"><input className="input-field" value={form.enderecoPastor} onChange={(e) => set('enderecoPastor', e.target.value)} /></Campo>
+                  </div>
                 </div>
               </div>
             </section>
@@ -355,9 +366,9 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   };
   const pastor = {
     nome: igrejaAtual.distrito?.nomePastor,
-    endereco: igrejaAtual.distrito?.nome ? `Distrito ${igrejaAtual.distrito.nome}` : '',
-    telefone: '',
-    dataNascimento: '',
+    endereco: igrejaAtual.distrito?.enderecoPastor || (igrejaAtual.distrito?.nome ? `Distrito ${igrejaAtual.distrito.nome}` : ''),
+    telefone: igrejaAtual.distrito?.telefonePastor,
+    dataNascimento: igrejaAtual.distrito?.dataNascimentoPastor,
   };
   const coordenador = {
     nome: igrejaAtual.nomeCoordInteressados,
