@@ -23,6 +23,24 @@ const FotoMini = ({ src, nome }) => {
   );
 };
 
+const SkeletonDuplas = () => (
+  <div className="space-y-2">
+    {[1, 2, 3, 4].map((item) => (
+      <div key={item} className="rounded-xl border-2 border-gray-100 bg-white p-3 flex items-center gap-3">
+        <div className="skeleton w-5 h-5 rounded" />
+        <div className="flex items-center -space-x-2">
+          <div className="skeleton w-8 h-8 rounded-full" />
+          <div className="skeleton w-8 h-8 rounded-full" />
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="skeleton h-4 w-3/5" />
+          <div className="skeleton h-3 w-2/5" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function RegistroSaida() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -179,7 +197,7 @@ export default function RegistroSaida() {
               </div>
 
               {carregando ? (
-                <div className="text-center py-8 text-gray-400">Carregando duplas...</div>
+                <SkeletonDuplas />
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                   {duplasFiltradas.map((dupla) => {
@@ -189,7 +207,7 @@ export default function RegistroSaida() {
                         key={dupla.id}
                         type="button"
                         onClick={() => toggleDupla(dupla.id)}
-                        className={`w-full text-left rounded-xl border-2 p-3 transition-all duration-200 flex items-center gap-3 ${
+                        className={`w-full min-h-[64px] text-left rounded-xl border-2 p-3 transition-all duration-200 flex items-center gap-3 active:scale-[0.99] active:opacity-80 ${
                           selecionada ? 'border-[#1A3A6B] bg-[#1A3A6B]/5' : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
@@ -234,7 +252,7 @@ export default function RegistroSaida() {
 
               {duplasSelecionadas.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <button type="button" onClick={() => setDuplasSelecionadas([])} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                  <button type="button" onClick={() => setDuplasSelecionadas([])} className="min-h-11 text-xs text-gray-400 hover:text-gray-600 transition-colors active:scale-95">
                     Limpar seleção
                   </button>
                 </div>
@@ -259,20 +277,20 @@ export default function RegistroSaida() {
         </div>
 
         <div className={isDireto
-          ? 'flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center'
-          : 'max-w-3xl mx-auto flex justify-between items-center gap-3 p-4 sm:p-6 pb-8'
+          ? 'flex-shrink-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3'
+          : 'max-w-3xl mx-auto flex flex-col sm:flex-row justify-between sm:items-center gap-3 p-4 sm:p-6 pb-24 sm:pb-8'
         }>
           <div className="text-sm text-gray-500">
             {duplasSelecionadas.length > 0
               ? <span className="font-medium text-[#1A3A6B]">{duplasSelecionadas.length} dupla(s) selecionada(s)</span>
               : 'Nenhuma dupla selecionada'}
           </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => navigate(-1)} className="btn-outline">Cancelar</button>
+          <div className="flex w-full sm:w-auto gap-3">
+            <button type="button" onClick={() => navigate(-1)} className="btn-outline flex-1 sm:flex-none">Cancelar</button>
             <button
               type="submit"
               disabled={enviando || duplasSelecionadas.length === 0 || !coordenadorId}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex flex-1 sm:flex-none items-center justify-center gap-2"
             >
               {enviando ? (
                 <>

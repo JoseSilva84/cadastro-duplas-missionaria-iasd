@@ -285,9 +285,43 @@ export default function LayoutDireto() {
       </header>
 
       {/* Conteúdo principal — ocupa todo o resto da tela, sem scroll vertical global */}
-      <main className="flex-1 min-h-0 overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-hidden pb-20 md:pb-0">
         <Outlet />
       </main>
+      <BottomNavigation navLinks={navLinks} onMenuClick={() => setMenuAberto(true)} />
     </div>
+  );
+}
+
+function BottomNavigation({ navLinks, onMenuClick }) {
+  const principais = navLinks
+    .filter((link) => !link.type)
+    .slice(0, 3);
+
+  return (
+    <nav className="md:hidden fixed left-0 right-0 bottom-0 z-30 mobile-bottom-nav border-t border-gray-200 bg-white/95 px-2 pt-2 backdrop-blur">
+      <div className="grid grid-cols-4 gap-1">
+        {principais.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `mobile-bottom-nav-link ${isActive ? 'bg-[#1A3A6B] text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-[#1A3A6B]'}`
+            }
+          >
+            {link.icon}
+            <span className="max-w-full truncate">{link.label}</span>
+          </NavLink>
+        ))}
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="mobile-bottom-nav-link text-gray-500 hover:bg-gray-50 hover:text-[#1A3A6B]"
+        >
+          {icons.menu}
+          <span>Menu</span>
+        </button>
+      </div>
+    </nav>
   );
 }

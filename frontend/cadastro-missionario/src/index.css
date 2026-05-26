@@ -28,6 +28,12 @@
     cursor: pointer;
   }
 
+  button,
+  [role="button"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
   body {
     font-family: 'Inter', 'Segoe UI', sans-serif;
     background-color: var(--cinza-claro);
@@ -57,8 +63,9 @@
 
 @layer utilities {
   .btn-primary {
-    @apply bg-[#1A3A6B] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+    @apply bg-[#1A3A6B] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 active:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed;
     background: linear-gradient(135deg, #1A3A6B 0%, #2a5298 100%);
+    min-height: 44px;
   }
   .btn-primary:hover {
     background: linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%);
@@ -69,8 +76,9 @@
   }
 
   .btn-secondary {
-    @apply bg-[#C9963A] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md active:scale-95;
+    @apply bg-[#C9963A] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md active:scale-95 active:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed;
     background: linear-gradient(135deg, #C9963A 0%, #e5b05a 100%);
+    min-height: 44px;
   }
   .btn-secondary:hover {
     background: linear-gradient(135deg, #b8862f 0%, #C9963A 100%);
@@ -78,7 +86,8 @@
   }
 
   .btn-outline {
-    @apply border-2 border-[#1A3A6B] text-[#1A3A6B] font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+    @apply border-2 border-[#1A3A6B] text-[#1A3A6B] font-semibold px-6 py-3 rounded-lg transition-all duration-200 active:scale-95 active:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed;
+    min-height: 44px;
   }
   .btn-outline:hover {
     @apply bg-[#1A3A6B] text-white;
@@ -100,6 +109,7 @@
   .input-field {
     @apply w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-all duration-200;
     background: #fafbfc;
+    min-height: 44px;
   }
   .input-field:focus {
     @apply border-transparent;
@@ -127,10 +137,11 @@
   }
 
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] active:opacity-80;
     color: rgba(255, 255, 255, 0.6);
     position: relative;
     overflow: hidden;
+    min-height: 44px;
   }
   .sidebar-link::before {
     content: '';
@@ -323,6 +334,20 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 8px;
+}
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.mobile-bottom-nav {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 24px rgba(15, 35, 71, 0.12);
+}
+
+.mobile-bottom-nav-link {
+  @apply flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold transition-all duration-200 active:scale-95 active:opacity-80;
 }
 
 /* ============================================

@@ -199,13 +199,47 @@ export default function Layout() {
            <div className="w-9 flex-shrink-0" />
          </header>
 
-         <main className="flex-1 overflow-y-auto bg-[#F4F5F7]">
+         <main className="flex-1 overflow-y-auto bg-[#F4F5F7] pb-20 lg:pb-0">
            <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
              <Outlet />
            </div>
          </main>
+         <BottomNavigation navLinks={navLinks} onMenuClick={() => setSidebarAberta(true)} />
        </div>
     </div>
+  );
+}
+
+function BottomNavigation({ navLinks, onMenuClick }) {
+  const principais = navLinks
+    .filter((link) => !link.type)
+    .slice(0, 3);
+
+  return (
+    <nav className="lg:hidden fixed left-0 right-0 bottom-0 z-30 mobile-bottom-nav border-t border-gray-200 bg-white/95 px-2 pt-2 backdrop-blur">
+      <div className="grid grid-cols-4 gap-1">
+        {principais.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `mobile-bottom-nav-link ${isActive ? 'bg-[#1A3A6B] text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-[#1A3A6B]'}`
+            }
+          >
+            {link.icon}
+            <span className="max-w-full truncate">{link.label}</span>
+          </NavLink>
+        ))}
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="mobile-bottom-nav-link text-gray-500 hover:bg-gray-50 hover:text-[#1A3A6B]"
+        >
+          {icons.menu}
+          <span>Menu</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 
