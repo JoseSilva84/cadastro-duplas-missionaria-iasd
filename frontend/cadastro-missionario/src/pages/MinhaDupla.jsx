@@ -9,16 +9,23 @@ export default function MinhaDupla() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const [dupla, setDupla] = useState(null);
+  const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
     if (!usuario?.duplaId) {
-      setErro('Nenhuma dupla vinculada a este usuário. Contate o administrador.');
-      setCarregando(false);
+      api.get('/duplas')
+        .then((res) => {
+          setDuplas(res.data);
+          setCarregando(false);
+        })
+        .catch((err) => {
+          setErro(err.response?.data?.erro || 'Erro ao carregar duplas missionarias.');
+          setCarregando(false);
+        });
       return;
     }
-
     api.get(`/duplas/${usuario.duplaId}`)
       .then((res) => {
         setDupla(res.data);
@@ -87,6 +94,57 @@ export default function MinhaDupla() {
       rota: `${prefix}/cadastro/classe-biblica`,
     },
   ];
+
+  if (!usuario?.duplaId) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <div className="bg-gradient-to-br from-[#1A3A6B] to-[#0d2347] rounded-2xl p-6 text-white shadow-lg">
+          <p className="text-sm text-blue-200 font-medium uppercase tracking-wider mb-1">Acesso unificado</p>
+          <h1 className="text-2xl font-bold">Duplas Missionárias</h1>
+          <p className="text-blue-200 mt-1">Selecione uma dupla para consultar a ficha ou registrar relatórios.</p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {atalhos.map((atalho) => (
+            <button
+              key={atalho.rota}
+              onClick={() => navigate(atalho.rota)}
+              className="flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-4 hover:border-[#1A3A6B] hover:shadow-md transition-all text-left group"
+            >
+              <span className="text-2xl">{atalho.icon}</span>
+              <div>
+                <p className="font-semibold text-[#1A3A6B] group-hover:text-[#C9963A] transition-colors">{atalho.titulo}</p>
+                <p className="text-sm text-gray-500">{atalho.descricao}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="font-semibold text-[#1A3A6B]">Todas as duplas</h2>
+            <p className="text-xs text-gray-500">{duplas.length} dupla(s) cadastrada(s)</p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {duplas.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => navigate(`${prefix}/duplas/${item.id}`)}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+              >
+                <div>
+                  <p className="font-semibold text-gray-900">{item.liderNome} + {item.membro2Nome}</p>
+                  <p className="text-sm text-gray-500">{item.bairro || 'Sem bairro'} · {item.distrito?.nome || item.regiaoNome || 'Sem distrito'}</p>
+                </div>
+                <span className="text-[#C9963A] text-xl">›</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

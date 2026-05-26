@@ -76,6 +76,23 @@ const UsuarioModel = {
       data: { ativo: false },
     });
   },
+
+  // Exclui usuário definitivamente
+  async remove(id) {
+    const usuarioId = Number(id);
+    return prisma.$transaction(async (tx) => {
+      await tx.escolaSabatinaCadastro.updateMany({
+        where: { criadoPorId: usuarioId },
+        data: { criadoPorId: null },
+      });
+      await tx.acompanhamentoDupla.deleteMany({
+        where: { coordenadorId: usuarioId },
+      });
+      return tx.usuario.delete({
+        where: { id: usuarioId },
+      });
+    });
+  },
 };
 
 module.exports = UsuarioModel;

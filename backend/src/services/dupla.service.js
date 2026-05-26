@@ -1,4 +1,4 @@
-// Service de Dupla — Regras de negócio com Resource-Based Authorization
+﻿// Service de Dupla â€” Regras de negÃ³cio com Resource-Based Authorization
 const DuplaModel = require('../models/dupla.model');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
@@ -32,21 +32,20 @@ const calcularClassificacao = (data) => {
 };
 
 const DuplaService = {
-  // Lista duplas com filtros e restrições por perfil (Resource-Based Authorization)
+  // Lista duplas com filtros e restriÃ§Ãµes por perfil (Resource-Based Authorization)
   async listar(usuario, query) {
     const { distritoId, status, regiaoNome } = query;
     const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId, duplaId: userDuplaId } = usuario;
 
-    // Montamos o filtro como lista de condições AND para evitar conflitos no Prisma
+    // Montamos o filtro como lista de condiÃ§Ãµes AND para evitar conflitos no Prisma
     const condicoes = [];
 
-    // ─── Restrições por perfil ──────────────────────────────────────────────────
+    // â”€â”€â”€ RestriÃ§Ãµes por perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (perfil === PERFIS.DUPLA_MISSIONARIA) {
-      // Dupla só vê a si mesma
-      if (!userDuplaId) {
-        throw { status: 403, mensagem: 'Dupla não vinculada a este usuário.' };
+      // Conta vinculada ve somente a propria dupla; conta unificada ve todas.
+      if (userDuplaId) {
+        condicoes.push({ id: userDuplaId });
       }
-      condicoes.push({ id: userDuplaId });
     } else if (perfil === PERFIS.PASTOR_DISTRITAL) {
       condicoes.push({ distritoId: userDistritoId });
     } else if (
@@ -55,10 +54,10 @@ const DuplaService = {
     ) {
       condicoes.push({ distrito: { is: { regiaoId: userRegiaoId } } });
     }
-    // SUPER_ADMIN e ADMINISTRADOR: sem restrição de escopo
+    // SUPER_ADMIN e ADMINISTRADOR: sem restriÃ§Ã£o de escopo
 
-    // ─── Filtros opcionais da query (só válidos se o perfil tem acesso ao escopo) ──
-    // Evitamos que uma DUPLA_MISSIONARIA consiga ignorar a restrição passando ?distritoId=X
+    // â”€â”€â”€ Filtros opcionais da query (sÃ³ vÃ¡lidos se o perfil tem acesso ao escopo) â”€â”€
+    // Evitamos que uma DUPLA_MISSIONARIA consiga ignorar a restriÃ§Ã£o passando ?distritoId=X
     if (perfil !== PERFIS.DUPLA_MISSIONARIA) {
       if (distritoId) condicoes.push({ distritoId: Number(distritoId) });
       if (regiaoNome) condicoes.push({ regiaoNome: { contains: regiaoNome, mode: 'insensitive' } });
@@ -78,24 +77,24 @@ const DuplaService = {
   async buscarPorId(id, usuario) {
     const dupla = await DuplaModel.findById(id);
     if (!dupla) {
-      throw { status: 404, mensagem: 'Dupla não encontrada.' };
+      throw { status: 404, mensagem: 'Dupla nÃ£o encontrada.' };
     }
 
-    // DUPLA_MISSIONARIA só pode ver a própria dupla
+    // DUPLA_MISSIONARIA sÃ³ pode ver a prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (dupla.id !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'Acesso negado: você só pode visualizar sua própria dupla.' };
+      if (usuario.duplaId && dupla.id !== usuario.duplaId) {
+        throw { status: 403, mensagem: 'Acesso negado: vocÃª sÃ³ pode visualizar sua prÃ³pria dupla.' };
       }
     }
 
-    // PASTOR_DISTRITAL só pode ver duplas do seu distrito
+    // PASTOR_DISTRITAL sÃ³ pode ver duplas do seu distrito
     if (usuario && usuario.perfil === PERFIS.PASTOR_DISTRITAL) {
       if (dupla.distritoId !== usuario.distritoId) {
         throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outro distrito.' };
       }
     }
 
-    // PASTOR_REGIONAL e COORDENADOR_REGIONAL: validação no service de distrito (via regiaoId)
+    // PASTOR_REGIONAL e COORDENADOR_REGIONAL: validaÃ§Ã£o no service de distrito (via regiaoId)
 
     return dupla;
   },
@@ -148,22 +147,22 @@ const DuplaService = {
     });
   },
 
-  // Atualiza dupla (com verificação de permissão por perfil)
+  // Atualiza dupla (com verificaÃ§Ã£o de permissÃ£o por perfil)
   async atualizar(id, data, usuario) {
     const dupla = await this.buscarPorId(id, usuario);
     const classificacao = calcularClassificacao(data);
 
-    // Pastores só editam duplas do próprio distrito
+    // Pastores sÃ³ editam duplas do prÃ³prio distrito
     if (usuario.perfil === PERFIS.PASTOR_DISTRITAL && dupla.distritoId !== usuario.distritoId) {
-      throw { status: 403, mensagem: 'Sem permissão para editar esta dupla.' };
+      throw { status: 403, mensagem: 'Sem permissÃ£o para editar esta dupla.' };
     }
 
-    // Pastor Regional só edita duplas da sua região
+    // Pastor Regional sÃ³ edita duplas da sua regiÃ£o
     if (usuario.perfil === PERFIS.PASTOR_REGIONAL) {
       const prisma = require('../lib/prisma');
       const distrito = await prisma.distrito.findUnique({ where: { id: dupla.distritoId } });
       if (!distrito || distrito.regiaoId !== usuario.regiaoId) {
-        throw { status: 403, mensagem: 'Sem permissão para editar esta dupla (outra região).' };
+        throw { status: 403, mensagem: 'Sem permissÃ£o para editar esta dupla (outra regiÃ£o).' };
       }
     }
 
@@ -220,7 +219,7 @@ const DuplaService = {
     return DuplaModel.update(id, dadosAtualizados);
   },
 
-  // Remove dupla (apenas admins — garantido na rota)
+  // Remove dupla (apenas admins â€” garantido na rota)
   async remover(id) {
     await this.buscarPorId(id);
     return DuplaModel.remove(id);

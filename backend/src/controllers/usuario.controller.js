@@ -1,47 +1,53 @@
-// Controller de Usuário — Entrada e saída HTTP
+﻿// Controller de UsuÃ¡rio â€” Entrada e saÃ­da HTTP
 const UsuarioService = require('../services/usuario.service');
 
 const UsuarioController = {
-  // GET /api/usuarios — filtrado por perfil do usuário logado
+  // GET /api/usuarios â€” filtrado por perfil do usuÃ¡rio logado
   async listar(req, res) {
     try {
       const usuarios = await UsuarioService.listar(req.usuario);
       res.json(usuarios);
     } catch (err) {
       const status = err.status || 500;
-      res.status(status).json({ erro: err.mensagem || 'Erro ao listar usuários.' });
+      res.status(status).json({ erro: err.mensagem || 'Erro ao listar usuÃ¡rios.' });
     }
   },
 
-  // POST /api/usuarios — contexto do usuário logado para validar permissões
+  // POST /api/usuarios â€” contexto do usuÃ¡rio logado para validar permissÃµes
   async criar(req, res) {
     try {
       const usuario = await UsuarioService.criar(req.body, req.usuario);
       res.status(201).json(usuario);
     } catch (err) {
       const status = err.status || 500;
-      res.status(status).json({ erro: err.mensagem || 'Erro ao criar usuário.' });
+      res.status(status).json({ erro: err.mensagem || 'Erro ao criar usuÃ¡rio.' });
     }
   },
 
-  // PUT /api/usuarios/:id — contexto do usuário logado para validar perfil atribuído
+  // PUT /api/usuarios/:id â€” contexto do usuÃ¡rio logado para validar perfil atribuÃ­do
   async atualizar(req, res) {
     try {
       const usuario = await UsuarioService.atualizar(req.params.id, req.body, req.usuario);
       res.json(usuario);
     } catch (err) {
       const status = err.status || 500;
-      res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar usuário.' });
+      res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar usuÃ¡rio.' });
     }
   },
 
   // DELETE /api/usuarios/:id
+  // DELETE /api/usuarios/:id
   async desativar(req, res) {
     try {
+      if (req.query.permanente === 'true') {
+        await UsuarioService.excluir(req.params.id, req.usuario);
+        return res.json({ mensagem: 'Usuario excluido com sucesso.' });
+      }
       await UsuarioService.desativar(req.params.id);
-      res.json({ mensagem: 'Usuário desativado com sucesso.' });
+      res.json({ mensagem: 'Usuario desativado com sucesso.' });
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao desativar usuário.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao processar usuario.' });
     }
   },
 };

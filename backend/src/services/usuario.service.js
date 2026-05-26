@@ -100,6 +100,14 @@ const UsuarioService = {
   async desativar(id) {
     return UsuarioModel.deactivate(id);
   },
+
+  // Exclui usuário definitivamente
+  async excluir(id, usuarioLogado) {
+    if (Number(id) === Number(usuarioLogado.id)) {
+      throw { status: 400, mensagem: 'Você não pode excluir o próprio usuário logado.' };
+    }
+    return UsuarioModel.remove(id);
+  },
 };
 
 module.exports = UsuarioService;

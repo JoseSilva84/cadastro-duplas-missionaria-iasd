@@ -1,17 +1,17 @@
-const EvangelismoModel = require('../models/evangelismo.model');
+﻿const EvangelismoModel = require('../models/evangelismo.model');
 const { PERFIS } = require('../middlewares/auth');
 
 // Aplica filtros de escopo por perfil + filtros opcionais da query
 const montarFiltro = (query = {}, usuario = null) => {
   const where = {};
 
-  // ─── Restrições por perfil ──────────────────────────────────────────────────
+  // â”€â”€â”€ RestriÃ§Ãµes por perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (usuario) {
     const { perfil, duplaId, distritoId, regiaoId } = usuario;
 
     if (perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (!duplaId) throw { status: 403, mensagem: 'Dupla não vinculada a este usuário.' };
-      where.duplaId = duplaId;
+      // Conta vinculada ve somente a propria dupla; conta unificada ve todas.
+      if (duplaId) where.duplaId = duplaId;
     } else if (perfil === PERFIS.PASTOR_DISTRITAL && distritoId) {
       where.dupla = { is: { distritoId } };
     } else if (
@@ -20,10 +20,10 @@ const montarFiltro = (query = {}, usuario = null) => {
     ) {
       where.dupla = { is: { distrito: { is: { regiaoId } } } };
     }
-    // SUPER_ADMIN e ADMINISTRADOR: sem restrição
+    // SUPER_ADMIN e ADMINISTRADOR: sem restriÃ§Ã£o
   }
 
-  // ─── Filtros opcionais (ignorados para DUPLA_MISSIONARIA) ──────────────────
+  // â”€â”€â”€ Filtros opcionais (ignorados para DUPLA_MISSIONARIA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!usuario || usuario.perfil !== PERFIS.DUPLA_MISSIONARIA) {
     if (query.duplaId) where.duplaId = Number(query.duplaId);
   }
@@ -58,22 +58,22 @@ const EvangelismoService = {
 
   async buscarPorId(id, usuario) {
     const evangelismo = await EvangelismoModel.findById(id);
-    if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo não encontrado.' };
+    if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo nÃ£o encontrado.' };
 
-    // DUPLA_MISSIONARIA só vê registros da própria dupla
+    // DUPLA_MISSIONARIA sÃ³ vÃª registros da prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (evangelismo.duplaId !== usuario.duplaId) {
+      if (usuario.duplaId && evangelismo.duplaId !== usuario.duplaId) {
         throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra dupla.' };
       }
     }
     return evangelismo;
   },
 
-  // Criação com validação de escopo para DUPLA_MISSIONARIA
+  // CriaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async criar(data, usuario) {
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (Number(data.duplaId) !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'Você só pode cadastrar registros para a sua própria dupla.' };
+      if (usuario.duplaId && Number(data.duplaId) !== usuario.duplaId) {
+        throw { status: 403, mensagem: 'VocÃª sÃ³ pode cadastrar registros para a sua prÃ³pria dupla.' };
       }
     }
     return EvangelismoModel.create(normalizar(data));

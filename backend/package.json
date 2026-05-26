@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev --name init",
     "db:push": "prisma db push",
     "db:seed": "node src/seed.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "acessos:gerar": "node src/scripts/gerarAcessos.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

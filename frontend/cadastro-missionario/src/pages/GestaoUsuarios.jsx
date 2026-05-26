@@ -322,44 +322,33 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
     </div>
   );
 }
-
 function ModalConfirmar({ usuario, onClose, onConfirmar, processando }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-8 0h10" />
           </svg>
         </div>
         <div className="mt-4 text-center">
-          <h3 className="text-lg font-bold text-gray-900">Desativar usuário?</h3>
+          <h3 className="text-lg font-bold text-gray-900">Excluir usuário?</h3>
           <p className="mt-2 text-sm text-gray-500">
-            {usuario.nome} não conseguirá acessar o sistema até ser reativado.
+            Esta ação removerá definitivamente o acesso de {usuario.nome}.
           </p>
         </div>
         <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-11 flex-1 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-          >
+          <button type="button" onClick={onClose} className="h-11 flex-1 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
             Cancelar
           </button>
-          <button
-            type="button"
-            onClick={onConfirmar}
-            disabled={processando}
-            className="h-11 flex-1 rounded-lg bg-red-600 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
-          >
-            {processando ? 'Desativando...' : 'Desativar'}
+          <button type="button" onClick={onConfirmar} disabled={processando} className="h-11 flex-1 rounded-lg bg-red-600 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60">
+            {processando ? 'Excluindo...' : 'Confirmar exclusão'}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
 export default function GestaoUsuarios() {
   const { usuario: usuarioLogado } = useAuth();
 
@@ -374,8 +363,8 @@ export default function GestaoUsuarios() {
   const [busca, setBusca] = useState('');
   const [modalCriar, setModalCriar] = useState(false);
   const [modalEditar, setModalEditar] = useState(null);
-  const [modalDesativar, setModalDesativar] = useState(null);
-  const [processandoDesativar, setProcessandoDesativar] = useState(false);
+  const [modalExcluir, setModalExcluir] = useState(null);
+  const [processandoExcluir, setProcessandoExcluir] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -387,7 +376,7 @@ export default function GestaoUsuarios() {
         api.get('/distritos'),
         api.get('/duplas'),
       ]);
-      setUsuarios(rUsuarios.data);
+      setUsuarios(rUsuarios.data.filter((usuario) => usuario.ativo));
       setRegioes(rRegioes.data);
       setDistritos(rDistritos.data);
       setDuplas(rDuplas.data);
@@ -402,21 +391,21 @@ export default function GestaoUsuarios() {
     carregar();
   }, [carregar]);
 
-  const handleDesativar = async () => {
-    setProcessandoDesativar(true);
+  const handleExcluir = async () => {
+    setProcessandoExcluir(true);
     try {
-      await api.delete(`/usuarios/${modalDesativar.id}`);
-      setModalDesativar(null);
+      await api.delete(`/usuarios/${modalExcluir.id}?permanente=true`);
+      setModalExcluir(null);
       await carregar();
     } finally {
-      setProcessandoDesativar(false);
+      setProcessandoExcluir(false);
     }
   };
 
   const usuariosFiltrados = usuarios.filter((usuario) => {
     if (filtroPerfil && usuario.perfil !== filtroPerfil) return false;
-    if (filtroStatus === 'ativo' && !usuario.ativo) return false;
-    if (filtroStatus === 'inativo' && usuario.ativo) return false;
+    if (!usuario.ativo) return false;
+    if (filtroStatus === 'inativo') return false;
     if (busca) {
       const termo = busca.toLowerCase();
       return usuario.nome.toLowerCase().includes(termo) || usuario.email.toLowerCase().includes(termo);
@@ -425,11 +414,10 @@ export default function GestaoUsuarios() {
   });
 
   const contagens = Object.keys(PERFIL_CONFIG).reduce((acc, perfil) => {
-    acc[perfil] = usuarios.filter((usuario) => usuario.perfil === perfil).length;
+    acc[perfil] = usuarios.filter((usuario) => usuario.ativo && usuario.perfil === perfil).length;
     return acc;
   }, {});
   const totalAtivos = usuarios.filter((usuario) => usuario.ativo).length;
-  const totalInativos = usuarios.length - totalAtivos;
   const filtrosAtivos = Boolean(filtroPerfil || filtroStatus || busca);
 
   if (carregando) {
@@ -486,8 +474,8 @@ export default function GestaoUsuarios() {
             <p className="text-xs font-medium text-gray-500">Ativos</p>
           </div>
           <div className="px-4 py-3 sm:px-5">
-            <p className="text-2xl font-bold text-gray-500">{totalInativos}</p>
-            <p className="text-xs font-medium text-gray-500">Inativos</p>
+            <p className="text-2xl font-bold text-gray-500">{usuariosFiltrados.length}</p>
+            <p className="text-xs font-medium text-gray-500">Exibidos</p>
           </div>
         </div>
       </section>
@@ -542,7 +530,6 @@ export default function GestaoUsuarios() {
           >
             <option value="">Todos os status</option>
             <option value="ativo">Ativos</option>
-            <option value="inativo">Inativos</option>
           </select>
           {filtrosAtivos && (
             <button
@@ -606,7 +593,7 @@ export default function GestaoUsuarios() {
                             </svg>
                           </IconButton>
                           {usuario.ativo && usuario.id !== usuarioLogado?.id && (
-                            <IconButton title="Desativar usuário" onClick={() => setModalDesativar(usuario)} variant="danger">
+                            <IconButton title="Excluir usuário" onClick={() => setModalExcluir(usuario)} variant="danger">
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                               </svg>
@@ -643,7 +630,7 @@ export default function GestaoUsuarios() {
                         </svg>
                       </IconButton>
                       {usuario.ativo && usuario.id !== usuarioLogado?.id && (
-                        <IconButton title="Desativar usuário" onClick={() => setModalDesativar(usuario)} variant="danger">
+                        <IconButton title="Excluir usuário" onClick={() => setModalExcluir(usuario)} variant="danger">
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                           </svg>
@@ -679,12 +666,12 @@ export default function GestaoUsuarios() {
           usuarioLogado={usuarioLogado}
         />
       )}
-      {modalDesativar && (
+      {modalExcluir && (
         <ModalConfirmar
-          usuario={modalDesativar}
-          onClose={() => setModalDesativar(null)}
-          onConfirmar={handleDesativar}
-          processando={processandoDesativar}
+          usuario={modalExcluir}
+          onClose={() => setModalExcluir(null)}
+          onConfirmar={handleExcluir}
+          processando={processandoExcluir}
         />
       )}
     </div>
