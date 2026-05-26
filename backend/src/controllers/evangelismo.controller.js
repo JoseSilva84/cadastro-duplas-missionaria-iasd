@@ -16,17 +16,18 @@ const validarEvangelismo = [
 const EvangelismoController = {
   async listar(req, res) {
     try {
-      res.json(await EvangelismoService.listar(req.query));
+      res.json(await EvangelismoService.listar(req.query, req.usuario));
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao listar classes bíblicas.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao listar registros de evangelismo.' });
     }
   },
 
   async buscarPorId(req, res) {
     try {
-      res.json(await EvangelismoService.buscarPorId(req.params.id));
+      res.json(await EvangelismoService.buscarPorId(req.params.id, req.usuario));
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar classe bíblica.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar registro de evangelismo.' });
     }
   },
 
@@ -35,9 +36,10 @@ const EvangelismoController = {
     if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
 
     try {
-      res.status(201).json(await EvangelismoService.criar(req.body));
+      res.status(201).json(await EvangelismoService.criar(req.body, req.usuario));
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao cadastrar classe bíblica.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao cadastrar registro de evangelismo.' });
     }
   },
 
@@ -46,18 +48,18 @@ const EvangelismoController = {
     if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
 
     try {
-      res.json(await EvangelismoService.atualizar(req.params.id, req.body));
+      res.json(await EvangelismoService.atualizar(req.params.id, req.body, req.usuario));
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar classe bíblica.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar registro de evangelismo.' });
     }
   },
 
   async remover(req, res) {
     try {
-      await EvangelismoService.remover(req.params.id);
-      res.json({ mensagem: 'Classe bíblica removida com sucesso.' });
+      await EvangelismoService.remover(req.params.id, req.usuario);
+      res.json({ mensagem: 'Registro de evangelismo removido com sucesso.' });
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover classe bíblica.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover registro de evangelismo.' });
     }
   },
 };

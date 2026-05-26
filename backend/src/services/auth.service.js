@@ -17,6 +17,7 @@ const AuthService = {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
 
+    // Payload do JWT inclui todos os campos necessários para Resource-Based Authorization
     const token = jwt.sign(
       {
         id: usuario.id,
@@ -25,6 +26,7 @@ const AuthService = {
         perfil: usuario.perfil,
         regiaoId: usuario.regiaoId,
         distritoId: usuario.distritoId,
+        duplaId: usuario.duplaId, // DUPLA_MISSIONARIA — vincula ao ID da dupla
       },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
@@ -37,8 +39,12 @@ const AuthService = {
         nome: usuario.nome,
         email: usuario.email,
         perfil: usuario.perfil,
+        regiaoId: usuario.regiaoId,
+        distritoId: usuario.distritoId,
+        duplaId: usuario.duplaId,
         regiao: usuario.regiao,
         distrito: usuario.distrito,
+        dupla: usuario.dupla,
       },
     };
   },

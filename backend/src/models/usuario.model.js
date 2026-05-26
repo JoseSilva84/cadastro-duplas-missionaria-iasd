@@ -2,34 +2,55 @@
 const prisma = require('../lib/prisma');
 
 const UsuarioModel = {
-  // Busca usuário por e-mail
+  // Busca usuário por e-mail (inclui dados de região, distrito e dupla)
   async findByEmail(email) {
     return prisma.usuario.findUnique({
       where: { email },
-      include: { regiao: true, distrito: true },
+      include: {
+        regiao: true,
+        distrito: true,
+        dupla: { select: { id: true, liderNome: true, membro2Nome: true, distritoId: true } },
+      },
     });
   },
 
   // Busca usuário por ID
   async findById(id) {
     return prisma.usuario.findUnique({
-      where: { id },
-      include: { regiao: true, distrito: true },
+      where: { id: Number(id) },
       select: {
-        id: true, nome: true, email: true, perfil: true,
-        regiao: true, distrito: true, ativo: true,
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        ativo: true,
+        regiaoId: true,
+        distritoId: true,
+        duplaId: true,
+        regiao: { select: { id: true, nome: true } },
+        distrito: { select: { id: true, nome: true } },
+        dupla: { select: { id: true, liderNome: true, membro2Nome: true } },
       },
     });
   },
 
   // Lista todos os usuários (admin)
-  async findAll() {
+  async findAll(filtro = {}) {
     return prisma.usuario.findMany({
+      where: filtro,
       select: {
-        id: true, nome: true, email: true, perfil: true,
-        ativo: true, criadoEm: true,
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        ativo: true,
+        criadoEm: true,
+        regiaoId: true,
+        distritoId: true,
+        duplaId: true,
         regiao: { select: { id: true, nome: true } },
         distrito: { select: { id: true, nome: true } },
+        dupla: { select: { id: true, liderNome: true } },
       },
       orderBy: { nome: 'asc' },
     });

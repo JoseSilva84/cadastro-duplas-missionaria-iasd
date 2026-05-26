@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const icons = {
   regioes: (
@@ -38,6 +38,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   ),
+  usuarios: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
   menu: (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -56,10 +61,12 @@ const icons = {
 };
 
 const perfilLabel = {
-  ADMINISTRADOR: 'Administrador',
+  SUPER_ADMIN: 'Super Administrador',
+  ADMINISTRADOR: 'Administrador (MIPES)',
+  PASTOR_REGIONAL: 'Pastor Regional',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
-  LIDER_REGIOES: 'Líder de Regiões',
+  DUPLA_MISSIONARIA: 'Dupla Missionária',
 };
 
 export default function Layout() {
@@ -82,7 +89,11 @@ export default function Layout() {
     }
   };
 
-  const isAdmin = usuario?.perfil === 'ADMINISTRADOR';
+  const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
+  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
+  const podeVerRelatorios = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeCadastrarDupla = usuario?.perfil !== PERFIS.DUPLA_MISSIONARIA && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
   const isDireto = layout === 'direto';
 
   const navLinks = isDireto
@@ -92,26 +103,29 @@ export default function Layout() {
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
-          { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
+          ...(podeCadastrarDupla ? [{ to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
-          { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
-          { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
-          { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionario', icon: 'CM' },
-          { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
-          { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
-          { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
+          ...(podeGerenciarLiderancas ? [
+            { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
+            { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
+            { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionário', icon: 'CM' },
+            { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
+            { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
+          ] : []),
+          ...(isSuperAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          { to: '/direto/registro-saida', label: 'Registro de Assistência', icon: '✅' },
         ] },
-        { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+        ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
           { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
           { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
-        ] },
+        ] }] : []),
       ]
     : [
         { to: '/regioes', label: 'Regiões', icon: icons.regioes },
@@ -119,19 +133,22 @@ export default function Layout() {
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
-          { to: '/duplas/nova', label: 'Nova Dupla', icon: '+' },
+          ...(podeCadastrarDupla ? [{ to: '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
-          { to: '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
-          { to: '/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
-          { to: '/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionario', icon: 'CM' },
-          { to: '/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
-          { to: '/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
-          { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
+          ...(podeGerenciarLiderancas ? [
+            { to: '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
+            { to: '/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
+            { to: '/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionário', icon: 'CM' },
+            { to: '/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
+            { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
+          ] : []),
+          ...(isSuperAdmin ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          { to: '/registro-saida', label: 'Registro de Assistência', icon: '✅' },
         ] },
-        ...(isAdmin ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+        ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
           { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },

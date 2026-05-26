@@ -1,20 +1,40 @@
-// Rotas de Usuários
+// Rotas de Usuários — com controle de acesso RBAC
 const express = require('express');
 const UsuarioController = require('../controllers/usuario.controller');
-const { autenticar, autorizar } = require('../middlewares/auth');
+const { autenticar, autorizar, PERFIS } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// GET /api/usuarios — Lista usuários (admin)
-router.get('/', autenticar, autorizar('ADMINISTRADOR'), UsuarioController.listar);
+// GET /api/usuarios — Admin vê todos; Pastor Regional vê os da sua região
+router.get(
+  '/',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL),
+  UsuarioController.listar
+);
 
-// POST /api/usuarios — Cria novo usuário (admin)
-router.post('/', autenticar, autorizar('ADMINISTRADOR'), UsuarioController.criar);
+// POST /api/usuarios — Admin cria qualquer perfil; Pastor Regional cria PD/Coord da sua região
+router.post(
+  '/',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL),
+  UsuarioController.criar
+);
 
-// PUT /api/usuarios/:id — Atualiza usuário (admin)
-router.put('/:id', autenticar, autorizar('ADMINISTRADOR'), UsuarioController.atualizar);
+// PUT /api/usuarios/:id — Admin e Pastor Regional (restrição no service)
+router.put(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL),
+  UsuarioController.atualizar
+);
 
-// DELETE /api/usuarios/:id — Desativa usuário (admin)
-router.delete('/:id', autenticar, autorizar('ADMINISTRADOR'), UsuarioController.desativar);
+// DELETE /api/usuarios/:id — Apenas admins desativam usuários
+router.delete(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  UsuarioController.desativar
+);
 
 module.exports = router;

@@ -1,6 +1,13 @@
 // Model de Relatório — Operações no banco de dados
 const prisma = require('../lib/prisma');
 
+const REGIOES_OFICIAIS = Array.from({ length: 7 }, (_, index) => `REGIÃO ${index + 1}`);
+
+const ordemRegiaoOficial = (nome = '') => {
+  const resultado = String(nome).match(/^REGIÃO\s+(\d+)$/i);
+  return resultado ? Number(resultado[1]) : 999;
+};
+
 const classificarClasseBiblica = (totalEstudantes = 0) => {
   if (totalEstudantes >= 150) return 'A';
   if (totalEstudantes >= 67) return 'B';
@@ -190,6 +197,7 @@ const RelatorioModel = {
   // Duplas agrupadas por região
   async porRegiao() {
     const regioes = await prisma.regiao.findMany({
+      where: { nome: { in: REGIOES_OFICIAIS } },
       include: {
         distritos: {
           include: {
@@ -223,7 +231,7 @@ const RelatorioModel = {
           totalPessoas: d.duplas.reduce((a, dupla) => a + (dupla.pessoasAlcancadas || 0), 0)
         })).sort((a, b) => b.totalDuplas - a.totalDuplas)
       };
-    });
+    }).sort((a, b) => ordemRegiaoOficial(a.nome) - ordemRegiaoOficial(b.nome));
   },
 
   // Relatório de um distrito específico
@@ -447,6 +455,13 @@ const RelatorioModel = {
       }),
       prisma.dupla.count({ where: { tipoProjeto: 'PEQUENOS_GRUPOS' } }),
       prisma.dupla.findMany({
+        where: {
+          distrito: {
+            is: {
+              regiao: { is: { nome: { in: REGIOES_OFICIAIS } } },
+            },
+          },
+        },
         select: {
           id: true,
           liderNome: true,
@@ -470,7 +485,18 @@ const RelatorioModel = {
         },
       }),
       prisma.estudoBiblico.findMany({
-        where: { tipoEstudo: 'CLASSE' },
+        where: {
+          tipoEstudo: 'CLASSE',
+          dupla: {
+            is: {
+              distrito: {
+                is: {
+                  regiao: { is: { nome: { in: REGIOES_OFICIAIS } } },
+                },
+              },
+            },
+          },
+        },
         include: {
           participantes: { select: { id: true } },
           dupla: {
@@ -585,6 +611,7 @@ const RelatorioModel = {
       where: {
         perfil: 'COORDENADOR_REGIONAL',
         ativo: true,
+        regiao: { is: { nome: { in: REGIOES_OFICIAIS } } },
       },
       select: {
         id: true,

@@ -1,5 +1,5 @@
 // Seed do banco de dados — Dados iniciais para o sistema
-// Execução: npm run db:seed
+// Execução: npm run db:seed  ou  node src/seed.js
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -23,7 +23,7 @@ async function main() {
     prisma.regiao.upsert({ where: { nome: 'Oeste Paulistana' }, update: {}, create: { nome: 'Oeste Paulistana', descricao: 'Regiao oeste da Associacao Paulistana', cor: cores[6] } }),
   ]);
 
-  console.log(`✅ ${regioes.length} regiões criadas.`);
+  console.log(`✅ ${regioes.length} regiões criadas/verificadas.`);
 
   // Criação dos distritos
   const distritos = await Promise.all([
@@ -50,7 +50,7 @@ async function main() {
     prisma.distrito.upsert({ where: { id: 14 }, update: {}, create: { nome: 'Pinheiros', regiaoId: regioes[6].id } }),
   ]);
 
-  console.log(`✅ ${distritos.length} distritos criados.`);
+  console.log(`✅ ${distritos.length} distritos criados/verificados.`);
 
   // Criação de igrejas
   const igrejas = await Promise.all([
@@ -60,58 +60,10 @@ async function main() {
     prisma.igreja.upsert({ where: { id: 4 }, update: {}, create: { nome: 'Igreja Osasco Central', distritoId: distritos[4].id } }),
   ]);
 
-  console.log(`✅ ${igrejas.length} igrejas criadas.`);
+  console.log(`✅ ${igrejas.length} igrejas criadas/verificadas.`);
 
-  // Usuário administrador padrão
-  const senhaHash = await bcrypt.hash('Admin@123', 10);
-  const admin = await prisma.usuario.upsert({
-    where: { email: 'admin@ap.adventistas.org' },
-    update: {},
-    create: {
-      nome: 'Departamental',
-      email: 'admin@ap.adventistas.org',
-      senha: senhaHash,
-      perfil: 'ADMINISTRADOR',
-    },
-  });
-
-  // Coordenador regional de exemplo
-  const coordSenha = await bcrypt.hash('Coord@123', 10);
-  await prisma.usuario.upsert({
-    where: { email: 'coord.centro@ap.adventistas.org' },
-    update: {},
-    create: {
-      nome: 'Coordenador PG',
-      email: 'coord.centro@ap.adventistas.org',
-      senha: coordSenha,
-      perfil: 'COORDENADOR_REGIONAL',
-      regiaoId: regioes[0].id,
-    },
-  });
-
-  // Pastor distrital de exemplo
-  const pastorSenha = await bcrypt.hash('Pastor@123', 10);
-  await prisma.usuario.upsert({
-    where: { email: 'pastor.santos@ap.adventistas.org' },
-    update: {},
-    create: {
-      nome: 'Pastor Santos',
-      email: 'pastor.santos@ap.adventistas.org',
-      senha: pastorSenha,
-      perfil: 'PASTOR_DISTRITAL',
-      distritoId: distritos[2].id,
-    },
-  });
-
-  // console.log('✅ Usuários criados.');
-  // console.log('');
-  // console.log('📋 Credenciais de acesso:');
-  // console.log('   Admin: admin@ap.adventistas.org / Admin@123');
-  // console.log('   Coordenador: coord.centro@ap.adventistas.org / Coord@123');
-  // console.log('   Pastor: pastor.santos@ap.adventistas.org / Pastor@123');
-  // console.log('');
-
-  // Duplas de exemplo
+  // ─── Duplas de exemplo ────────────────────────────────────────────────────────
+  // Usamos createMany + skipDuplicates; depois buscamos a dupla 1 para vincular ao usuario DUPLA_MISSIONARIA
   await prisma.dupla.createMany({
     skipDuplicates: true,
     data: [
@@ -159,7 +111,118 @@ async function main() {
     ],
   });
 
-  console.log('✅ Duplas de exemplo criadas.');
+  // Busca a primeira dupla para vincular ao perfil DUPLA_MISSIONARIA
+  const primeirasDuplas = await prisma.dupla.findMany({
+    take: 2,
+    orderBy: { id: 'asc' },
+    select: { id: true, liderNome: true, membro2Nome: true },
+  });
+
+  console.log(`✅ Duplas de exemplo criadas/verificadas.`);
+
+  // ─── Usuários — 6 perfis ─────────────────────────────────────────────────────
+
+  // 1. SUPER_ADMIN (Programador)
+  const superAdminHash = await bcrypt.hash('SuperAdmin@123', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'superadmin@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'Super Administrador',
+      email: 'superadmin@ap.adventistas.org',
+      senha: superAdminHash,
+      perfil: 'SUPER_ADMIN',
+    },
+  });
+
+  // 2. ADMINISTRADOR (Departamental MIPES)
+  const adminHash = await bcrypt.hash('Admin@123', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'admin@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'Departamental MIPES',
+      email: 'admin@ap.adventistas.org',
+      senha: adminHash,
+      perfil: 'ADMINISTRADOR',
+    },
+  });
+
+  // 3. PASTOR_REGIONAL (vinculado à região Centro SP)
+  const pastorRegionalHash = await bcrypt.hash('Pastor@123', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'pastor.regional@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'Pastor Regional Centro SP',
+      email: 'pastor.regional@ap.adventistas.org',
+      senha: pastorRegionalHash,
+      perfil: 'PASTOR_REGIONAL',
+      regiaoId: regioes[0].id,
+    },
+  });
+
+  // 4. PASTOR_DISTRITAL (vinculado ao distrito Santos)
+  const pastorDistritalHash = await bcrypt.hash('Pastor@123', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'pastor.santos@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'Pastor Santos',
+      email: 'pastor.santos@ap.adventistas.org',
+      senha: pastorDistritalHash,
+      perfil: 'PASTOR_DISTRITAL',
+      distritoId: distritos[2].id,
+    },
+  });
+
+  // 5. COORDENADOR_REGIONAL (vinculado à região Centro SP)
+  const coordHash = await bcrypt.hash('Coord@123', 10);
+  await prisma.usuario.upsert({
+    where: { email: 'coord.centro@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'Coordenador PG — Centro SP',
+      email: 'coord.centro@ap.adventistas.org',
+      senha: coordHash,
+      perfil: 'COORDENADOR_REGIONAL',
+      regiaoId: regioes[0].id,
+    },
+  });
+
+  // 6. DUPLA_MISSIONARIA (vinculada à 1ª dupla do banco)
+  const duplaHash = await bcrypt.hash('Dupla@123', 10);
+  const duplaId = primeirasDuplas[0]?.id ?? null;
+  await prisma.usuario.upsert({
+    where: { email: 'dupla.joao@ap.adventistas.org' },
+    update: {},
+    create: {
+      nome: 'João Silva (Dupla)',
+      email: 'dupla.joao@ap.adventistas.org',
+      senha: duplaHash,
+      perfil: 'DUPLA_MISSIONARIA',
+      duplaId,
+    },
+  });
+
+  console.log('');
+  console.log('✅ 6 usuários criados/verificados com sucesso!');
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  📋 CREDENCIAIS DE ACESSO');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  SUPER_ADMIN         superadmin@ap.adventistas.org  / SuperAdmin@123');
+  console.log('  ADMINISTRADOR       admin@ap.adventistas.org        / Admin@123');
+  console.log('  PASTOR_REGIONAL     pastor.regional@ap.adventistas.org / Pastor@123');
+  console.log('  PASTOR_DISTRITAL    pastor.santos@ap.adventistas.org   / Pastor@123');
+  console.log('  COORDENADOR_REG.    coord.centro@ap.adventistas.org    / Coord@123');
+  if (duplaId) {
+    console.log(`  DUPLA_MISSIONARIA   dupla.joao@ap.adventistas.org     / Dupla@123  (duplaId: ${duplaId})`);
+  } else {
+    console.log('  DUPLA_MISSIONARIA   dupla.joao@ap.adventistas.org     / Dupla@123  (⚠️ sem dupla vinculada)');
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
   console.log('🎉 Seed concluído com sucesso!');
 }
 

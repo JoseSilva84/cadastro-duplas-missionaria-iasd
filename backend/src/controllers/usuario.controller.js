@@ -2,20 +2,21 @@
 const UsuarioService = require('../services/usuario.service');
 
 const UsuarioController = {
-  // GET /api/usuarios
+  // GET /api/usuarios — filtrado por perfil do usuário logado
   async listar(req, res) {
     try {
-      const usuarios = await UsuarioService.listar();
+      const usuarios = await UsuarioService.listar(req.usuario);
       res.json(usuarios);
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao listar usuários.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao listar usuários.' });
     }
   },
 
-  // POST /api/usuarios
+  // POST /api/usuarios — contexto do usuário logado para validar permissões
   async criar(req, res) {
     try {
-      const usuario = await UsuarioService.criar(req.body);
+      const usuario = await UsuarioService.criar(req.body, req.usuario);
       res.status(201).json(usuario);
     } catch (err) {
       const status = err.status || 500;
@@ -23,13 +24,14 @@ const UsuarioController = {
     }
   },
 
-  // PUT /api/usuarios/:id
+  // PUT /api/usuarios/:id — contexto do usuário logado para validar perfil atribuído
   async atualizar(req, res) {
     try {
-      const usuario = await UsuarioService.atualizar(req.params.id, req.body);
+      const usuario = await UsuarioService.atualizar(req.params.id, req.body, req.usuario);
       res.json(usuario);
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao atualizar usuário.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar usuário.' });
     }
   },
 

@@ -4,6 +4,52 @@ import api from '../lib/api';
 // Contexto de autenticação global
 const AuthContext = createContext(null);
 
+// ─── Helpers de Verificação de Perfil ─────────────────────────────────────────
+export const PERFIS = {
+  SUPER_ADMIN:          'SUPER_ADMIN',
+  ADMINISTRADOR:        'ADMINISTRADOR',
+  PASTOR_REGIONAL:      'PASTOR_REGIONAL',
+  PASTOR_DISTRITAL:     'PASTOR_DISTRITAL',
+  COORDENADOR_REGIONAL: 'COORDENADOR_REGIONAL',
+  DUPLA_MISSIONARIA:    'DUPLA_MISSIONARIA',
+};
+
+// Perfis com acesso administrativo total
+export const ADMINS = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
+
+// Verifica se o usuário é admin total
+export const ehAdmin = (usuario) =>
+  usuario && ADMINS.includes(usuario.perfil);
+
+// Verifica se é DUPLA_MISSIONARIA
+export const ehDupla = (usuario) =>
+  usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA;
+
+// Verifica se é Pastor Regional
+export const ehPastorRegional = (usuario) =>
+  usuario && usuario.perfil === PERFIS.PASTOR_REGIONAL;
+
+// Verifica se é Pastor Distrital
+export const ehPastorDistrital = (usuario) =>
+  usuario && usuario.perfil === PERFIS.PASTOR_DISTRITAL;
+
+// Verifica se é Coordenador Regional
+export const ehCoordenador = (usuario) =>
+  usuario && usuario.perfil === PERFIS.COORDENADOR_REGIONAL;
+
+// Tem acesso a painel gerencial (acima de Coordenador)
+export const temAcessoGerencial = (usuario) =>
+  usuario && [
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.PASTOR_DISTRITAL,
+  ].includes(usuario.perfil);
+
+// Verifica se o usuário tem um dos perfis listados
+export const temPerfil = (usuario, ...perfis) =>
+  usuario && perfis.includes(usuario.perfil);
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [layout, setLayoutState] = useState(null);

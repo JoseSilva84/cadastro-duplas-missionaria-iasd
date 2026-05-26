@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla, temPerfil } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 
 // Páginas
@@ -24,6 +24,8 @@ import DashboardCoordenadorRegional from './pages/DashboardCoordenadorRegional';
 import DashboardAssociacao from './pages/DashboardAssociacao';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
+import MinhaDupla from './pages/MinhaDupla';
+import GestaoUsuarios from './pages/GestaoUsuarios';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -34,7 +36,7 @@ import ListagemDistritosDireto from './pages/direto/ListagemDistritosDireto';
 import ListagemIgrejasDireto from './pages/direto/ListagemIgrejasDireto';
 import RelatoriosDireto from './pages/direto/RelatoriosDireto';
 
-// Rota protegida — redireciona para login se não autenticado
+// ─── Rota protegida — redireciona para login se não autenticado ────────────────
 function RotaProtegida({ children }) {
   const { usuario, carregando } = useAuth();
   if (carregando) {
@@ -50,31 +52,61 @@ function RotaProtegida({ children }) {
   return usuario ? children : <Navigate to="/login" replace />;
 }
 
-// Rota apenas para admin
+// ─── Rota apenas para Admins (SUPER_ADMIN + ADMINISTRADOR) ────────────────────
 function RotaAdmin({ children }) {
   const { usuario } = useAuth();
-  if (usuario?.perfil !== 'ADMINISTRADOR') {
-    return <Navigate to="/regioes" replace />;
+  if (!ehAdmin(usuario)) {
+    // DUPLA_MISSIONARIA vai direto para minha-dupla; outros vão para regiões
+    return ehDupla(usuario)
+      ? <Navigate to="/minha-dupla" replace />
+      : <Navigate to="/regioes" replace />;
   }
   return children;
 }
 
-// Redireciona para escolha de layout se não houver layout selecionado
-// Valida também se o layout atual corresponde ao modelo da rota
+// ─── Rota bloqueada para DUPLA_MISSIONARIA ────────────────────────────────────
+// A dupla não pode acessar nenhuma rota de listagem geográfica
+function RotaBloqueadaParaDupla({ children }) {
+  const { usuario } = useAuth();
+  if (ehDupla(usuario)) {
+    return <Navigate to="/minha-dupla" replace />;
+  }
+  return children;
+}
+
+// ─── Rota com exigência de perfis específicos ─────────────────────────────────
+// redirectTo: para onde redirecionar se não tiver permissão
+function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) {
+  const { usuario } = useAuth();
+  if (!usuario || !perfisPermitidos.includes(usuario.perfil)) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+}
+
+// ─── Redireciona para escolha de layout ou rota correta após login ────────────
 function RotaComLayout({ children, modelo }) {
   const { layout, carregando } = useAuth();
   if (carregando) return null;
   if (!layout) return <Navigate to="/escolha-layout" replace />;
-  
-  // Se o layout não corresponder ao modelo da rota, redireciona para o correto
+
   if (modelo === 'avancado' && layout !== 'avancado') {
     return <Navigate to="/direto/regioes" replace />;
   }
   if (modelo === 'direto' && layout !== 'direto') {
     return <Navigate to="/regioes" replace />;
   }
-  
+
   return children;
+}
+
+// ─── Redirect inteligente após login (baseado no perfil) ─────────────────────
+function RedirectPosLogin() {
+  const { usuario, layout } = useAuth();
+  if (!usuario) return <Navigate to="/login" replace />;
+  if (ehDupla(usuario)) return <Navigate to="/minha-dupla" replace />;
+  const prefix = layout === 'direto' ? '/direto' : '';
+  return <Navigate to={`${prefix}/regioes`} replace />;
 }
 
 function AppRoutes() {
@@ -93,6 +125,23 @@ function AppRoutes() {
         }
       />
 
+      {/* ─── Rota exclusiva DUPLA_MISSIONARIA ─────────────────────────────── */}
+      <Route
+        path="/minha-dupla"
+        element={
+          <RotaProtegida>
+            <RotaComPerfis
+              perfisPermitidos={[PERFIS.DUPLA_MISSIONARIA]}
+              redirectTo="/regioes"
+            >
+              <Layout>
+                <MinhaDupla />
+              </Layout>
+            </RotaComPerfis>
+          </RotaProtegida>
+        }
+      />
+
       {/* ============================================
           MODELO AVANÇADO (padrão hierárquico)
           ============================================ */}
@@ -101,13 +150,16 @@ function AppRoutes() {
         element={
           <RotaProtegida>
             <RotaComLayout modelo="avancado">
-              <Layout />
+              <RotaBloqueadaParaDupla>
+                <Layout />
+              </RotaBloqueadaParaDupla>
             </RotaComLayout>
           </RotaProtegida>
         }
       >
-        <Route index element={<Navigate to="/regioes" replace />} />
+        <Route index element={<RedirectPosLogin />} />
 
+        {/* Regiões — bloqueado para DUPLA_MISSIONARIA (já tratado em RotaBloqueadaParaDupla) */}
         <Route path="regioes" element={<Regioes />} />
         <Route path="regioes/:regiaoId/distritos" element={<Distritos />} />
 
@@ -124,13 +176,56 @@ function AppRoutes() {
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
         <Route path="cadastro/ponto-estudo" element={<CadastroAcompanhamento tipo="ponto" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
-        <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
+
+        {/* Escola Sabatina — apenas perfis com acesso distrital+ */}
+        <Route
+          path="cadastro/escola-sabatina"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+                PERFIS.PASTOR_DISTRITAL,
+                PERFIS.COORDENADOR_REGIONAL,
+              ]}
+            >
+              <CadastroEscolaSabatina />
+            </RotaComPerfis>
+          }
+        />
+
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
-        <Route path="cadastro/liderancas" element={<CadastroPastores />} />
 
-        {/* Relatórios — apenas admin */}
+        {/* Lideranças — apenas para quem pode gerenciar */}
+        <Route
+          path="cadastro/liderancas"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+              ]}
+            >
+              <CadastroPastores />
+            </RotaComPerfis>
+          }
+        />
+
+        {/* Gestão de Usuários — apenas admins */}
+        <Route
+          path="gestao-usuarios"
+          element={
+            <RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]}>
+              <GestaoUsuarios />
+            </RotaComPerfis>
+          }
+        />
+
+        {/* Relatórios — apenas admins e pastores regionais */}
         <Route
           path="relatorios"
           element={
@@ -156,7 +251,9 @@ function AppRoutes() {
         element={
           <RotaProtegida>
             <RotaComLayout modelo="direto">
-              <LayoutDireto />
+              <RotaBloqueadaParaDupla>
+                <LayoutDireto />
+              </RotaBloqueadaParaDupla>
             </RotaComLayout>
           </RotaProtegida>
         }
@@ -172,11 +269,50 @@ function AppRoutes() {
         <Route path="cadastro/estudos-biblicos" element={<CadastroAcompanhamento tipo="estudo" />} />
         <Route path="cadastro/ponto-estudo" element={<CadastroAcompanhamento tipo="ponto" />} />
         <Route path="cadastro/classe-biblica" element={<CadastroClasseBiblica />} />
-        <Route path="cadastro/escola-sabatina" element={<CadastroEscolaSabatina />} />
+        <Route
+          path="cadastro/escola-sabatina"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+                PERFIS.PASTOR_DISTRITAL,
+                PERFIS.COORDENADOR_REGIONAL,
+              ]}
+            >
+              <CadastroEscolaSabatina />
+            </RotaComPerfis>
+          }
+        />
         <Route path="duplas/:id/editar" element={<Cadastro />} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
-        <Route path="cadastro/liderancas" element={<CadastroPastores />} />
+        <Route
+          path="cadastro/liderancas"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+              ]}
+            >
+              <CadastroPastores />
+            </RotaComPerfis>
+          }
+        />
+        <Route
+          path="gestao-usuarios"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[PERFIS.SUPER_ADMIN]}
+              redirectTo="/direto/regioes"
+            >
+              <GestaoUsuarios />
+            </RotaComPerfis>
+          }
+        />
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />

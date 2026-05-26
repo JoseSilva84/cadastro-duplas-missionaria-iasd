@@ -63,15 +63,16 @@ const validarEstudoBiblico = [
 const EstudoBiblicoController = {
   async listar(req, res) {
     try {
-      res.json(await EstudoBiblicoService.listar(req.query));
+      res.json(await EstudoBiblicoService.listar(req.query, req.usuario));
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao listar estudos biblicos.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao listar estudos biblicos.' });
     }
   },
 
   async buscarPorId(req, res) {
     try {
-      res.json(await EstudoBiblicoService.buscarPorId(req.params.id));
+      res.json(await EstudoBiblicoService.buscarPorId(req.params.id, req.usuario));
     } catch (err) {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar estudo biblico.' });
     }
@@ -82,10 +83,10 @@ const EstudoBiblicoController = {
     if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
 
     try {
-      res.status(201).json(await EstudoBiblicoService.criar(req.body));
+      res.status(201).json(await EstudoBiblicoService.criar(req.body, req.usuario));
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ erro: 'Erro ao cadastrar estudo biblico.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao cadastrar estudo biblico.' });
     }
   },
 
@@ -94,7 +95,7 @@ const EstudoBiblicoController = {
     if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
 
     try {
-      res.json(await EstudoBiblicoService.atualizar(req.params.id, req.body));
+      res.json(await EstudoBiblicoService.atualizar(req.params.id, req.body, req.usuario));
     } catch (err) {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar estudo biblico.' });
     }
@@ -102,7 +103,7 @@ const EstudoBiblicoController = {
 
   async remover(req, res) {
     try {
-      await EstudoBiblicoService.remover(req.params.id);
+      await EstudoBiblicoService.remover(req.params.id, req.usuario);
       res.json({ mensagem: 'Estudo biblico removido com sucesso.' });
     } catch (err) {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover estudo biblico.' });

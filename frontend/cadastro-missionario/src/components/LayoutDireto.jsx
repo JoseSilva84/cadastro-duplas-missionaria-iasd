@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
 
 const icons = {
@@ -52,6 +52,7 @@ const icons = {
 };
 
 const perfilLabel = {
+  SUPER_ADMIN: 'Super Administrador',
   ADMINISTRADOR: 'Administrador',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
@@ -74,6 +75,8 @@ export default function LayoutDireto() {
     navigate('/regioes');
   };
 
+  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
     { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
@@ -86,6 +89,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
     { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
+    ...(isSuperAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
   ];
 
   const relatorioItems = [
@@ -286,7 +290,7 @@ export default function LayoutDireto() {
       </header>
 
       {/* Conteúdo principal — ocupa todo o resto da tela, sem scroll vertical global */}
-      <main className="flex-1 min-h-0 overflow-hidden pb-20 md:pb-0">
+      <main className="flex-1 min-h-0 overflow-y-auto pb-20 md:pb-0">
         <Outlet />
       </main>
       <BottomNavigation navLinks={navLinks} onMenuClick={() => setMenuAberto(true)} />

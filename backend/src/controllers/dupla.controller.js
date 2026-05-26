@@ -15,21 +15,21 @@ const validarDupla = [
 ];
 
 const DuplaController = {
-  // GET /api/duplas
+  // GET /api/duplas — lista com filtros por escopo de perfil
   async listar(req, res) {
     try {
       const duplas = await DuplaService.listar(req.usuario, req.query);
       res.json(duplas);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ erro: 'Erro ao listar duplas.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao listar duplas.' });
     }
   },
 
-  // GET /api/duplas/:id
+  // GET /api/duplas/:id — valida escopo para DUPLA_MISSIONARIA e PASTOR_DISTRITAL
   async buscarPorId(req, res) {
     try {
-      const dupla = await DuplaService.buscarPorId(req.params.id);
+      const dupla = await DuplaService.buscarPorId(req.params.id, req.usuario);
       res.json(dupla);
     } catch (err) {
       const status = err.status || 500;
@@ -37,7 +37,7 @@ const DuplaController = {
     }
   },
 
-  // POST /api/duplas
+  // POST /api/duplas — cria nova dupla (DUPLA_MISSIONARIA e COORD bloqueados na rota)
   async criar(req, res) {
     const erros = validationResult(req);
     if (!erros.isEmpty()) {
@@ -48,12 +48,12 @@ const DuplaController = {
       const dupla = await DuplaService.criar(req.body);
       res.status(201).json(dupla);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ erro: 'Erro ao cadastrar dupla.' });
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao cadastrar dupla.' });
     }
   },
 
-  // PUT /api/duplas/:id
+  // PUT /api/duplas/:id — atualiza com verificação de escopo no service
   async atualizar(req, res) {
     const erros = validationResult(req);
     if (!erros.isEmpty()) {
@@ -69,7 +69,7 @@ const DuplaController = {
     }
   },
 
-  // DELETE /api/duplas/:id
+  // DELETE /api/duplas/:id — apenas admins (garantido na rota)
   async remover(req, res) {
     try {
       await DuplaService.remover(req.params.id);
