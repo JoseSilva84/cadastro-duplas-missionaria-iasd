@@ -46,7 +46,7 @@ const projetoLabel = {
   ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  EVANGELISMO_PUBLICO: 'Evangelismo Público',
+  EVANGELISMO_PUBLICO: 'Classe Bíblica',
 };
 
 const projetoIcon = {
@@ -722,7 +722,7 @@ export default function DuplasDireto() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
                     <div><span className="text-gray-400 text-xs">Estudo bíblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
-                    <div><span className="text-gray-400 text-xs">Status do evangelismo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status da classe bíblica:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudos bíblicos cadastrados:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Visitações registradas:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Pessoas alcançadas:</span><p className="text-gray-700 font-medium">{duplaSelecionada.pessoasAlcancadas ?? 0}</p></div>

@@ -201,7 +201,7 @@ export default function ListagemDistritosDireto() {
                     </div>
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Estudos Bíblicos Ativos:</span><p className="text-[#0284c7] font-bold">{distritoSelecionado.duplas?.filter(d => d.statusEstudoBiblico === 'ATIVO').length || 0}</p></div>
-                      <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Evangelismos Ativos:</span><p className="text-[#ea580c] font-bold">{distritoSelecionado.duplas?.filter(d => d.statusEvangelismo === 'ATIVO').length || 0}</p></div>
+                      <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Classes Bíblicas Ativas:</span><p className="text-[#ea580c] font-bold">{distritoSelecionado.duplas?.filter(d => d.statusEvangelismo === 'ATIVO').length || 0}</p></div>
                       <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Batismos Realizados:</span><p className="text-[#0d9488] font-bold">{distritoSelecionado.duplas?.reduce((acc, d) => acc + (d.batismos || 0), 0) || 0}</p></div>
                     </div>
                   </div>

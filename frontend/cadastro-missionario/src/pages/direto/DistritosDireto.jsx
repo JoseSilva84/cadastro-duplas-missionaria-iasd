@@ -10,7 +10,7 @@ const projetoLabel = {
   ESTUDO_BIBLICO: 'Estudo Biblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Acao Social',
-  EVANGELISMO_PUBLICO: 'Evangelismo Publico',
+  EVANGELISMO_PUBLICO: 'Classe Biblica',
 };
 
 const statusAcompanhamentoLabels = {
@@ -641,7 +641,7 @@ export default function DistritosDireto() {
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Estudo biblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
-                    <div><span className="text-gray-400 text-xs">Status do evangelismo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Status da classe bíblica:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Levou pessoa ao batismo?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.levouPessoaBatismo)}</p></div>
                     <div><span className="text-gray-400 text-xs">Ja deu estudo biblico?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.jaDeuEstudoBiblico)}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudo em andamento?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.estudoAtualEmAndamento)}</p></div>

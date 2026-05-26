@@ -33,7 +33,7 @@ const EvangelismoService = {
 
   async buscarPorId(id) {
     const evangelismo = await EvangelismoModel.findById(id);
-    if (!evangelismo) throw { status: 404, mensagem: 'Evangelismo não encontrado.' };
+    if (!evangelismo) throw { status: 404, mensagem: 'Classe bíblica não encontrada.' };
     return evangelismo;
   },
 

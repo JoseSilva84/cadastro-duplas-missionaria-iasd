@@ -32,17 +32,17 @@ const configs = {
     sucesso: 'Ponto de estudo cadastrado com sucesso!',
   },
   evangelismo: {
-    titulo: 'Cadastro de Evangelismo',
+    titulo: 'Cadastro de Classe Bíblica',
     subtitulo: 'Registre contato, dupla responsável e estudo atual',
     endpoint: '/evangelismos',
     nomeCampo: 'nomePessoa',
     nomeLabel: 'Nome da Pessoa',
     dataCampo: 'diaEvangelismo',
-    dataLabel: 'Dia do Evangelismo',
+    dataLabel: 'Dia da Classe Bíblica',
     duplaLabel: 'Dupla responsável',
     atualCampo: 'estudoAtual',
     atualLabel: 'Estudo Atual',
-    sucesso: 'Evangelismo cadastrado com sucesso!',
+    sucesso: 'Classe Bíblica cadastrada com sucesso!',
   },
 };
 
@@ -312,7 +312,7 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
               </Campo>
             </Secao>
 
-            <Secao numero="2" titulo={tipo === 'evangelismo' ? 'Dados do Evangelismo' : 'Dados do Estudo'}>
+            <Secao numero="2" titulo={tipo === 'evangelismo' ? 'Dados da Classe Bíblica' : 'Dados do Estudo'}>
               <Campo label={config.dataLabel} obrigatorio>
                 <select className="input-field" value={form[config.dataCampo]} onChange={(e) => set(config.dataCampo, e.target.value)} required>
                   <option value="">Selecione o dia</option>
@@ -336,7 +336,7 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
               </Campo>
             </Secao>
 
-            <Secao numero="3" titulo={tipo === 'evangelismo' ? 'Série de Evangelismo' : 'Série de Estudo'}>
+            <Secao numero="3" titulo={tipo === 'evangelismo' ? 'Série da Classe Bíblica' : 'Série de Estudo'}>
               <Campo label="Estudo" obrigatorio>
                 <select className="input-field" value={form.serie} onChange={(e) => set('serie', e.target.value)} required>
                   <option value="">Selecione a série</option>

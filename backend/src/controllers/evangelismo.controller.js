@@ -7,7 +7,7 @@ const validarEvangelismo = [
   body('cidade').notEmpty().withMessage('Cidade obrigatória.'),
   body('estado').isLength({ min: 2, max: 2 }).withMessage('Estado obrigatório.'),
   body('whatsapp').notEmpty().withMessage('WhatsApp obrigatório.'),
-  body('diaEvangelismo').notEmpty().withMessage('Dia do evangelismo obrigatório.'),
+  body('diaEvangelismo').notEmpty().withMessage('Dia da classe bíblica obrigatório.'),
   body('duplaId').isInt().withMessage('Dupla obrigatória.'),
   body('serie').notEmpty().withMessage('Série obrigatória.'),
   body('estudoAtual').isInt({ min: 1 }).withMessage('Estudo atual obrigatório.'),
@@ -18,7 +18,7 @@ const EvangelismoController = {
     try {
       res.json(await EvangelismoService.listar(req.query));
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao listar evangelismos.' });
+      res.status(500).json({ erro: 'Erro ao listar classes bíblicas.' });
     }
   },
 
@@ -26,7 +26,7 @@ const EvangelismoController = {
     try {
       res.json(await EvangelismoService.buscarPorId(req.params.id));
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar evangelismo.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar classe bíblica.' });
     }
   },
 
@@ -37,7 +37,7 @@ const EvangelismoController = {
     try {
       res.status(201).json(await EvangelismoService.criar(req.body));
     } catch (err) {
-      res.status(500).json({ erro: 'Erro ao cadastrar evangelismo.' });
+      res.status(500).json({ erro: 'Erro ao cadastrar classe bíblica.' });
     }
   },
 
@@ -48,16 +48,16 @@ const EvangelismoController = {
     try {
       res.json(await EvangelismoService.atualizar(req.params.id, req.body));
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar evangelismo.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar classe bíblica.' });
     }
   },
 
   async remover(req, res) {
     try {
       await EvangelismoService.remover(req.params.id);
-      res.json({ mensagem: 'Evangelismo removido com sucesso.' });
+      res.json({ mensagem: 'Classe bíblica removida com sucesso.' });
     } catch (err) {
-      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover evangelismo.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover classe bíblica.' });
     }
   },
 };

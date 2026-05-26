@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 
 const validarAcompanhamento = [
   body('dataSaida').notEmpty().withMessage('Data da saída obrigatória.'),
+  body('coordenadorId').isInt().withMessage('Coordenador regional obrigatório.'),
   body('duplaIds').isArray({ min: 1 }).withMessage('Selecione ao menos uma dupla.'),
 ];
 
@@ -15,7 +16,24 @@ const AcompanhamentoController = {
 
     try {
       const { dataSaida, observacoes, duplaIds } = req.body;
-      const coordenadorId = req.usuario.id;
+      const coordenadorId = Number(req.body.coordenadorId);
+
+      if (req.usuario.perfil !== 'ADMINISTRADOR' && coordenadorId !== req.usuario.id) {
+        return res.status(403).json({ erro: 'Você só pode registrar acompanhamento para seu próprio usuário.' });
+      }
+
+      const coordenador = await prisma.usuario.findFirst({
+        where: {
+          id: coordenadorId,
+          perfil: 'COORDENADOR_REGIONAL',
+          ativo: true,
+        },
+        select: { id: true },
+      });
+
+      if (!coordenador) {
+        return res.status(400).json({ erro: 'Selecione um coordenador regional válido.' });
+      }
 
       const resultado = await prisma.$transaction(async (tx) => {
         // Cria o registro de acompanhamento
@@ -47,6 +65,36 @@ const AcompanhamentoController = {
     } catch (err) {
       console.error(err);
       res.status(500).json({ erro: 'Erro ao registrar acompanhamento.' });
+    }
+  },
+
+  // GET /api/acompanhamentos/coordenadores — Lista coordenadores regionais ativos
+  async listarCoordenadores(req, res) {
+    try {
+      const where = {
+        perfil: 'COORDENADOR_REGIONAL',
+        ativo: true,
+      };
+
+      if (req.usuario.perfil !== 'ADMINISTRADOR') {
+        where.id = req.usuario.id;
+      }
+
+      const coordenadores = await prisma.usuario.findMany({
+        where,
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          regiao: { select: { id: true, nome: true } },
+        },
+        orderBy: { nome: 'asc' },
+      });
+
+      res.json(coordenadores);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ erro: 'Erro ao listar coordenadores regionais.' });
     }
   },
 

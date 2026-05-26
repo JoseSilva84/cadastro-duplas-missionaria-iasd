@@ -8,7 +8,7 @@ const projetoLabel = {
   ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  EVANGELISMO_PUBLICO: 'Evangelismo Público',
+  EVANGELISMO_PUBLICO: 'Classe Bíblica',
 };
 
 const projetoIcon = {
@@ -277,7 +277,7 @@ export default function Duplas() {
             { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
           ] : []),
           { label: 'Estudos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
-          { label: 'Evangelismo', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]' },
+          { label: 'Classe Bíblica', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]' },
           { label: 'Batismos', valor: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0), cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
         ].map((item, idx) => (
           <div key={idx} className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">

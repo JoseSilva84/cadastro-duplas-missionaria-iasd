@@ -84,7 +84,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
     { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionario', icon: 'CM' },
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
-    { to: '/direto/registro-saida', label: 'Registro de Saída (Coor. Reg.)', icon: '✅' },
+    { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
   ];
 

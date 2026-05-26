@@ -93,14 +93,14 @@ const gerarPdf = (relatorio) => {
           ${linhaIndicador('Classificação da Classe Bíblica', indicadores.classeBiblica ? `Classe ${indicadores.classeBiblica}` : 'Sem classificação')}
           ${linhaIndicador('Estudantes em Classe Bíblica', indicadores.totalEstudantesClasseBiblica || 0)}
           ${linhaIndicador('Estudos ativos', indicadores.estudosAtivos)}
-          ${linhaIndicador('Evangelismos ativos', indicadores.evangelismosAtivos)}
+          ${linhaIndicador('Classes Bíblicas ativas', indicadores.evangelismosAtivos)}
           ${linhaIndicador('Batismos', indicadores.batismos)}
           ${linhaIndicador('Pessoas alcançadas', indicadores.pessoasAlcancadas)}
         </tbody></table>
 
         <h2>Duplas Missionárias</h2>
         <table>
-          <thead><tr><th>Dupla</th><th>Status</th><th>Estudos</th><th>Evangelismos</th><th>Batismos</th></tr></thead>
+          <thead><tr><th>Dupla</th><th>Status</th><th>Estudos</th><th>Classes Bíblicas</th><th>Batismos</th></tr></thead>
           <tbody>${duplas.length ? duplas.map(linhaDupla).join('') : '<tr><td colspan="5">Nenhuma dupla registrada.</td></tr>'}</tbody>
         </table>
 

@@ -13,6 +13,9 @@ router.post('/', validarAcompanhamento, AcompanhamentoController.criar);
 // GET /api/acompanhamentos — Listar saídas (filtros: coordenadorId, de, ate)
 router.get('/', AcompanhamentoController.listar);
 
+// GET /api/acompanhamentos/coordenadores — Listar coordenadores regionais
+router.get('/coordenadores', AcompanhamentoController.listarCoordenadores);
+
 // GET /api/acompanhamentos/:id — Detalhe de uma saída
 router.get('/:id', AcompanhamentoController.buscarPorId);
 

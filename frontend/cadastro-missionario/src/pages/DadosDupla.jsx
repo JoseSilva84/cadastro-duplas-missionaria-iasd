@@ -7,7 +7,7 @@ const projetoLabel = {
   ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  EVANGELISMO_PUBLICO: 'Evangelismo Público',
+  EVANGELISMO_PUBLICO: 'Classe Bíblica',
 };
 const membro2Label = { MEMBRO_IASD: 'Membro IASD' };
 

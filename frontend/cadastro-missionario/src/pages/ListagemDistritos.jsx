@@ -169,7 +169,7 @@ export default function ListagemDistritos() {
                 { label: 'Igrejas', valor: (distritoSelecionado.igrejas || []).length, icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
                 { label: 'Duplas', valor: distritoSelecionado._count?.duplas || 0, icon: '👥', gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
                 { label: 'Est. Bíblicos', valor: estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
-                { label: 'Evangelismos', valor: evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
+                { label: 'Classes Bíblicas', valor: evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
                 { label: 'Batismos', valor: totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">

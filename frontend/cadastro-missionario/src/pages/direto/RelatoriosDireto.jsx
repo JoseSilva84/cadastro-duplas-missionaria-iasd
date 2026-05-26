@@ -7,7 +7,7 @@ const projetoLabel = {
   ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
-  EVANGELISMO_PUBLICO: 'Evangelismo Público',
+  EVANGELISMO_PUBLICO: 'Classe Bíblica',
 };
 
 const projetoIcon = {
@@ -172,7 +172,7 @@ export default function RelatoriosDireto() {
                     { label: 'Total de Duplas', valor: resumo.totalDuplas, icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
                     { label: 'Duplas Ativas', valor: resumo.totalAtivas, icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
                     { label: 'Estudos Bíblicos Ativos', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
-                    { label: 'Evangelismos Ativos', valor: resumo.evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
+                    { label: 'Classes Bíblicas Ativas', valor: resumo.evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
                     { label: 'Batismos Realizados', valor: resumo.totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
                     { label: 'Metas de contatos', valor: resumo.totalPessoasAlcancadas, icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
                   ].map((item) => (
@@ -275,7 +275,7 @@ export default function RelatoriosDireto() {
                     { label: 'Total de Duplas', valor: regiaoSelecionada.totalDuplas, icon: '✝️' },
                     { label: 'Duplas Ativas', valor: regiaoSelecionada.ativas, icon: '✅' },
                     { label: 'Estudos Bíblicos Ativos', valor: regiaoSelecionada.estudosAtivos, icon: '📖' },
-                    { label: 'Evangelismos Ativos', valor: regiaoSelecionada.evangelismosAtivos, icon: '📢' },
+                    { label: 'Classes Bíblicas Ativas', valor: regiaoSelecionada.evangelismosAtivos, icon: '📢' },
                     { label: 'Batismos Realizados', valor: regiaoSelecionada.totalBatismos, icon: '💧' },
                     { label: 'metas de contatos', valor: regiaoSelecionada.totalPessoas, icon: '🙏' },
                   ].map((item) => (

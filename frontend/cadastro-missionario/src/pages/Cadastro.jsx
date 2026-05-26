@@ -10,7 +10,7 @@ const TIPOS_PROJETO = [
   { value: 'ESTUDO_BIBLICO', label: 'Estudo Bíblico', icon: '📖' },
   { value: 'PEQUENOS_GRUPOS', label: 'Pequenos Grupos', icon: '👥' },
   { value: 'ACAO_SOCIAL', label: 'Ação Social', icon: '🤲' },
-  { value: 'EVANGELISMO_PUBLICO', label: 'Evangelismo Público', icon: '📢' },
+  { value: 'EVANGELISMO_PUBLICO', label: 'Classe Bíblica', icon: '📢' },
 ];
 
 
@@ -573,7 +573,7 @@ export default function Cadastro() {
                   </select>
                 </Campo>
 
-                <Campo label="Evangelismo" icone="📢">
+                <Campo label="Classe Bíblica" icone="📢">
                   <select className="input-field" value={form.statusEvangelismo} onChange={(e) => set('statusEvangelismo', e.target.value)}>
                     <option value="">Não iniciado</option>
                     <option value="ATIVO">Ativo</option>
