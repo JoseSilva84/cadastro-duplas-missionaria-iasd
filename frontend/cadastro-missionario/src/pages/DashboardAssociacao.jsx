@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from '../lib/toast';
@@ -72,6 +72,68 @@ function ClasseResumo({ classe, valor, cor, bg }) {
   );
 }
 
+function DestaqueRanking({ label, item, cor, icon, detalhe }) {
+  return (
+    <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <Icone cor={cor}>{icon}</Icone>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
+          <p className="text-lg font-bold text-[#1A3A6B] truncate mt-1">{item?.nome || 'Sem dados'}</p>
+          <div className="flex items-end justify-between gap-3 mt-2">
+            <p className="text-xs text-gray-400">{detalhe || 'Maior volume registrado'}</p>
+            <p className="text-2xl font-bold leading-none" style={{ color: cor }}>{numero(item?.total)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ListaRanking({ titulo, itens = [], valorCampo, valorLabel, cor = '#1A3A6B', detalheCampo, onItemClick }) {
+  return (
+    <div className="bg-[#F4F5F7] rounded-lg border border-gray-100 p-4">
+      <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">{titulo}</h3>
+      <div className="space-y-2">
+        {itens.length > 0 ? itens.map((item, index) => {
+          const Conteudo = (
+            <>
+              <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">
+                {index + 1}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#1A3A6B] truncate">{item.nome}</p>
+                {detalheCampo && <p className="text-xs text-gray-400 truncate">{item[detalheCampo]}</p>}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-lg font-bold leading-tight" style={{ color: cor }}>{numero(item[valorCampo])}</p>
+                <p className="text-[10px] text-gray-400 uppercase">{valorLabel}</p>
+              </div>
+            </>
+          );
+
+          return onItemClick ? (
+            <button
+              key={`${titulo}-${item.id}-${index}`}
+              type="button"
+              onClick={() => onItemClick(item)}
+              className="w-full bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3 text-left hover:border-[#C9963A]/50 hover:shadow-sm transition-all active:scale-[0.99] active:opacity-80"
+            >
+              {Conteudo}
+            </button>
+          ) : (
+            <div key={`${titulo}-${item.id}-${index}`} className="bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3">
+              {Conteudo}
+            </div>
+          );
+        }) : (
+          <p className="text-sm text-gray-400">Sem dados para exibir.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Painel({ titulo, subtitulo, cor, children }) {
   return (
     <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -88,6 +150,7 @@ function Painel({ titulo, subtitulo, cor, children }) {
 
 export default function DashboardAssociacao() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const [dados, setDados] = useState(null);
@@ -125,6 +188,8 @@ export default function DashboardAssociacao() {
 
   const ministerio = dados?.ministerioPessoal || {};
   const escola = dados?.escolaSabatina || {};
+  const dashboardDuplas = dados?.duplasMissionarias || {};
+  const dashboardClasses = dados?.classesBiblicasDetalhes || {};
   const visitas = escola.visitasRealizadas || {};
 
   const visitasDetalhe = useMemo(() => ([
@@ -134,6 +199,12 @@ export default function DashboardAssociacao() {
   ]), [visitas.alunos, visitas.diretores, visitas.professores]);
 
   const podeEditarEscola = ['ADMINISTRADOR', 'LIDER_REGIOES'].includes(usuario?.perfil);
+  const irParaDupla = (dupla) => {
+    if (dupla?.id) navigate(isDireto ? `/direto/duplas/${dupla.id}` : `/duplas/${dupla.id}`);
+  };
+  const irParaClassesBiblicas = () => {
+    navigate(isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas');
+  };
 
   const setCampoEscola = (campo, valor) => {
     setFormEscola((prev) => ({ ...prev, [campo]: valor }));
@@ -279,6 +350,124 @@ export default function DashboardAssociacao() {
                   <p className="text-xl font-bold" style={{ color: item.cor }}>{numero(item.valor)}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </Painel>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
+        <Painel titulo="Duplas Missionárias" subtitulo="Dashboard de desempenho" cor="#1A3A6B">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} cor="#1A3A6B" icon={<UsersIcon />} />
+            <DestaqueRanking
+              label="Região com mais duplas"
+              item={dashboardDuplas.regiaoMaisDuplas}
+              cor="#C9963A"
+              icon={<VisitIcon />}
+              detalhe="duplas missionárias"
+            />
+            <DestaqueRanking
+              label="Distrito com mais duplas"
+              item={dashboardDuplas.distritoMaisDuplas}
+              cor="#0d9488"
+              icon={<GaugeIcon />}
+              detalhe="duplas missionárias"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ListaRanking
+              titulo="Duplas com mais estudos"
+              itens={dashboardDuplas.topEstudos}
+              valorCampo="estudos"
+              valorLabel="estudos"
+              detalheCampo="distrito"
+              cor="#0284c7"
+              onItemClick={irParaDupla}
+            />
+            <ListaRanking
+              titulo="Duplas com mais batismos"
+              itens={dashboardDuplas.topBatismos}
+              valorCampo="batismos"
+              valorLabel="batismos"
+              detalheCampo="distrito"
+              cor="#0d9488"
+              onItemClick={irParaDupla}
+            />
+            <ListaRanking
+              titulo="Duplas com mais visitas"
+              itens={dashboardDuplas.topVisitas}
+              valorCampo="visitas"
+              valorLabel="visitas"
+              detalheCampo="distrito"
+              cor="#7B2D8B"
+              onItemClick={irParaDupla}
+            />
+            <ListaRanking
+              titulo="Duplas com mais pessoas alcançadas"
+              itens={dashboardDuplas.topPessoasAlcancadas}
+              valorCampo="pessoasAlcancadas"
+              valorLabel="pessoas"
+              detalheCampo="distrito"
+              cor="#C9963A"
+              onItemClick={irParaDupla}
+            />
+          </div>
+        </Painel>
+
+        <Painel titulo="Classes Bíblicas" subtitulo="Dashboard detalhado" cor="#7B2D8B">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <Indicador label="Classes bíblicas" valor={dashboardClasses.totalClasses} cor="#7B2D8B" icon={<BookIcon />} />
+            <Indicador label="Duplas com classe" valor={dashboardClasses.totalDuplasComClasse} cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Estudantes em classes" valor={dashboardClasses.totalEstudantes} cor="#C9963A" icon={<ClipboardIcon />} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <DestaqueRanking
+              label="Região com mais classes"
+              item={dashboardClasses.regiaoMaisClasses}
+              cor="#C9963A"
+              icon={<VisitIcon />}
+              detalhe="classes bíblicas"
+            />
+            <DestaqueRanking
+              label="Distrito com mais classes"
+              item={dashboardClasses.distritoMaisClasses}
+              cor="#0d9488"
+              icon={<GaugeIcon />}
+              detalhe="classes bíblicas"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ListaRanking
+              titulo="Classes com mais estudantes"
+              itens={dashboardClasses.topEstudantes}
+              valorCampo="estudantes"
+              valorLabel="estud."
+              detalheCampo="dupla"
+              cor="#C9963A"
+              onItemClick={irParaClassesBiblicas}
+            />
+            <ListaRanking
+              titulo="Classes com mais batismos"
+              itens={dashboardClasses.topBatismos}
+              valorCampo="batismos"
+              valorLabel="batismos"
+              detalheCampo="dupla"
+              cor="#0d9488"
+              onItemClick={irParaClassesBiblicas}
+            />
+            <div className="lg:col-span-2">
+              <ListaRanking
+                titulo="Classes mais avançadas na lição"
+                itens={dashboardClasses.topLicaoAtual}
+                valorCampo="licaoAtual"
+                valorLabel="lição"
+                detalheCampo="dupla"
+                cor="#1A3A6B"
+                onItemClick={irParaClassesBiblicas}
+              />
             </div>
           </div>
         </Painel>

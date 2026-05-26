@@ -44,6 +44,104 @@ const criarResumoClassesBiblicas = (estudos = []) => {
   ]));
 };
 
+const ordenarPorTotal = (lista = []) => [...lista].sort((a, b) => b.total - a.total || String(a.nome).localeCompare(String(b.nome)));
+
+const agruparSoma = (lista = [], chaveFn) => {
+  const mapa = {};
+  lista.forEach((item) => {
+    const chave = chaveFn(item);
+    if (!chave?.id) return;
+    if (!mapa[chave.id]) mapa[chave.id] = { id: chave.id, nome: chave.nome, total: 0 };
+    mapa[chave.id].total += chave.valor ?? 1;
+  });
+  return ordenarPorTotal(Object.values(mapa));
+};
+
+const nomeDupla = (dupla) => `${dupla.liderNome || 'Lider'} + ${dupla.membro2Nome || 'Membro'}`;
+
+const criarDashboardDuplasMissionarias = (duplas = []) => {
+  const duplasComIndicadores = duplas.map((dupla) => ({
+    id: dupla.id,
+    nome: nomeDupla(dupla),
+    bairro: dupla.bairro,
+    distrito: dupla.distrito?.nome || 'Sem distrito',
+    regiao: dupla.distrito?.regiao?.nome || 'Sem regiao',
+    estudos: dupla._count?.estudosBiblicos || 0,
+    visitas: dupla._count?.acompanhamentos || 0,
+    batismos: dupla.batismos || 0,
+    pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
+  }));
+
+  const regioes = agruparSoma(duplas, (dupla) => ({
+    id: dupla.distrito?.regiao?.id,
+    nome: dupla.distrito?.regiao?.nome,
+  }));
+
+  const distritos = agruparSoma(duplas, (dupla) => ({
+    id: dupla.distrito?.id,
+    nome: dupla.distrito?.nome,
+  }));
+
+  const top = (campo) => [...duplasComIndicadores]
+    .sort((a, b) => b[campo] - a[campo] || a.nome.localeCompare(b.nome))
+    .slice(0, 5);
+
+  return {
+    totalDuplas: duplas.length,
+    regiaoMaisDuplas: regioes[0] || null,
+    distritoMaisDuplas: distritos[0] || null,
+    topEstudos: top('estudos'),
+    topBatismos: top('batismos'),
+    topVisitas: top('visitas'),
+    topPessoasAlcancadas: top('pessoasAlcancadas'),
+  };
+};
+
+const criarDashboardClassesBiblicas = (classes = []) => {
+  const classesComIndicadores = classes.map((classe) => {
+    const estudantes = totalEstudantesDaClasse(classe);
+    const dupla = classe.dupla || {};
+    return {
+      id: classe.id,
+      nome: classe.nomeEstudante || 'Classe Biblica',
+      duplaId: dupla.id,
+      dupla: dupla.id ? nomeDupla(dupla) : 'Sem dupla',
+      distrito: dupla.distrito?.nome || 'Sem distrito',
+      regiao: dupla.distrito?.regiao?.nome || 'Sem regiao',
+      estudantes,
+      batismos: dupla.batismos || 0,
+      licaoAtual: classe.licaoAtual || 0,
+      serie: classe.serie || '',
+    };
+  });
+
+  const regioes = agruparSoma(classes, (classe) => ({
+    id: classe.dupla?.distrito?.regiao?.id,
+    nome: classe.dupla?.distrito?.regiao?.nome,
+  }));
+
+  const distritos = agruparSoma(classes, (classe) => ({
+    id: classe.dupla?.distrito?.id,
+    nome: classe.dupla?.distrito?.nome,
+  }));
+
+  const duplasComClasse = new Set(classes.map((classe) => classe.duplaId).filter(Boolean));
+  const top = (campo) => [...classesComIndicadores]
+    .sort((a, b) => b[campo] - a[campo] || a.nome.localeCompare(b.nome))
+    .slice(0, 5);
+
+  return {
+    totalClasses: classes.length,
+    totalEstudantes: classesComIndicadores.reduce((acc, classe) => acc + classe.estudantes, 0),
+    totalDuplasComClasse: duplasComClasse.size,
+    regiaoMaisClasses: regioes[0] || null,
+    distritoMaisClasses: distritos[0] || null,
+    topEstudantes: top('estudantes'),
+    topBatismos: top('batismos'),
+    topLicaoAtual: top('licaoAtual'),
+  };
+};
+
 const RelatorioModel = {
   async resumo() {
     const [totalDuplas, totalAtivas, totalPendentes, totalInativas, totalPessoas, classesBiblicasEstudos] = await Promise.all([
@@ -315,6 +413,8 @@ const RelatorioModel = {
       escolaSabatinaResumo,
       escolaSabatinaCadastros,
       pequenosGruposPorDuplas,
+      duplasDashboard,
+      classesBiblicasDashboard,
     ] = await Promise.all([
       prisma.ataDupla.count(),
       prisma.estudoBiblico.count(),
@@ -346,6 +446,50 @@ const RelatorioModel = {
         },
       }),
       prisma.dupla.count({ where: { tipoProjeto: 'PEQUENOS_GRUPOS' } }),
+      prisma.dupla.findMany({
+        select: {
+          id: true,
+          liderNome: true,
+          membro2Nome: true,
+          bairro: true,
+          batismos: true,
+          pessoasAlcancadas: true,
+          distrito: {
+            select: {
+              id: true,
+              nome: true,
+              regiao: { select: { id: true, nome: true } },
+            },
+          },
+          _count: {
+            select: {
+              estudosBiblicos: true,
+              acompanhamentos: true,
+            },
+          },
+        },
+      }),
+      prisma.estudoBiblico.findMany({
+        where: { tipoEstudo: 'CLASSE' },
+        include: {
+          participantes: { select: { id: true } },
+          dupla: {
+            select: {
+              id: true,
+              liderNome: true,
+              membro2Nome: true,
+              batismos: true,
+              distrito: {
+                select: {
+                  id: true,
+                  nome: true,
+                  regiao: { select: { id: true, nome: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     const classes = { A: 0, B: 0, C: 0 };
@@ -404,6 +548,8 @@ const RelatorioModel = {
         },
         quantidadePequenosGrupos: escolaSabatina.quantidadePequenosGrupos ?? pequenosGruposPorDuplas,
       },
+      duplasMissionarias: criarDashboardDuplasMissionarias(duplasDashboard),
+      classesBiblicasDetalhes: criarDashboardClassesBiblicas(classesBiblicasDashboard),
     };
   },
 
