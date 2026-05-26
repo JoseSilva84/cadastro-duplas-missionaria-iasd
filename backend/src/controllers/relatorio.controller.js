@@ -75,6 +75,17 @@ const RelatorioController = {
       res.status(500).json({ erro: 'Erro ao atualizar resumo da Escola Sabatina.' });
     }
   },
+
+  // GET /api/relatorios/coordenadores-regionais
+  async coordenadoresRegionais(req, res) {
+    try {
+      const resultado = await RelatorioService.coordenadoresRegionais();
+      res.json(resultado);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ erro: 'Erro ao gerar dashboard de coordenadores regionais.' });
+    }
+  },
 };
 
 module.exports = RelatorioController;

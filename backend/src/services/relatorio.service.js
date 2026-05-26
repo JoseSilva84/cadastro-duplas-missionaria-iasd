@@ -40,6 +40,10 @@ const RelatorioService = {
   async atualizarEscolaSabatinaResumo(data) {
     return RelatorioModel.atualizarEscolaSabatinaResumo(data);
   },
+
+  async coordenadoresRegionais() {
+    return RelatorioModel.coordenadoresRegionais();
+  },
 };
 
 module.exports = RelatorioService;

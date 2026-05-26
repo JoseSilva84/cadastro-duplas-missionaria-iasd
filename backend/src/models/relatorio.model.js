@@ -579,6 +579,119 @@ const RelatorioModel = {
       },
     });
   },
+
+  async coordenadoresRegionais() {
+    const coordenadores = await prisma.usuario.findMany({
+      where: {
+        perfil: 'COORDENADOR_REGIONAL',
+        ativo: true,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        regiao: { select: { id: true, nome: true } },
+        acompanhamentos: {
+          orderBy: { dataSaida: 'desc' },
+          include: {
+            duplas: {
+              include: {
+                dupla: {
+                  select: {
+                    id: true,
+                    liderNome: true,
+                    membro2Nome: true,
+                    bairro: true,
+                    distrito: { select: { id: true, nome: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { nome: 'asc' },
+    });
+
+    const detalhes = coordenadores.map((coordenador) => {
+      const assistencias = coordenador.acompanhamentos || [];
+      const duplaIds = new Set();
+      const distritos = {};
+      let totalDuplasAcompanhadas = 0;
+
+      assistencias.forEach((assistencia) => {
+        totalDuplasAcompanhadas += assistencia.duplas.length;
+        assistencia.duplas.forEach((item) => {
+          const dupla = item.dupla;
+          if (!dupla) return;
+          duplaIds.add(dupla.id);
+          const distritoId = dupla.distrito?.id || `sem-${dupla.distrito?.nome || 'distrito'}`;
+          if (!distritos[distritoId]) {
+            distritos[distritoId] = {
+              id: dupla.distrito?.id || null,
+              nome: dupla.distrito?.nome || 'Sem distrito',
+              total: 0,
+            };
+          }
+          distritos[distritoId].total += 1;
+        });
+      });
+
+      const ultimoAcompanhamento = assistencias[0] || null;
+
+      return {
+        id: coordenador.id,
+        nome: coordenador.nome,
+        email: coordenador.email,
+        regiao: coordenador.regiao?.nome || 'Sem região',
+        regiaoId: coordenador.regiao?.id || null,
+        totalAssistencias: assistencias.length,
+        totalDuplasAcompanhadas,
+        duplasUnicas: duplaIds.size,
+        relatoriosPreenchidos: assistencias.filter((item) => String(item.observacoes || '').trim()).length,
+        ultimoAcompanhamento: ultimoAcompanhamento?.dataSaida || null,
+        distritoMaisVisitado: ordenarPorTotal(Object.values(distritos))[0] || null,
+      };
+    });
+
+    const recentes = coordenadores
+      .flatMap((coordenador) => coordenador.acompanhamentos.map((assistencia) => ({
+        id: assistencia.id,
+        dataSaida: assistencia.dataSaida,
+        coordenador: coordenador.nome,
+        regiao: coordenador.regiao?.nome || 'Sem região',
+        totalDuplas: assistencia.duplas.length,
+        relatorio: assistencia.observacoes || null,
+        duplas: assistencia.duplas.map((item) => ({
+          id: item.dupla?.id,
+          nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla não encontrada',
+          bairro: item.dupla?.bairro || '',
+        })),
+      })))
+      .sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida))
+      .slice(0, 8);
+
+    const top = (campo) => [...detalhes]
+      .sort((a, b) => b[campo] - a[campo] || a.nome.localeCompare(b.nome))
+      .slice(0, 5);
+
+    return {
+      resumo: {
+        totalCoordenadores: detalhes.length,
+        totalAssistencias: detalhes.reduce((acc, item) => acc + item.totalAssistencias, 0),
+        totalDuplasAcompanhadas: detalhes.reduce((acc, item) => acc + item.totalDuplasAcompanhadas, 0),
+        totalRelatorios: detalhes.reduce((acc, item) => acc + item.relatoriosPreenchidos, 0),
+      },
+      coordenadores: detalhes,
+      rankings: {
+        porAssistencias: top('totalAssistencias'),
+        porDuplasAcompanhadas: top('totalDuplasAcompanhadas'),
+        porDuplasUnicas: top('duplasUnicas'),
+        porRelatorios: top('relatoriosPreenchidos'),
+      },
+      recentes,
+    };
+  },
 };
 
 module.exports = RelatorioModel;

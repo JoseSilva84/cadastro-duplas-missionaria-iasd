@@ -110,6 +110,7 @@ export default function Layout() {
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
+          { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] },
       ]
     : [
@@ -136,6 +137,7 @@ export default function Layout() {
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
+          { to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] }] : []),
       ];
 

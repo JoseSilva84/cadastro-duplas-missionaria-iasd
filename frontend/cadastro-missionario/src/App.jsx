@@ -20,6 +20,7 @@ import Relatorios from './pages/Relatorios';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
 import EstudanteDashboard from './pages/EstudanteDashboard';
 import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
+import DashboardCoordenadorRegional from './pages/DashboardCoordenadorRegional';
 import DashboardAssociacao from './pages/DashboardAssociacao';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
@@ -144,6 +145,7 @@ function AppRoutes() {
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
+        <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
       </Route>
 
       {/* ============================================
@@ -182,6 +184,7 @@ function AppRoutes() {
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
+        <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
       </Route>
 
       {/* Fallback */}
