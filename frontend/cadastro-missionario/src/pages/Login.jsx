@@ -21,7 +21,13 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', senha: '' });
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [estatisticas, setEstatisticas] = useState({ regioes: '-', distritos: '-', duplas: '-' });
+  const [estatisticas, setEstatisticas] = useState({
+    regioes: '-',
+    distritos: '-',
+    duplas: '-',
+    classes: '-',
+    estudantes: '-',
+  });
 
   useEffect(() => {
     api.get('/public/estatisticas')
@@ -30,6 +36,8 @@ export default function Login() {
           regioes: res.data.regioes,
           distritos: res.data.distritos,
           duplas: res.data.duplas,
+          classes: res.data.classes,
+          estudantes: res.data.estudantes,
         });
       })
       .catch((err) => console.error('Erro ao carregar estatísticas:', err));
@@ -110,11 +118,13 @@ export default function Login() {
           <VersiculoHero />
 
           {/* Estatísticas decorativas dinâmicas */}
-          <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
+          <div className="grid grid-cols-5 gap-3 w-full max-w-xl">
             {[
               { label: 'Regiões', valor: estatisticas.regioes },
               { label: 'Distritos', valor: estatisticas.distritos },
               { label: 'Duplas', valor: estatisticas.duplas },
+              { label: 'Classes', valor: estatisticas.classes },
+              { label: 'Estudantes', valor: estatisticas.estudantes },
             ].map((item) => (
               <div key={item.label} className="bg-white/10 rounded-lg px-2 py-2 text-center">
                 <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>
