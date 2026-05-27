@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
 export default function Regioes() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeExcluir = ehAdmin(usuario);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -19,6 +22,17 @@ export default function Regioes() {
       setResumo(s.data);
     }).finally(() => setCarregando(false));
   }, []);
+
+  const excluirRegiao = async (event, regiao) => {
+    event.stopPropagation();
+    if (!window.confirm(`Excluir ${regiao.nome} e todos os cadastros vinculados?`)) return;
+    try {
+      await api.delete(`/regioes/${regiao.id}`);
+      setRegioes((lista) => lista.filter((item) => item.id !== regiao.id));
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao remover região.');
+    }
+  };
 
   if (carregando) {
     return (
@@ -81,9 +95,14 @@ export default function Regioes() {
         {regioes.map((regiao, idx) => {
           const cor = regiao.cor || coresPadrao[idx % coresPadrao.length];
           return (
-            <button
+            <div
               key={regiao.id}
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/regioes/${regiao.id}/distritos`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') navigate(`/regioes/${regiao.id}/distritos`);
+              }}
               className="text-left group cursor-pointer"
             >
               <div
@@ -140,9 +159,18 @@ export default function Regioes() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
+                  {podeExcluir && (
+                    <button
+                      type="button"
+                      onClick={(event) => excluirRegiao(event, regiao)}
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      Excluir
+                    </button>
+                  )}
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

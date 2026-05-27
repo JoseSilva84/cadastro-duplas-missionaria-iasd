@@ -43,6 +43,16 @@ const DistritoController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar distrito.' });
     }
   },
+
+  async remover(req, res) {
+    try {
+      await DistritoService.remover(req.params.id, req.usuario);
+      res.json({ mensagem: 'Distrito removido com sucesso.' });
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao remover distrito.' });
+    }
+  },
 };
 
 module.exports = DistritoController;

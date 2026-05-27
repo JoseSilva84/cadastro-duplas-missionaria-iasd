@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -39,7 +40,9 @@ export default function DadosDupla() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
+  const podeExcluir = ehAdmin(usuario);
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [confirmandoDelete, setConfirmandoDelete] = useState(false);
@@ -136,22 +139,24 @@ export default function DadosDupla() {
               >
                 Editar
               </button>
-              {!confirmandoDelete ? (
-                <button
-                  onClick={() => setConfirmandoDelete(true)}
-                  className="px-4 py-2 rounded-lg border-2 border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 hover:border-red-300 transition-all duration-200"
-                >
-                  Remover
-                </button>
-              ) : (
-                <div className="flex gap-2 animate-fade-in">
-                  <button onClick={handleDelete} className="px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors shadow-md">
-                    Confirmar
+              {podeExcluir && (
+                !confirmandoDelete ? (
+                  <button
+                    onClick={() => setConfirmandoDelete(true)}
+                    className="px-4 py-2 rounded-lg border-2 border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 hover:border-red-300 transition-all duration-200"
+                  >
+                    Remover
                   </button>
-                  <button onClick={() => setConfirmandoDelete(false)} className="px-3 py-2 rounded-lg border text-sm hover:bg-gray-50 transition-colors">
-                    Cancelar
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex gap-2 animate-fade-in">
+                    <button onClick={handleDelete} className="px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors shadow-md">
+                      Confirmar
+                    </button>
+                    <button onClick={() => setConfirmandoDelete(false)} className="px-3 py-2 rounded-lg border text-sm hover:bg-gray-50 transition-colors">
+                      Cancelar
+                    </button>
+                  </div>
+                )
               )}
             </div>
           </div>

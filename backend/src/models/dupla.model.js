@@ -1,5 +1,6 @@
 // Model de Dupla — Operações no banco de dados
 const prisma = require('../lib/prisma');
+const { removerDuplasPorIds } = require('./cadastroDelete.model');
 
 const DuplaModel = {
   // Lista duplas com filtro opcional
@@ -54,7 +55,11 @@ const DuplaModel = {
 
   // Remove dupla por ID
   async remove(id) {
-    return prisma.dupla.delete({ where: { id: Number(id) } });
+    const duplaId = Number(id);
+    return prisma.$transaction(async (tx) => {
+      await removerDuplasPorIds(tx, [duplaId]);
+      return { id: duplaId };
+    });
   },
 };
 

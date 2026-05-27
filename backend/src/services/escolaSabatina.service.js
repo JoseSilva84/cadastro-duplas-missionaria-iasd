@@ -19,6 +19,15 @@ const EscolaSabatinaService = {
     return EscolaSabatinaModel.listar(combinar(...condicoes));
   },
 
+  async buscarPorId(id, usuario) {
+    const cadastro = await EscolaSabatinaModel.buscarPorId(id);
+    if (!cadastro) {
+      throw { status: 404, mensagem: 'Cadastro da Escola Sabatina nao encontrado.' };
+    }
+    await validarIgreja(usuario, cadastro.igrejaId);
+    return cadastro;
+  },
+
   async criar(data, usuario) {
     const distritoId = Number(data.distritoId);
     const igrejaId = Number(data.igrejaId);
@@ -61,6 +70,11 @@ const EscolaSabatinaService = {
       observacoes: data.observacoes || null,
       criadoPorId: usuario.id || null,
     }, duplaIds);
+  },
+
+  async remover(id, usuario) {
+    await this.buscarPorId(id, usuario);
+    return EscolaSabatinaModel.remover(id);
   },
 };
 

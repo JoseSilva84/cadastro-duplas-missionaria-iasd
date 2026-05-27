@@ -41,4 +41,11 @@ router.patch(
   DistritoController.atualizar
 );
 
+router.delete(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  DistritoController.remover
+);
+
 module.exports = router;

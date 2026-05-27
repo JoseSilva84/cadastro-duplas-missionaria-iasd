@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const FotoConselheiro = ({ src, nome }) => {
   const inicial = (nome || '?').charAt(0).toUpperCase();
@@ -16,6 +17,8 @@ const FotoConselheiro = ({ src, nome }) => {
 export default function Distritos() {
   const { regiaoId } = useParams();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeExcluir = ehAdmin(usuario);
   const [regiao, setRegiao] = useState(null);
   const [fotoConselheiro, setFotoConselheiro] = useState('');
   const [carregando, setCarregando] = useState(true);
@@ -34,6 +37,20 @@ export default function Distritos() {
       });
     return () => { ativo = false; };
   }, [regiaoId]);
+
+  const excluirDistrito = async (event, distrito) => {
+    event.stopPropagation();
+    if (!window.confirm(`Excluir ${distrito.nome} e todos os cadastros vinculados?`)) return;
+    try {
+      await api.delete(`/distritos/${distrito.id}`);
+      setRegiao((atual) => ({
+        ...atual,
+        distritos: atual.distritos.filter((item) => item.id !== distrito.id),
+      }));
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao remover distrito.');
+    }
+  };
 
   if (carregando) {
     return (
@@ -128,9 +145,14 @@ export default function Distritos() {
       {/* Lista de distritos */}
       <div className="space-y-3 stagger-children">
         {regiao.distritos.map((distrito) => (
-          <button
+          <div
             key={distrito.id}
+            role="button"
+            tabIndex={0}
             onClick={() => navigate(`/distritos/${distrito.id}/duplas`)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') navigate(`/distritos/${distrito.id}/duplas`);
+            }}
             className="w-full text-left card border-2 border-transparent hover:border-[#1A3A6B]/20 group transition-all duration-300 hover:-translate-y-0.5"
           >
             <div className="flex items-center justify-between">
@@ -178,9 +200,18 @@ export default function Distritos() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
+                {podeExcluir && (
+                  <button
+                    type="button"
+                    onClick={(event) => excluirDistrito(event, distrito)}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                  >
+                    Excluir
+                  </button>
+                )}
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
 

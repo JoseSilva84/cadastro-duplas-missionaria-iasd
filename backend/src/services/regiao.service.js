@@ -41,8 +41,8 @@ const RegiaoService = {
     return RegiaoModel.update(id, campos);
   },
 
-  async remover(id) {
-    await this.buscarPorId(id);
+  async remover(id, usuario) {
+    await this.buscarPorId(id, usuario);
     return RegiaoModel.remove(id);
   },
 };

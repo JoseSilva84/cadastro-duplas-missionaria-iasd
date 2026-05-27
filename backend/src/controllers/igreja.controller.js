@@ -43,6 +43,16 @@ const IgrejaController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar igreja.' });
     }
   },
+
+  async remover(req, res) {
+    try {
+      await IgrejaService.remover(req.params.id, req.usuario);
+      res.json({ mensagem: 'Igreja removida com sucesso.' });
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao remover igreja.' });
+    }
+  },
 };
 
 module.exports = IgrejaController;

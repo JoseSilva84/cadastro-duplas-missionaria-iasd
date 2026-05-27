@@ -47,6 +47,11 @@ const DistritoService = {
     }
     return DistritoModel.update(id, campos);
   },
+
+  async remover(id, usuario) {
+    await this.buscarPorId(id, usuario);
+    return DistritoModel.remove(id);
+  },
 };
 
 module.exports = DistritoService;

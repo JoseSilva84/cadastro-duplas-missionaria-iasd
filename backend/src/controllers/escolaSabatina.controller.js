@@ -40,6 +40,17 @@ const EscolaSabatinaController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao cadastrar Escola Sabatina.' });
     }
   },
+
+  async remover(req, res) {
+    try {
+      await EscolaSabatinaService.remover(req.params.id, req.usuario);
+      res.json({ mensagem: 'Cadastro da Escola Sabatina removido com sucesso.' });
+    } catch (err) {
+      const status = err.status || 500;
+      if (status === 500) console.error(err);
+      res.status(status).json({ erro: err.mensagem || 'Erro ao remover cadastro da Escola Sabatina.' });
+    }
+  },
 };
 
 module.exports = { EscolaSabatinaController, validarCadastroEscolaSabatina };

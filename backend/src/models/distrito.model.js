@@ -1,5 +1,6 @@
 // Model de Distrito — Operações no banco de dados
 const prisma = require('../lib/prisma');
+const { removerDuplasPorFiltro } = require('./cadastroDelete.model');
 
 const DistritoModel = {
   // Lista distritos com filtro opcional
@@ -51,6 +52,28 @@ const DistritoModel = {
     return prisma.distrito.update({
       where: { id: Number(id) },
       data,
+    });
+  },
+
+  async remove(id) {
+    const distritoId = Number(id);
+    return prisma.$transaction(async (tx) => {
+      await removerDuplasPorFiltro(tx, { distritoId });
+      const cadastros = await tx.escolaSabatinaCadastro.findMany({
+        where: { distritoId },
+        select: { id: true },
+      });
+      const cadastroIds = cadastros.map((cadastro) => cadastro.id);
+      await tx.escolaSabatinaDupla.deleteMany({
+        where: { escolaSabatinaCadastroId: { in: cadastroIds } },
+      });
+      await tx.escolaSabatinaCadastro.deleteMany({ where: { distritoId } });
+      await tx.usuario.updateMany({
+        where: { distritoId },
+        data: { distritoId: null },
+      });
+      await tx.igreja.deleteMany({ where: { distritoId } });
+      return tx.distrito.delete({ where: { id: distritoId } });
     });
   },
 };

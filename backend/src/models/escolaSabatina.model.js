@@ -29,6 +29,13 @@ const EscolaSabatinaModel = {
     });
   },
 
+  async buscarPorId(id) {
+    return prisma.escolaSabatinaCadastro.findUnique({
+      where: { id: Number(id) },
+      include: includeCadastro,
+    });
+  },
+
   async criar(data, duplaIds = []) {
     return prisma.escolaSabatinaCadastro.create({
       data: {
@@ -57,6 +64,16 @@ const EscolaSabatinaModel = {
         igrejaId: true,
         tipoProjeto: true,
       },
+    });
+  },
+
+  async remover(id) {
+    const cadastroId = Number(id);
+    return prisma.$transaction(async (tx) => {
+      await tx.escolaSabatinaDupla.deleteMany({
+        where: { escolaSabatinaCadastroId: cadastroId },
+      });
+      return tx.escolaSabatinaCadastro.delete({ where: { id: cadastroId } });
     });
   },
 };

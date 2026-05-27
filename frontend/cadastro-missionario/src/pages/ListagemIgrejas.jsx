@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import IgrejaCapa from '../components/IgrejaCapa';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 export default function ListagemIgrejas() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeExcluir = ehAdmin(usuario);
   const [igrejas, setIgrejas] = useState([]);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);
   const [busca, setBusca] = useState('');
@@ -24,6 +27,21 @@ export default function ListagemIgrejas() {
     const termo = busca.toLowerCase();
     return !termo || ig.nome.toLowerCase().includes(termo) || ig.distrito?.nome?.toLowerCase().includes(termo);
   });
+
+  const excluirIgreja = async () => {
+    if (!igrejaSelecionada) return;
+    if (!window.confirm(`Excluir ${igrejaSelecionada.nome} e todos os cadastros vinculados?`)) return;
+    try {
+      await api.delete(`/igrejas/${igrejaSelecionada.id}`);
+      setIgrejas((lista) => {
+        const novaLista = lista.filter((igreja) => igreja.id !== igrejaSelecionada.id);
+        setIgrejaSelecionada(novaLista[0] || null);
+        return novaLista;
+      });
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao remover igreja.');
+    }
+  };
 
   if (carregando) {
     return (
@@ -61,6 +79,15 @@ export default function ListagemIgrejas() {
             onChange={(e) => setBusca(e.target.value)}
           />
         </div>
+        {podeExcluir && igrejaSelecionada && (
+          <button
+            type="button"
+            onClick={excluirIgreja}
+            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
+            Excluir igreja
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 min-h-[520px]">

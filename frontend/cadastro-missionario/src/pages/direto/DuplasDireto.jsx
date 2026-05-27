@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
+import { ehAdmin, useAuth } from '../../contexts/AuthContext';
 
 // ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
 function getMedalha(dupla) {
@@ -155,6 +156,8 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
 
 export default function DuplasDireto() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeExcluir = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
@@ -163,8 +166,26 @@ export default function DuplasDireto() {
   const [buscaFocada, setBuscaFocada] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
+  const [excluindoId, setExcluindoId] = useState(null);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
+
+  const excluirDupla = async () => {
+    if (!duplaSelecionada || excluindoId) return;
+    const confirmou = window.confirm(`Excluir a dupla ${duplaSelecionada.liderNome || ''} + ${duplaSelecionada.membro2Nome || ''}?`);
+    if (!confirmou) return;
+
+    try {
+      setExcluindoId(duplaSelecionada.id);
+      await api.delete(`/duplas/${duplaSelecionada.id}`);
+      setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaSelecionada.id));
+      setMostraDetalhe(false);
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao remover dupla.');
+    } finally {
+      setExcluindoId(null);
+    }
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -573,6 +594,19 @@ export default function DuplasDireto() {
 
                 {/* Ações no header */}
                 <div className="flex gap-2 flex-shrink-0">
+                  {podeExcluir && (
+                    <button
+                      type="button"
+                      onClick={excluirDupla}
+                      disabled={excluindoId === duplaSelecionada.id}
+                      className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-60 transition-all flex items-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1h6a1 1 0 001 1m-8 0h8" />
+                      </svg>
+                      {excluindoId === duplaSelecionada.id ? 'Excluindo...' : 'Excluir'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}

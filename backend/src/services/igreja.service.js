@@ -57,6 +57,11 @@ const IgrejaService = {
     }
     return IgrejaModel.update(id, campos);
   },
+
+  async remover(id, usuario) {
+    await this.buscarPorId(id, usuario);
+    return IgrejaModel.remove(id);
+  },
 };
 
 module.exports = IgrejaService;

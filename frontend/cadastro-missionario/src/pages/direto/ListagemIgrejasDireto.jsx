@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../lib/api';
 import IgrejaCapa from '../../components/IgrejaCapa';
+import { ehAdmin, useAuth } from '../../contexts/AuthContext';
 
 export default function ListagemIgrejasDireto() {
   const navigate = useNavigate();
   const { igrejaId } = useParams();
+  const { usuario } = useAuth();
+  const podeExcluir = ehAdmin(usuario);
   const [igrejas, setIgrejas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);
@@ -32,6 +35,25 @@ export default function ListagemIgrejasDireto() {
     const q = busca.toLowerCase();
     return !q || ig.nome.toLowerCase().includes(q) || ig.distrito?.nome?.toLowerCase().includes(q);
   });
+
+  const excluirIgreja = async () => {
+    if (!igrejaSelecionada) return;
+    if (!window.confirm(`Excluir ${igrejaSelecionada.nome} e todos os cadastros vinculados?`)) return;
+    try {
+      await api.delete(`/igrejas/${igrejaSelecionada.id}`);
+      setIgrejas((lista) => {
+        const novaLista = lista.filter((igreja) => igreja.id !== igrejaSelecionada.id);
+        const proxima = novaLista[0] || null;
+        setIgrejaSelecionada(proxima);
+        if (proxima) navigate(`/direto/igrejas/${proxima.id}`);
+        else navigate('/direto/igrejas');
+        return novaLista;
+      });
+      setMostraDetalhe(false);
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao remover igreja.');
+    }
+  };
 
   if (carregando) {
     return (
@@ -159,10 +181,23 @@ export default function ListagemIgrejasDireto() {
                 </svg>
                 Voltar à lista
               </button>
-              <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Capa da Igreja</p>
-              <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-                {igrejaSelecionada.nome}
-              </h2>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Capa da Igreja</p>
+                  <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                    {igrejaSelecionada.nome}
+                  </h2>
+                </div>
+                {podeExcluir && (
+                  <button
+                    type="button"
+                    onClick={excluirIgreja}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                  >
+                    Excluir
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">

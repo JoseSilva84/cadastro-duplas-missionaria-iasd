@@ -47,7 +47,7 @@ const RegiaoController = {
   // DELETE /api/regioes/:id
   async remover(req, res) {
     try {
-      await RegiaoService.remover(req.params.id);
+      await RegiaoService.remover(req.params.id, req.usuario);
       res.json({ mensagem: 'Região removida com sucesso.' });
     } catch (err) {
       const status = err.status || 500;

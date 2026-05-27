@@ -1,5 +1,6 @@
 // Model de Igreja — Operações no banco de dados
 const prisma = require('../lib/prisma');
+const { removerDuplasPorFiltro } = require('./cadastroDelete.model');
 
 const classificarClasseBiblica = (totalEstudantes = 0) => {
   if (totalEstudantes >= 150) return 'A';
@@ -91,6 +92,23 @@ const IgrejaModel = {
     return prisma.igreja.update({
       where: { id: Number(id) },
       data,
+    });
+  },
+
+  async remove(id) {
+    const igrejaId = Number(id);
+    return prisma.$transaction(async (tx) => {
+      await removerDuplasPorFiltro(tx, { igrejaId });
+      const cadastros = await tx.escolaSabatinaCadastro.findMany({
+        where: { igrejaId },
+        select: { id: true },
+      });
+      const cadastroIds = cadastros.map((cadastro) => cadastro.id);
+      await tx.escolaSabatinaDupla.deleteMany({
+        where: { escolaSabatinaCadastroId: { in: cadastroIds } },
+      });
+      await tx.escolaSabatinaCadastro.deleteMany({ where: { igrejaId } });
+      return tx.igreja.delete({ where: { id: igrejaId } });
     });
   },
 };

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 const progresso = (estudo) => {
@@ -81,7 +82,9 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
 export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
+  const podeExcluir = ehAdmin(usuario);
   const isPonto = tipoRelatorio === 'PONTO';
   const titulo = isPonto ? 'Pontos de Estudo Bíblico' : 'Estudantes Bíblicos';
   const [resultado, setResultado] = useState({ total: 0, estudos: [], porSerie: [] });
@@ -156,6 +159,19 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     });
     toast.success('Lição atualizada.');
     carregar();
+  };
+
+  const excluirEstudo = async (estudo) => {
+    const nome = isPonto ? estudo.nomeEstudante : participantesResumo(estudo);
+    if (!window.confirm(`Excluir ${nome}?`)) return;
+    try {
+      await api.delete(`/estudos-biblicos/${estudo.id}`);
+      toast.success('Registro removido.');
+      if (selecionado?.id === estudo.id) setSelecionado(null);
+      carregar();
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao remover registro.');
+    }
   };
 
   const limpar = () => {
@@ -309,6 +325,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           <div className="flex flex-col gap-2 min-w-28">
                             <button type="button" className="btn-outline text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo.id))}>Detalhes</button>
                             <button type="button" className="btn-primary text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                            {podeExcluir && (
+                              <button type="button" className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>
+                            )}
                           </div>
                         </td>
                       </tr>
