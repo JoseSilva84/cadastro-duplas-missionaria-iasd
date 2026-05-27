@@ -181,6 +181,16 @@ export default function Layout({ children }) {
 
   const navLinksVisiveis = isCoordenadorRegional
     ? navLinks.map((link) => {
+      if (link.key === 'relatorios') {
+        return {
+          ...link,
+          items: link.items.filter((item) => (
+            item.to.includes('/relatorios/estudos-biblicos') ||
+            item.to.includes('/relatorios/pontos-estudo') ||
+            item.to.includes('/relatorios/classes-biblicas')
+          )),
+        };
+      }
       if (link.key !== 'cadastro') return link;
       const prefix = isDireto ? '/direto' : '';
       return {

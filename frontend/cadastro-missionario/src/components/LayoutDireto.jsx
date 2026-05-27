@@ -102,6 +102,14 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
   ];
+  const relatorioItemsVisiveis = isCoordenadorRegional
+    ? relatorioItems.filter((item) => (
+      item.to.includes('/relatorios/estudos-biblicos') ||
+      item.to.includes('/relatorios/pontos-estudo') ||
+      item.to.includes('/relatorios/classes-biblicas')
+    ))
+    : relatorioItems;
+
   const cadastroItemsVisiveis = isCoordenadorRegional
     ? [
       { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
@@ -127,7 +135,7 @@ export default function LayoutDireto() {
     { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
-    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItems },
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItemsVisiveis },
   ];
 
   return (
