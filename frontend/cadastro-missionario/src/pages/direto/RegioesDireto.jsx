@@ -4,6 +4,7 @@ import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
+import { useAuth, PERFIS, ehAdmin } from '../../contexts/AuthContext';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -122,6 +123,9 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
 
 export default function RegioesDireto() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeEditarPastorRegional = ehAdmin(usuario) || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
+  const podeCriarDupla = ehAdmin(usuario) || usuario?.perfil === PERFIS.PASTOR_REGIONAL || usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -350,11 +354,24 @@ export default function RegioesDireto() {
             {/* Conteúdo do detail — scroll horizontal se necessário */}
             <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
               <div className="mb-6 flex justify-start">
-                <button
-                  type="button"
-                  onClick={() => setEditandoPastor(true)}
-                  title="Abrir credenciais do pastor regional"
-                  className="group bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md text-left hover:border-[#C9963A]/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                <div
+                  role={podeEditarPastorRegional ? 'button' : undefined}
+                  tabIndex={podeEditarPastorRegional ? 0 : undefined}
+                  onClick={() => {
+                    if (podeEditarPastorRegional) setEditandoPastor(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (podeEditarPastorRegional && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      setEditandoPastor(true);
+                    }
+                  }}
+                  title={podeEditarPastorRegional ? 'Abrir credenciais do pastor regional' : 'Pastor regional'}
+                  className={`group bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md text-left transition-all duration-200 ${
+                    podeEditarPastorRegional
+                      ? 'hover:border-[#C9963A]/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
+                      : 'cursor-default'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <FotoConselheiro src={fotosConselheiro[regiaoSelecionada.id]} nome={regiaoSelecionada.nomeConselheiro} />
@@ -364,12 +381,14 @@ export default function RegioesDireto() {
                         {regiaoSelecionada.nomeConselheiro || 'Nao informado'}
                       </h3>
                       <p className="text-xs text-gray-400 truncate">{regiaoSelecionada.cargoConselheiro || 'Conselheiro Regional'}</p>
-                      <p className="text-[10px] font-semibold text-[#1A3A6B] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Ver e editar credenciais
-                      </p>
+                      {podeEditarPastorRegional && (
+                        <p className="text-[10px] font-semibold text-[#1A3A6B] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Ver e editar credenciais
+                        </p>
+                      )}
                     </div>
                   </div>
-                </button>
+                </div>
               </div>
 
               {/* Cards de resumo da região */}
@@ -430,6 +449,7 @@ export default function RegioesDireto() {
                     </button>
 
                     {/* Botão extra: Ação Rápida */}
+                    {podeCriarDupla && (
                     <button
                       type="button"
                       onClick={() => navigate(`/direto/duplas/nova`)}
@@ -445,6 +465,7 @@ export default function RegioesDireto() {
                         <p className="text-[10px] text-gray-400">Nesta região</p>
                       </div>
                     </button>
+                    )}
 
                   </div>
                 );

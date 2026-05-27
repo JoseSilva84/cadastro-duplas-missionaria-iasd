@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { toast } from '../lib/toast';
 import AvatarUpload from '../components/AvatarUpload';
 import { FotoService } from '../foto.service';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
   <div className="group/campo">
@@ -82,10 +83,15 @@ const CARGO_POR_TIPO = {
 export default function CadastroPastores() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usuario } = useAuth();
+  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isDireto = location.pathname.startsWith('/direto');
   const tipoUrl = new URLSearchParams(location.search).get('tipo');
+  const tiposDisponiveis = isCoordenadorRegional
+    ? TIPOS.filter((item) => item.value === 'coordenador')
+    : TIPOS;
 
-  const [tipo, setTipo] = useState('regional');
+  const [tipo, setTipo] = useState(isCoordenadorRegional ? 'coordenador' : 'regional');
   const [foto, setFoto] = useState('');
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState(CARGO_POR_TIPO.regional);
@@ -107,9 +113,13 @@ export default function CadastroPastores() {
   }, []);
 
   useEffect(() => {
+    if (isCoordenadorRegional) {
+      if (tipo !== 'coordenador') handleTipo('coordenador');
+      return;
+    }
     if (!tipoUrl || !CARGO_POR_TIPO[tipoUrl]) return;
     handleTipo(tipoUrl);
-  }, [tipoUrl]);
+  }, [tipoUrl, isCoordenadorRegional]);
 
   // Carrega distritos quando região muda
   useEffect(() => {
@@ -129,11 +139,12 @@ export default function CadastroPastores() {
 
   // Zera os selects ao mudar o tipo
   const handleTipo = (t) => {
-    setTipo(t);
+    const proximoTipo = isCoordenadorRegional ? 'coordenador' : t;
+    setTipo(proximoTipo);
     setRegiaoId('');
     setDistritoId('');
     setIgrejaId('');
-    setCargo(CARGO_POR_TIPO[t]);
+    setCargo(CARGO_POR_TIPO[proximoTipo]);
     setFoto('');
     setNome('');
     setEndereco('');
@@ -242,7 +253,7 @@ export default function CadastroPastores() {
             <div className="card">
               <SecaoHeader numero="1" titulo="Tipo de Liderança" descricao="Selecione qual tipo de liderança você deseja cadastrar" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {TIPOS.map((t) => {
+                {tiposDisponiveis.map((t) => {
                   const ativo = tipo === t.value;
                   return (
                     <button

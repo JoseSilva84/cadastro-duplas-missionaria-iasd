@@ -97,6 +97,7 @@ export default function Layout({ children }) {
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
+  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeCadastrarDupla = !isDupla && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
@@ -178,6 +179,20 @@ export default function Layout({ children }) {
         ] }] : []),
       ];
 
+  const navLinksVisiveis = isCoordenadorRegional
+    ? navLinks.map((link) => {
+      if (link.key !== 'cadastro') return link;
+      const prefix = isDireto ? '/direto' : '';
+      return {
+        ...link,
+        items: [
+          { to: `${prefix}/cadastro/liderancas?tipo=coordenador`, label: 'Coordenador Regional', icon: 'CR' },
+          { to: `${prefix}/registro-saida`, label: 'Registro de Assistência', icon: '✅' },
+        ],
+      };
+    })
+    : navLinks;
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar desktop */}
@@ -187,7 +202,7 @@ export default function Layout({ children }) {
       >
         <SidebarContent
           usuario={usuario}
-          navLinks={navLinks}
+          navLinks={navLinksVisiveis}
           handleLogout={handleLogout}
           handleTrocarLayout={handleTrocarLayout}
           setSidebarAberta={setSidebarAberta}
@@ -207,7 +222,7 @@ export default function Layout({ children }) {
          >
            <SidebarContent
              usuario={usuario}
-             navLinks={navLinks}
+             navLinks={navLinksVisiveis}
              handleLogout={handleLogout}
              handleTrocarLayout={handleTrocarLayout}
              setSidebarAberta={setSidebarAberta}
@@ -243,7 +258,7 @@ export default function Layout({ children }) {
              {children || <Outlet />}
            </div>
          </main>
-         <BottomNavigation navLinks={navLinks} onMenuClick={() => setSidebarAberta(true)} />
+         <BottomNavigation navLinks={navLinksVisiveis} onMenuClick={() => setSidebarAberta(true)} />
        </div>
     </div>
   );

@@ -77,6 +77,7 @@ export default function LayoutDireto() {
 
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
+  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -101,6 +102,12 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
   ];
+  const cadastroItemsVisiveis = isCoordenadorRegional
+    ? [
+      { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
+      { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
+    ]
+    : cadastroItems;
 
   const navLinks = isDupla ? [
     { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
@@ -119,7 +126,7 @@ export default function LayoutDireto() {
     { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
-    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItems },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItems },
   ];
 
