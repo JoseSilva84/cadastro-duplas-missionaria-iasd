@@ -20,7 +20,14 @@ const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:3000', 
+    'http://pcmpaulistana.com.br', 
+    'https://pcmpaulistana.com.br', 
+    'http://www.pcmpaulistana.com.br', 
+    'https://www.pcmpaulistana.com.br'
+  ],
   credentials: true,
 }));
 app.use(express.json());
