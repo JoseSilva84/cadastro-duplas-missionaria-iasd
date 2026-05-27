@@ -100,10 +100,3 @@ Resumo: 69 contas ativas geradas/atualizadas.
 |---|---|---|---|---|
 | DUPLA_MISSIONARIA | Todas as duplas missionárias | Duplas Missionárias | duplas.missionarias@ap.adventistas.org | ZnoVdUW_%2hbLY29Yo |
 
-## Contas antigas de demonstração desativadas
-
-- pastor.regional@ap.adventistas.org
-- pastor.santos@ap.adventistas.org
-- coord.centro@ap.adventistas.org
-- dupla.joao@ap.adventistas.org
-

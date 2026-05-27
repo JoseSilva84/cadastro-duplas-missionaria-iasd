@@ -80,7 +80,7 @@ const gerarPdf = (relatorio) => {
         <div class="grid">
           <div class="box"><div class="label">Diretor de Ministério Pessoal</div><div class="value">${escaparHtml(relatorio.liderancas?.diretorMinisterioPessoal?.nome || 'Não informado')}</div></div>
           <div class="box"><div class="label">Pastor</div><div class="value">${escaparHtml(relatorio.liderancas?.pastor?.nome || 'Não informado')}</div></div>
-          <div class="box"><div class="label">Coordenador Missionário</div><div class="value">${escaparHtml(relatorio.liderancas?.coordenadorMissionario?.nome || 'Não informado')}</div></div>
+          <div class="box"><div class="label">Coordenador Regional</div><div class="value">${escaparHtml(relatorio.liderancas?.coordenadorMissionario?.nome || 'Não informado')}</div></div>
           <div class="box"><div class="label">Membros</div><div class="value">${escaparHtml(formatarNumero(indicadores.quantidadeMembros))}</div></div>
         </div>
 
@@ -285,7 +285,7 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
             </section>
 
             <section className="bg-white rounded-lg border border-gray-100 p-4">
-              <h4 className="font-bold text-[#1A3A6B] mb-4">Coordenador Missionário</h4>
+              <h4 className="font-bold text-[#1A3A6B] mb-4">Coordenador Regional</h4>
               <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-5">
                 <AvatarUpload value={form.fotoCoordInteressados} onChange={(v) => set('fotoCoordInteressados', v)} label="Foto" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -434,7 +434,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
         <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} onFotoClick={setFotoAmpliada} />
         <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onFotoClick={setFotoAmpliada} />
-        <ColunaPessoa titulo="Coordenador Missionário" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
+        <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
 
         <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
           <div className="mb-3">

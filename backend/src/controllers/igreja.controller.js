@@ -15,7 +15,7 @@ const IgrejaController = {
   // GET /api/igrejas/:id
   async buscarPorId(req, res) {
     try {
-      const igreja = await IgrejaService.buscarPorId(req.params.id);
+      const igreja = await IgrejaService.buscarPorId(req.params.id, req.usuario);
       res.json(igreja);
     } catch (err) {
       const status = err.status || 500;
@@ -26,7 +26,7 @@ const IgrejaController = {
   // POST /api/igrejas
   async criar(req, res) {
     try {
-      const igreja = await IgrejaService.criar(req.body);
+      const igreja = await IgrejaService.criar(req.body, req.usuario);
       res.status(201).json(igreja);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao criar igreja.' });
@@ -36,7 +36,7 @@ const IgrejaController = {
   // PUT /api/igrejas/:id
   async atualizar(req, res) {
     try {
-      const igreja = await IgrejaService.atualizar(req.params.id, req.body);
+      const igreja = await IgrejaService.atualizar(req.params.id, req.body, req.usuario);
       res.json(igreja);
     } catch (err) {
       const status = err.status || 500;

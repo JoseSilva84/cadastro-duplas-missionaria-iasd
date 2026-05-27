@@ -45,7 +45,7 @@ const DuplaController = {
     }
 
     try {
-      const dupla = await DuplaService.criar(req.body);
+      const dupla = await DuplaService.criar(req.body, req.usuario);
       res.status(201).json(dupla);
     } catch (err) {
       const status = err.status || 500;

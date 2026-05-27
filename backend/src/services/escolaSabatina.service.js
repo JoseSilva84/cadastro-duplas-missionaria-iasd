@@ -1,30 +1,22 @@
 const EscolaSabatinaModel = require('../models/escolaSabatina.model');
+const { montarEscopo, combinar, validarIgreja } = require('./escopo.service');
 
 const inteiro = (valor) => Math.max(Number(valor || 0), 0);
 
-const aplicarEscopo = (usuario, condicoes) => {
-  if (usuario.perfil === 'PASTOR_DISTRITAL' && usuario.distritoId) {
-    condicoes.push({ distritoId: usuario.distritoId });
-  } else if (usuario.perfil === 'COORDENADOR_REGIONAL' && usuario.regiaoId) {
-    condicoes.push({ distrito: { is: { regiaoId: usuario.regiaoId } } });
-  }
+const aplicarEscopo = async (usuario, condicoes) => {
+  const escopo = await montarEscopo(usuario);
+  condicoes.push(escopo.escolaSabatina);
 };
 
 const EscolaSabatinaService = {
   async listar(usuario, query = {}) {
     const condicoes = [];
-    aplicarEscopo(usuario, condicoes);
+    await aplicarEscopo(usuario, condicoes);
 
     if (query.distritoId) condicoes.push({ distritoId: Number(query.distritoId) });
     if (query.igrejaId) condicoes.push({ igrejaId: Number(query.igrejaId) });
 
-    const where = condicoes.length === 0
-      ? {}
-      : condicoes.length === 1
-        ? condicoes[0]
-        : { AND: condicoes };
-
-    return EscolaSabatinaModel.listar(where);
+    return EscolaSabatinaModel.listar(combinar(...condicoes));
   },
 
   async criar(data, usuario) {
@@ -32,14 +24,11 @@ const EscolaSabatinaService = {
     const igrejaId = Number(data.igrejaId);
     const duplaIds = [...new Set((data.duplaIds || []).map(Number).filter(Boolean))];
 
-    if (usuario.perfil === 'PASTOR_DISTRITAL' && usuario.distritoId !== distritoId) {
-      throw { status: 403, mensagem: 'Sem permissao para cadastrar Escola Sabatina neste distrito.' };
-    }
-
     const igreja = await EscolaSabatinaModel.buscarIgreja(igrejaId);
     if (!igreja || igreja.distritoId !== distritoId) {
       throw { status: 400, mensagem: 'A igreja selecionada nao pertence ao distrito informado.' };
     }
+    await validarIgreja(usuario, igrejaId);
 
     if (duplaIds.length === 0) {
       throw { status: 400, mensagem: 'Selecione ao menos uma dupla da igreja.' };

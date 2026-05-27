@@ -91,12 +91,27 @@ export default function Layout() {
 
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
-  const podeVerRelatorios = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
-  const podeCadastrarDupla = usuario?.perfil !== PERFIS.DUPLA_MISSIONARIA && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
+  const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeCadastrarDupla = !isDupla && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
   const isDireto = layout === 'direto';
 
-  const navLinks = isDireto
+  const navLinks = isDupla
+    ? [
+        { to: '/minha-dupla', label: 'Minha Igreja', icon: icons.igrejas },
+        { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
+          { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
+          { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
+        ] },
+        { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+          { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
+          { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
+        ] },
+      ]
+    : isDireto
     ? [
         { to: '/direto/regioes', label: 'Regiões', icon: icons.regioes },
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
@@ -111,7 +126,7 @@ export default function Layout() {
           ...(podeGerenciarLiderancas ? [
             { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
             { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
-            { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionário', icon: 'CM' },
+            { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
             { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
@@ -141,7 +156,7 @@ export default function Layout() {
           ...(podeGerenciarLiderancas ? [
             { to: '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
             { to: '/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
-            { to: '/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionário', icon: 'CM' },
+            { to: '/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
             { to: '/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),

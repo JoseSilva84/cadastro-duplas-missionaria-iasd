@@ -1,4 +1,4 @@
-// Controller de Acompanhamento do Coordenador Missionário
+// Controller de Acompanhamento do Coordenador Regional
 const prisma = require('../lib/prisma');
 const { body, validationResult } = require('express-validator');
 

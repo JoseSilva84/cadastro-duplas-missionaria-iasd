@@ -5,7 +5,7 @@ const RelatorioController = {
   // GET /api/relatorios/resumo
   async resumo(req, res) {
     try {
-      const resultado = await RelatorioService.resumo();
+      const resultado = await RelatorioService.resumo(req.usuario);
       res.json(resultado);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao gerar relatório.' });
@@ -15,7 +15,7 @@ const RelatorioController = {
   // GET /api/relatorios/por-regiao
   async porRegiao(req, res) {
     try {
-      const resultado = await RelatorioService.porRegiao();
+      const resultado = await RelatorioService.porRegiao(req.usuario);
       res.json(resultado);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao gerar relatório por região.' });
@@ -25,7 +25,7 @@ const RelatorioController = {
   // GET /api/relatorios/por-distrito/:distritoId
   async porDistrito(req, res) {
     try {
-      const resultado = await RelatorioService.porDistrito(req.params.distritoId);
+      const resultado = await RelatorioService.porDistrito(req.params.distritoId, req.usuario);
       res.json(resultado);
     } catch (err) {
       const status = err.status || 500;
@@ -36,7 +36,7 @@ const RelatorioController = {
   // GET /api/relatorios/por-igreja/:igrejaId
   async porIgreja(req, res) {
     try {
-      const resultado = await RelatorioService.porIgreja(req.params.igrejaId);
+      const resultado = await RelatorioService.porIgreja(req.params.igrejaId, req.usuario);
       res.json(resultado);
     } catch (err) {
       const status = err.status || 500;
@@ -47,7 +47,7 @@ const RelatorioController = {
   // GET /api/relatorios/estudos-biblicos
   async estudosBiblicos(req, res) {
     try {
-      const resultado = await RelatorioService.estudosBiblicos(req.query);
+      const resultado = await RelatorioService.estudosBiblicos(req.query, req.usuario);
       res.json(resultado);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao gerar relatório de estudos bíblicos.' });

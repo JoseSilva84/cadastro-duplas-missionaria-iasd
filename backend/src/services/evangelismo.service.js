@@ -1,29 +1,16 @@
-﻿const EvangelismoModel = require('../models/evangelismo.model');
+const EvangelismoModel = require('../models/evangelismo.model');
+const prisma = require('../lib/prisma');
 const { PERFIS } = require('../middlewares/auth');
+const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
 
-// Aplica filtros de escopo por perfil + filtros opcionais da query
-const montarFiltro = (query = {}, usuario = null) => {
-  const where = {};
+const montarFiltro = async (query = {}, usuario = null) => {
+  let where = {};
 
-  // â”€â”€â”€ RestriÃ§Ãµes por perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (usuario) {
-    const { perfil, duplaId, distritoId, regiaoId } = usuario;
-
-    if (perfil === PERFIS.DUPLA_MISSIONARIA) {
-      // Conta vinculada ve somente a propria dupla; conta unificada ve todas.
-      if (duplaId) where.duplaId = duplaId;
-    } else if (perfil === PERFIS.PASTOR_DISTRITAL && distritoId) {
-      where.dupla = { is: { distritoId } };
-    } else if (
-      (perfil === PERFIS.PASTOR_REGIONAL || perfil === PERFIS.COORDENADOR_REGIONAL) &&
-      regiaoId
-    ) {
-      where.dupla = { is: { distrito: { is: { regiaoId } } } };
-    }
-    // SUPER_ADMIN e ADMINISTRADOR: sem restriÃ§Ã£o
+    const escopo = await montarEscopo(usuario);
+    where = { ...where, ...escopo.estudo };
   }
 
-  // â”€â”€â”€ Filtros opcionais (ignorados para DUPLA_MISSIONARIA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!usuario || usuario.perfil !== PERFIS.DUPLA_MISSIONARIA) {
     if (query.duplaId) where.duplaId = Number(query.duplaId);
   }
@@ -51,36 +38,46 @@ const normalizar = (data) => ({
   estudoAtual: Number(data.estudoAtual),
 });
 
+async function validarDuplaDoRegistro(usuario, duplaId) {
+  if (!usuario) return;
+  const dupla = await prisma.dupla.findUnique({
+    where: { id: Number(duplaId) },
+    select: { igrejaId: true },
+  });
+  if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
+  await validarIgreja(usuario, dupla.igrejaId);
+}
+
 const EvangelismoService = {
-  listar(query, usuario) {
-    return EvangelismoModel.findAll(montarFiltro(query, usuario));
+  async listar(query, usuario) {
+    return EvangelismoModel.findAll(await montarFiltro(query, usuario));
   },
 
   async buscarPorId(id, usuario) {
     const evangelismo = await EvangelismoModel.findById(id);
-    if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo nÃ£o encontrado.' };
+    if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo não encontrado.' };
 
-    // DUPLA_MISSIONARIA sÃ³ vÃª registros da prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId && evangelismo.duplaId !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra dupla.' };
+      const escopo = await montarEscopo(usuario);
+      if (evangelismo.dupla?.igreja?.id !== escopo.igrejaId) {
+        throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra igreja.' };
       }
+    } else if (usuario && evangelismo.dupla?.igreja?.id) {
+      await validarIgreja(usuario, evangelismo.dupla.igreja.id);
+    } else if (usuario && evangelismo.dupla?.distrito?.id) {
+      await validarDistrito(usuario, evangelismo.dupla.distrito.id);
     }
     return evangelismo;
   },
 
-  // CriaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async criar(data, usuario) {
-    if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId && Number(data.duplaId) !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'VocÃª sÃ³ pode cadastrar registros para a sua prÃ³pria dupla.' };
-      }
-    }
+    await validarDuplaDoRegistro(usuario, data.duplaId);
     return EvangelismoModel.create(normalizar(data));
   },
 
   async atualizar(id, data, usuario) {
     await this.buscarPorId(id, usuario);
+    await validarDuplaDoRegistro(usuario, data.duplaId);
     return EvangelismoModel.update(id, normalizar(data));
   },
 

@@ -47,7 +47,7 @@ const TIPOS = [
   },
   {
     value: 'coordenador',
-    label: 'Coordenador Missionário',
+    label: 'Coordenador Regional',
     descricao: 'Responsável pelo acompanhamento missionário de uma Igreja',
     icon: '👤',
     cor: '#C9963A',
@@ -74,7 +74,7 @@ const TIPOS = [
 const CARGO_POR_TIPO = {
   regional: 'Pastor Regional',
   distrital: 'Pastor Distrital',
-  coordenador: 'Coordenador Missionário',
+  coordenador: 'Coordenador Regional',
   diretor_mp: 'Diretor de Ministério Pessoal',
   igreja: 'Igreja Local',
 };

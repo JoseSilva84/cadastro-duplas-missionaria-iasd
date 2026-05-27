@@ -1,6 +1,7 @@
 ﻿// Service de Dupla â€” Regras de negÃ³cio com Resource-Based Authorization
 const DuplaModel = require('../models/dupla.model');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
+const { montarEscopo, combinar, validarDistrito, validarIgreja } = require('./escopo.service');
 
 const comoBoolean = (valor) => {
   if (valor === undefined || valor === null || valor === '') return null;
@@ -35,26 +36,9 @@ const DuplaService = {
   // Lista duplas com filtros e restriÃ§Ãµes por perfil (Resource-Based Authorization)
   async listar(usuario, query) {
     const { distritoId, status, regiaoNome } = query;
-    const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId, duplaId: userDuplaId } = usuario;
-
-    // Montamos o filtro como lista de condiÃ§Ãµes AND para evitar conflitos no Prisma
-    const condicoes = [];
-
-    // â”€â”€â”€ RestriÃ§Ãµes por perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    if (perfil === PERFIS.DUPLA_MISSIONARIA) {
-      // Conta vinculada ve somente a propria dupla; conta unificada ve todas.
-      if (userDuplaId) {
-        condicoes.push({ id: userDuplaId });
-      }
-    } else if (perfil === PERFIS.PASTOR_DISTRITAL) {
-      condicoes.push({ distritoId: userDistritoId });
-    } else if (
-      (perfil === PERFIS.PASTOR_REGIONAL || perfil === PERFIS.COORDENADOR_REGIONAL) &&
-      userRegiaoId
-    ) {
-      condicoes.push({ distrito: { is: { regiaoId: userRegiaoId } } });
-    }
-    // SUPER_ADMIN e ADMINISTRADOR: sem restriÃ§Ã£o de escopo
+    const { perfil } = usuario;
+    const escopo = await montarEscopo(usuario);
+    const condicoes = [escopo.dupla];
 
     // â”€â”€â”€ Filtros opcionais da query (sÃ³ vÃ¡lidos se o perfil tem acesso ao escopo) â”€â”€
     // Evitamos que uma DUPLA_MISSIONARIA consiga ignorar a restriÃ§Ã£o passando ?distritoId=X
@@ -64,13 +48,7 @@ const DuplaService = {
     }
     if (status) condicoes.push({ status });
 
-    const filtro = condicoes.length === 0
-      ? {}
-      : condicoes.length === 1
-        ? condicoes[0]
-        : { AND: condicoes };
-
-    return DuplaModel.findAll(filtro);
+    return DuplaModel.findAll(combinar(...condicoes));
   },
 
   // Busca dupla por ID (valida escopo para DUPLA_MISSIONARIA)
@@ -80,27 +58,22 @@ const DuplaService = {
       throw { status: 404, mensagem: 'Dupla nÃ£o encontrada.' };
     }
 
-    // DUPLA_MISSIONARIA sÃ³ pode ver a prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId && dupla.id !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'Acesso negado: vocÃª sÃ³ pode visualizar sua prÃ³pria dupla.' };
+      const escopo = await montarEscopo(usuario);
+      if (dupla.igrejaId !== escopo.igrejaId) {
+        throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outra igreja.' };
       }
+    } else {
+      await validarDistrito(usuario, dupla.distritoId);
     }
-
-    // PASTOR_DISTRITAL sÃ³ pode ver duplas do seu distrito
-    if (usuario && usuario.perfil === PERFIS.PASTOR_DISTRITAL) {
-      if (dupla.distritoId !== usuario.distritoId) {
-        throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outro distrito.' };
-      }
-    }
-
-    // PASTOR_REGIONAL e COORDENADOR_REGIONAL: validaÃ§Ã£o no service de distrito (via regiaoId)
 
     return dupla;
   },
 
   // Cria nova dupla
-  async criar(data) {
+  async criar(data, usuario) {
+    await validarDistrito(usuario, data.distritoId);
+    if (data.igrejaId) await validarIgreja(usuario, data.igrejaId);
     const classificacao = calcularClassificacao(data);
 
     return DuplaModel.create({
@@ -152,19 +125,8 @@ const DuplaService = {
     const dupla = await this.buscarPorId(id, usuario);
     const classificacao = calcularClassificacao(data);
 
-    // Pastores sÃ³ editam duplas do prÃ³prio distrito
-    if (usuario.perfil === PERFIS.PASTOR_DISTRITAL && dupla.distritoId !== usuario.distritoId) {
-      throw { status: 403, mensagem: 'Sem permissÃ£o para editar esta dupla.' };
-    }
-
-    // Pastor Regional sÃ³ edita duplas da sua regiÃ£o
-    if (usuario.perfil === PERFIS.PASTOR_REGIONAL) {
-      const prisma = require('../lib/prisma');
-      const distrito = await prisma.distrito.findUnique({ where: { id: dupla.distritoId } });
-      if (!distrito || distrito.regiaoId !== usuario.regiaoId) {
-        throw { status: 403, mensagem: 'Sem permissÃ£o para editar esta dupla (outra regiÃ£o).' };
-      }
-    }
+    if (data.distritoId) await validarDistrito(usuario, data.distritoId);
+    if (data.igrejaId) await validarIgreja(usuario, data.igrejaId);
 
     const dadosAtualizados = {
       regiaoNome: data.regiaoNome,

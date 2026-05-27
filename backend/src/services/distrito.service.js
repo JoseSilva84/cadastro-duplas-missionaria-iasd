@@ -1,36 +1,20 @@
-// Service de Distrito — Regras de negócio
 const DistritoModel = require('../models/distrito.model');
+const { montarEscopo, combinar, validarDistrito, validarRegiao } = require('./escopo.service');
 
 const DistritoService = {
-  // Lista distritos com filtro por perfil
-  async listar(usuario, query) {
+  async listar(usuario, query = {}) {
     const { regiaoId, nome } = query;
-    const { perfil, regiaoId: userRegiaoId, distritoId: userDistritoId } = usuario;
+    const escopo = await montarEscopo(usuario);
+    const condicoes = [escopo.distrito];
 
-    const condicoes = [];
-
-    // Restrição por perfil
-    if (perfil === 'PASTOR_DISTRITAL' && userDistritoId) {
-      condicoes.push({ id: userDistritoId });
-    } else if (perfil === 'COORDENADOR_REGIONAL' && userRegiaoId) {
-      condicoes.push({ regiaoId: userRegiaoId });
-    }
-
-    // Filtros opcionais da query
     if (regiaoId) condicoes.push({ regiaoId: Number(regiaoId) });
     if (nome) condicoes.push({ nome: { contains: nome, mode: 'insensitive' } });
 
-    const where = condicoes.length === 0
-      ? {}
-      : condicoes.length === 1
-        ? condicoes[0]
-        : { AND: condicoes };
-
-    return DistritoModel.findAll(where);
+    return DistritoModel.findAll(combinar(...condicoes));
   },
 
-  // Busca distrito por ID
-  async buscarPorId(id) {
+  async buscarPorId(id, usuario) {
+    await validarDistrito(usuario, id);
     const distrito = await DistritoModel.findById(id);
     if (!distrito) {
       throw { status: 404, mensagem: 'Distrito não encontrado.' };
@@ -38,23 +22,21 @@ const DistritoService = {
     return distrito;
   },
 
-  // Cria novo distrito
-  async criar(data) {
+  async criar(data, usuario) {
+    validarRegiao(usuario, data.regiaoId);
     return DistritoModel.create({
       nome: data.nome,
       regiaoId: Number(data.regiaoId),
     });
   },
 
-  // Atualiza distrito (suporta update parcial via PATCH)
-  async atualizar(id, data) {
-    await this.buscarPorId(id);
-    // Monta apenas os campos permitidos que vieram no body
+  async atualizar(id, data, usuario) {
+    await this.buscarPorId(id, usuario);
     const campos = {};
-    if (data.nome !== undefined)        campos.nome = data.nome;
-    if (data.membros !== undefined)     campos.membros = Number(data.membros);
-    if (data.fotoPastor !== undefined)  campos.fotoPastor = data.fotoPastor;
-    if (data.nomePastor !== undefined)  campos.nomePastor = data.nomePastor;
+    if (data.nome !== undefined) campos.nome = data.nome;
+    if (data.membros !== undefined) campos.membros = Number(data.membros);
+    if (data.fotoPastor !== undefined) campos.fotoPastor = data.fotoPastor;
+    if (data.nomePastor !== undefined) campos.nomePastor = data.nomePastor;
     if (data.cargoPastor !== undefined) campos.cargoPastor = data.cargoPastor;
     if (data.telefonePastor !== undefined) campos.telefonePastor = data.telefonePastor;
     if (data.enderecoPastor !== undefined) campos.enderecoPastor = data.enderecoPastor;

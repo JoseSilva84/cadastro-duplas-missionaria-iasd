@@ -7,7 +7,8 @@ const includeDupla = {
       liderNome: true,
       membro2Nome: true,
       bairro: true,
-      distrito: { select: { nome: true, regiao: { select: { nome: true } } } },
+      igreja: { select: { id: true, nome: true } },
+      distrito: { select: { id: true, nome: true, regiao: { select: { nome: true } } } },
     },
   },
 };

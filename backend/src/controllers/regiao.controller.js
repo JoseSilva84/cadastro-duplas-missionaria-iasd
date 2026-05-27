@@ -5,7 +5,7 @@ const RegiaoController = {
   // GET /api/regioes
   async listar(req, res) {
     try {
-      const regioes = await RegiaoService.listar();
+      const regioes = await RegiaoService.listar(req.usuario);
       res.json(regioes);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao listar regiões.' });
@@ -15,7 +15,7 @@ const RegiaoController = {
   // GET /api/regioes/:id
   async buscarPorId(req, res) {
     try {
-      const regiao = await RegiaoService.buscarPorId(req.params.id);
+      const regiao = await RegiaoService.buscarPorId(req.params.id, req.usuario);
       res.json(regiao);
     } catch (err) {
       const status = err.status || 500;
@@ -36,7 +36,7 @@ const RegiaoController = {
   // PUT /api/regioes/:id
   async atualizar(req, res) {
     try {
-      const regiao = await RegiaoService.atualizar(req.params.id, req.body);
+      const regiao = await RegiaoService.atualizar(req.params.id, req.body, req.usuario);
       res.json(regiao);
     } catch (err) {
       const status = err.status || 500;

@@ -1,37 +1,19 @@
-// Service de Igreja — Regras de negócio
 const IgrejaModel = require('../models/igreja.model');
+const { montarEscopo, combinar, validarIgreja, validarDistrito } = require('./escopo.service');
 
 const IgrejaService = {
-  // Lista todas as igrejas aplicando restrições de acesso
-  async listar(usuario, query) {
-    const condicoes = [];
+  async listar(usuario, query = {}) {
+    const escopo = await montarEscopo(usuario);
+    const condicoes = [escopo.igreja];
 
-    // Restrição por perfil — define o escopo máximo permitido
-    if (usuario.perfil === 'COORDENADOR_REGIONAL' && usuario.regiaoId) {
-      // Prisma exige "is" para filtrar campos de uma relação
-      condicoes.push({ distrito: { is: { regiaoId: usuario.regiaoId } } });
-    } else if (usuario.perfil === 'PASTOR_DISTRITAL' && usuario.distritoId) {
-      condicoes.push({ distritoId: usuario.distritoId });
-    } else if (usuario.perfil === 'LIDER_LOCAL' && usuario.igrejaId) {
-      condicoes.push({ id: usuario.igrejaId });
-    }
-
-    // Filtros opcionais da query (refinam dentro do escopo permitido)
     if (query.distritoId) condicoes.push({ distritoId: Number(query.distritoId) });
     if (query.regiaoId) condicoes.push({ distrito: { is: { regiaoId: Number(query.regiaoId) } } });
 
-    // Combina tudo com AND sem conflitos
-    const where = condicoes.length === 0
-      ? {}
-      : condicoes.length === 1
-        ? condicoes[0]
-        : { AND: condicoes };
-
-    return IgrejaModel.findAll(where);
+    return IgrejaModel.findAll(combinar(...condicoes));
   },
 
-  // Busca igreja por ID com validação
-  async buscarPorId(id) {
+  async buscarPorId(id, usuario) {
+    await validarIgreja(usuario, id);
     const igreja = await IgrejaModel.findById(id);
     if (!igreja) {
       throw { status: 404, mensagem: 'Igreja não encontrada.' };
@@ -39,22 +21,23 @@ const IgrejaService = {
     return igreja;
   },
 
-  // Cria nova igreja
-  async criar(data) {
+  async criar(data, usuario) {
+    await validarDistrito(usuario, data.distritoId);
     return IgrejaModel.create(data);
   },
 
-  // Atualiza igreja (suporta update parcial via PATCH)
-  async atualizar(id, data) {
-    await this.buscarPorId(id);
+  async atualizar(id, data, usuario) {
+    await this.buscarPorId(id, usuario);
+    if (data.distritoId !== undefined) await validarDistrito(usuario, data.distritoId);
+
     const campos = {};
-    if (data.nome !== undefined)                    campos.nome = data.nome;
-    if (data.membros !== undefined)                 campos.membros = Number(data.membros);
-    if (data.distritoId !== undefined)              campos.distritoId = Number(data.distritoId);
-    if (data.endereco !== undefined)                 campos.endereco = data.endereco;
-    if (data.fotoIgreja !== undefined)               campos.fotoIgreja = data.fotoIgreja;
-    if (data.fotoDiretorMinisterioPessoal !== undefined)     campos.fotoDiretorMinisterioPessoal = data.fotoDiretorMinisterioPessoal;
-    if (data.nomeDiretorMinisterioPessoal !== undefined)     campos.nomeDiretorMinisterioPessoal = data.nomeDiretorMinisterioPessoal;
+    if (data.nome !== undefined) campos.nome = data.nome;
+    if (data.membros !== undefined) campos.membros = Number(data.membros);
+    if (data.distritoId !== undefined) campos.distritoId = Number(data.distritoId);
+    if (data.endereco !== undefined) campos.endereco = data.endereco;
+    if (data.fotoIgreja !== undefined) campos.fotoIgreja = data.fotoIgreja;
+    if (data.fotoDiretorMinisterioPessoal !== undefined) campos.fotoDiretorMinisterioPessoal = data.fotoDiretorMinisterioPessoal;
+    if (data.nomeDiretorMinisterioPessoal !== undefined) campos.nomeDiretorMinisterioPessoal = data.nomeDiretorMinisterioPessoal;
     if (data.enderecoDiretorMinisterioPessoal !== undefined) campos.enderecoDiretorMinisterioPessoal = data.enderecoDiretorMinisterioPessoal;
     if (data.whatsappDiretorMinisterioPessoal !== undefined) campos.whatsappDiretorMinisterioPessoal = data.whatsappDiretorMinisterioPessoal;
     if (data.dataNascimentoDiretorMinisterioPessoal !== undefined) {
@@ -62,9 +45,9 @@ const IgrejaService = {
         ? new Date(data.dataNascimentoDiretorMinisterioPessoal)
         : null;
     }
-    if (data.fotoCoordInteressados !== undefined)   campos.fotoCoordInteressados = data.fotoCoordInteressados;
-    if (data.nomeCoordInteressados !== undefined)   campos.nomeCoordInteressados = data.nomeCoordInteressados;
-    if (data.cargoCoordInteressados !== undefined)  campos.cargoCoordInteressados = data.cargoCoordInteressados;
+    if (data.fotoCoordInteressados !== undefined) campos.fotoCoordInteressados = data.fotoCoordInteressados;
+    if (data.nomeCoordInteressados !== undefined) campos.nomeCoordInteressados = data.nomeCoordInteressados;
+    if (data.cargoCoordInteressados !== undefined) campos.cargoCoordInteressados = data.cargoCoordInteressados;
     if (data.telefoneCoordInteressados !== undefined) campos.telefoneCoordInteressados = data.telefoneCoordInteressados;
     if (data.enderecoCoordInteressados !== undefined) campos.enderecoCoordInteressados = data.enderecoCoordInteressados;
     if (data.dataNascimentoCoordInteressados !== undefined) {

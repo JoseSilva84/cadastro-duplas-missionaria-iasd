@@ -1,28 +1,16 @@
 ﻿const EstudoBiblicoModel = require('../models/estudoBiblico.model');
 const prisma = require('../lib/prisma');
 const { PERFIS } = require('../middlewares/auth');
+const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
 
 // Aplica filtros de escopo por perfil + filtros opcionais da query
 const montarFiltro = async (query = {}, usuario = null) => {
-  const where = {};
+  let where = {};
 
   // â”€â”€â”€ RestriÃ§Ãµes por perfil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (usuario) {
-    const { perfil, duplaId, distritoId, regiaoId } = usuario;
-
-    if (perfil === PERFIS.DUPLA_MISSIONARIA) {
-      // Conta vinculada ve somente a propria dupla; conta unificada ve todas.
-      if (duplaId) where.duplaId = duplaId;
-    } else if (perfil === PERFIS.PASTOR_DISTRITAL && distritoId) {
-      // Pastor Distrital sÃ³ vÃª estudos de duplas do seu distrito
-      where.dupla = { is: { distritoId } };
-    } else if (
-      (perfil === PERFIS.PASTOR_REGIONAL || perfil === PERFIS.COORDENADOR_REGIONAL) &&
-      regiaoId
-    ) {
-      // Pastor Regional e Coordenador veem estudos de duplas da sua regiÃ£o
-      where.dupla = { is: { distrito: { is: { regiaoId } } } };
-    }
+    const escopo = await montarEscopo(usuario);
+    where = { ...where, ...escopo.estudo };
     // SUPER_ADMIN e ADMINISTRADOR: sem restriÃ§Ã£o
   }
 
@@ -81,20 +69,27 @@ const EstudoBiblicoService = {
 
     // DUPLA_MISSIONARIA sÃ³ pode ver estudos da prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId && estudo.duplaId !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'Acesso negado: estudo pertence a outra dupla.' };
+      const escopo = await montarEscopo(usuario);
+      if (estudo.dupla?.igreja?.id !== escopo.igrejaId) {
+        throw { status: 403, mensagem: 'Acesso negado: estudo pertence a outra igreja.' };
       }
+    } else if (usuario && estudo.dupla?.igreja?.id) {
+      await validarIgreja(usuario, estudo.dupla.igreja.id);
+    } else if (usuario && estudo.dupla?.distrito?.id) {
+      await validarDistrito(usuario, estudo.dupla.distrito.id);
     }
     return estudo;
   },
 
   // CriaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async criar(data, usuario) {
-    // DUPLA_MISSIONARIA sÃ³ pode criar estudos para a prÃ³pria dupla
-    if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId && Number(data.duplaId) !== usuario.duplaId) {
-        throw { status: 403, mensagem: 'VocÃª sÃ³ pode cadastrar estudos para a sua prÃ³pria dupla.' };
-      }
+    if (usuario) {
+      const dupla = await prisma.dupla.findUnique({
+        where: { id: Number(data.duplaId) },
+        select: { igrejaId: true },
+      });
+      if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
+      await validarIgreja(usuario, dupla.igrejaId);
     }
 
     const dadosEstudo = normalizarEstudo(data);
@@ -139,6 +134,14 @@ const EstudoBiblicoService = {
   // AtualizaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async atualizar(id, data, usuario) {
     await this.buscarPorId(id, usuario);
+    if (usuario && data.duplaId) {
+      const dupla = await prisma.dupla.findUnique({
+        where: { id: Number(data.duplaId) },
+        select: { igrejaId: true },
+      });
+      if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
+      await validarIgreja(usuario, dupla.igrejaId);
+    }
     const dadosEstudo = normalizarEstudo(data);
     const participantes = data.participantes;
 

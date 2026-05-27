@@ -9,7 +9,7 @@ const UsuarioModel = {
       include: {
         regiao: true,
         distrito: true,
-        dupla: { select: { id: true, liderNome: true, membro2Nome: true, distritoId: true } },
+        dupla: { select: { id: true, liderNome: true, membro2Nome: true, distritoId: true, igrejaId: true, igreja: { select: { id: true, nome: true } } } },
       },
     });
   },
@@ -29,7 +29,7 @@ const UsuarioModel = {
         duplaId: true,
         regiao: { select: { id: true, nome: true } },
         distrito: { select: { id: true, nome: true } },
-        dupla: { select: { id: true, liderNome: true, membro2Nome: true } },
+        dupla: { select: { id: true, liderNome: true, membro2Nome: true, igrejaId: true, igreja: { select: { id: true, nome: true } } } },
       },
     });
   },
@@ -50,7 +50,7 @@ const UsuarioModel = {
         duplaId: true,
         regiao: { select: { id: true, nome: true } },
         distrito: { select: { id: true, nome: true } },
-        dupla: { select: { id: true, liderNome: true } },
+        dupla: { select: { id: true, liderNome: true, igrejaId: true, igreja: { select: { id: true, nome: true } } } },
       },
       orderBy: { nome: 'asc' },
     });

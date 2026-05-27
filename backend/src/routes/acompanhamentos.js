@@ -1,4 +1,4 @@
-// Rotas de Acompanhamento do Coordenador Missionário
+// Rotas de Acompanhamento do Coordenador Regional
 const express = require('express');
 const router = express.Router();
 const { AcompanhamentoController, validarAcompanhamento } = require('../controllers/acompanhamento.controller');

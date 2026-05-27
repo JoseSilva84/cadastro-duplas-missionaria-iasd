@@ -15,7 +15,7 @@ const DistritoController = {
   // GET /api/distritos/:id
   async buscarPorId(req, res) {
     try {
-      const distrito = await DistritoService.buscarPorId(req.params.id);
+      const distrito = await DistritoService.buscarPorId(req.params.id, req.usuario);
       res.json(distrito);
     } catch (err) {
       const status = err.status || 500;
@@ -26,7 +26,7 @@ const DistritoController = {
   // POST /api/distritos
   async criar(req, res) {
     try {
-      const distrito = await DistritoService.criar(req.body);
+      const distrito = await DistritoService.criar(req.body, req.usuario);
       res.status(201).json(distrito);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao criar distrito.' });
@@ -36,7 +36,7 @@ const DistritoController = {
   // PUT /api/distritos/:id
   async atualizar(req, res) {
     try {
-      const distrito = await DistritoService.atualizar(req.params.id, req.body);
+      const distrito = await DistritoService.atualizar(req.params.id, req.body, req.usuario);
       res.json(distrito);
     } catch (err) {
       const status = err.status || 500;

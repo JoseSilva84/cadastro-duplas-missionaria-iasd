@@ -67,10 +67,6 @@ function RotaAdmin({ children }) {
 // ─── Rota bloqueada para DUPLA_MISSIONARIA ────────────────────────────────────
 // A dupla não pode acessar nenhuma rota de listagem geográfica
 function RotaBloqueadaParaDupla({ children }) {
-  const { usuario } = useAuth();
-  if (ehDupla(usuario)) {
-    return <Navigate to="/minha-dupla" replace />;
-  }
   return children;
 }
 
@@ -229,9 +225,17 @@ function AppRoutes() {
         <Route
           path="relatorios"
           element={
-            <RotaAdmin>
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+                PERFIS.PASTOR_DISTRITAL,
+                PERFIS.COORDENADOR_REGIONAL,
+              ]}
+            >
               <Relatorios />
-            </RotaAdmin>
+            </RotaComPerfis>
           }
         />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />

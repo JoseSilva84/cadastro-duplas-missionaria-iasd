@@ -1,10 +1,8 @@
-// Service de Autenticação — Regras de negócio
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const UsuarioModel = require('../models/usuario.model');
 
 const AuthService = {
-  // Realiza login e retorna token + dados do usuário
   async login(email, senha) {
     const usuario = await UsuarioModel.findByEmail(email);
 
@@ -17,7 +15,8 @@ const AuthService = {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
 
-    // Payload do JWT inclui todos os campos necessários para Resource-Based Authorization
+    const igrejaId = usuario.dupla?.igrejaId || null;
+
     const token = jwt.sign(
       {
         id: usuario.id,
@@ -26,7 +25,8 @@ const AuthService = {
         perfil: usuario.perfil,
         regiaoId: usuario.regiaoId,
         distritoId: usuario.distritoId,
-        duplaId: usuario.duplaId, // DUPLA_MISSIONARIA — vincula ao ID da dupla
+        duplaId: usuario.duplaId,
+        igrejaId,
       },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
@@ -42,6 +42,7 @@ const AuthService = {
         regiaoId: usuario.regiaoId,
         distritoId: usuario.distritoId,
         duplaId: usuario.duplaId,
+        igrejaId,
         regiao: usuario.regiao,
         distrito: usuario.distrito,
         dupla: usuario.dupla,
@@ -49,7 +50,6 @@ const AuthService = {
     };
   },
 
-  // Retorna dados do usuário autenticado
   async me(usuarioId) {
     return UsuarioModel.findById(usuarioId);
   },

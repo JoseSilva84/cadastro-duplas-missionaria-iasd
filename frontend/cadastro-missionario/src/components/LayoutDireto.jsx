@@ -76,6 +76,7 @@ export default function LayoutDireto() {
   };
 
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -85,7 +86,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
     { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
     { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
-    { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Missionario', icon: 'CM' },
+    { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
     { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
@@ -101,7 +102,19 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
   ];
 
-  const navLinks = [
+  const navLinks = isDupla ? [
+    { to: '/minha-dupla', label: 'Minha Igreja', icon: icons.igrejas },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
+      { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+      { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
+      { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
+    ] },
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+      { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+      { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
+      { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
+    ] },
+  ] : [
     { to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes },
     { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },

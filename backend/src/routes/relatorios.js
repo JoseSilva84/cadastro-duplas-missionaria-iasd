@@ -2,7 +2,7 @@
 const express = require('express');
 const RelatorioController = require('../controllers/relatorio.controller');
 const { AcompanhamentoController } = require('../controllers/acompanhamento.controller');
-const { autenticar, autorizar } = require('../middlewares/auth');
+const { autenticar, autorizar, PERFIS } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/resumo', autenticar, RelatorioController.resumo);
 
 // GET /api/relatorios/por-regiao — Duplas agrupadas por região
-router.get('/por-regiao', autenticar, autorizar('ADMINISTRADOR', 'LIDER_REGIOES'), RelatorioController.porRegiao);
+router.get('/por-regiao', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL), RelatorioController.porRegiao);
 
 // GET /api/relatorios/por-distrito/:distritoId
 router.get('/por-distrito/:distritoId', autenticar, RelatorioController.porDistrito);
@@ -20,7 +20,7 @@ router.get('/por-igreja/:igrejaId', autenticar, RelatorioController.porIgreja);
 router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
 router.get('/dashboard-associacao', autenticar, RelatorioController.dashboardAssociacao);
 router.get('/coordenadores-regionais', autenticar, RelatorioController.coordenadoresRegionais);
-router.patch('/escola-sabatina-resumo', autenticar, autorizar('ADMINISTRADOR', 'LIDER_REGIOES'), RelatorioController.atualizarEscolaSabatinaResumo);
+router.patch('/escola-sabatina-resumo', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.atualizarEscolaSabatinaResumo);
 
 // GET /api/relatorios/acompanhamento — Relatório de saídas do coordenador
 router.get('/acompanhamento', autenticar, AcompanhamentoController.relatorio);
