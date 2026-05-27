@@ -3,6 +3,7 @@ import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { toast } from '../lib/toast';
 import AvatarUpload from './AvatarUpload';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 
 const formatarNumero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -317,6 +318,8 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
 };
 
 export default function IgrejaCapa({ igreja, onNovaDupla }) {
+  const { usuario } = useAuth();
+  const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const [igrejaAtual, setIgrejaAtual] = useState(igreja);
   const [relatorio, setRelatorio] = useState(null);
   const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
@@ -408,10 +411,12 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <button type="button" onClick={() => setEditando(true)} className="btn-outline text-sm">
-              Editar Dados
-            </button>
-            {onNovaDupla && (
+            {!somenteVisualizacao && (
+              <button type="button" onClick={() => setEditando(true)} className="btn-outline text-sm">
+                Editar Dados
+              </button>
+            )}
+            {!somenteVisualizacao && onNovaDupla && (
               <button type="button" onClick={onNovaDupla} className="btn-outline text-sm">
                 Nova Dupla
               </button>

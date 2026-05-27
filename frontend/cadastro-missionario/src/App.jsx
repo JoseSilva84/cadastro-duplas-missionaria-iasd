@@ -82,15 +82,15 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
 
 // ─── Redireciona para escolha de layout ou rota correta após login ────────────
 function RotaComLayout({ children, modelo }) {
-  const { layout, carregando } = useAuth();
+  const { usuario, layout, carregando } = useAuth();
   if (carregando) return null;
   if (!layout) return <Navigate to="/escolha-layout" replace />;
 
   if (modelo === 'avancado' && layout !== 'avancado') {
-    return <Navigate to="/direto/regioes" replace />;
+    return <Navigate to={ehDupla(usuario) ? '/direto/igrejas' : '/direto/regioes'} replace />;
   }
   if (modelo === 'direto' && layout !== 'direto') {
-    return <Navigate to="/regioes" replace />;
+    return <Navigate to={ehDupla(usuario) ? '/igrejas' : '/regioes'} replace />;
   }
 
   return children;
@@ -100,8 +100,8 @@ function RotaComLayout({ children, modelo }) {
 function RedirectPosLogin() {
   const { usuario, layout } = useAuth();
   if (!usuario) return <Navigate to="/login" replace />;
-  if (ehDupla(usuario)) return <Navigate to="/minha-dupla" replace />;
   const prefix = layout === 'direto' ? '/direto' : '';
+  if (ehDupla(usuario)) return <Navigate to={`${prefix}/igrejas`} replace />;
   return <Navigate to={`${prefix}/regioes`} replace />;
 }
 
@@ -262,7 +262,7 @@ function AppRoutes() {
           </RotaProtegida>
         }
       >
-        <Route index element={<Navigate to="/direto/regioes" replace />} />
+        <Route index element={<RedirectPosLogin />} />
         <Route path="regioes" element={<RegioesDireto />} />
         <Route path="distritos" element={<ListagemDistritosDireto />} />
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />

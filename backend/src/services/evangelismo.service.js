@@ -58,9 +58,11 @@ const EvangelismoService = {
     if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo não encontrado.' };
 
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      const escopo = await montarEscopo(usuario);
-      if (evangelismo.dupla?.igreja?.id !== escopo.igrejaId) {
-        throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra igreja.' };
+      if (usuario.duplaId) {
+        const escopo = await montarEscopo(usuario);
+        if (evangelismo.dupla?.igreja?.id !== escopo.igrejaId) {
+          throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra igreja.' };
+        }
       }
     } else if (usuario && evangelismo.dupla?.igreja?.id) {
       await validarIgreja(usuario, evangelismo.dupla.igreja.id);

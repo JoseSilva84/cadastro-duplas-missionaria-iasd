@@ -72,7 +72,7 @@ export default function LayoutDireto() {
 
   const handleTrocarLayout = () => {
     setLayout('avancado');
-    navigate('/regioes');
+    navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/regioes');
   };
 
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
@@ -103,7 +103,7 @@ export default function LayoutDireto() {
   ];
 
   const navLinks = isDupla ? [
-    { to: '/minha-dupla', label: 'Minha Igreja', icon: icons.igrejas },
+    { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
       { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
       { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },

@@ -52,6 +52,16 @@ async function montarEscopo(usuario) {
 
   if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
     const dupla = await obterIgrejaDaDupla(usuario);
+    if (!usuario.duplaId) {
+      return {
+        regiao: {},
+        distrito: {},
+        igreja: {},
+        dupla: {},
+        estudo: {},
+        escolaSabatina: {},
+      };
+    }
     if (!dupla?.igrejaId) return negarTudo();
     return {
       regiao: semAcesso,
@@ -119,6 +129,7 @@ async function validarIgreja(usuario, igrejaId) {
   if (!igreja) throw { status: 404, mensagem: 'Igreja não encontrada.' };
 
   if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    if (!usuario.duplaId) return;
     const escopo = await montarEscopo(usuario);
     if (igreja.id !== escopo.igrejaId) {
       throw { status: 403, mensagem: 'Acesso negado: igreja fora do seu escopo.' };

@@ -59,9 +59,11 @@ const DuplaService = {
     }
 
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      const escopo = await montarEscopo(usuario);
-      if (dupla.igrejaId !== escopo.igrejaId) {
-        throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outra igreja.' };
+      if (usuario.duplaId) {
+        const escopo = await montarEscopo(usuario);
+        if (dupla.igrejaId !== escopo.igrejaId) {
+          throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outra igreja.' };
+        }
       }
     } else {
       await validarDistrito(usuario, dupla.distritoId);

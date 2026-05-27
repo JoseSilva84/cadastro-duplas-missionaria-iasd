@@ -69,7 +69,7 @@ const perfilLabel = {
   DUPLA_MISSIONARIA: 'Dupla Missionária',
 };
 
-export default function Layout() {
+export default function Layout({ children }) {
   const { usuario, logout, layout, setLayout } = useAuth();
   const navigate = useNavigate();
   const [sidebarAberta, setSidebarAberta] = useState(false);
@@ -81,7 +81,12 @@ export default function Layout() {
 
   const handleTrocarLayout = () => {
     const novoLayout = layout === 'avancado' ? 'direto' : 'avancado';
+    const destinoDupla = novoLayout === 'avancado' ? '/igrejas' : '/direto/igrejas';
     setLayout(novoLayout);
+    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+      navigate(destinoDupla);
+      return;
+    }
     if (novoLayout === 'avancado') {
       navigate('/regioes');
     } else {
@@ -99,7 +104,7 @@ export default function Layout() {
 
   const navLinks = isDupla
     ? [
-        { to: '/minha-dupla', label: 'Minha Igreja', icon: icons.igrejas },
+        { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
@@ -235,7 +240,7 @@ export default function Layout() {
 
          <main className="flex-1 overflow-y-auto bg-[#F4F5F7] pb-20 lg:pb-0">
            <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-             <Outlet />
+             {children || <Outlet />}
            </div>
          </main>
          <BottomNavigation navLinks={navLinks} onMenuClick={() => setSidebarAberta(true)} />
