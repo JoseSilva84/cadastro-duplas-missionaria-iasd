@@ -540,9 +540,10 @@ export default function DuplasDireto() {
                 </svg>
                 Voltar à lista
               </button>
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  {/* Fotos lado a lado, mesmo tamanho */}
+              {/* Mobile: empilhado | sm+: lado a lado */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                {/* Fotos + Nomes */}
+                <div className="flex items-start gap-3 min-w-0">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <FotoPessoa
                       src={duplaSelecionada.fotoLiderPreview}
@@ -559,17 +560,17 @@ export default function DuplasDireto() {
                       onPreview={abrirFoto}
                     />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <h2 className="text-base font-bold text-[#1A3A6B] leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
                         {duplaSelecionada.liderNome || 'Sem nome'}
                       </h2>
-                      <span className="text-gray-300">+</span>
-                      <h2 className="text-lg font-bold text-[#1A3A6B]">
+                      <span className="text-gray-300 text-sm">+</span>
+                      <h2 className="text-base font-bold text-[#1A3A6B] leading-tight">
                         {duplaSelecionada.membro2Nome || 'Sem nome'}
                       </h2>
                     </div>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <ClassificacaoAtividadeBadge dupla={duplaSelecionada} />
                       {(() => {
                         const cor = statusColors[duplaSelecionada.status] || '#9ca3af';
@@ -582,18 +583,13 @@ export default function DuplasDireto() {
                           </span>
                         );
                       })()}
-                      <span className="text-[10px] text-gray-400">{duplaSelecionada.distrito?.nome || 'Sem distrito'}</span>
-                      <span className="text-[10px] text-gray-400">Estudos {getEstudosCount(duplaSelecionada)}</span>
-                      <span className="text-[10px] text-gray-400">Visitações {getVisitacoesCount(duplaSelecionada)}</span>
-                      <span className="text-[10px] text-gray-400">
-                        {projetoIcon[duplaSelecionada.tipoProjeto] || '📋'} {projetoLabel[duplaSelecionada.tipoProjeto] || duplaSelecionada.tipoProjeto || '—'}
-                      </span>
+                      <span className="text-[10px] text-gray-400 hidden sm:inline">{duplaSelecionada.distrito?.nome || 'Sem distrito'}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Ações no header */}
-                <div className="flex gap-2 flex-shrink-0">
+                {/* Botões de ação — linha separada no mobile */}
+                <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                   {podeExcluir && (
                     <button
                       type="button"

@@ -39,6 +39,7 @@
     background-color: var(--cinza-claro);
     color: var(--texto);
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   h1, h2, h3 {

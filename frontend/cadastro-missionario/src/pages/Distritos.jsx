@@ -155,25 +155,25 @@ export default function Distritos() {
             }}
             className="w-full text-left card border-2 border-transparent hover:border-[#1A3A6B]/20 group transition-all duration-300 hover:-translate-y-0.5"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1A3A6B]/10 to-[#1A3A6B]/5 flex items-center justify-center flex-shrink-0 group-hover:from-[#1A3A6B]/20 group-hover:to-[#1A3A6B]/10 transition-all duration-300">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1A3A6B]/10 to-[#1A3A6B]/5 flex items-center justify-center flex-shrink-0 group-hover:from-[#1A3A6B]/20 group-hover:to-[#1A3A6B]/10 transition-all duration-300">
                   <svg className="w-6 h-6 text-[#1A3A6B] group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#1A3A6B] text-base group-hover:text-[#C9963A] transition-colors duration-200">{distrito.nome}</h3>
-                  <div className="flex items-center gap-4 mt-1.5">
-                    <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-[#1A3A6B] text-base group-hover:text-[#C9963A] transition-colors duration-200 truncate">{distrito.nome}</h3>
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
                       <span className="w-4 h-4 rounded-full bg-[#1A3A6B]/10 flex items-center justify-center text-[10px]">⛪</span>
                       {distrito.igrejas.length} igrejas
                     </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
                       <span className="w-4 h-4 rounded-full bg-[#C9963A]/10 flex items-center justify-center text-[10px]">👥</span>
                       {distrito._count.duplas} duplas
                     </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
                       <span className="w-4 h-4 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center text-[10px]">👨‍👩‍👧‍👦</span>
                       {(distrito.membros || 0).toLocaleString('pt-BR')} membros
                     </span>
@@ -181,18 +181,16 @@ export default function Distritos() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="hidden sm:block">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700 ease-out"
-                        style={{
-                          width: `${Math.min((distrito._count.duplas / 10) * 100, 100)}%`,
-                          background: 'linear-gradient(90deg, #C9963A, #e5b05a)',
-                        }}
-                      />
-                    </div>
+                  <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{
+                        width: `${Math.min((distrito._count.duplas / 10) * 100, 100)}%`,
+                        background: 'linear-gradient(90deg, #C9963A, #e5b05a)',
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-[#1A3A6B] transition-all duration-200">

@@ -236,9 +236,9 @@ export default function LayoutDireto() {
           </div>
         </div>
 
-        {/* Menu mobile dropdown */}
+        {/* Menu mobile dropdown — com scroll quando há muitos itens */}
         {menuAberto && (
-          <div className="md:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in">
+          <div className="md:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in" style={{ maxHeight: 'calc(100vh - 56px)', overflowY: 'auto' }}>
             <div className="px-4 py-3 space-y-1">
               {navLinks.map((link) => link.type === 'dropdown' ? (
                 <div key={link.key}>
@@ -253,16 +253,16 @@ export default function LayoutDireto() {
                     </svg>
                   </button>
                   {mobileSubmenu === link.key && (
-                    <div className="ml-8 mt-1 space-y-1">
+                    <div className="ml-6 mt-1 space-y-0.5">
                       {link.items.map((item) => (
                         <NavLink
                           key={item.to}
                           to={item.to}
                           onClick={() => { setMenuAberto(false); setMobileSubmenu(null); }}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8"
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8"
                         >
-                          <span>{item.icon}</span>
-                          {item.label}
+                          <span className="flex-shrink-0 w-5 text-center text-xs">{item.icon}</span>
+                          <span className="truncate">{item.label}</span>
                         </NavLink>
                       ))}
                     </div>
