@@ -141,11 +141,11 @@ export default function Login() {
           {/* Header mobile */}
           <div className="lg:hidden flex flex-col items-center mb-8 gap-2">
             <Cruz />
-            <h1 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Cadastro
+            <h1 className="text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
+              PROGRAMA
             </h1>
-            <h1 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Duplas Missionárias
+            <h1 className="text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
+              CAPACITAÇÃO MISSIONÁRIA
             </h1>
             <p className="text-[#C9963A] font-semibold text-sm">Associação Paulistana</p>
           </div>
