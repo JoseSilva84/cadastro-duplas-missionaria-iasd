@@ -288,7 +288,7 @@ export default function DuplasDireto() {
                 <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Visão Direta</p>
               </div>
               <h1 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-                Todas as Duplas
+                Duplas
               </h1>
               <p className="text-gray-400 text-[10px]">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
             </div>

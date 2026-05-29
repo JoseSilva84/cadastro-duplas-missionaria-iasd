@@ -87,6 +87,10 @@ export default function Layout({ children }) {
       navigate(destinoDupla);
       return;
     }
+    if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) {
+      navigate(novoLayout === 'avancado' ? '/distritos' : '/direto/distritos');
+      return;
+    }
     if (novoLayout === 'avancado') {
       navigate('/regioes');
     } else {
@@ -98,7 +102,8 @@ export default function Layout({ children }) {
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
-  const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL || isPastorDistrital;
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeCadastrarDupla = !isDupla && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
   const isDireto = layout === 'direto';
@@ -119,10 +124,10 @@ export default function Layout({ children }) {
       ]
     : isDireto
     ? [
-        { to: '/direto/regioes', label: 'Regiões', icon: icons.regioes },
+        ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
-        { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
+        { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(podeCadastrarDupla ? [{ to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
@@ -137,7 +142,7 @@ export default function Layout({ children }) {
             { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
           ...(isSuperAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
-          { to: '/direto/registro-saida', label: 'Registro de Assistência', icon: '✅' },
+          { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
@@ -149,7 +154,7 @@ export default function Layout({ children }) {
         ] }] : []),
       ]
     : [
-        { to: '/regioes', label: 'Regiões', icon: icons.regioes },
+        ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
@@ -167,7 +172,7 @@ export default function Layout({ children }) {
             { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
           ...(isSuperAdmin ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
-          { to: '/registro-saida', label: 'Registro de Assistência', icon: '✅' },
+          { to: '/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },

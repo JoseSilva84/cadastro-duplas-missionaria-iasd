@@ -4,6 +4,7 @@ import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
+import { PERFIS, useAuth } from '../../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Casa a casa',
@@ -209,6 +210,10 @@ const ModalPastorDistrital = ({ distrito, fotoPreview, onClose, onSaved }) => {
 export default function DistritosDireto() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const voltarDestino = isPastorDistrital ? '/direto/distritos' : '/direto/regioes';
+  const voltarLabel = isPastorDistrital ? 'Voltar para Distritos' : 'Voltar para Regiões';
   const [distrito, setDistrito] = useState(null);
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -275,10 +280,10 @@ export default function DistritosDireto() {
           <p className="text-red-500 font-medium">{erro}</p>
           <button
             type="button"
-            onClick={() => navigate('/direto/regioes')}
+            onClick={() => navigate(voltarDestino)}
             className="btn-primary mt-4 text-sm"
           >
-            Voltar para Regiões
+            {voltarLabel}
           </button>
         </div>
       </div>
@@ -293,10 +298,10 @@ export default function DistritosDireto() {
           <p className="text-red-500 font-medium">Distrito não encontrado.</p>
           <button
             type="button"
-            onClick={() => navigate('/direto/regioes')}
+            onClick={() => navigate(voltarDestino)}
             className="btn-primary mt-4 text-sm"
           >
-            Voltar para Regiões
+            {voltarLabel}
           </button>
         </div>
       </div>
@@ -316,10 +321,16 @@ export default function DistritosDireto() {
         {/* Breadcrumb */}
         <div className="flex-shrink-0 px-4 pt-4 pb-2">
           <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
-            <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">Associação</button>
+            <button type="button" onClick={() => navigate(voltarDestino)} className="hover:text-[#1A3A6B] transition-colors">
+              {isPastorDistrital ? 'Distritos' : 'Associação'}
+            </button>
             <span className="text-gray-300">/</span>
-            <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
-            <span className="text-gray-300">/</span>
+            {!isPastorDistrital && (
+              <>
+                <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
+                <span className="text-gray-300">/</span>
+              </>
+            )}
             <span className="text-[#1A3A6B] font-semibold">{distrito.nome}</span>
           </div>
         </div>

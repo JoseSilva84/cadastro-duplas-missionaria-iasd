@@ -199,6 +199,24 @@
    ANIMAÇÕES GLOBAIS
    ============================================ */
 
+.direto-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+.direto-nav-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.direto-nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.direto-nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

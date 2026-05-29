@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
@@ -47,12 +47,12 @@ export default function Login() {
     e.preventDefault();
     setCarregando(true);
     try {
-      await login(form.email, form.senha);
+      const usuarioLogado = await login(form.email, form.senha);
       // Se já tem layout salvo, vai direto para o destino
       if (layout === 'direto') {
-        navigate('/direto/regioes');
+        navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/direto/distritos' : '/direto/regioes');
       } else if (layout === 'avancado') {
-        navigate('/regioes');
+        navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
       } else {
         navigate('/escolha-layout');
       }

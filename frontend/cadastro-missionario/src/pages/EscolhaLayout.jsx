@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 
 const layouts = [
   {
@@ -42,9 +42,9 @@ export default function EscolhaLayout() {
     setLayout(layoutId);
     setTimeout(() => {
       if (layoutId === 'avancado') {
-        navigate('/regioes');
+        navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
       } else {
-        navigate('/direto/regioes');
+        navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/direto/distritos' : '/direto/regioes');
       }
     }, 400);
   };

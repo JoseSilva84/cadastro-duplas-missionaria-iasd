@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
-import { ehAdmin, useAuth } from '../contexts/AuthContext';
+import { ehAdmin, PERFIS, useAuth } from '../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -42,6 +42,7 @@ export default function DadosDupla() {
   const location = useLocation();
   const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeExcluir = ehAdmin(usuario);
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -80,7 +81,12 @@ export default function DadosDupla() {
       <div className={isDireto ? "flex-shrink-0 px-6 py-4 bg-white border-b border-gray-200 z-10" : ""}>
         {/* Breadcrumb */}
         <div className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 ${isDireto ? 'mb-3' : 'mb-6'} flex-wrap animate-fade-in-down`}>
-          <button onClick={() => navigate(isDireto ? '/direto/regioes' : '/regioes')} className="hover:text-[#1A3A6B] transition-colors">Regiões</button>
+          <button
+            onClick={() => navigate(isPastorDistrital ? (isDireto ? '/direto/distritos' : '/distritos') : (isDireto ? '/direto/regioes' : '/regioes'))}
+            className="hover:text-[#1A3A6B] transition-colors"
+          >
+            {isPastorDistrital ? 'Distritos' : 'Associação'}
+          </button>
           <span className="text-gray-300">/</span>
           <button onClick={() => navigate(isDireto ? '/direto/duplas' : -1)} className="hover:text-[#1A3A6B] transition-colors">Duplas</button>
           <span className="text-gray-300">/</span>

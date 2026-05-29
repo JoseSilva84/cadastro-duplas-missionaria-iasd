@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
+import { PERFIS, useAuth } from '../../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -20,6 +21,8 @@ const projetoIcon = {
 
 export default function RelatoriosDireto() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const [resumo, setResumo] = useState(null);
   const [porRegiao, setPorRegiao] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -260,9 +263,11 @@ export default function RelatoriosDireto() {
                   {regiaoSelecionada.nome}
                 </h2>
               </div>
-              <button onClick={() => navigate('/direto/regioes')} className="btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
-                Ver Região Detalhada
-              </button>
+              {!isPastorDistrital && (
+                <button onClick={() => navigate('/direto/regioes')} className="btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
+                  Ver Região Detalhada
+                </button>
+              )}
             </div>
             
             <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6">

@@ -72,12 +72,17 @@ export default function LayoutDireto() {
 
   const handleTrocarLayout = () => {
     setLayout('avancado');
-    navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/regioes');
+    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+      navigate('/igrejas');
+      return;
+    }
+    navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
   };
 
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -130,10 +135,10 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
   ] : [
-    { to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes },
+    ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes }] : []),
     { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
-    { to: '/direto/duplas', label: 'Todas as Duplas', icon: icons.duplas },
+    { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItemsVisiveis },
   ];
@@ -146,9 +151,9 @@ export default function LayoutDireto() {
         style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
       >
         <div className="px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center h-14 gap-3 min-w-0">
             {/* Logo + Título */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0">
                 <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
               </div>
@@ -161,7 +166,7 @@ export default function LayoutDireto() {
             </div>
 
             {/* Navegação desktop — centro */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex flex-1 min-w-0 items-center gap-1 overflow-x-auto overflow-y-visible py-1 pr-2 direto-nav-scroll">
               {navLinks.map((link) => link.type === 'dropdown' ? (
                 <DropdownMenu key={link.key} label={link.label} icon={link.icon} items={link.items} />
               ) : (
@@ -169,7 +174,7 @@ export default function LayoutDireto() {
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    `flex flex-shrink-0 items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-white/15 text-white'
                         : 'text-white/60 hover:text-white hover:bg-white/8'
@@ -183,7 +188,7 @@ export default function LayoutDireto() {
             </nav>
 
             {/* Ações à direita */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-shrink-0 items-center gap-2">
               {/* Indicador do modelo */}
               <div className="hidden sm:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
                 <div className="w-2 h-2 rounded-full bg-[#C9963A]" />

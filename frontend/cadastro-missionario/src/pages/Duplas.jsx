@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
+import { PERFIS, useAuth } from '../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -110,6 +111,8 @@ const BadgeAcompanhamento = ({ data }) => {
 export default function Duplas() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const [duplas, setDuplas] = useState([]);
   const [distrito, setDistrito] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
@@ -183,12 +186,18 @@ export default function Duplas() {
       {/* Breadcrumb */}
       {distrito && (
         <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 mb-6 flex-wrap animate-fade-in-down">
-          <button onClick={() => navigate('/regioes')} className="hover:text-[#1A3A6B] transition-colors">Associação</button>
-          <span className="text-gray-300">/</span>
-          <button onClick={() => navigate(`/regioes/${distrito.regiao?.id}/distritos`)} className="hover:text-[#1A3A6B] transition-colors">
-            {distrito.regiao?.nome}
+          <button onClick={() => navigate(isPastorDistrital ? '/distritos' : '/regioes')} className="hover:text-[#1A3A6B] transition-colors">
+            {isPastorDistrital ? 'Distritos' : 'Associação'}
           </button>
           <span className="text-gray-300">/</span>
+          {!isPastorDistrital && (
+            <>
+              <button onClick={() => navigate(`/regioes/${distrito.regiao?.id}/distritos`)} className="hover:text-[#1A3A6B] transition-colors">
+                {distrito.regiao?.nome}
+              </button>
+              <span className="text-gray-300">/</span>
+            </>
+          )}
           <span className="text-[#1A3A6B] font-medium">{distrito.nome}</span>
         </div>
       )}
@@ -199,7 +208,7 @@ export default function Duplas() {
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
             <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-              {distrito ? `Distrito ${distrito.nome}` : 'Todas as Duplas'}
+              {distrito ? `Distrito ${distrito.nome}` : 'Duplas'}
             </p>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>

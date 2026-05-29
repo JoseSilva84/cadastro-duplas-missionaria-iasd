@@ -25,14 +25,14 @@ export default function DropdownMenu({ label, icon, items }) {
   return (
     <div
       ref={ref}
-      className="relative"
+      className="relative flex-shrink-0"
       onMouseEnter={() => setAberto(true)}
       onMouseLeave={() => setAberto(false)}
     >
       <button
         type="button"
         onClick={() => setAberto((valor) => !valor)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+        className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
           aberto ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white hover:bg-white/8'
         }`}
         aria-haspopup="menu"
