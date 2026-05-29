@@ -4,14 +4,15 @@ const DuplaService = require('../services/dupla.service');
 
 // Validações do cadastro de dupla
 const validarDupla = [
-  body('bairro').notEmpty().withMessage('Bairro obrigatório.'),
-  body('tipoProjeto').notEmpty().withMessage('Tipo de projeto obrigatório.'),
   body('liderNome').notEmpty().withMessage('Nome do líder obrigatório.'),
-  body('membro2Nome').notEmpty().withMessage('Nome do segundo membro obrigatório.'),
-  body('distritoId').isInt().withMessage('Distrito obrigatório.'),
-  body('levouPessoaBatismo').isBoolean().withMessage('Informe se a dupla já levou alguém ao batismo.'),
-  body('jaDeuEstudoBiblico').isBoolean().withMessage('Informe se a dupla já deu estudo bíblico.'),
-  body('estudoAtualEmAndamento').isBoolean().withMessage('Informe se a dupla está estudando com alguém atualmente.'),
+  body('liderTelefone').notEmpty().withMessage('WhatsApp do líder obrigatório.'),
+  body('bairro').optional({ checkFalsy: true }).isString(),
+  body('tipoProjeto').optional({ checkFalsy: true }).isString(),
+  body('membro2Nome').optional({ checkFalsy: true }).isString(),
+  body('distritoId').optional({ checkFalsy: true }).isInt().withMessage('Distrito inválido.'),
+  body('levouPessoaBatismo').optional({ checkFalsy: true }).isBoolean(),
+  body('jaDeuEstudoBiblico').optional({ checkFalsy: true }).isBoolean(),
+  body('estudoAtualEmAndamento').optional({ checkFalsy: true }).isBoolean(),
 ];
 
 const DuplaController = {

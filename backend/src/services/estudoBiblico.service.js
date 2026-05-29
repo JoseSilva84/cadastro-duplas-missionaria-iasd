@@ -33,17 +33,17 @@ const montarFiltro = async (query = {}, usuario = null) => {
 };
 
 // Normaliza os dados do estudo bÃ­blico para persistÃªncia
-const normalizarEstudo = (data) => ({
+const normalizarEstudo = (data, duplaIdPadrao = null) => ({
   nomeEstudante: data.nomeEstudante,
-  endereco: data.endereco,
-  cidade: data.cidade,
-  estado: data.estado,
+  endereco: data.endereco || 'Nao informado',
+  cidade: data.cidade || 'Nao informada',
+  estado: data.estado || 'SP',
   whatsapp: data.whatsapp,
-  diaEstudo: data.diaEstudo,
+  diaEstudo: data.diaEstudo || 'Nao informado',
   horarioEstudo: data.horarioEstudo || null,
-  duplaId: Number(data.duplaId),
-  serie: data.serie,
-  licaoAtual: Number(data.licaoAtual),
+  duplaId: Number(data.duplaId || duplaIdPadrao),
+  serie: data.serie || 'Nao informado',
+  licaoAtual: Number(data.licaoAtual || 1),
   tipoEstudo: data.tipoEstudo || 'UNICO',
   sexo: data.sexo || null,
   classificacaoInteressado: data.classificacaoInteressado || null,
@@ -85,16 +85,28 @@ const EstudoBiblicoService = {
 
   // CriaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async criar(data, usuario) {
+    let duplaIdPadrao = data.duplaId;
+    if (!duplaIdPadrao) {
+      const escopo = await montarEscopo(usuario);
+      const dupla = await prisma.dupla.findFirst({
+        where: escopo.dupla,
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      });
+      duplaIdPadrao = dupla?.id;
+    }
+    if (!duplaIdPadrao) throw { status: 400, mensagem: 'Nao ha dupla disponivel para vincular este cadastro.' };
+
     if (usuario) {
       const dupla = await prisma.dupla.findUnique({
-        where: { id: Number(data.duplaId) },
+        where: { id: Number(duplaIdPadrao) },
         select: { igrejaId: true },
       });
       if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
-      await validarIgreja(usuario, dupla.igrejaId);
+      if (dupla.igrejaId) await validarIgreja(usuario, dupla.igrejaId);
     }
 
-    const dadosEstudo = normalizarEstudo(data);
+    const dadosEstudo = normalizarEstudo(data, duplaIdPadrao);
     const participantes = data.participantes || [];
 
     if ((dadosEstudo.tipoEstudo === 'PONTO' || dadosEstudo.tipoEstudo === 'CLASSE') && participantes.length > 0) {
@@ -136,6 +148,11 @@ const EstudoBiblicoService = {
   // AtualizaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async atualizar(id, data, usuario) {
     await this.buscarPorId(id, usuario);
+    let duplaIdPadrao = data.duplaId;
+    if (!duplaIdPadrao) {
+      const atual = await EstudoBiblicoModel.findById(id);
+      duplaIdPadrao = atual?.dupla?.id;
+    }
     if (usuario && data.duplaId) {
       const dupla = await prisma.dupla.findUnique({
         where: { id: Number(data.duplaId) },
@@ -144,7 +161,7 @@ const EstudoBiblicoService = {
       if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
       await validarIgreja(usuario, dupla.igrejaId);
     }
-    const dadosEstudo = normalizarEstudo(data);
+    const dadosEstudo = normalizarEstudo(data, duplaIdPadrao);
     const participantes = data.participantes;
 
     if (participantes !== undefined) {

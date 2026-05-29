@@ -255,10 +255,6 @@ export default function Cadastro() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ([form.levouPessoaBatismo, form.jaDeuEstudoBiblico, form.estudoAtualEmAndamento].some((valor) => valor === '')) {
-      toast.error('Responda as perguntas de classificação missionária antes de salvar.');
-      return;
-    }
     setEnviando(true);
     try {
       const montarPayload = (fotoLiderRef = fotoRefs.fotoLider, fotoMembro2Ref = fotoRefs.fotoMembro2) => ({
@@ -350,8 +346,8 @@ export default function Cadastro() {
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '100ms' }}>
               <SecaoHeader numero="1" titulo="Localização" descricao="Região, distrito e bairro de atuação da dupla" />
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
-                <Campo label="Distrito" obrigatorio icone="🏛️">
-                  <select className="input-field" value={form.distritoId} onChange={(e) => set('distritoId', e.target.value)} required>
+                <Campo label="Distrito" icone="🏛️">
+                  <select className="input-field" value={form.distritoId} onChange={(e) => set('distritoId', e.target.value)}>
                     <option value="">Selecione o distrito</option>
                     {distritos.map((d) => (
                       <option key={d.id} value={d.id}>{d.nome} — {d.regiao?.nome}</option>
@@ -366,12 +362,12 @@ export default function Cadastro() {
                   </select>
                 </Campo>
 
-                <Campo label="Bairro de Atuação" obrigatorio icone="📍">
-                  <input type="text" className="input-field" placeholder="Ex: Santana, Gonzaga..." value={form.bairro} onChange={(e) => set('bairro', e.target.value)} required />
+                <Campo label="Bairro de Atuação" icone="📍">
+                  <input type="text" className="input-field" placeholder="Ex: Santana, Gonzaga..." value={form.bairro} onChange={(e) => set('bairro', e.target.value)} />
                 </Campo>
 
-                <Campo label="Tipo de Projeto" obrigatorio icone="📋">
-                  <select className="input-field" value={form.tipoProjeto} onChange={(e) => set('tipoProjeto', e.target.value)} required>
+                <Campo label="Tipo de Projeto" icone="📋">
+                  <select className="input-field" value={form.tipoProjeto} onChange={(e) => set('tipoProjeto', e.target.value)}>
                     <option value="">Selecione o tipo</option>
                     {TIPOS_PROJETO.map((t) => (<option key={t.value} value={t.value}>{t.icon} {t.label}</option>))}
                   </select>
@@ -398,8 +394,8 @@ export default function Cadastro() {
                 <AvatarUpload value={form.fotoLider} onChange={(val) => set('fotoLider', val)} label="Foto do Líder" />
               </div>
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
-                <Campo label="Nome Completo" obrigatorio icone="👤">
-                  <input type="text" className="input-field" placeholder="Nome do líder" value={form.liderNome} onChange={(e) => set('liderNome', e.target.value)} required />
+                <Campo label="Nome Completo" icone="👤">
+                  <input type="text" className="input-field" placeholder="Nome do líder" value={form.liderNome} onChange={(e) => set('liderNome', e.target.value)} />
                 </Campo>
                 <Campo label="WhatsApp" icone={<WhatsAppIcon />}>
                   <div className="relative">
@@ -459,8 +455,8 @@ export default function Cadastro() {
                 <AvatarUpload value={form.fotoMembro2} onChange={(val) => set('fotoMembro2', val)} label="Foto do Parceiro" />
               </div>
               <div className={`grid grid-cols-1 ${isDireto ? '' : 'sm:grid-cols-2'} gap-4`}>
-                <Campo label="Nome Completo" obrigatorio icone="👤">
-                  <input type="text" className="input-field" placeholder="Nome do parceiro" value={form.membro2Nome} onChange={(e) => set('membro2Nome', e.target.value)} required />
+                <Campo label="Nome Completo" icone="👤">
+                  <input type="text" className="input-field" placeholder="Nome do parceiro" value={form.membro2Nome} onChange={(e) => set('membro2Nome', e.target.value)} />
                 </Campo>
                 <Campo label="WhatsApp" icone={<WhatsAppIcon />}>
                   <div className="relative">
@@ -642,3 +638,4 @@ export default function Cadastro() {
     </div>
   );
 }
+

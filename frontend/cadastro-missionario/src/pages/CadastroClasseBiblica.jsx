@@ -102,15 +102,9 @@ export default function CadastroClasseBiblica() {
       return null;
     }
 
-    const semClassificacao = preenchidos.find((p) => !p.classificacaoInteressado);
-    if (semClassificacao) {
-      toast.error(`Informe a classificacao de ${semClassificacao.nome}.`);
-      return null;
-    }
-
-    const semMotivo = preenchidos.find((p) => ['B', 'C'].includes(p.classificacaoInteressado) && !p.motivoImpedimento.trim());
-    if (semMotivo) {
-      toast.error(`Informe o motivo da classificacao ${semMotivo.classificacaoInteressado} de ${semMotivo.nome}.`);
+    const semWhatsApp = preenchidos.find((p) => !p.whatsapp.replace(/\\D/g, ''));
+    if (semWhatsApp) {
+      toast.error(`Informe o WhatsApp de ${semWhatsApp.nome}.`);
       return null;
     }
 
@@ -120,7 +114,7 @@ export default function CadastroClasseBiblica() {
       sexo: p.sexo || null,
       endereco: p.endereco.trim() || null,
       classificacaoInteressado: p.classificacaoInteressado || null,
-      motivoImpedimento: ['B', 'C'].includes(p.classificacaoInteressado) ? p.motivoImpedimento.trim() : null,
+      motivoImpedimento: p.motivoImpedimento.trim() || null,
     }));
   };
 
@@ -179,47 +173,47 @@ export default function CadastroClasseBiblica() {
                 <Campo label="Nome da Classe Bíblica" obrigatorio>
                   <input className="input-field" value={form.nomeClasse} onChange={(e) => set('nomeClasse', e.target.value)} required />
                 </Campo>
-                <Campo label="Dupla responsável" obrigatorio>
-                  <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)} required>
+                <Campo label="Dupla responsável">
+                  <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
                     <option value="">Selecione a dupla</option>
                     {duplas.map((dupla) => (
                       <option key={dupla.id} value={dupla.id}>{dupla.liderNome} + {dupla.membro2Nome}</option>
                     ))}
                   </select>
                 </Campo>
-                <Campo label="Endereço / Local" obrigatorio>
-                  <input className="input-field" value={form.endereco} onChange={(e) => set('endereco', e.target.value)} required />
+                <Campo label="Endereço / Local">
+                  <input className="input-field" value={form.endereco} onChange={(e) => set('endereco', e.target.value)} />
                 </Campo>
-                <Campo label="Cidade" obrigatorio>
-                  <input className="input-field" value={form.cidade} onChange={(e) => set('cidade', e.target.value)} required />
+                <Campo label="Cidade">
+                  <input className="input-field" value={form.cidade} onChange={(e) => set('cidade', e.target.value)} />
                 </Campo>
-                <Campo label="Estado" obrigatorio>
-                  <select className="input-field" value={form.estado} onChange={(e) => set('estado', e.target.value)} required>
+                <Campo label="Estado">
+                  <select className="input-field" value={form.estado} onChange={(e) => set('estado', e.target.value)}>
                     {UFS_BRASIL.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
                 </Campo>
-                <Campo label="Dia da Classe" obrigatorio>
-                  <select className="input-field" value={form.diaEstudo} onChange={(e) => set('diaEstudo', e.target.value)} required>
+                <Campo label="Dia da Classe">
+                  <select className="input-field" value={form.diaEstudo} onChange={(e) => set('diaEstudo', e.target.value)}>
                     <option value="">Selecione o dia</option>
                     {DIAS_SEMANA.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
                   </select>
                 </Campo>
-                <Campo label="Horário da Classe" obrigatorio>
-                  <input type="time" className="input-field" value={form.horarioEstudo} onChange={(e) => set('horarioEstudo', e.target.value)} required />
+                <Campo label="Horário da Classe">
+                  <input type="time" className="input-field" value={form.horarioEstudo} onChange={(e) => set('horarioEstudo', e.target.value)} />
                 </Campo>
               </div>
             </Secao>
 
             <Secao numero="2" titulo="Série e Lição">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Campo label="Série de Estudo" obrigatorio>
-                  <select className="input-field" value={form.serie} onChange={(e) => set('serie', e.target.value)} required>
+                <Campo label="Série de Estudo">
+                  <select className="input-field" value={form.serie} onChange={(e) => set('serie', e.target.value)}>
                     <option value="">Selecione a série</option>
                     {SERIES_ESTUDO.map((serie) => <option key={serie.id} value={serie.id}>{serie.nome}</option>)}
                   </select>
                 </Campo>
-                <Campo label="Lição Atual" obrigatorio>
-                  <select className="input-field" value={form.licaoAtual} onChange={(e) => set('licaoAtual', e.target.value)} required disabled={!form.serie}>
+                <Campo label="Lição Atual">
+                  <select className="input-field" value={form.licaoAtual} onChange={(e) => set('licaoAtual', e.target.value)} disabled={!form.serie}>
                     <option value="">Selecione primeiro a série</option>
                     {licoes.map((licao) => (
                       <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>
@@ -245,8 +239,8 @@ export default function CadastroClasseBiblica() {
                       <Campo label="Nome" obrigatorio={index === 0}>
                         <input className="input-field" value={participante.nome} onChange={(e) => setParticipante(index, 'nome', e.target.value)} required={index === 0} />
                       </Campo>
-                      <Campo label="WhatsApp">
-                        <input className="input-field" value={participante.whatsapp} onChange={(e) => setParticipante(index, 'whatsapp', e.target.value)} placeholder="(11) 99999-0000" />
+                      <Campo label="WhatsApp" obrigatorio={Boolean(participante.nome) || index === 0}>
+                        <input className="input-field" value={participante.whatsapp} onChange={(e) => setParticipante(index, 'whatsapp', e.target.value)} placeholder="(11) 99999-0000" required={Boolean(participante.nome) || index === 0} />
                       </Campo>
                       <Campo label="Sexo">
                         <select className="input-field" value={participante.sexo} onChange={(e) => setParticipante(index, 'sexo', e.target.value)}>
@@ -255,12 +249,12 @@ export default function CadastroClasseBiblica() {
                           <option value="Masculino">Masculino</option>
                         </select>
                       </Campo>
-                      <Campo label="Classificacao A/B/C" obrigatorio={Boolean(participante.nome)}>
+                      <Campo label="Classificacao A/B/C">
                         <select
                           className="input-field"
                           value={participante.classificacaoInteressado}
                           onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)}
-                          required={Boolean(participante.nome)}
+                          
                         >
                           <option value="">Selecione</option>
                           <option value="A">A - Pronto para o batismo</option>
@@ -275,7 +269,7 @@ export default function CadastroClasseBiblica() {
                       </div>
                       {['B', 'C'].includes(participante.classificacaoInteressado) && (
                         <div className="md:col-span-2 xl:col-span-3">
-                          <Campo label={`Motivo da classe ${participante.classificacaoInteressado}`} obrigatorio>
+                          <Campo label={`Motivo da classe ${participante.classificacaoInteressado}`}>
                             <textarea
                               className="input-field min-h-24"
                               value={participante.motivoImpedimento}
@@ -283,8 +277,7 @@ export default function CadastroClasseBiblica() {
                               placeholder={participante.classificacaoInteressado === 'B'
                                 ? 'Ex.: quer se batizar, mas precisa resolver casamento, trabalho no sabado ou outro impedimento.'
                                 : 'Ex.: ainda nao deseja o batismo, nao decidiu continuar ou outro motivo pastoral.'}
-                              required
-                            />
+                              />
                           </Campo>
                         </div>
                       )}
@@ -311,3 +304,4 @@ export default function CadastroClasseBiblica() {
     </div>
   );
 }
+

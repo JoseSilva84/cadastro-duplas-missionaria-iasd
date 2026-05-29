@@ -26,16 +26,16 @@ const montarFiltro = async (query = {}, usuario = null) => {
   return where;
 };
 
-const normalizar = (data) => ({
+const normalizar = (data, duplaIdPadrao = null) => ({
   nomePessoa: data.nomePessoa,
-  endereco: data.endereco,
-  cidade: data.cidade,
-  estado: data.estado,
+  endereco: data.endereco || 'Nao informado',
+  cidade: data.cidade || 'Nao informada',
+  estado: data.estado || 'SP',
   whatsapp: data.whatsapp,
-  diaEvangelismo: data.diaEvangelismo,
-  duplaId: Number(data.duplaId),
-  serie: data.serie,
-  estudoAtual: Number(data.estudoAtual),
+  diaEvangelismo: data.diaEvangelismo || 'Nao informado',
+  duplaId: Number(data.duplaId || duplaIdPadrao),
+  serie: data.serie || 'Nao informado',
+  estudoAtual: Number(data.estudoAtual || 1),
 });
 
 async function validarDuplaDoRegistro(usuario, duplaId) {
@@ -45,7 +45,18 @@ async function validarDuplaDoRegistro(usuario, duplaId) {
     select: { igrejaId: true },
   });
   if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
-  await validarIgreja(usuario, dupla.igrejaId);
+  if (dupla.igrejaId) await validarIgreja(usuario, dupla.igrejaId);
+}
+
+async function obterDuplaPadrao(usuario) {
+  const escopo = await montarEscopo(usuario);
+  const dupla = await prisma.dupla.findFirst({
+    where: escopo.dupla,
+    select: { id: true },
+    orderBy: { id: 'asc' },
+  });
+  if (!dupla) throw { status: 400, mensagem: 'Nao ha dupla disponivel para vincular este cadastro.' };
+  return dupla.id;
 }
 
 const EvangelismoService = {
@@ -73,14 +84,17 @@ const EvangelismoService = {
   },
 
   async criar(data, usuario) {
-    await validarDuplaDoRegistro(usuario, data.duplaId);
-    return EvangelismoModel.create(normalizar(data));
+    const duplaId = data.duplaId || await obterDuplaPadrao(usuario);
+    await validarDuplaDoRegistro(usuario, duplaId);
+    return EvangelismoModel.create(normalizar(data, duplaId));
   },
 
   async atualizar(id, data, usuario) {
     await this.buscarPorId(id, usuario);
-    await validarDuplaDoRegistro(usuario, data.duplaId);
-    return EvangelismoModel.update(id, normalizar(data));
+    const atual = await EvangelismoModel.findById(id);
+    const duplaId = data.duplaId || atual?.dupla?.id;
+    await validarDuplaDoRegistro(usuario, duplaId);
+    return EvangelismoModel.update(id, normalizar(data, duplaId));
   },
 
   async remover(id, usuario) {

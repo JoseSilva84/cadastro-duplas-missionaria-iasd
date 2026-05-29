@@ -148,16 +148,16 @@ export default function CadastroPastores() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (tipo !== 'igreja' && !nome.trim()) { toast.error('Informe o nome da liderança.'); return; }
-    if (tipo === 'regional' && !regiaoId) { toast.error('Selecione a Região.'); return; }
-    if (tipo === 'distrital' && !distritoId) { toast.error('Selecione o Distrito.'); return; }
-    if (tipo === 'coordenador' && (!distritoId || !igrejaId)) { toast.error('Selecione Distrito e Igreja.'); return; }
-    if ((tipo === 'diretor_mp' || tipo === 'igreja') && (!distritoId || !igrejaId)) { toast.error('Selecione Distrito e Igreja.'); return; }
-
+    if (tipo !== 'igreja' && !telefone.trim()) { toast.error('Informe o WhatsApp da liderança.'); return; }
     setEnviando(true);
     try {
+      const destinoRegiaoId = regiaoId || regioes[0]?.id;
+      const destinoDistritoId = distritoId || distritos[0]?.id;
+      const destinoIgrejaId = igrejaId || igrejas[0]?.id;
       if (tipo === 'regional') {
-        const fotoRef = await FotoService.salvarFotoPorReferencia('regiao', regiaoId, 'conselheiro', foto);
-        await api.patch(`/regioes/${regiaoId}`, {
+        if (!destinoRegiaoId) { toast.error('Nenhuma região disponível para vincular este cadastro.'); return; }
+        const fotoRef = await FotoService.salvarFotoPorReferencia('regiao', destinoRegiaoId, 'conselheiro', foto);
+        await api.patch(`/regioes/${destinoRegiaoId}`, {
           fotoConselheiro: fotoRef || null,
           nomeConselheiro: nome,
           cargoConselheiro: cargoAtual,
@@ -166,8 +166,9 @@ export default function CadastroPastores() {
           dataNascimentoConselheiro: dataNascimento || null,
         });
       } else if (tipo === 'distrital') {
-        const fotoRef = await FotoService.salvarFotoPorReferencia('distrito', distritoId, 'pastor', foto);
-        await api.patch(`/distritos/${distritoId}`, {
+        if (!destinoDistritoId) { toast.error('Nenhum distrito disponível para vincular este cadastro.'); return; }
+        const fotoRef = await FotoService.salvarFotoPorReferencia('distrito', destinoDistritoId, 'pastor', foto);
+        await api.patch(`/distritos/${destinoDistritoId}`, {
           fotoPastor: fotoRef || null,
           nomePastor: nome,
           cargoPastor: cargoAtual,
@@ -176,8 +177,9 @@ export default function CadastroPastores() {
           dataNascimentoPastor: dataNascimento || null,
         });
       } else if (tipo === 'coordenador') {
-        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'coordenador', foto);
-        await api.patch(`/igrejas/${igrejaId}`, {
+        if (!destinoIgrejaId) { toast.error('Nenhuma igreja disponível para vincular este cadastro.'); return; }
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', destinoIgrejaId, 'coordenador', foto);
+        await api.patch(`/igrejas/${destinoIgrejaId}`, {
           fotoCoordInteressados: fotoRef || null,
           nomeCoordInteressados: nome,
           cargoCoordInteressados: cargoAtual,
@@ -186,8 +188,9 @@ export default function CadastroPastores() {
           dataNascimentoCoordInteressados: dataNascimento || null,
         });
       } else if (tipo === 'diretor_mp') {
-        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'diretor_mp', foto);
-        await api.patch(`/igrejas/${igrejaId}`, {
+        if (!destinoIgrejaId) { toast.error('Nenhuma igreja disponível para vincular este cadastro.'); return; }
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', destinoIgrejaId, 'diretor_mp', foto);
+        await api.patch(`/igrejas/${destinoIgrejaId}`, {
           fotoDiretorMinisterioPessoal: fotoRef || null,
           nomeDiretorMinisterioPessoal: nome,
           enderecoDiretorMinisterioPessoal: endereco || null,
@@ -195,8 +198,9 @@ export default function CadastroPastores() {
           dataNascimentoDiretorMinisterioPessoal: dataNascimento || null,
         });
       } else {
-        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', igrejaId, 'templo', foto);
-        await api.patch(`/igrejas/${igrejaId}`, {
+        if (!destinoIgrejaId) { toast.error('Nenhuma igreja disponível para vincular este cadastro.'); return; }
+        const fotoRef = await FotoService.salvarFotoPorReferencia('igreja', destinoIgrejaId, 'templo', foto);
+        await api.patch(`/igrejas/${destinoIgrejaId}`, {
           fotoIgreja: fotoRef || null,
           endereco: endereco || null,
         });
@@ -311,7 +315,7 @@ export default function CadastroPastores() {
                   {(tipo === 'regional' || tipo === 'distrital' || tipo === 'coordenador' || tipo === 'diretor_mp') && (
                     <>
                       <Campo label="WhatsApp" icone="☎">
-                        <input type="text" className="input-field" placeholder="(11) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                        <input type="text" className="input-field" placeholder="(11) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
                       </Campo>
                       <div className="sm:col-span-2">
                         <Campo label="Endereço" icone="⌂">
@@ -349,12 +353,12 @@ export default function CadastroPastores() {
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Região — sempre visível */}
-                <Campo label="Região" obrigatorio={tipo === 'regional'} icone="🗺️">
+                <Campo label="Região"  icone="🗺️">
                   <select
                     className="input-field"
                     value={regiaoId}
                     onChange={(e) => setRegiaoId(e.target.value)}
-                    required={tipo === 'regional'}
+                    
                   >
                     <option value="">Selecione a Região</option>
                     {regioes.map((r) => (
@@ -365,12 +369,11 @@ export default function CadastroPastores() {
 
                 {/* Distrito — visível para itens distritais/locais */}
                 {(tipo === 'distrital' || tipo === 'coordenador' || tipo === 'diretor_mp' || tipo === 'igreja') && (
-                  <Campo label="Distrito" obrigatorio icone="⛪">
+                  <Campo label="Distrito" icone="⛪">
                     <select
                       className="input-field"
                       value={distritoId}
                       onChange={(e) => setDistritoId(e.target.value)}
-                      required
                       disabled={!regiaoId}
                     >
                       <option value="">Selecione o Distrito</option>
@@ -383,12 +386,11 @@ export default function CadastroPastores() {
 
                 {/* Igreja — visível para dados locais */}
                 {(tipo === 'coordenador' || tipo === 'diretor_mp' || tipo === 'igreja') && (
-                  <Campo label="Igreja" obrigatorio icone="🏠">
+                  <Campo label="Igreja" icone="🏠">
                     <select
                       className="input-field"
                       value={igrejaId}
                       onChange={(e) => setIgrejaId(e.target.value)}
-                      required
                       disabled={!distritoId}
                     >
                       <option value="">Selecione a Igreja</option>
@@ -442,3 +444,9 @@ export default function CadastroPastores() {
     </div>
   );
 }
+
+
+
+
+
+

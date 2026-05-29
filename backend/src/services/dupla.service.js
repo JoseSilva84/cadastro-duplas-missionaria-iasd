@@ -1,5 +1,6 @@
 ﻿// Service de Dupla â€” Regras de negÃ³cio com Resource-Based Authorization
 const DuplaModel = require('../models/dupla.model');
+const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 const { montarEscopo, combinar, validarDistrito, validarIgreja } = require('./escopo.service');
 
@@ -74,25 +75,33 @@ const DuplaService = {
 
   // Cria nova dupla
   async criar(data, usuario) {
-    await validarDistrito(usuario, data.distritoId);
+    const escopo = await montarEscopo(usuario);
+    const distritoPadrao = data.distritoId ? null : await prisma.distrito.findFirst({
+      where: escopo.distrito,
+      select: { id: true, nome: true, regiao: { select: { nome: true } } },
+      orderBy: { id: 'asc' },
+    });
+    const distritoId = data.distritoId ? Number(data.distritoId) : distritoPadrao?.id;
+    if (!distritoId) throw { status: 400, mensagem: 'Nao ha distrito disponivel para vincular este cadastro.' };
+    await validarDistrito(usuario, distritoId);
     if (data.igrejaId) await validarIgreja(usuario, data.igrejaId);
     const classificacao = calcularClassificacao(data);
 
     return DuplaModel.create({
-      regiaoNome: data.regiaoNome || '',
-      distritoId: Number(data.distritoId),
+      regiaoNome: data.regiaoNome || distritoPadrao?.regiao?.nome || '',
+      distritoId,
       igrejaId: data.igrejaId ? Number(data.igrejaId) : null,
-      bairro: data.bairro,
+      bairro: data.bairro || 'Nao informado',
       fotoLider: data.fotoLider,
       fotoMembro2: data.fotoMembro2,
-      tipoProjeto: data.tipoProjeto,
+      tipoProjeto: data.tipoProjeto || 'ESTUDO_BIBLICO',
       liderNome: data.liderNome,
       liderTelefone: data.liderTelefone,
       liderEmail: data.liderEmail,
       liderIgreja: data.liderIgreja,
       liderDistrito: data.liderDistrito,
       membro2Tipo: 'MEMBRO_IASD',
-      membro2Nome: data.membro2Nome,
+      membro2Nome: data.membro2Nome || 'Nao informado',
       membro2Telefone: data.membro2Telefone,
       membro2Email: data.membro2Email,
       membro2Igreja: data.membro2Igreja,
@@ -134,17 +143,17 @@ const DuplaService = {
       regiaoNome: data.regiaoNome,
       distritoId: data.distritoId ? Number(data.distritoId) : undefined,
       igrejaId: data.igrejaId !== undefined ? (data.igrejaId ? Number(data.igrejaId) : null) : undefined,
-      bairro: data.bairro,
+      bairro: data.bairro || undefined,
       fotoLider: data.fotoLider,
       fotoMembro2: data.fotoMembro2,
-      tipoProjeto: data.tipoProjeto,
+      tipoProjeto: data.tipoProjeto || undefined,
       liderNome: data.liderNome,
       liderTelefone: data.liderTelefone,
       liderEmail: data.liderEmail,
       liderIgreja: data.liderIgreja,
       liderDistrito: data.liderDistrito,
       membro2Tipo: data.membro2Tipo,
-      membro2Nome: data.membro2Nome,
+      membro2Nome: data.membro2Nome || undefined,
       membro2Telefone: data.membro2Telefone,
       membro2Email: data.membro2Email,
       membro2Igreja: data.membro2Igreja,

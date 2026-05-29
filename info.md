@@ -4,10 +4,10 @@
 
 3 fazer uma conta adicional para o pastor presidente com nível administrador
 
-4 O salvamento de todos os cadastros, embora tenham várias perguntas, mas as duas únicas obrigatórias para permitir o salvamento devem ser nome e whatsapp (Nome do Estudante da Bíblia * e WhatsApp * como obrigatórios)
+4 O salvamento de todos os cadastros em todo os acessos, embora tenham vários campos, mas os dois únicos obrigatórios para permitir o salvamento devem ser e, tão somente, nome e whatsapp (Nome do Estudante da Bíblia * e WhatsApp * como obrigatórios) como obrigatórios. Os outros devem ser opcionais.
 
-5 No relatório do administrador não aparece as datas de nascimento e de batismo de cada membro da dupla. Preciso que apareçam  esses dois itens para os administradores.
+5 No relatório do administrador e super administrador não aparece as datas de nascimento e de batismo de cada membro da dupla. Preciso que apareçam  esses dois itens para os administradores.
 
-6 Na tela de duplas missionárias, eu quero o botão duplas apareça
+6 Na tela de duplas missionárias, eu quero o botão duplas que apareça
 
 7 Os coordenadores regionais devem ser cadastrados por região e não por distrito e igreja como estão atualmente. No caso, distrito e igreja devem ser opcionais e não mais obrigatórios.

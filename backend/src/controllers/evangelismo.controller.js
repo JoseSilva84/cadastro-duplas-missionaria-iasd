@@ -2,15 +2,15 @@ const { body, validationResult } = require('express-validator');
 const EvangelismoService = require('../services/evangelismo.service');
 
 const validarEvangelismo = [
-  body('nomePessoa').notEmpty().withMessage('Nome da pessoa obrigatório.'),
-  body('endereco').notEmpty().withMessage('Endereço obrigatório.'),
-  body('cidade').notEmpty().withMessage('Cidade obrigatória.'),
-  body('estado').isLength({ min: 2, max: 2 }).withMessage('Estado obrigatório.'),
-  body('whatsapp').notEmpty().withMessage('WhatsApp obrigatório.'),
-  body('diaEvangelismo').notEmpty().withMessage('Dia da classe bíblica obrigatório.'),
-  body('duplaId').isInt().withMessage('Dupla obrigatória.'),
-  body('serie').notEmpty().withMessage('Série obrigatória.'),
-  body('estudoAtual').isInt({ min: 1 }).withMessage('Estudo atual obrigatório.'),
+  body('nomePessoa').notEmpty().withMessage('Nome da pessoa obrigatorio.'),
+  body('whatsapp').notEmpty().withMessage('WhatsApp obrigatorio.'),
+  body('endereco').optional({ checkFalsy: true }).isString(),
+  body('cidade').optional({ checkFalsy: true }).isString(),
+  body('estado').optional({ checkFalsy: true }).isLength({ min: 2, max: 2 }).withMessage('Estado invalido.'),
+  body('diaEvangelismo').optional({ checkFalsy: true }).isString(),
+  body('duplaId').optional({ checkFalsy: true }).isInt().withMessage('Dupla invalida.'),
+  body('serie').optional({ checkFalsy: true }).isString(),
+  body('estudoAtual').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('Estudo atual invalido.'),
 ];
 
 const EvangelismoController = {

@@ -174,25 +174,17 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
       toast.error('Informe pelo menos um estudante do ponto de estudo.');
       return null;
     }
-    const semClassificacao = preenchidos.find((participante) => !participante.classificacaoInteressado);
-    if (semClassificacao) {
-      toast.error('Informe a classificação A, B ou C de cada estudante preenchido.');
+    const semWhatsApp = preenchidos.find((participante) => !participante.whatsapp.replace(/\D/g, ''));
+    if (semWhatsApp) {
+      toast.error('Informe o WhatsApp de cada estudante preenchido.');
       return null;
-    }
-    const classeBSemMotivo = preenchidos.find((participante) => (
-      participante.classificacaoInteressado === 'B' && !participante.motivoImpedimento.trim()
-    ));
-    if (classeBSemMotivo) {
-      toast.error('Informe o motivo do impedimento para estudantes classificados como B.');
-      return null;
-    }
-    return preenchidos.map((participante) => ({
+    }    return preenchidos.map((participante) => ({
       nome: participante.nome.trim(),
       whatsapp: participante.whatsapp.replace(/\D/g, '') || null,
       sexo: participante.sexo || null,
       endereco: participante.endereco.trim() || null,
       classificacaoInteressado: participante.classificacaoInteressado || null,
-      motivoImpedimento: participante.classificacaoInteressado === 'B' ? participante.motivoImpedimento.trim() : null,
+      motivoImpedimento: participante.motivoImpedimento.trim() || null,
     }));
   };
 
@@ -200,18 +192,13 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
     event.preventDefault();
     const participantesValidos = montarParticipantes();
     if (participantesValidos === null) return;
-    if (isEstudo && form.classificacaoInteressado === 'B' && !form.motivoImpedimento.trim()) {
-      toast.error('Informe o motivo do impedimento para a classe B.');
-      return;
-    }
-
     setEnviando(true);
     try {
       const primeiroParticipante = participantesValidos[0];
       const payload = {
         ...form,
-        whatsapp: isPonto ? (primeiroParticipante?.whatsapp || '00000000000') : form.whatsapp.replace(/\D/g, ''),
-        [config.nomeCampo]: isPonto ? (form.nomeEstudante || 'Ponto de Estudo') : form[config.nomeCampo],
+        whatsapp: isPonto ? primeiroParticipante?.whatsapp : form.whatsapp.replace(/\D/g, ''),
+        [config.nomeCampo]: isPonto ? (form.nomeEstudante || primeiroParticipante?.nome || 'Ponto de Estudo') : form[config.nomeCampo],
         [config.dataCampo]: form[config.dataCampo],
         [config.atualCampo]: form[config.atualCampo],
       };
@@ -269,15 +256,15 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
               )}
               {!isPonto && isEstudo && (
                 <>
-                  <Campo label="Sexo" obrigatorio>
-                    <select className="input-field" value={form.sexo} onChange={(e) => set('sexo', e.target.value)} required>
+                  <Campo label="Sexo">
+                    <select className="input-field" value={form.sexo} onChange={(e) => set('sexo', e.target.value)}>
                       <option value="">Selecione</option>
                       <option value="FEMININO">Feminino</option>
                       <option value="MASCULINO">Masculino</option>
                     </select>
                   </Campo>
-                  <Campo label="Classificação do estudante" obrigatorio>
-                    <select className="input-field" value={form.classificacaoInteressado} onChange={(e) => set('classificacaoInteressado', e.target.value)} required>
+                  <Campo label="Classificação do estudante">
+                    <select className="input-field" value={form.classificacaoInteressado} onChange={(e) => set('classificacaoInteressado', e.target.value)}>
                       <option value="">Selecione</option>
                       <option value="A">A - Pronto para o batismo</option>
                       <option value="B">B - Quer, mas tem impedimento</option>
@@ -286,35 +273,34 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                   </Campo>
                   {form.classificacaoInteressado === 'B' && (
                     <div className="md:col-span-2">
-                      <Campo label="Motivo do impedimento" obrigatorio>
+                      <Campo label="Motivo do impedimento">
                         <textarea
                           className="input-field min-h-24 resize-y"
                           value={form.motivoImpedimento}
                           onChange={(e) => set('motivoImpedimento', e.target.value)}
                           placeholder="Ex.: precisa se casar, parar de fumar, dificuldade com o sabado no trabalho..."
-                          required
                         />
                       </Campo>
                     </div>
                   )}
                 </>
               )}
-              <Campo label={isPonto ? 'Endereço / Local do ponto' : 'Endereço'} obrigatorio>
-                <input className="input-field" value={form.endereco} onChange={(e) => set('endereco', e.target.value)} required />
+              <Campo label={isPonto ? 'Endereço / Local do ponto' : 'Endereço'}>
+                <input className="input-field" value={form.endereco} onChange={(e) => set('endereco', e.target.value)} />
               </Campo>
-              <Campo label="Cidade" obrigatorio>
-                <input className="input-field" value={form.cidade} onChange={(e) => set('cidade', e.target.value)} required />
+              <Campo label="Cidade">
+                <input className="input-field" value={form.cidade} onChange={(e) => set('cidade', e.target.value)} />
               </Campo>
-              <Campo label="Estado" obrigatorio>
-                <select className="input-field" value={form.estado} onChange={(e) => set('estado', e.target.value)} required>
+              <Campo label="Estado">
+                <select className="input-field" value={form.estado} onChange={(e) => set('estado', e.target.value)}>
                   {UFS_BRASIL.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                 </select>
               </Campo>
             </Secao>
 
             <Secao numero="2" titulo={tipo === 'evangelismo' ? 'Dados da Classe Bíblica' : 'Dados do Estudo'}>
-              <Campo label={config.dataLabel} obrigatorio>
-                <select className="input-field" value={form[config.dataCampo]} onChange={(e) => set(config.dataCampo, e.target.value)} required>
+              <Campo label={config.dataLabel}>
+                <select className="input-field" value={form[config.dataCampo]} onChange={(e) => set(config.dataCampo, e.target.value)}>
                   <option value="">Selecione o dia</option>
                   {DIAS_SEMANA.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
                 </select>
@@ -324,8 +310,8 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                   <input type="time" className="input-field" value={form.horarioEstudo} onChange={(e) => set('horarioEstudo', e.target.value)} />
                 </Campo>
               )}
-              <Campo label={config.duplaLabel} obrigatorio>
-                <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)} required>
+              <Campo label={config.duplaLabel}>
+                <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
                   <option value="">Selecione a dupla</option>
                   {duplas.map((dupla) => (
                     <option key={dupla.id} value={dupla.id}>
@@ -337,14 +323,14 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
             </Secao>
 
             <Secao numero="3" titulo={tipo === 'evangelismo' ? 'Série da Classe Bíblica' : 'Série de Estudo'}>
-              <Campo label="Estudo" obrigatorio>
-                <select className="input-field" value={form.serie} onChange={(e) => set('serie', e.target.value)} required>
+              <Campo label="Estudo">
+                <select className="input-field" value={form.serie} onChange={(e) => set('serie', e.target.value)}>
                   <option value="">Selecione a série</option>
                   {SERIES_ESTUDO.map((serie) => <option key={serie.id} value={serie.id}>{serie.nome}</option>)}
                 </select>
               </Campo>
-              <Campo label={config.atualLabel} obrigatorio>
-                <select className="input-field" value={form[config.atualCampo]} onChange={(e) => set(config.atualCampo, e.target.value)} required disabled={!form.serie}>
+              <Campo label={config.atualLabel}>
+                <select className="input-field" value={form[config.atualCampo]} onChange={(e) => set(config.atualCampo, e.target.value)} disabled={!form.serie}>
                   <option value="">Selecione primeiro a série</option>
                   {licoes.map((licao) => (
                     <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>
@@ -379,8 +365,8 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                       <Campo label={`Nome ${index + 1}`} obrigatorio={index === 0}>
                         <input className="input-field" value={participante.nome} onChange={(e) => setParticipante(index, 'nome', e.target.value)} required={index === 0} />
                       </Campo>
-                      <Campo label="WhatsApp">
-                        <input className="input-field" value={participante.whatsapp} onChange={(e) => setParticipante(index, 'whatsapp', e.target.value)} placeholder="(11) 99999-0000" />
+                      <Campo label="WhatsApp" obrigatorio={Boolean(participante.nome) || index === 0}>
+                        <input className="input-field" value={participante.whatsapp} onChange={(e) => setParticipante(index, 'whatsapp', e.target.value)} placeholder="(11) 99999-0000" required={Boolean(participante.nome) || index === 0} />
                       </Campo>
                       <Campo label="Sexo">
                         <select className="input-field" value={participante.sexo} onChange={(e) => setParticipante(index, 'sexo', e.target.value)}>
@@ -389,8 +375,8 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                           <option value="MASCULINO">Masculino</option>
                         </select>
                       </Campo>
-                      <Campo label="Classificação A/B/C" obrigatorio={Boolean(participante.nome)}>
-                        <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)} required={Boolean(participante.nome)}>
+                      <Campo label="Classificação A/B/C">
+                        <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => setParticipante(index, 'classificacaoInteressado', e.target.value)}>
                           <option value="">Selecione</option>
                           <option value="A">A - Pronto para o batismo</option>
                           <option value="B">B - Quer, mas tem impedimento</option>
@@ -399,14 +385,13 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                       </Campo>
                       {participante.classificacaoInteressado === 'B' && (
                         <div className="md:col-span-2 xl:col-span-3">
-                          <Campo label="Motivo do impedimento" obrigatorio>
+                          <Campo label="Motivo do impedimento">
                             <textarea
                               className="input-field min-h-20 resize-y"
                               value={participante.motivoImpedimento}
                               onChange={(e) => setParticipante(index, 'motivoImpedimento', e.target.value)}
                               placeholder="Ex.: precisa se casar, parar de fumar, dificuldade com o sabado no trabalho..."
-                              required
-                            />
+                        />
                           </Campo>
                         </div>
                       )}
@@ -449,3 +434,5 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
     </div>
   );
 }
+
+
