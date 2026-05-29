@@ -141,7 +141,7 @@ export default function Layout({ children }) {
             { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
-          ...(isSuperAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          ...(isAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
           { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
@@ -171,7 +171,7 @@ export default function Layout({ children }) {
             { to: '/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
-          ...(isSuperAdmin ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          ...(isAdmin ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
           { to: '/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [

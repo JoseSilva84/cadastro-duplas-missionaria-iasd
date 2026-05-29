@@ -35,6 +35,17 @@ const UsuarioController = {
     }
   },
 
+  // PATCH /api/usuarios/:id/senha
+  async redefinirSenha(req, res) {
+    try {
+      const usuario = await UsuarioService.redefinirSenha(req.params.id, req.body.senha, req.usuario);
+      res.json({ mensagem: 'Senha redefinida com sucesso.', usuario });
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao redefinir senha.' });
+    }
+  },
+
   // DELETE /api/usuarios/:id
   // DELETE /api/usuarios/:id
   async desativar(req, res) {

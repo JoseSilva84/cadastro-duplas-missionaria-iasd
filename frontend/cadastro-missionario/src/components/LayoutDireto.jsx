@@ -79,7 +79,7 @@ export default function LayoutDireto() {
     navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
   };
 
-  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const isAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuario?.perfil);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
@@ -96,7 +96,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
     { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
-    ...(isSuperAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+    ...(isAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
   ];
 
   const relatorioItems = [

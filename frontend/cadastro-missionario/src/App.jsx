@@ -241,7 +241,7 @@ function AppRoutes() {
         <Route
           path="gestao-usuarios"
           element={
-            <RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]}>
+            <RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}>
               <GestaoUsuarios />
             </RotaComPerfis>
           }
@@ -347,8 +347,8 @@ function AppRoutes() {
           path="gestao-usuarios"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN]}
-              redirectTo="/direto/regioes"
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
+              redirectTo="/direto/distritos"
             >
               <GestaoUsuarios />
             </RotaComPerfis>

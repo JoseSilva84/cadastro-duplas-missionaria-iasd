@@ -322,6 +322,108 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
     </div>
   );
 }
+
+function ModalRedefinirSenha({ usuario, onClose, onSalvo }) {
+  const [senha, setSenha] = useState('');
+  const [confirmacao, setConfirmacao] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setErro(null);
+
+    if (senha.length < 8) {
+      setErro('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (senha !== confirmacao) {
+      setErro('As senhas informadas não conferem.');
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      await api.patch(`/usuarios/${usuario.id}/senha`, { senha });
+      onSalvo();
+    } catch (err) {
+      setErro(err.response?.data?.erro || 'Erro ao redefinir senha.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#C9963A]">Segurança</p>
+            <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Redefinir senha
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">{usuario.nome}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Fechar"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5">
+          <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            A senha atual não é exibida. Defina uma nova senha e entregue ao usuário com segurança.
+          </div>
+
+          <TextInput
+            label="Nova senha"
+            type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            minLength={8}
+            required
+          />
+          <TextInput
+            label="Confirmar nova senha"
+            type="password"
+            value={confirmacao}
+            onChange={(e) => setConfirmacao(e.target.value)}
+            minLength={8}
+            required
+          />
+
+          {erro && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 rounded-lg border border-gray-200 px-5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="h-11 rounded-lg bg-[#1A3A6B] px-5 text-sm font-semibold text-white transition hover:bg-[#0d2347] disabled:opacity-60"
+            >
+              {salvando ? 'Redefinindo...' : 'Redefinir senha'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ModalConfirmar({ usuario, onClose, onConfirmar, processando }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -363,6 +465,7 @@ export default function GestaoUsuarios() {
   const [busca, setBusca] = useState('');
   const [modalCriar, setModalCriar] = useState(false);
   const [modalEditar, setModalEditar] = useState(null);
+  const [modalSenha, setModalSenha] = useState(null);
   const [modalExcluir, setModalExcluir] = useState(null);
   const [processandoExcluir, setProcessandoExcluir] = useState(false);
 
@@ -592,6 +695,11 @@ export default function GestaoUsuarios() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </IconButton>
+                          <IconButton title="Redefinir senha" onClick={() => setModalSenha(usuario)}>
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
+                            </svg>
+                          </IconButton>
                           {usuario.ativo && usuario.id !== usuarioLogado?.id && (
                             <IconButton title="Excluir usuário" onClick={() => setModalExcluir(usuario)} variant="danger">
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -629,6 +737,11 @@ export default function GestaoUsuarios() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </IconButton>
+                      <IconButton title="Redefinir senha" onClick={() => setModalSenha(usuario)}>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
+                        </svg>
+                      </IconButton>
                       {usuario.ativo && usuario.id !== usuarioLogado?.id && (
                         <IconButton title="Excluir usuário" onClick={() => setModalExcluir(usuario)} variant="danger">
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -664,6 +777,13 @@ export default function GestaoUsuarios() {
           distritos={distritos}
           duplas={duplas}
           usuarioLogado={usuarioLogado}
+        />
+      )}
+      {modalSenha && (
+        <ModalRedefinirSenha
+          usuario={modalSenha}
+          onClose={() => setModalSenha(null)}
+          onSalvo={() => { setModalSenha(null); carregar(); }}
         />
       )}
       {modalExcluir && (

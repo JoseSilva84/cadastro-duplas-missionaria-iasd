@@ -87,11 +87,30 @@ const UsuarioService = {
         : null,
     };
 
+    if (data.senha && !ehAdmin(perfilCriador)) {
+      throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
+    }
+
     if (data.senha) {
       updateData.senha = await bcrypt.hash(data.senha, 10);
     }
 
     const usuario = await UsuarioModel.update(id, updateData);
+    const { senha: _, ...usuarioSemSenha } = usuario;
+    return usuarioSemSenha;
+  },
+
+  // Redefine senha por administradores sem expor a senha atual
+  async redefinirSenha(id, senha, usuarioLogado) {
+    if (!ehAdmin(usuarioLogado.perfil)) {
+      throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
+    }
+    if (!senha || String(senha).length < 8) {
+      throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
+    }
+
+    const hash = await bcrypt.hash(String(senha), 10);
+    const usuario = await UsuarioModel.update(id, { senha: hash });
     const { senha: _, ...usuarioSemSenha } = usuario;
     return usuarioSemSenha;
   },

@@ -37,4 +37,12 @@ router.delete(
   UsuarioController.desativar
 );
 
+// PATCH /api/usuarios/:id/senha - Apenas admins redefinem senhas
+router.patch(
+  '/:id/senha',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  UsuarioController.redefinirSenha
+);
+
 module.exports = router;
