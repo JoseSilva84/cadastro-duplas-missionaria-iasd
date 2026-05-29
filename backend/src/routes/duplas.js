@@ -12,21 +12,21 @@ router.get('/', autenticar, DuplaController.listar);
 router.get('/:id', autenticar, DuplaController.buscarPorId);
 
 // POST /api/duplas — Cadastra nova dupla
-// DUPLA_MISSIONARIA e COORDENADOR_REGIONAL não criam duplas
+// DUPLA_MISSIONARIA não cria duplas
 router.post(
   '/',
   autenticar,
-  bloquear(PERFIS.DUPLA_MISSIONARIA, PERFIS.COORDENADOR_REGIONAL),
+  bloquear(PERFIS.DUPLA_MISSIONARIA),
   validarDupla,
   DuplaController.criar
 );
 
 // PUT /api/duplas/:id — Atualiza dupla (service valida escopo)
-// DUPLA_MISSIONARIA e COORDENADOR_REGIONAL não editam cadastro de duplas
+// DUPLA_MISSIONARIA não edita cadastro de duplas
 router.put(
   '/:id',
   autenticar,
-  bloquear(PERFIS.DUPLA_MISSIONARIA, PERFIS.COORDENADOR_REGIONAL),
+  bloquear(PERFIS.DUPLA_MISSIONARIA),
   validarDupla,
   DuplaController.atualizar
 );

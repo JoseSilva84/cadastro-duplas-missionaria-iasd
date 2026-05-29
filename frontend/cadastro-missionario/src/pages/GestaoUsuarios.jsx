@@ -5,7 +5,7 @@ import api from '../lib/api';
 const PERFIL_CONFIG = {
   SUPER_ADMIN: { label: 'Super Admin', cor: 'bg-purple-100 text-purple-800 border-purple-200', dot: 'bg-purple-500' },
   ADMINISTRADOR: { label: 'Administrador', cor: 'bg-blue-100 text-blue-800 border-blue-200', dot: 'bg-blue-500' },
-  PASTOR_REGIONAL: { label: 'Pastor Regional', cor: 'bg-[#1A3A6B]/10 text-[#1A3A6B] border-[#1A3A6B]/20', dot: 'bg-[#1A3A6B]' },
+  PASTOR_REGIONAL: { label: 'Pastor Departamental Regional', cor: 'bg-[#1A3A6B]/10 text-[#1A3A6B] border-[#1A3A6B]/20', dot: 'bg-[#1A3A6B]' },
   PASTOR_DISTRITAL: { label: 'Pastor Distrital', cor: 'bg-teal-100 text-teal-800 border-teal-200', dot: 'bg-teal-500' },
   COORDENADOR_REGIONAL: { label: 'Coordenador Regional', cor: 'bg-[#C9963A]/15 text-[#8B6A28] border-[#C9963A]/30', dot: 'bg-[#C9963A]' },
   DUPLA_MISSIONARIA: { label: 'Dupla Missionária', cor: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' },

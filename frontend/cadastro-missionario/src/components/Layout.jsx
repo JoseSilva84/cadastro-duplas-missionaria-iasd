@@ -63,11 +63,15 @@ const icons = {
 const perfilLabel = {
   SUPER_ADMIN: 'Super Administrador',
   ADMINISTRADOR: 'Administrador (MIPES)',
-  PASTOR_REGIONAL: 'Pastor Regional',
+  PASTOR_REGIONAL: 'Pastor Departamental Regional',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
   DUPLA_MISSIONARIA: 'Dupla Missionária',
 };
+
+const formatarNomeUsuario = (nome) => (
+  nome?.replace(/^Pastor Regional - REGIÃO/i, 'Pr. Dp. Regional - REGIÃO')
+);
 
 export default function Layout({ children }) {
   const { usuario, logout, layout, setLayout } = useAuth();
@@ -103,9 +107,9 @@ export default function Layout({ children }) {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
-  const podeGerenciarLiderancas = isAdmin || usuario?.perfil === PERFIS.PASTOR_REGIONAL || isPastorDistrital;
+  const podeGerenciarLiderancas = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
-  const podeCadastrarDupla = !isDupla && usuario?.perfil !== PERFIS.COORDENADOR_REGIONAL;
+  const podeCadastrarDupla = !isDupla;
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla
@@ -196,15 +200,7 @@ export default function Layout({ children }) {
           )),
         };
       }
-      if (link.key !== 'cadastro') return link;
-      const prefix = isDireto ? '/direto' : '';
-      return {
-        ...link,
-        items: [
-          { to: `${prefix}/cadastro/liderancas?tipo=coordenador`, label: 'Coordenador Regional', icon: 'CR' },
-          { to: `${prefix}/registro-saida`, label: 'Registro de Assistência', icon: '✅' },
-        ],
-      };
+      return link;
     })
     : navLinks;
 
@@ -416,7 +412,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
               {usuario?.nome?.charAt(0)}
             </div>
             <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{usuario?.nome}</p>
+              <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
               <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
             </div>
           </div>

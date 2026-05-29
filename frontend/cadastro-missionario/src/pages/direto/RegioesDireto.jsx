@@ -36,7 +36,7 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
   const [form, setForm] = useState(() => ({
     fotoConselheiro: fotoPreview || '',
     nomeConselheiro: regiao.nomeConselheiro || '',
-    cargoConselheiro: regiao.cargoConselheiro || 'Pastor Regional',
+    cargoConselheiro: regiao.cargoConselheiro || 'Pastor Departamental Regional',
     telefoneConselheiro: regiao.telefoneConselheiro || '',
     enderecoConselheiro: regiao.enderecoConselheiro || '',
     dataNascimentoConselheiro: valorDataInput(regiao.dataNascimentoConselheiro),
@@ -53,15 +53,15 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
       const { data } = await api.patch(`/regioes/${regiao.id}`, {
         fotoConselheiro: fotoRef || null,
         nomeConselheiro: form.nomeConselheiro || null,
-        cargoConselheiro: form.cargoConselheiro || 'Pastor Regional',
+        cargoConselheiro: form.cargoConselheiro || 'Pastor Departamental Regional',
         telefoneConselheiro: form.telefoneConselheiro || null,
         enderecoConselheiro: form.enderecoConselheiro || null,
         dataNascimentoConselheiro: form.dataNascimentoConselheiro || null,
       });
-      toast.success('Credenciais do pastor regional atualizadas.');
+      toast.success('Credenciais do pastor departamental regional atualizadas.');
       onSaved(data, form.fotoConselheiro);
     } catch (err) {
-      toast.error(err.response?.data?.erro || 'Erro ao atualizar pastor regional.');
+      toast.error(err.response?.data?.erro || 'Erro ao atualizar pastor departamental regional.');
     } finally {
       setSalvando(false);
     }
@@ -74,7 +74,7 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
           <div>
             <p className="text-[#C9963A] text-xs font-bold uppercase tracking-wider">Credenciais</p>
             <h3 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Pastor Regional
+              Pastor Departamental Regional
             </h3>
             <p className="text-xs text-gray-400 mt-1">{regiao.nome}</p>
           </div>
@@ -88,11 +88,11 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <CampoCredencial label="Nome completo">
-                    <input className="input-field" value={form.nomeConselheiro} onChange={(e) => set('nomeConselheiro', e.target.value)} placeholder="Nome do pastor regional" />
+                    <input className="input-field" value={form.nomeConselheiro} onChange={(e) => set('nomeConselheiro', e.target.value)} placeholder="Nome do pastor departamental regional" />
                   </CampoCredencial>
                 </div>
                 <CampoCredencial label="Cargo">
-                  <input className="input-field" value={form.cargoConselheiro} onChange={(e) => set('cargoConselheiro', e.target.value)} placeholder="Pastor Regional" />
+                  <input className="input-field" value={form.cargoConselheiro} onChange={(e) => set('cargoConselheiro', e.target.value)} placeholder="Pastor Departamental Regional" />
                 </CampoCredencial>
                 <CampoCredencial label="WhatsApp">
                   <input className="input-field" value={form.telefoneConselheiro} onChange={(e) => set('telefoneConselheiro', e.target.value)} placeholder="(11) 99999-9999" />
@@ -124,8 +124,8 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
 export default function RegioesDireto() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const podeEditarPastorRegional = ehAdmin(usuario) || usuario?.perfil === PERFIS.PASTOR_REGIONAL;
-  const podeCriarDupla = ehAdmin(usuario) || usuario?.perfil === PERFIS.PASTOR_REGIONAL || usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const podeEditarPastorRegional = ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeCriarDupla = ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -366,7 +366,7 @@ export default function RegioesDireto() {
                       setEditandoPastor(true);
                     }
                   }}
-                  title={podeEditarPastorRegional ? 'Abrir credenciais do pastor regional' : 'Pastor regional'}
+                  title={podeEditarPastorRegional ? 'Abrir credenciais do pastor departamental regional' : 'Pastor departamental regional'}
                   className={`group bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full sm:max-w-md text-left transition-all duration-200 ${
                     podeEditarPastorRegional
                       ? 'hover:border-[#C9963A]/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
@@ -376,7 +376,7 @@ export default function RegioesDireto() {
                   <div className="flex items-center gap-4">
                     <FotoConselheiro src={fotosConselheiro[regiaoSelecionada.id]} nome={regiaoSelecionada.nomeConselheiro} />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor regional</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor departamental regional</p>
                       <h3 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
                         {regiaoSelecionada.nomeConselheiro || 'Nao informado'}
                       </h3>

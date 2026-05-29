@@ -32,7 +32,7 @@ router.put(
 router.patch(
   '/:id',
   autenticar,
-  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL),
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL),
   RegiaoController.atualizar
 );
 

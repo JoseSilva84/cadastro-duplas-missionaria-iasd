@@ -54,10 +54,15 @@ const icons = {
 const perfilLabel = {
   SUPER_ADMIN: 'Super Administrador',
   ADMINISTRADOR: 'Administrador',
+  PASTOR_REGIONAL: 'Pastor Departamental Regional',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
   LIDER_REGIOES: 'Líder de Regiões',
 };
+
+const formatarNomeUsuario = (nome) => (
+  nome?.replace(/^Pastor Regional - REGIÃO/i, 'Pr. Dp. Regional - REGIÃO')
+);
 
 export default function LayoutDireto() {
   const { usuario, logout, setLayout } = useAuth();
@@ -115,12 +120,7 @@ export default function LayoutDireto() {
     ))
     : relatorioItems;
 
-  const cadastroItemsVisiveis = isCoordenadorRegional
-    ? [
-      { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
-      { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
-    ]
-    : cadastroItems;
+  const cadastroItemsVisiveis = cadastroItems;
 
   const navLinks = isDupla ? [
     { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
@@ -220,7 +220,7 @@ export default function LayoutDireto() {
                   {usuario?.nome?.charAt(0)}
                 </div>
                 <div className="hidden lg:block">
-                  <p className="text-white text-xs font-semibold leading-tight">{usuario?.nome}</p>
+                  <p className="text-white text-xs font-semibold leading-tight">{formatarNomeUsuario(usuario?.nome)}</p>
                   <p className="text-white/40 text-[10px]">{perfilLabel[usuario?.perfil]}</p>
                 </div>
               </div>
@@ -315,7 +315,7 @@ export default function LayoutDireto() {
                     {usuario?.nome?.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{usuario?.nome}</p>
+                    <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
                     <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
                   </div>
                 </div>

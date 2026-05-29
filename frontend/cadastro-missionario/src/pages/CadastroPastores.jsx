@@ -4,7 +4,6 @@ import api from '../lib/api';
 import { toast } from '../lib/toast';
 import AvatarUpload from '../components/AvatarUpload';
 import { FotoService } from '../foto.service';
-import { useAuth, PERFIS } from '../contexts/AuthContext';
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
   <div className="group/campo">
@@ -32,7 +31,7 @@ const SecaoHeader = ({ numero, titulo, descricao }) => (
 const TIPOS = [
   {
     value: 'regional',
-    label: 'Pastor Regional',
+    label: 'Pastor Departamental Regional',
     descricao: 'Responsável por uma Região inteira',
     icon: '🏛️',
     cor: '#1A3A6B',
@@ -73,7 +72,7 @@ const TIPOS = [
 ];
 
 const CARGO_POR_TIPO = {
-  regional: 'Pastor Regional',
+  regional: 'Pastor Departamental Regional',
   distrital: 'Pastor Distrital',
   coordenador: 'Coordenador Regional',
   diretor_mp: 'Diretor de Ministério Pessoal',
@@ -83,15 +82,11 @@ const CARGO_POR_TIPO = {
 export default function CadastroPastores() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { usuario } = useAuth();
-  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isDireto = location.pathname.startsWith('/direto');
   const tipoUrl = new URLSearchParams(location.search).get('tipo');
-  const tiposDisponiveis = isCoordenadorRegional
-    ? TIPOS.filter((item) => item.value === 'coordenador')
-    : TIPOS;
+  const tiposDisponiveis = TIPOS;
 
-  const [tipo, setTipo] = useState(isCoordenadorRegional ? 'coordenador' : 'regional');
+  const [tipo, setTipo] = useState('regional');
   const [foto, setFoto] = useState('');
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState(CARGO_POR_TIPO.regional);
@@ -113,13 +108,9 @@ export default function CadastroPastores() {
   }, []);
 
   useEffect(() => {
-    if (isCoordenadorRegional) {
-      if (tipo !== 'coordenador') handleTipo('coordenador');
-      return;
-    }
     if (!tipoUrl || !CARGO_POR_TIPO[tipoUrl]) return;
     handleTipo(tipoUrl);
-  }, [tipoUrl, isCoordenadorRegional]);
+  }, [tipoUrl]);
 
   // Carrega distritos quando região muda
   useEffect(() => {
@@ -139,7 +130,7 @@ export default function CadastroPastores() {
 
   // Zera os selects ao mudar o tipo
   const handleTipo = (t) => {
-    const proximoTipo = isCoordenadorRegional ? 'coordenador' : t;
+    const proximoTipo = t;
     setTipo(proximoTipo);
     setRegiaoId('');
     setDistritoId('');
@@ -241,7 +232,7 @@ export default function CadastroPastores() {
           Lideranças
         </h1>
         <p className="text-gray-400 text-sm mt-1">
-          Cadastre foto e nome de pastores regionais, distritais e coordenadores de interessados
+          Cadastre foto e nome de pastores departamentais regionais, distritais e coordenadores de interessados
         </p>
       </div>
 
@@ -414,7 +405,7 @@ export default function CadastroPastores() {
                 <svg className="w-4 h-4 flex-shrink-0 text-gray-300 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {tipo === 'regional' && 'A foto e o nome do pastor regional aparecerão na página de Detalhes da Região.'}
+                {tipo === 'regional' && 'A foto e o nome do pastor departamental regional aparecerão na página de Detalhes da Região.'}
                 {tipo === 'distrital' && 'A foto e o nome do pastor distrital aparecerão na página de Detalhes do Distrito.'}
                 {tipo === 'coordenador' && 'A foto e o nome do coordenador de interessados aparecerão na página da Igreja correspondente.'}
               </div>
