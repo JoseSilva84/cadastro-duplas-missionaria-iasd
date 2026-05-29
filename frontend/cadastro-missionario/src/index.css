@@ -369,6 +369,16 @@
   @apply flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold transition-all duration-200 active:scale-95 active:opacity-80;
 }
 
+@media (max-width: 1023.98px) and (orientation: landscape) {
+  .direto-bottom-nav {
+    display: none;
+  }
+
+  .direto-main-content {
+    padding-bottom: 0;
+  }
+}
+
 /* ============================================
    MASTER-DETAIL HORIZONTAL — Animações
    ============================================ */

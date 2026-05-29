@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
-export default function DropdownMenu({ label, icon, items }) {
+export default function DropdownMenu({ label, icon, items, align = 'left' }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
 
@@ -32,7 +32,7 @@ export default function DropdownMenu({ label, icon, items }) {
       <button
         type="button"
         onClick={() => setAberto((valor) => !valor)}
-        className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+        className={`flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
           aberto ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white hover:bg-white/8'
         }`}
         aria-haspopup="menu"
@@ -46,7 +46,7 @@ export default function DropdownMenu({ label, icon, items }) {
       </button>
 
       {aberto && (
-        <div className="absolute left-0 top-full pt-2 z-50 min-w-56">
+        <div className={`absolute top-full pt-2 z-50 min-w-56 ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <div className="rounded-xl bg-white border border-gray-100 shadow-xl py-2 overflow-hidden">
             {items.map((item) => (
               <NavLink

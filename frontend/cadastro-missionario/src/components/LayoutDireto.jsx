@@ -166,15 +166,21 @@ export default function LayoutDireto() {
             </div>
 
             {/* Navegação desktop — centro */}
-            <nav className="hidden md:flex flex-1 min-w-0 items-center gap-1 overflow-x-auto overflow-y-visible py-1 pr-2 direto-nav-scroll">
+            <nav className="hidden lg:flex flex-1 min-w-0 items-center gap-1 overflow-visible py-1 pr-1">
               {navLinks.map((link) => link.type === 'dropdown' ? (
-                <DropdownMenu key={link.key} label={link.label} icon={link.icon} items={link.items} />
+                <DropdownMenu
+                  key={link.key}
+                  label={link.label}
+                  icon={link.icon}
+                  items={link.items}
+                  align={link.key === 'relatorios' ? 'right' : 'left'}
+                />
               ) : (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `flex flex-shrink-0 items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    `flex flex-shrink-0 items-center gap-2 px-2.5 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-white/15 text-white'
                         : 'text-white/60 hover:text-white hover:bg-white/8'
@@ -190,7 +196,7 @@ export default function LayoutDireto() {
             {/* Ações à direita */}
             <div className="flex flex-shrink-0 items-center gap-2">
               {/* Indicador do modelo */}
-              <div className="hidden sm:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
+              <div className="hidden 2xl:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
                 <div className="w-2 h-2 rounded-full bg-[#C9963A]" />
                 <span className="text-[#C9963A] text-[10px] font-semibold uppercase tracking-wider">
                   Modelo Direto
@@ -201,15 +207,15 @@ export default function LayoutDireto() {
               <button
                 type="button"
                 onClick={handleTrocarLayout}
-                className="hidden sm:flex items-center gap-2 text-white/50 hover:text-[#C9963A] text-xs font-medium px-3 py-2 rounded-lg hover:bg-white/8 transition-all duration-200"
+                className="hidden lg:flex items-center gap-2 text-white/50 hover:text-[#C9963A] text-xs font-medium px-2 lg:px-3 py-2 rounded-lg hover:bg-white/8 transition-all duration-200"
                 title="Trocar para modo Avançado"
               >
                 {icons.trocaLayout}
-                <span className="hidden lg:inline">Modo Avançado</span>
+                <span className="hidden xl:inline">Modo Avançado</span>
               </button>
 
               {/* Usuário */}
-              <div className="hidden sm:flex items-center gap-2 bg-white/8 rounded-lg px-3 py-1.5">
+              <div className="hidden lg:flex items-center gap-2 bg-white/8 rounded-lg px-3 py-1.5">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
                   {usuario?.nome?.charAt(0)}
                 </div>
@@ -233,7 +239,7 @@ export default function LayoutDireto() {
               <button
                 type="button"
                 onClick={() => setMenuAberto(!menuAberto)}
-                className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="lg:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 {icons.menu}
               </button>
@@ -241,9 +247,9 @@ export default function LayoutDireto() {
           </div>
         </div>
 
-        {/* Menu mobile dropdown — com scroll quando há muitos itens */}
+        {/* Menu compacto para celular/tablet */}
         {menuAberto && (
-          <div className="md:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in" style={{ maxHeight: 'calc(100vh - 56px)', overflowY: 'auto' }}>
+          <div className="lg:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in" style={{ maxHeight: 'calc(100vh - 56px)', overflowY: 'auto' }}>
             <div className="px-4 py-3 space-y-1">
               {navLinks.map((link) => link.type === 'dropdown' ? (
                 <div key={link.key}>
@@ -323,7 +329,7 @@ export default function LayoutDireto() {
       </header>
 
       {/* Conteúdo principal — ocupa todo o resto da tela, sem scroll vertical global */}
-      <main className="flex-1 min-h-0 overflow-y-auto pb-20 md:pb-0">
+      <main className="direto-main-content flex-1 min-h-0 overflow-y-auto pb-20 lg:pb-0">
         <Outlet />
       </main>
       <BottomNavigation navLinks={navLinks} onMenuClick={() => setMenuAberto(true)} />
@@ -337,7 +343,7 @@ function BottomNavigation({ navLinks, onMenuClick }) {
     .slice(0, 3);
 
   return (
-    <nav className="md:hidden fixed left-0 right-0 bottom-0 z-30 mobile-bottom-nav border-t border-gray-200 bg-white/95 px-2 pt-2 backdrop-blur">
+    <nav className="lg:hidden fixed left-0 right-0 bottom-0 z-30 mobile-bottom-nav direto-bottom-nav border-t border-gray-200 bg-white/95 px-2 pt-2 backdrop-blur">
       <div className="grid grid-cols-4 gap-1">
         {principais.map((link) => (
           <NavLink
