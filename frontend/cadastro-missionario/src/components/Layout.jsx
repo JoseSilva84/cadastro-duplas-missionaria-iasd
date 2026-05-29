@@ -115,6 +115,7 @@ export default function Layout({ children }) {
   const navLinks = isDupla
     ? [
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
+        { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },

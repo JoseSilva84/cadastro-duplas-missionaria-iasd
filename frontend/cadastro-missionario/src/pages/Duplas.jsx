@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
-import { PERFIS, useAuth } from '../contexts/AuthContext';
+import { PERFIS, ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -66,6 +66,25 @@ const resolverFotosDaDupla = async (dupla) => {
   return { ...dupla, fotoLiderPreview, fotoMembro2Preview };
 };
 
+const formatarData = (valor) => {
+  if (!valor) return '—';
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
+};
+
+const sexoLabel = (valor) => {
+  if (valor === 'M' || valor === 'MASCULINO') return 'Masculino';
+  if (valor === 'F' || valor === 'FEMININO') return 'Feminino';
+  return '—';
+};
+
+const InfoAdmin = ({ label, valor }) => (
+  <div>
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+    <p className="text-xs text-gray-700 break-words">{valor ?? '—'}</p>
+  </div>
+);
+
 // Foto de pessoa com tamanho fixo (aplicado externamente)
 const FotoPessoa = ({ src, nome, className, fallbackGradient = 'from-[#1A3A6B] to-[#2a5298]' }) => {
   const inicial = (nome || '?').charAt(0).toUpperCase();
@@ -113,6 +132,7 @@ export default function Duplas() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const isAdmin = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
   const [distrito, setDistrito] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
@@ -523,6 +543,60 @@ export default function Duplas() {
                 )}
                 <BadgeAcompanhamento data={dupla.ultimoAcompanhamento} />
               </div>
+
+              {isAdmin && (
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg bg-gray-50 p-3">
+                      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#1A3A6B]">Membro 1</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <InfoAdmin label="Nome" valor={dupla.liderNome} />
+                        <InfoAdmin label="WhatsApp" valor={dupla.liderTelefone} />
+                        <InfoAdmin label="E-mail" valor={dupla.liderEmail} />
+                        <InfoAdmin label="Sexo" valor={sexoLabel(dupla.liderSexo)} />
+                        <InfoAdmin label="Nascimento" valor={formatarData(dupla.liderDataNascimento)} />
+                        <InfoAdmin label="Batismo" valor={formatarData(dupla.liderDataBatismo)} />
+                        <InfoAdmin label="Igreja" valor={dupla.liderIgreja || dupla.igreja?.nome} />
+                        <InfoAdmin label="Distrito" valor={dupla.liderDistrito || dupla.distrito?.nome} />
+                        <div className="col-span-2">
+                          <InfoAdmin label="Endereço" valor={dupla.liderEndereco} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg bg-gray-50 p-3">
+                      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#1A3A6B]">Membro 2</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <InfoAdmin label="Nome" valor={dupla.membro2Nome} />
+                        <InfoAdmin label="WhatsApp" valor={dupla.membro2Telefone} />
+                        <InfoAdmin label="E-mail" valor={dupla.membro2Email} />
+                        <InfoAdmin label="Sexo" valor={sexoLabel(dupla.membro2Sexo)} />
+                        <InfoAdmin label="Nascimento" valor={formatarData(dupla.membro2DataNascimento)} />
+                        <InfoAdmin label="Batismo" valor={formatarData(dupla.membro2DataBatismo)} />
+                        <InfoAdmin label="Igreja" valor={dupla.membro2Igreja || dupla.igreja?.nome} />
+                        <InfoAdmin label="Distrito" valor={dupla.membro2Distrito || dupla.distrito?.nome} />
+                        <div className="col-span-2">
+                          <InfoAdmin label="Endereço" valor={dupla.membro2Endereco} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 rounded-lg bg-[#1A3A6B]/5 p-3">
+                    <InfoAdmin label="Região" valor={dupla.distrito?.regiao?.nome || dupla.regiaoNome} />
+                    <InfoAdmin label="Distrito" valor={dupla.distrito?.nome} />
+                    <InfoAdmin label="Igreja" valor={dupla.igreja?.nome} />
+                    <InfoAdmin label="Projeto" valor={projetoLabel[dupla.tipoProjeto] || dupla.tipoProjeto} />
+                    <InfoAdmin label="Status" valor={dupla.status} />
+                    <InfoAdmin label="Pessoas alcançadas" valor={dupla.pessoasAlcancadas} />
+                    <InfoAdmin label="Batismos alcançados" valor={dupla.batismos} />
+                    <InfoAdmin label="Início" valor={formatarData(dupla.dataInicio)} />
+                    <div className="col-span-2 md:col-span-4">
+                      <InfoAdmin label="Observações" valor={dupla.observacoes} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </button>
           );
         })}
