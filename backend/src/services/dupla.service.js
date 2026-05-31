@@ -79,21 +79,25 @@ const DuplaService = {
   // Cria nova dupla
   async criar(data, usuario) {
     const escopo = await montarEscopo(usuario);
+    const igrejaIdPadrao = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA
+      ? escopo.igrejaId
+      : null;
     const distritoPadrao = data.distritoId ? null : await prisma.distrito.findFirst({
       where: escopo.distrito,
       select: { id: true, nome: true, regiao: { select: { nome: true } } },
       orderBy: { id: 'asc' },
     });
     const distritoId = data.distritoId ? Number(data.distritoId) : distritoPadrao?.id;
+    const igrejaId = data.igrejaId ? Number(data.igrejaId) : igrejaIdPadrao;
     if (!distritoId) throw { status: 400, mensagem: 'Nao ha distrito disponivel para vincular este cadastro.' };
     await validarDistrito(usuario, distritoId);
-    if (data.igrejaId) await validarIgreja(usuario, data.igrejaId);
+    if (igrejaId) await validarIgreja(usuario, igrejaId);
     const classificacao = calcularClassificacao(data);
 
     return DuplaModel.create({
       regiaoNome: data.regiaoNome || distritoPadrao?.regiao?.nome || '',
       distritoId,
-      igrejaId: data.igrejaId ? Number(data.igrejaId) : null,
+      igrejaId: igrejaId || null,
       bairro: data.bairro || 'Nao informado',
       fotoLider: data.fotoLider,
       fotoMembro2: data.fotoMembro2,
