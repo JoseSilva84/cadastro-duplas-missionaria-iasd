@@ -86,6 +86,17 @@ const RelatorioController = {
       res.status(500).json({ erro: 'Erro ao gerar dashboard de coordenadores regionais.' });
     }
   },
+
+  // GET /api/relatorios/personalizado
+  async personalizado(req, res) {
+    try {
+      const resultado = await RelatorioService.personalizado(req.query, req.usuario);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao gerar relatorio personalizado.' });
+    }
+  },
 };
 
 module.exports = RelatorioController;

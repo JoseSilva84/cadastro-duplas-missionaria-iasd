@@ -50,6 +50,25 @@ async function montarEscopo(usuario) {
     };
   }
 
+  if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    if (!usuario.igrejaId) return negarTudo();
+    const igreja = await prisma.igreja.findUnique({
+      where: { id: Number(usuario.igrejaId) },
+      select: { id: true, distritoId: true },
+    });
+    if (!igreja) return negarTudo();
+    return {
+      regiao: semAcesso,
+      distrito: { id: Number(igreja.distritoId) },
+      igreja: { id: Number(igreja.id) },
+      dupla: { igrejaId: Number(igreja.id) },
+      estudo: { dupla: { is: { igrejaId: Number(igreja.id) } } },
+      escolaSabatina: { igrejaId: Number(igreja.id) },
+      igrejaId: Number(igreja.id),
+      distritoId: Number(igreja.distritoId),
+    };
+  }
+
   if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
     const dupla = await obterIgrejaDaDupla(usuario);
     if (!usuario.duplaId) {
@@ -117,6 +136,13 @@ async function validarDistrito(usuario, distritoId) {
   if (usuario.perfil === PERFIS.PASTOR_DISTRITAL && distrito.id !== Number(usuario.distritoId)) {
     throw { status: 403, mensagem: 'Acesso negado: distrito fora do seu escopo.' };
   }
+  if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    const escopo = await montarEscopo(usuario);
+    if (distrito.id !== escopo.distritoId) {
+      throw { status: 403, mensagem: 'Acesso negado: distrito fora do seu escopo.' };
+    }
+    return;
+  }
   validarRegiao(usuario, distrito.regiaoId);
 }
 
@@ -128,8 +154,8 @@ async function validarIgreja(usuario, igrejaId) {
   });
   if (!igreja) throw { status: 404, mensagem: 'Igreja não encontrada.' };
 
-  if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-    if (!usuario.duplaId) return;
+  if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA || usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && !usuario.duplaId) return;
     const escopo = await montarEscopo(usuario);
     if (igreja.id !== escopo.igrejaId) {
       throw { status: 403, mensagem: 'Acesso negado: igreja fora do seu escopo.' };

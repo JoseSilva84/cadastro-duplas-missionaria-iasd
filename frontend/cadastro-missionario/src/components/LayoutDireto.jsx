@@ -57,6 +57,7 @@ const perfilLabel = {
   PASTOR_REGIONAL: 'Pastor Departamental Regional',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
+  DIRETOR_MISSIONARIO_IGREJA: 'Diretor Missionário',
   LIDER_REGIOES: 'Líder de Regiões',
 };
 
@@ -77,7 +78,7 @@ export default function LayoutDireto() {
 
   const handleTrocarLayout = () => {
     setLayout('avancado');
-    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    if ([PERFIS.DUPLA_MISSIONARIA, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil)) {
       navigate('/igrejas');
       return;
     }
@@ -86,6 +87,7 @@ export default function LayoutDireto() {
 
   const isAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuario?.perfil);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
+  const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
 
@@ -120,7 +122,16 @@ export default function LayoutDireto() {
     ))
     : relatorioItems;
 
-  const cadastroItemsVisiveis = cadastroItems;
+  const cadastroItemsVisiveis = isDiretorMissionario
+    ? cadastroItems.filter((item) => [
+      '/direto/duplas/nova',
+      '/direto/cadastro/estudos-biblicos',
+      '/direto/cadastro/ponto-estudo',
+      '/direto/cadastro/classe-biblica',
+      '/direto/cadastro/escola-sabatina',
+      '/direto/cadastro/liderancas?tipo=diretor_mp',
+    ].includes(item.to))
+    : cadastroItems;
 
   const navLinks = isDupla ? [
     { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
@@ -135,6 +146,10 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
+  ] : isDiretorMissionario ? [
+    { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
+    { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
   ] : [
     ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes }] : []),
     { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },

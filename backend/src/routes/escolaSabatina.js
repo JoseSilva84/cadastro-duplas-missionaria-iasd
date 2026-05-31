@@ -8,7 +8,7 @@ router.get('/', autenticar, EscolaSabatinaController.listar);
 router.post(
   '/',
   autenticar,
-  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL),
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
   validarCadastroEscolaSabatina,
   EscolaSabatinaController.criar
 );

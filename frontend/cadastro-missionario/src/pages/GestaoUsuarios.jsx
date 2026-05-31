@@ -8,6 +8,7 @@ const PERFIL_CONFIG = {
   PASTOR_REGIONAL: { label: 'Pastor Departamental Regional', cor: 'bg-[#1A3A6B]/10 text-[#1A3A6B] border-[#1A3A6B]/20', dot: 'bg-[#1A3A6B]' },
   PASTOR_DISTRITAL: { label: 'Pastor Distrital', cor: 'bg-teal-100 text-teal-800 border-teal-200', dot: 'bg-teal-500' },
   COORDENADOR_REGIONAL: { label: 'Coordenador Regional', cor: 'bg-[#C9963A]/15 text-[#8B6A28] border-[#C9963A]/30', dot: 'bg-[#C9963A]' },
+  DIRETOR_MISSIONARIO_IGREJA: { label: 'Diretor Missionário', cor: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
   DUPLA_MISSIONARIA: { label: 'Dupla Missionária', cor: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' },
 };
 
@@ -20,6 +21,7 @@ const CAMPO_EXTRA = {
   PASTOR_REGIONAL: 'regiao',
   COORDENADOR_REGIONAL: 'regiao',
   PASTOR_DISTRITAL: 'distrito',
+  DIRETOR_MISSIONARIO_IGREJA: 'igreja',
   DUPLA_MISSIONARIA: 'dupla',
 };
 
@@ -47,6 +49,7 @@ function StatusBadge({ ativo }) {
 function EscopoUsuario({ usuario }) {
   if (usuario.regiao) return <span className="text-sm text-gray-600">{usuario.regiao.nome}</span>;
   if (usuario.distrito) return <span className="text-sm text-gray-600">{usuario.distrito.nome}</span>;
+  if (usuario.igreja) return <span className="text-sm text-gray-600">{usuario.igreja.nome}</span>;
   if (usuario.dupla) return <span className="text-sm text-gray-600">{usuario.dupla.liderNome}</span>;
   return <span className="text-sm text-gray-300">Associação</span>;
 }
@@ -95,7 +98,7 @@ function SelectInput({ label, children, className = '', ...props }) {
   );
 }
 
-function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, usuarioLogado }) {
+function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, duplas, usuarioLogado }) {
   const editando = Boolean(usuario);
   const [form, setForm] = useState({
     nome: usuario?.nome || '',
@@ -104,6 +107,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
     perfil: usuario?.perfil || 'ADMINISTRADOR',
     regiaoId: usuario?.regiaoId || '',
     distritoId: usuario?.distritoId || '',
+    igrejaId: usuario?.igrejaId || '',
     duplaId: usuario?.duplaId || '',
     ativo: usuario?.ativo !== undefined ? usuario.ativo : true,
   });
@@ -131,6 +135,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
       perfil: form.perfil,
       regiaoId: campoExtra === 'regiao' ? form.regiaoId || null : null,
       distritoId: campoExtra === 'distrito' ? form.distritoId || null : null,
+      igrejaId: campoExtra === 'igreja' ? form.igrejaId || null : null,
       duplaId: campoExtra === 'dupla' ? form.duplaId || null : null,
       ativo: form.ativo,
     };
@@ -213,6 +218,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
                   perfil: e.target.value,
                   regiaoId: '',
                   distritoId: '',
+                  igrejaId: '',
                   duplaId: '',
                 }));
               }}
@@ -259,6 +265,22 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, duplas, u
               {distritos.map((distrito) => (
                 <option key={distrito.id} value={distrito.id}>
                   {distrito.nome}{distrito.regiao?.nome ? ` (${distrito.regiao.nome})` : ''}
+                </option>
+              ))}
+            </SelectInput>
+          )}
+
+          {campoExtra === 'igreja' && (
+            <SelectInput
+              label="Igreja"
+              value={form.igrejaId}
+              onChange={(e) => set('igrejaId', e.target.value)}
+              required
+            >
+              <option value="">Selecione uma igreja</option>
+              {igrejas.map((igreja) => (
+                <option key={igreja.id} value={igreja.id}>
+                  {igreja.nome}{igreja.distrito?.nome ? ` (${igreja.distrito.nome})` : ''}
                 </option>
               ))}
             </SelectInput>
@@ -457,6 +479,7 @@ export default function GestaoUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [regioes, setRegioes] = useState([]);
   const [distritos, setDistritos] = useState([]);
+  const [igrejas, setIgrejas] = useState([]);
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -473,15 +496,17 @@ export default function GestaoUsuarios() {
     setCarregando(true);
     setErro(null);
     try {
-      const [rUsuarios, rRegioes, rDistritos, rDuplas] = await Promise.all([
+      const [rUsuarios, rRegioes, rDistritos, rIgrejas, rDuplas] = await Promise.all([
         api.get('/usuarios'),
         api.get('/regioes'),
         api.get('/distritos'),
+        api.get('/igrejas'),
         api.get('/duplas'),
       ]);
       setUsuarios(rUsuarios.data.filter((usuario) => usuario.ativo));
       setRegioes(rRegioes.data);
       setDistritos(rDistritos.data);
+      setIgrejas(rIgrejas.data);
       setDuplas(rDuplas.data);
     } catch (err) {
       setErro(err.response?.data?.erro || 'Erro ao carregar usuários.');
@@ -764,6 +789,7 @@ export default function GestaoUsuarios() {
           onSalvo={() => { setModalCriar(false); carregar(); }}
           regioes={regioes}
           distritos={distritos}
+          igrejas={igrejas}
           duplas={duplas}
           usuarioLogado={usuarioLogado}
         />
@@ -775,6 +801,7 @@ export default function GestaoUsuarios() {
           onSalvo={() => { setModalEditar(null); carregar(); }}
           regioes={regioes}
           distritos={distritos}
+          igrejas={igrejas}
           duplas={duplas}
           usuarioLogado={usuarioLogado}
         />

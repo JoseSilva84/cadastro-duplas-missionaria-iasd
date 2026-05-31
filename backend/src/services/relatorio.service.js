@@ -94,6 +94,18 @@ const RelatorioService = {
   async coordenadoresRegionais() {
     return RelatorioModel.coordenadoresRegionais();
   },
+
+  async personalizado(query, usuario) {
+    if (!ehAdmin(usuario?.perfil)) {
+      throw { status: 403, mensagem: 'Acesso restrito a administradores.' };
+    }
+    const { nivel, regiaoId, distritoId, igrejaId } = query || {};
+    const id = nivel === 'regiao' ? regiaoId : nivel === 'distrito' ? distritoId : igrejaId;
+    if (!['regiao', 'distrito', 'igreja'].includes(nivel) || !id) {
+      throw { status: 400, mensagem: 'Informe nivel e o identificador do escopo.' };
+    }
+    return RelatorioModel.personalizado({ nivel, id });
+  },
 };
 
 module.exports = RelatorioService;

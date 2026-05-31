@@ -8,6 +8,7 @@ const PERFIS = {
   PASTOR_REGIONAL:      'PASTOR_REGIONAL',
   PASTOR_DISTRITAL:     'PASTOR_DISTRITAL',
   COORDENADOR_REGIONAL: 'COORDENADOR_REGIONAL',
+  DIRETOR_MISSIONARIO_IGREJA: 'DIRETOR_MISSIONARIO_IGREJA',
   DUPLA_MISSIONARIA:    'DUPLA_MISSIONARIA',
 };
 
@@ -37,6 +38,7 @@ const ehSuperAdmin = (perfil) => perfil === PERFIS.SUPER_ADMIN;
 const ehPastorRegional = (perfil) => perfil === PERFIS.PASTOR_REGIONAL;
 const ehPastorDistrital = (perfil) => perfil === PERFIS.PASTOR_DISTRITAL;
 const ehCoordenadorRegional = (perfil) => perfil === PERFIS.COORDENADOR_REGIONAL;
+const ehDiretorMissionarioIgreja = (perfil) => perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
 const ehDupla = (perfil) => perfil === PERFIS.DUPLA_MISSIONARIA;
 
 // ─── Middleware: Verifica e decodifica o token JWT ─────────────────────────────
@@ -106,5 +108,6 @@ module.exports = {
   ehPastorRegional,
   ehPastorDistrital,
   ehCoordenadorRegional,
+  ehDiretorMissionarioIgreja,
   ehDupla,
 };

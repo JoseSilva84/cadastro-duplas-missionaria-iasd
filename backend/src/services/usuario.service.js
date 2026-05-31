@@ -50,6 +50,9 @@ const UsuarioService = {
         perfil: data.perfil,
         regiaoId: data.regiaoId ? Number(data.regiaoId) : null,
         distritoId: data.distritoId ? Number(data.distritoId) : null,
+        igrejaId: data.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA && data.igrejaId
+          ? Number(data.igrejaId)
+          : null,
         // Vincula ao ID da dupla quando for perfil DUPLA_MISSIONARIA
         duplaId: data.perfil === PERFIS.DUPLA_MISSIONARIA && data.duplaId
           ? Number(data.duplaId)
@@ -82,6 +85,9 @@ const UsuarioService = {
       ativo: data.ativo,
       regiaoId: data.regiaoId ? Number(data.regiaoId) : null,
       distritoId: data.distritoId ? Number(data.distritoId) : null,
+      igrejaId: data.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA && data.igrejaId
+        ? Number(data.igrejaId)
+        : null,
       duplaId: data.perfil === PERFIS.DUPLA_MISSIONARIA && data.duplaId
         ? Number(data.duplaId)
         : null,

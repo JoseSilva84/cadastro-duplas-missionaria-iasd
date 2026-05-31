@@ -20,6 +20,7 @@ router.get('/por-igreja/:igrejaId', autenticar, RelatorioController.porIgreja);
 router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
 router.get('/dashboard-associacao', autenticar, RelatorioController.dashboardAssociacao);
 router.get('/coordenadores-regionais', autenticar, RelatorioController.coordenadoresRegionais);
+router.get('/personalizado', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.personalizado);
 router.patch('/escola-sabatina-resumo', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.atualizarEscolaSabatinaResumo);
 
 // GET /api/relatorios/acompanhamento — Relatório de saídas do coordenador

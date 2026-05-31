@@ -73,6 +73,7 @@ const upsertUsuario = async (credencial) => {
     ativo: true,
     regiaoId: credencial.regiaoId || null,
     distritoId: credencial.distritoId || null,
+    igrejaId: credencial.igrejaId || null,
     duplaId: credencial.duplaId || null,
   };
 
@@ -89,6 +90,7 @@ const gerarMarkdown = (credenciais, resumo) => {
     ['Pastores Regionais', credenciais.filter((item) => item.perfil === 'PASTOR_REGIONAL')],
     ['Coordenadores Regionais', credenciais.filter((item) => item.perfil === 'COORDENADOR_REGIONAL')],
     ['Pastores Distritais', credenciais.filter((item) => item.perfil === 'PASTOR_DISTRITAL')],
+    ['Diretores Missionários de Igreja', credenciais.filter((item) => item.perfil === 'DIRETOR_MISSIONARIO_IGREJA')],
     ['Duplas Missionárias', credenciais.filter((item) => item.perfil === 'DUPLA_MISSIONARIA')],
   ];
 
@@ -140,6 +142,14 @@ async function main() {
     orderBy: [{ regiaoId: 'asc' }, { nome: 'asc' }],
   });
 
+  const igrejas = await prisma.igreja.findMany({
+    where: { distrito: { is: { regiao: { is: { nome: { in: REGIOES_OFICIAIS } } } } } },
+    include: {
+      distrito: { include: { regiao: { select: { nome: true } } } },
+    },
+    orderBy: [{ distritoId: 'asc' }, { nome: 'asc' }],
+  });
+
   const credenciais = [];
   const senhasExistentes = lerSenhasExistentes();
   const adicionar = (item) => {
@@ -187,6 +197,16 @@ async function main() {
     });
   });
 
+  igrejas.forEach((igreja) => {
+    adicionar({
+      perfil: 'DIRETOR_MISSIONARIO_IGREJA',
+      escopo: `${igreja.nome} / ${igreja.distrito.nome}`,
+      nome: igreja.nomeCoordInteressados || igreja.nomeDiretorMinisterioPessoal || `Diretor Missionário - ${igreja.nome}`,
+      email: `diretor.missionario.${igreja.id}.${slug(igreja.nome)}@${EMAIL_DOMINIO}`,
+      igrejaId: igreja.id,
+    });
+  });
+
   adicionar({
     perfil: 'DUPLA_MISSIONARIA',
     escopo: 'Todas as duplas missionárias',
@@ -226,6 +246,7 @@ async function main() {
   console.log(`Pastores regionais: ${credenciais.filter((item) => item.perfil === 'PASTOR_REGIONAL').length}`);
   console.log(`Coordenadores regionais: ${credenciais.filter((item) => item.perfil === 'COORDENADOR_REGIONAL').length}`);
   console.log(`Pastores distritais: ${credenciais.filter((item) => item.perfil === 'PASTOR_DISTRITAL').length}`);
+  console.log(`Diretores missionários de igreja: ${credenciais.filter((item) => item.perfil === 'DIRETOR_MISSIONARIO_IGREJA').length}`);
   console.log(`Duplas missionárias: ${credenciais.filter((item) => item.perfil === 'DUPLA_MISSIONARIA').length}`);
   console.log(`Arquivo atualizado: ${ARQUIVO_SENHAS}`);
 }

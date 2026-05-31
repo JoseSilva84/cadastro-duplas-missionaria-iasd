@@ -11,6 +11,7 @@ export const PERFIS = {
   PASTOR_REGIONAL:      'PASTOR_REGIONAL',
   PASTOR_DISTRITAL:     'PASTOR_DISTRITAL',
   COORDENADOR_REGIONAL: 'COORDENADOR_REGIONAL',
+  DIRETOR_MISSIONARIO_IGREJA: 'DIRETOR_MISSIONARIO_IGREJA',
   DUPLA_MISSIONARIA:    'DUPLA_MISSIONARIA',
 };
 
@@ -24,6 +25,9 @@ export const ehAdmin = (usuario) =>
 // Verifica se é DUPLA_MISSIONARIA
 export const ehDupla = (usuario) =>
   usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA;
+
+export const ehDiretorMissionarioIgreja = (usuario) =>
+  usuario && usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
 
 // Verifica se é Pastor Regional
 export const ehPastorRegional = (usuario) =>

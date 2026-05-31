@@ -719,6 +719,117 @@ const RelatorioModel = {
       recentes,
     };
   },
+
+  async personalizado({ nivel, id }) {
+    const whereDupla = {};
+    const whereEstudo = {};
+    const whereEscola = {};
+    const whereIgreja = {};
+    const escopo = Number(id);
+
+    if (nivel === 'regiao') {
+      whereDupla.distrito = { is: { regiaoId: escopo } };
+      whereEstudo.dupla = { is: { distrito: { is: { regiaoId: escopo } } } };
+      whereEscola.distrito = { is: { regiaoId: escopo } };
+      whereIgreja.distrito = { is: { regiaoId: escopo } };
+    } else if (nivel === 'distrito') {
+      whereDupla.distritoId = escopo;
+      whereEstudo.dupla = { is: { distritoId: escopo } };
+      whereEscola.distritoId = escopo;
+      whereIgreja.distritoId = escopo;
+    } else if (nivel === 'igreja') {
+      whereDupla.igrejaId = escopo;
+      whereEstudo.dupla = { is: { igrejaId: escopo } };
+      whereEscola.igrejaId = escopo;
+      whereIgreja.id = escopo;
+    } else {
+      throw { status: 400, mensagem: 'Nivel de relatorio invalido.' };
+    }
+
+    const [
+      totalIgrejas,
+      duplas,
+      estudos,
+      escolaSabatinaCadastros,
+      diretoresMissionarios,
+    ] = await Promise.all([
+      prisma.igreja.count({ where: whereIgreja }),
+      prisma.dupla.findMany({
+        where: whereDupla,
+        select: {
+          id: true,
+          status: true,
+          batismos: true,
+          pessoasAlcancadas: true,
+          tipoProjeto: true,
+          igrejaId: true,
+        },
+      }),
+      prisma.estudoBiblico.findMany({
+        where: whereEstudo,
+        include: { participantes: { select: { id: true } } },
+      }),
+      prisma.escolaSabatinaCadastro.findMany({
+        where: whereEscola,
+        select: {
+          unidadesAcao: true,
+          classeProfessores: true,
+          classeInteressados: true,
+          visitasDiretores: true,
+          visitasProfessores: true,
+          visitasAlunos: true,
+          quantidadePequenosGrupos: true,
+        },
+      }),
+      prisma.usuario.count({
+        where: {
+          perfil: 'DIRETOR_MISSIONARIO_IGREJA',
+          ativo: true,
+          ...(nivel === 'igreja'
+            ? { igrejaId: escopo }
+            : { igreja: { is: whereIgreja } }),
+        },
+      }),
+    ]);
+
+    const somaEscola = escolaSabatinaCadastros.reduce((acc, item) => ({
+      unidadesAcao: acc.unidadesAcao + item.unidadesAcao,
+      classeProfessores: acc.classeProfessores + item.classeProfessores,
+      classeInteressados: acc.classeInteressados + item.classeInteressados,
+      visitasDiretores: acc.visitasDiretores + item.visitasDiretores,
+      visitasProfessores: acc.visitasProfessores + item.visitasProfessores,
+      visitasAlunos: acc.visitasAlunos + item.visitasAlunos,
+      quantidadePequenosGrupos: acc.quantidadePequenosGrupos + item.quantidadePequenosGrupos,
+    }), {
+      unidadesAcao: 0,
+      classeProfessores: 0,
+      classeInteressados: 0,
+      visitasDiretores: 0,
+      visitasProfessores: 0,
+      visitasAlunos: 0,
+      quantidadePequenosGrupos: 0,
+    });
+
+    return {
+      escopo: { nivel, id: escopo },
+      totalIgrejas,
+      novaDupla: duplas.length,
+      estudosBiblicos: estudos.filter((estudo) => estudo.tipoEstudo === 'UNICO').length,
+      pontosEstudo: estudos.filter((estudo) => estudo.tipoEstudo === 'PONTO').length,
+      classesBiblicas: estudos.filter((estudo) => estudo.tipoEstudo === 'CLASSE').length,
+      pessoasEmPontosEClasses: estudos.reduce((acc, estudo) => acc + (estudo.participantes?.length || 0), 0),
+      batismos: duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0),
+      pessoasAlcancadas: duplas.reduce((acc, dupla) => acc + (dupla.pessoasAlcancadas || 0), 0),
+      diretorMinisterioPessoal: totalIgrejas,
+      diretoresMissionarios,
+      escolaSabatina: somaEscola,
+      duplasPorStatus: {
+        ativas: duplas.filter((dupla) => dupla.status === 'ATIVA').length,
+        pendentes: duplas.filter((dupla) => dupla.status === 'PENDENTE').length,
+        inativas: duplas.filter((dupla) => dupla.status === 'INATIVA').length,
+      },
+    };
+  },
 };
 
 module.exports = RelatorioModel;

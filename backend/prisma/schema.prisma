@@ -17,6 +17,7 @@ enum Perfil {
   PASTOR_REGIONAL      // Restrito à própria região
   PASTOR_DISTRITAL     // Restrito ao próprio distrito
   COORDENADOR_REGIONAL // Acompanhamento de campo na própria região
+  DIRETOR_MISSIONARIO_IGREJA // Restrito à própria igreja
   DUPLA_MISSIONARIA    // Apenas relatórios da própria dupla
 }
 
@@ -81,9 +82,11 @@ model Usuario {
   // Relacionamentos opcionais por perfil
   regiaoId   Int?
   distritoId Int?
+  igrejaId   Int?     // Exclusivo para perfil DIRETOR_MISSIONARIO_IGREJA
   duplaId    Int?     // Exclusivo para perfil DUPLA_MISSIONARIA
   regiao     Regiao?   @relation(fields: [regiaoId], references: [id])
   distrito   Distrito? @relation(fields: [distritoId], references: [id])
+  igreja     Igreja?   @relation(fields: [igrejaId], references: [id])
   dupla      Dupla?    @relation("UsuarioDupla", fields: [duplaId], references: [id])
 
   acompanhamentos AcompanhamentoDupla[]
@@ -160,6 +163,7 @@ model Igreja {
 
   distrito Distrito @relation(fields: [distritoId], references: [id])
   duplas   Dupla[]
+  usuarios Usuario[]
   escolasSabatina EscolaSabatinaCadastro[]
 }
 

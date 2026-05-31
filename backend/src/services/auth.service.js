@@ -15,7 +15,7 @@ const AuthService = {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
 
-    const igrejaId = usuario.dupla?.igrejaId || null;
+    const igrejaId = usuario.igrejaId || usuario.dupla?.igrejaId || null;
 
     const token = jwt.sign(
       {
@@ -46,6 +46,7 @@ const AuthService = {
         regiao: usuario.regiao,
         distrito: usuario.distrito,
         dupla: usuario.dupla,
+        igreja: usuario.igreja,
       },
     };
   },

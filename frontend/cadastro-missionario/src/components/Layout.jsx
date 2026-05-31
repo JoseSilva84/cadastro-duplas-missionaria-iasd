@@ -66,6 +66,7 @@ const perfilLabel = {
   PASTOR_REGIONAL: 'Pastor Departamental Regional',
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
+  DIRETOR_MISSIONARIO_IGREJA: 'Diretor Missionário',
   DUPLA_MISSIONARIA: 'Dupla Missionária',
 };
 
@@ -87,7 +88,7 @@ export default function Layout({ children }) {
     const novoLayout = layout === 'avancado' ? 'direto' : 'avancado';
     const destinoDupla = novoLayout === 'avancado' ? '/igrejas' : '/direto/igrejas';
     setLayout(novoLayout);
-    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    if ([PERFIS.DUPLA_MISSIONARIA, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil)) {
       navigate(destinoDupla);
       return;
     }
@@ -105,6 +106,7 @@ export default function Layout({ children }) {
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
+  const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeGerenciarLiderancas = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
@@ -112,20 +114,25 @@ export default function Layout({ children }) {
   const podeCadastrarDupla = !isDupla;
   const isDireto = layout === 'direto';
 
-  const navLinks = isDupla
+  const navLinks = isDupla || isDiretorMissionario
     ? [
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
-          { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
-          { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
-          { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
+          ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
+          { to: isDireto ? '/direto/cadastro/estudos-biblicos' : '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
+          { to: isDireto ? '/direto/cadastro/ponto-estudo' : '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
+          { to: isDireto ? '/direto/cadastro/classe-biblica' : '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
+          ...(isDiretorMissionario ? [
+            { to: isDireto ? '/direto/cadastro/escola-sabatina' : '/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
+            { to: isDireto ? '/direto/cadastro/liderancas?tipo=diretor_mp' : '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
+          ] : []),
         ] },
-        { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
-          { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
-          { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
-          { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-        ] },
+        ...(isDupla ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: isDireto ? '/direto/relatorios/estudos-biblicos' : '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
+          { to: isDireto ? '/direto/relatorios/pontos-estudo' : '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
+          { to: isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
+        ] }] : []),
       ]
     : isDireto
     ? [
@@ -152,6 +159,7 @@ export default function Layout({ children }) {
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
           { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
+          ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
@@ -182,6 +190,7 @@ export default function Layout({ children }) {
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
           { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
+          ...(isAdmin ? [{ to: '/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },

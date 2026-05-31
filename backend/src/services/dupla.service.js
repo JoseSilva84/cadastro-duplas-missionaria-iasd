@@ -59,12 +59,15 @@ const DuplaService = {
       throw { status: 404, mensagem: 'Dupla nÃ£o encontrada.' };
     }
 
-    if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    if (usuario && (usuario.perfil === PERFIS.DUPLA_MISSIONARIA || usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA)) {
       if (usuario.duplaId) {
         const escopo = await montarEscopo(usuario);
         if (dupla.igrejaId !== escopo.igrejaId) {
           throw { status: 403, mensagem: 'Acesso negado: dupla pertence a outra igreja.' };
         }
+      } else if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+        if (!dupla.igrejaId) throw { status: 403, mensagem: 'Acesso negado: dupla sem igreja vinculada.' };
+        await validarIgreja(usuario, dupla.igrejaId);
       }
     } else {
       await validarDistrito(usuario, dupla.distritoId);

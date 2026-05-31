@@ -18,7 +18,7 @@ router.post('/', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR,
 router.put('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL), IgrejaController.atualizar);
 
 // PATCH /api/igrejas/:id — Atualiza campos parciais (foto/nome do coordenador de interessados)
-router.patch('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL), IgrejaController.atualizar);
+router.patch('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA), IgrejaController.atualizar);
 
 router.delete('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), IgrejaController.remover);
 
