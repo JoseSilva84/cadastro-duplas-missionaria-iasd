@@ -1,8 +1,8 @@
-1 Preciso criar 171 contas de acesso para o diretor missionario de cada igreja
+1 Preciso criar 171 contas de acesso para o diretor missionario de cada igreja (Feito)
 
 2 corrigir na conta de coordenador regional para ele ter o acesso a todas as edições de cadastros, porque eles não estão tendo acesso a todos os cadastros, mas precisam ter esse acesso a todos os cadastros. (feito)
 
-3 fazer uma conta adicional para o pastor presidente com nível de acesso de administrador
+3 fazer uma conta adicional para o pastor presidente com nível de acesso de administrador (Feito)
 
 4 O salvamento de todos os cadastros em todo os acessos, embora tenham vários campos, mas os dois únicos obrigatórios para permitir o salvamento devem ser e, tão somente, nome e whatsapp (Nome do Estudante da Bíblia * e WhatsApp * como obrigatórios) como obrigatórios. Os outros devem ser opcionais. (Feito)
 

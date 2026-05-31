@@ -165,8 +165,14 @@ async function main() {
   adicionar({
     perfil: 'ADMINISTRADOR',
     escopo: 'Associação Paulistana',
-    nome: 'Administrador do Sistema',
+    nome: 'Departamental MIPES',
     email: `admin@${EMAIL_DOMINIO}`,
+  });
+  adicionar({
+    perfil: 'ADMINISTRADOR',
+    escopo: 'Associação Paulistana',
+    nome: 'Presidente',
+    email: `presidente@${EMAIL_DOMINIO}`,
   });
 
   regioes.forEach((regiao) => {
