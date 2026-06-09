@@ -161,7 +161,7 @@ export default function DuplasDireto() {
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
-  const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/PENDENTE/INATIVA) ou medalha (ouro/prata/bronze)
+  const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/INATIVA) ou medalha (ouro/prata/bronze)
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
@@ -413,7 +413,6 @@ export default function DuplasDireto() {
                 <option value="">Todos</option>
                 <optgroup label="Status">
                   <option value="ATIVA">Ativa</option>
-                  <option value="PENDENTE">Pendente</option>
                   <option value="INATIVA">Inativa</option>
                 </optgroup>
                 <optgroup label="Medalha">

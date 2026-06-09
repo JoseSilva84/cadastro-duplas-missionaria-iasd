@@ -430,7 +430,6 @@ export default function Duplas() {
             <option value="">Todos os status</option>
             <optgroup label="Status">
               <option value="ATIVA">Ativa</option>
-              <option value="PENDENTE">Pendente</option>
               <option value="INATIVA">Inativa</option>
             </optgroup>
             <optgroup label="Medalha">
