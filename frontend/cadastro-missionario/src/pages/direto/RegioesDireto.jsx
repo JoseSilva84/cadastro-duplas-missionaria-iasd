@@ -218,7 +218,7 @@ export default function RegioesDireto() {
       {/* ===== PAINEL ESQUERDO: Lista de Regiões (Master) ===== */}
       <div className={`${
         mostraDetalhe ? 'hidden sm:flex' : 'flex'
-      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
+      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-y-auto`}>
         {/* Cabeçalho do painel */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
@@ -248,7 +248,7 @@ export default function RegioesDireto() {
         </div>
 
         {/* Lista de regiões */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {regioes.map((regiao, idx) => {
             const cor = regiao.cor || coresPadrao[idx % coresPadrao.length];
             const selecionada = regiaoSelecionada?.id === regiao.id;

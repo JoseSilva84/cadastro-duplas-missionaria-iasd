@@ -71,7 +71,7 @@ export default function ListagemIgrejasDireto() {
 
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">
-      <div className={`${mostraDetalhe ? 'hidden sm:flex' : 'flex'} w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
+      <div className={`${mostraDetalhe ? 'hidden sm:flex' : 'flex'} w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-y-auto`}>
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
@@ -105,7 +105,7 @@ export default function ListagemIgrejasDireto() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {igrejasFiltradas.length === 0 && (
             <div className="py-10 text-center text-gray-400 text-xs">
               {busca ? `Nenhuma igreja encontrada para "${busca}".` : 'Nenhuma igreja cadastrada.'}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
-export default function DropdownMenu({ label, icon, items, align = 'left' }) {
+export default function DropdownMenu({ label, shortLabel, icon, items, align = 'left' }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
 
@@ -32,14 +32,15 @@ export default function DropdownMenu({ label, icon, items, align = 'left' }) {
       <button
         type="button"
         onClick={() => setAberto((valor) => !valor)}
-        className={`flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
+        className={`flex items-center gap-1.5 xl:gap-2 px-2 lg:px-2.5 xl:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
           aberto ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white hover:bg-white/8'
         }`}
         aria-haspopup="menu"
         aria-expanded={aberto}
       >
         {icon}
-        {label}
+        <span className="hidden xl:inline">{label}</span>
+        <span className="inline xl:hidden">{shortLabel || label}</span>
         <svg className={`w-3.5 h-3.5 transition-transform ${aberto ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>

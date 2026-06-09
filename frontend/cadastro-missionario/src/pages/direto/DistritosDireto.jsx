@@ -317,7 +317,7 @@ export default function DistritosDireto() {
     <>
       <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Info do Distrito + Lista de Duplas (Master) ===== */}
-      <div className="w-full sm:w-80 lg:w-[340px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+      <div className="w-full sm:w-80 lg:w-[340px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-y-auto">
         {/* Breadcrumb */}
         <div className="flex-shrink-0 px-4 pt-4 pb-2">
           <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
@@ -415,7 +415,7 @@ export default function DistritosDireto() {
         </div>
 
         {/* Lista de duplas */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {duplas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const cor = statusColors[dupla.status] || '#9ca3af';

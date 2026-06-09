@@ -135,29 +135,29 @@ export default function LayoutDireto() {
     : cadastroItems;
 
   const navLinks = isDupla ? [
-    { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
-    { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
-    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
+    { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
+    { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: [
       { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
       { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
       { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     ] },
-    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: [
       { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
   ] : isDiretorMissionario ? [
-    { to: '/direto/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
-    { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
-    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
+    { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
+    { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
   ] : [
-    ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regi\u00f5es', icon: icons.regioes }] : []),
-    { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
-    { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
-    { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
-    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: cadastroItemsVisiveis },
-    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: relatorioItemsVisiveis },
+    ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', shortLabel: 'Reg.', icon: icons.regioes }] : []),
+    { to: '/direto/distritos', label: 'Distritos', shortLabel: 'Dist.', icon: icons.distritos },
+    { to: '/direto/igrejas', label: 'Igrejas', shortLabel: 'Igrej.', icon: icons.igrejas },
+    { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
+    { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
   ];
 
   return (
@@ -168,7 +168,7 @@ export default function LayoutDireto() {
         style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
       >
         <div className="px-4 sm:px-6">
-          <div className="flex items-center h-14 gap-3 min-w-0">
+          <div className="flex items-center h-14 gap-3 lg:gap-6 min-w-0">
             {/* Logo + Título */}
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0">
@@ -188,6 +188,7 @@ export default function LayoutDireto() {
                 <DropdownMenu
                   key={link.key}
                   label={link.label}
+                  shortLabel={link.shortLabel}
                   icon={link.icon}
                   items={link.items}
                   align={link.key === 'relatorios' ? 'right' : 'left'}
@@ -197,7 +198,7 @@ export default function LayoutDireto() {
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `flex flex-shrink-0 items-center gap-2 px-2.5 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
+                    `flex flex-shrink-0 items-center gap-1.5 xl:gap-2 px-2 lg:px-2.5 xl:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-white/15 text-white'
                         : 'text-white/60 hover:text-white hover:bg-white/8'
@@ -205,13 +206,14 @@ export default function LayoutDireto() {
                   }
                 >
                   {link.icon}
-                  {link.label}
+                  <span className="hidden xl:inline">{link.label}</span>
+                  <span className="xl:hidden">{link.shortLabel || link.label}</span>
                 </NavLink>
               ))}
             </nav>
 
             {/* Ações à direita */}
-            <div className="flex flex-shrink-0 items-center gap-2">
+            <div className="flex flex-shrink-0 items-center gap-2 lg:ml-2 xl:ml-4">
               {/* Indicador do modelo */}
               <div className="hidden 2xl:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
                 <div className="w-2 h-2 rounded-full bg-[#C9963A]" />
@@ -371,7 +373,7 @@ function BottomNavigation({ navLinks, onMenuClick }) {
             }
           >
             {link.icon}
-            <span className="max-w-full truncate">{link.label}</span>
+            <span className="max-w-full truncate">{link.shortLabel || link.label}</span>
           </NavLink>
         ))}
         <button

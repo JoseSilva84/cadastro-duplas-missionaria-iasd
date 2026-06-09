@@ -62,7 +62,7 @@ export default function RelatoriosDireto() {
       {/* ===== PAINEL ESQUERDO: Menu Master ===== */}
       <div className={`${
         mostraDetalhe ? 'hidden sm:flex' : 'flex'
-      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
+      } w-full sm:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-y-auto`}>
         {/* Cabeçalho do painel */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
@@ -76,7 +76,7 @@ export default function RelatoriosDireto() {
         </div>
 
         {/* Lista Master */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {/* Item: Associação Geral */}
           <button
             type="button"

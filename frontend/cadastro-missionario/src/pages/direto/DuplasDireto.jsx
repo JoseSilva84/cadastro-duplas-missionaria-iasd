@@ -278,7 +278,7 @@ export default function DuplasDireto() {
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
       <div className={`${
         mostraDetalhe ? 'hidden sm:flex' : 'flex'
-      } w-full sm:w-80 lg:w-[360px] flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
+      } w-full sm:w-80 lg:w-[360px] flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-y-auto`}>
         {/* Cabeçalho + Filtros */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
@@ -426,7 +426,7 @@ export default function DuplasDireto() {
         </div>
 
         {/* Lista de duplas */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const mcfg = medalhaConfig[dupla._medalha];
