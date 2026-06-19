@@ -187,6 +187,13 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     const base = isDireto ? '/direto/relatorios' : '/relatorios';
     return `${base}/${isPonto ? 'pontos-estudo' : 'estudos-biblicos'}/${id}`;
   };
+  const abrirEstudo = (estudo) => {
+    if (podeExcluir) {
+      navigate(detalhesPath(estudo.id));
+      return;
+    }
+    setSelecionado(estudo);
+  };
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -279,25 +286,25 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           {carregando ? (
             <p className="text-gray-400 text-sm">Carregando...</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto pb-2">
+              <table className="w-full min-w-[1280px] text-sm">
                 <thead>
                   <tr className="bg-[#F4F5F7] text-gray-500">
-                    <th className="text-left px-4 py-3">{isPonto ? 'Ponto/Estudantes' : 'Estudante'}</th>
-                    <th className="text-left px-4 py-3">Cidade/Estado</th>
-                    <th className="text-left px-4 py-3">Série</th>
-                    <th className="text-left px-4 py-3">Lição Atual</th>
-                    <th className="text-left px-4 py-3">Classificação</th>
-                    <th className="text-left px-4 py-3">Progresso</th>
-                    <th className="text-left px-4 py-3">Dupla</th>
-                    <th className="text-left px-4 py-3">Ação</th>
+                    <th className="w-40 text-left px-4 py-3">{isPonto ? 'Ponto/Estudantes' : 'Estudante'}</th>
+                    <th className="w-40 text-left px-4 py-3">Cidade/Estado</th>
+                    <th className="w-32 text-left px-4 py-3">Série</th>
+                    <th className="w-72 text-left px-4 py-3">Lição Atual</th>
+                    <th className="w-40 text-left px-4 py-3">Classificação</th>
+                    <th className="w-44 text-left px-4 py-3">Progresso</th>
+                    <th className="w-40 text-left px-4 py-3">Dupla</th>
+                    <th className="sticky right-0 z-20 w-36 bg-[#F4F5F7] text-left px-4 py-3 shadow-[-8px_0_16px_rgba(15,35,71,0.06)]">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
                   {resultado.estudos.map((estudo) => {
                     const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === estudo.serie)?.licoes || [];
                     return (
-                      <tr key={estudo.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setSelecionado(estudo)}>
+                      <tr key={estudo.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => abrirEstudo(estudo)}>
                         <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{isPonto ? <><span>{estudo.nomeEstudante}</span><p className="text-xs text-gray-400 font-normal">{participantesResumo(estudo)}</p></> : estudo.nomeEstudante}</td>
                         <td className="px-4 py-3 text-gray-600">{estudo.cidade}/{estudo.estado}</td>
                         <td className="px-4 py-3 text-gray-600">{getSerieNome(estudo.serie)}</td>
@@ -320,13 +327,13 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                         <td className="px-4 py-3 text-gray-600">
                           <div className="min-w-28"><div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(estudo)}%` }} /></div><span className="text-xs">{progresso(estudo)}%</span></div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex flex-col gap-2 min-w-28">
-                            <button type="button" className="btn-outline text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo.id))}>Detalhes</button>
-                            <button type="button" className="btn-primary text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                        <td className="px-4 py-3 text-gray-600 break-words">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
+                        <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_16px_rgba(15,35,71,0.06)]" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex w-32 flex-col gap-2">
+                            <button type="button" className="btn-outline w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo.id))}>Detalhes</button>
+                            <button type="button" className="btn-primary w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
                             {podeExcluir && (
-                              <button type="button" className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>
+                              <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>
                             )}
                           </div>
                         </td>
