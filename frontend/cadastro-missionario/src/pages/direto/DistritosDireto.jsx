@@ -837,21 +837,21 @@ export default function DistritosDireto() {
                           <div 
                             key={estudo.id} 
                             className="p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:border-[#16a34a]/30 hover:bg-[#16a34a]/5 transition-colors group"
-                            title={`Início: ${formatarData(estudo.dataInicio)}\nNível de interesse: ${estudo.nivelInteresse || 'Não informado'}\nContato: ${estudo.telefone || 'Sem contato'}`}
+                            title={`Série: ${estudo.serie || 'Não informada'}\nDia: ${estudo.diaEstudo || '-'}\nHorário: ${estudo.horarioEstudo || '-'}`}
                             onClick={() => setEstudoSelecionado(estudo)}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#16a34a] truncate transition-colors">{estudo.nome}</p>
+                                <p className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#16a34a] truncate transition-colors">{estudo.nomeEstudante}</p>
                                 <p className="text-xs text-gray-500 mt-0.5 truncate">{estudo.endereco || 'Endereço não informado'}</p>
                               </div>
                             </div>
                             <div className="mt-2 flex items-center gap-2">
                                <span className="text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
-                                 {estudo.idade ? `${estudo.idade} anos` : 'S/ Idade'}
+                                 {estudo.sexo === 'M' || estudo.sexo === 'MASCULINO' ? 'Masculino' : (estudo.sexo === 'F' || estudo.sexo === 'FEMININO' ? 'Feminino' : 'S/ Sexo')}
                                </span>
                                <span className="text-[10px] font-semibold text-[#16a34a] bg-[#16a34a]/10 px-1.5 py-0.5 rounded">
-                                 {estudo.nivelInteresse || 'Estudando'}
+                                 {estudo.classificacaoInteressado || 'Estudando'}
                                </span>
                             </div>
                           </div>
@@ -957,19 +957,19 @@ export default function DistritosDireto() {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-[#16a34a]/10 flex items-center justify-center text-xl shadow-sm">📖</div>
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">{estudoSelecionado.nome}</h2>
-              <p className="text-xs text-gray-500">{estudoSelecionado.telefone || 'Sem telefone cadastrado'}</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">{estudoSelecionado.nomeEstudante}</h2>
+              <p className="text-xs text-gray-500">{estudoSelecionado.whatsapp || 'Sem telefone cadastrado'}</p>
             </div>
           </div>
           <div className="space-y-4 text-sm">
-            <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Endereço</span><p className="font-medium text-gray-700">{estudoSelecionado.endereco || '—'}</p></div>
+            <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Endereço</span><p className="font-medium text-gray-700">{estudoSelecionado.endereco || '—'}, {estudoSelecionado.cidade || ''} - {estudoSelecionado.estado || ''}</p></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Início</span><p className="font-medium text-gray-700">{formatarData(estudoSelecionado.dataInicio)}</p></div>
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Nível de Interesse</span><p className="font-medium text-[#16a34a]">{estudoSelecionado.nivelInteresse || '—'}</p></div>
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Idade</span><p className="font-medium text-gray-700">{estudoSelecionado.idade ? `${estudoSelecionado.idade} anos` : '—'}</p></div>
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Sexo</span><p className="font-medium text-gray-700">{sexoLabel(estudoSelecionado.sexo)}</p></div>
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Estado Civil</span><p className="font-medium text-gray-700">{estudoSelecionado.estadoCivil || '—'}</p></div>
-              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Religião</span><p className="font-medium text-gray-700">{estudoSelecionado.religiao || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Início</span><p className="font-medium text-gray-700">{formatarData(estudoSelecionado.criadoEm)}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Dia do Estudo</span><p className="font-medium text-gray-700">{estudoSelecionado.diaEstudo || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Horário</span><p className="font-medium text-gray-700">{estudoSelecionado.horarioEstudo || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Classificação</span><p className="font-medium text-[#16a34a]">{estudoSelecionado.classificacaoInteressado || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Série/Lição</span><p className="font-medium text-gray-700">{estudoSelecionado.serie ? `${estudoSelecionado.serie} (Lição ${estudoSelecionado.licaoAtual || 0})` : '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Sexo</span><p className="font-medium text-gray-700">{estudoSelecionado.sexo === 'M' || estudoSelecionado.sexo === 'MASCULINO' ? 'Masculino' : (estudoSelecionado.sexo === 'F' || estudoSelecionado.sexo === 'FEMININO' ? 'Feminino' : '—')}</p></div>
             </div>
             {estudoSelecionado.observacoes && (
               <div className="mt-2"><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-1">Observações</span><p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">{estudoSelecionado.observacoes}</p></div>
