@@ -141,6 +141,7 @@ export default function Duplas() {
   const [filtroAtividade, setFiltroAtividade] = useState('');
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
+  const [filtroIgrejaId, setFiltroIgrejaId] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -179,9 +180,10 @@ export default function Duplas() {
         (d.liderNome || '').toLowerCase().includes(busca.toLowerCase()) ||
         (d.membro2Nome || '').toLowerCase().includes(busca.toLowerCase()) ||
         (d.bairro || '').toLowerCase().includes(busca.toLowerCase());
-      return matchFiltro && matchClasse && matchAtividade && matchBusca;
+      const matchIgreja = !filtroIgrejaId || (d.igreja?.id === filtroIgrejaId || d.igrejaId === filtroIgrejaId);
+      return matchFiltro && matchClasse && matchAtividade && matchBusca && matchIgreja;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, busca]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, busca, filtroIgrejaId]);
 
   const contagemMedalha = useMemo(() => {
     const c = { ouro: 0, prata: 0, bronze: 0 };
@@ -271,8 +273,14 @@ export default function Duplas() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {distrito.igrejas.map((igreja) => (
-                <div key={igreja.id} className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 hover:border-[#1A3A6B]/20 transition-colors">
+              {distrito.igrejas.map((igreja) => {
+                const isSelected = filtroIgrejaId === igreja.id;
+                return (
+                <div 
+                  key={igreja.id} 
+                  onClick={() => setFiltroIgrejaId(isSelected ? null : igreja.id)}
+                  className={`bg-white rounded-lg border ${isSelected ? 'border-[#1A3A6B] ring-1 ring-[#1A3A6B]' : 'border-gray-100 hover:border-[#1A3A6B]/20'} shadow-sm p-4 transition-all cursor-pointer transform ${isSelected ? 'scale-[1.02]' : 'hover:-translate-y-0.5'}`}
+                >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0">
                       <svg className="w-5 h-5 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,7 +297,8 @@ export default function Duplas() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
