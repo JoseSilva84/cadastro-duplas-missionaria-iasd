@@ -594,9 +594,13 @@ export default function DistritosDireto() {
                               <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border border-gray-200 text-gray-500 whitespace-nowrap">
                                 {getClassificacaoAtividadeText(dupla)}
                               </span>
-                              {dupla.statusEstudoBiblico === 'ATIVO' && (
+                              {dupla.statusEstudoBiblico === 'ATIVO' ? (
                                 <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-[#16a34a]/10 text-[#16a34a] whitespace-nowrap">
-                                  📖 Dando estudo
+                                  📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
+                                </span>
+                              ) : (
+                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 whitespace-nowrap">
+                                  Sem estudo bíblico
                                 </span>
                               )}
                             </div>

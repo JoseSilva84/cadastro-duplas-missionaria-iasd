@@ -47,6 +47,7 @@ export default function DadosDupla() {
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [confirmandoDelete, setConfirmandoDelete] = useState(false);
+  const [modalEstudosAberto, setModalEstudosAberto] = useState(false);
 
   useEffect(() => {
     api.get(`/duplas/${id}`)
@@ -124,14 +125,16 @@ export default function DadosDupla() {
                     </span>
                   )}
                   {dupla.atividadeDupla && atividadeConfig[dupla.atividadeDupla] && (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
+                    <button
+                      onClick={() => setModalEstudosAberto(true)}
+                      title={dupla.atividadeDupla === 'ATIVA' && dupla.estudosBiblicos?.length > 0 ? `Estudantes:\n${dupla.estudosBiblicos.map(e => e.nomeEstudante).join('\n')}` : 'Clique para ver os detalhes dos estudos'}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border hover:opacity-80 transition-opacity cursor-pointer text-left"
                       style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].bg, color: atividadeConfig[dupla.atividadeDupla].cor, borderColor: atividadeConfig[dupla.atividadeDupla].cor + '40' }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].dot }} />
                       {dupla.atividadeDupla === 'ATIVA' 
                         ? `${atividadeConfig[dupla.atividadeDupla].label} (${dupla._count?.estudosBiblicos ?? 0} pessoa${(dupla._count?.estudosBiblicos ?? 0) !== 1 ? 's' : ''})`
                         : atividadeConfig[dupla.atividadeDupla].label}
-                    </span>
+                    </button>
                   )}
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
@@ -282,14 +285,16 @@ export default function DadosDupla() {
                   <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50">
                     <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">Atividade</dt>
                     <dd className="col-span-2">
-                      <span
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
+                      <button
+                        onClick={() => setModalEstudosAberto(true)}
+                        title={dupla.atividadeDupla === 'ATIVA' && dupla.estudosBiblicos?.length > 0 ? `Estudantes:\n${dupla.estudosBiblicos.map(e => e.nomeEstudante).join('\n')}` : 'Clique para ver os detalhes'}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border hover:opacity-80 transition-opacity cursor-pointer text-left"
                         style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.bg, color: atividadeConfig[dupla.atividadeDupla]?.cor, borderColor: (atividadeConfig[dupla.atividadeDupla]?.cor || '#000') + '40' }}>
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.dot }} />
                         {dupla.atividadeDupla === 'ATIVA' 
                           ? `${atividadeConfig[dupla.atividadeDupla]?.label} (${dupla._count?.estudosBiblicos ?? 0} pessoa${(dupla._count?.estudosBiblicos ?? 0) !== 1 ? 's' : ''})`
                           : atividadeConfig[dupla.atividadeDupla]?.label}
-                      </span>
+                      </button>
                     </dd>
                   </div>
                 )}
@@ -329,6 +334,50 @@ export default function DadosDupla() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Detalhes dos Estudos Bíblicos */}
+      {modalEstudosAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setModalEstudosAberto(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h3 className="text-lg font-bold text-[#1A3A6B] flex items-center gap-2">
+                <span className="text-2xl">📖</span> Detalhes dos Estudos Bíblicos
+              </h3>
+              <button onClick={() => setModalEstudosAberto(false)} className="text-gray-400 hover:text-gray-600 bg-white shadow-sm p-1.5 rounded-lg border border-gray-200 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 overflow-y-auto bg-gray-50">
+              {dupla.estudosBiblicos && dupla.estudosBiblicos.length > 0 ? (
+                <div className="grid gap-4">
+                  {dupla.estudosBiblicos.map((estudo, idx) => (
+                    <div key={estudo.id || idx} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-[#1A3A6B] text-lg">{estudo.nomeEstudante}</h4>
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-[#C9963A]/10 text-[#C9963A]">
+                          Lição {estudo.licaoAtual || '?'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-600 mt-2">
+                        <p><strong className="text-gray-500 font-medium">WhatsApp:</strong> {estudo.whatsapp || 'Não informado'}</p>
+                        <p><strong className="text-gray-500 font-medium">Endereço:</strong> {estudo.endereco || 'Não informado'}</p>
+                        <p><strong className="text-gray-500 font-medium">Dia do estudo:</strong> {estudo.diaEstudo || 'Não informado'} {estudo.horarioEstudo ? `às ${estudo.horarioEstudo}` : ''}</p>
+                        <p><strong className="text-gray-500 font-medium">Série:</strong> {estudo.serie || 'Não informada'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-gray-500 bg-white rounded-xl border border-gray-100">
+                  <span className="text-4xl mb-3 block opacity-50">📭</span>
+                  Nenhum estudo bíblico ativo cadastrado para esta dupla.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
