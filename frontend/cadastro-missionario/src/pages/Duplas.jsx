@@ -189,6 +189,18 @@ export default function Duplas() {
     return c;
   }, [duplasComMedalha]);
 
+  const duplasPorIgreja = useMemo(() => {
+    const contagem = {};
+    duplas.forEach((dupla) => {
+      if (dupla.igreja?.id) {
+        contagem[dupla.igreja.id] = (contagem[dupla.igreja.id] || 0) + 1;
+      } else if (dupla.igrejaId) {
+        contagem[dupla.igrejaId] = (contagem[dupla.igrejaId] || 0) + 1;
+      }
+    });
+    return contagem;
+  }, [duplas]);
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -269,7 +281,11 @@ export default function Duplas() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-[#1A3A6B] text-sm truncate" title={igreja.nome}>{igreja.nome}</p>
-                      <p className="text-xs text-gray-400 mt-1">{(igreja.membros || 0).toLocaleString('pt-BR')} membros</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {(igreja.membros || 0).toLocaleString('pt-BR')} membros
+                        <span className="mx-1.5">•</span>
+                        {duplasPorIgreja[igreja.id] || 0} duplas
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -489,7 +505,7 @@ export default function Duplas() {
                   </p>
                 </div>
 
-                {/* Badges de classe + atividade + medalha + seta */}
+                {/* Badges de classe + atividade + medalha + estudos + seta */}
                 <div className="hidden sm:flex items-center gap-2 flex-shrink-0 ml-2">
                   {clsCfg && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border"
@@ -502,6 +518,15 @@ export default function Duplas() {
                       style={{ backgroundColor: atvCfg.bg, color: atvCfg.cor, borderColor: atvCfg.cor + '40' }}>
                       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: atvCfg.dot }} />
                       {atvCfg.label}
+                    </span>
+                  )}
+                  {dupla.statusEstudoBiblico === 'ATIVO' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20">
+                      📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-100 text-red-600 border-red-200">
+                      Sem estudo bíblico
                     </span>
                   )}
                   <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
