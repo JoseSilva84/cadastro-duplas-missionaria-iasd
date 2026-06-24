@@ -25,7 +25,7 @@ const classeConfig = {
 };
 
 const atividadeConfig = {
-  ATIVA:   { label: 'Estudando',  cor: '#16a34a', bg: '#dcfce7', dot: '#22c55e' },
+  ATIVA:   { label: 'dando estudo bíblico',  cor: '#16a34a', bg: '#dcfce7', dot: '#22c55e' },
   INATIVA: { label: 'Sem estudo', cor: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' },
 };
 
@@ -124,10 +124,13 @@ export default function DadosDupla() {
                     </span>
                   )}
                   {dupla.atividadeDupla && atividadeConfig[dupla.atividadeDupla] && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
                       style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].bg, color: atividadeConfig[dupla.atividadeDupla].cor, borderColor: atividadeConfig[dupla.atividadeDupla].cor + '40' }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla].dot }} />
-                      {atividadeConfig[dupla.atividadeDupla].label}
+                      {dupla.atividadeDupla === 'ATIVA' 
+                        ? `${atividadeConfig[dupla.atividadeDupla].label} (${dupla._count?.estudosBiblicos ?? 0} pessoa${(dupla._count?.estudosBiblicos ?? 0) !== 1 ? 's' : ''})`
+                        : atividadeConfig[dupla.atividadeDupla].label}
                     </span>
                   )}
                   <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -278,11 +281,14 @@ export default function DadosDupla() {
                 {dupla.atividadeDupla && (
                   <div className="flex flex-col sm:flex-row sm:items-start gap-1 py-3.5 border-b border-gray-50">
                     <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide sm:w-40 flex-shrink-0">Atividade</dt>
-                    <dd>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                    <dd className="col-span-2">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
                         style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.bg, color: atividadeConfig[dupla.atividadeDupla]?.cor, borderColor: (atividadeConfig[dupla.atividadeDupla]?.cor || '#000') + '40' }}>
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: atividadeConfig[dupla.atividadeDupla]?.dot }} />
-                        {atividadeConfig[dupla.atividadeDupla]?.label}
+                        {dupla.atividadeDupla === 'ATIVA' 
+                          ? `${atividadeConfig[dupla.atividadeDupla]?.label} (${dupla._count?.estudosBiblicos ?? 0} pessoa${(dupla._count?.estudosBiblicos ?? 0) !== 1 ? 's' : ''})`
+                          : atividadeConfig[dupla.atividadeDupla]?.label}
                       </span>
                     </dd>
                   </div>
