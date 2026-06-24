@@ -222,6 +222,7 @@ export default function DistritosDireto() {
   const [duplaSelecionada, setDuplaSelecionada] = useState(null);
   const [erro, setErro] = useState(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
+  const [estudoSelecionado, setEstudoSelecionado] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
   const [editandoPastor, setEditandoPastor] = useState(false);
 
@@ -815,6 +816,51 @@ export default function DistritosDireto() {
                   </div>
                 </div>
 
+                {/* Card: Estudos Bíblicos */}
+                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs">📖</div>
+                      <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Estudos Bíblicos</h4>
+                    </div>
+                    <span className="text-xs font-bold text-[#16a34a] bg-[#16a34a]/10 px-2 py-0.5 rounded-md">
+                      {duplaSelecionada.estudosBiblicos?.length || 0}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {(!duplaSelecionada.estudosBiblicos || duplaSelecionada.estudosBiblicos.length === 0) ? (
+                      <p className="text-sm text-gray-400 mt-2">Nenhum estudo bíblico registrado para esta dupla.</p>
+                    ) : (
+                      <div className="space-y-2 mt-1 max-h-[300px] overflow-y-auto pr-1">
+                        {duplaSelecionada.estudosBiblicos.map((estudo) => (
+                          <div 
+                            key={estudo.id} 
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:border-[#16a34a]/30 hover:bg-[#16a34a]/5 transition-colors group"
+                            title={`Início: ${formatarData(estudo.dataInicio)}\nNível de interesse: ${estudo.nivelInteresse || 'Não informado'}\nContato: ${estudo.telefone || 'Sem contato'}`}
+                            onClick={() => setEstudoSelecionado(estudo)}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#16a34a] truncate transition-colors">{estudo.nome}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 truncate">{estudo.endereco || 'Endereço não informado'}</p>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                               <span className="text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
+                                 {estudo.idade ? `${estudo.idade} anos` : 'S/ Idade'}
+                               </span>
+                               <span className="text-[10px] font-semibold text-[#16a34a] bg-[#16a34a]/10 px-1.5 py-0.5 rounded">
+                                 {estudo.nivelInteresse || 'Estudando'}
+                               </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {duplaSelecionada.observacoes && (
                   <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
@@ -888,6 +934,53 @@ export default function DistritosDireto() {
               {fotoAmpliada.nome}
             </div>
           )}
+        </div>
+      </div>
+    )}
+
+    {/* Modal: Estudo Bíblico Detalhes */}
+    {estudoSelecionado && (
+      <div
+        className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        onClick={() => setEstudoSelecionado(null)}
+      >
+        <div
+          className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setEstudoSelecionado(null)}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-[#16a34a]/10 flex items-center justify-center text-xl shadow-sm">📖</div>
+            <div>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">{estudoSelecionado.nome}</h2>
+              <p className="text-xs text-gray-500">{estudoSelecionado.telefone || 'Sem telefone cadastrado'}</p>
+            </div>
+          </div>
+          <div className="space-y-4 text-sm">
+            <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Endereço</span><p className="font-medium text-gray-700">{estudoSelecionado.endereco || '—'}</p></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Início</span><p className="font-medium text-gray-700">{formatarData(estudoSelecionado.dataInicio)}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Nível de Interesse</span><p className="font-medium text-[#16a34a]">{estudoSelecionado.nivelInteresse || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Idade</span><p className="font-medium text-gray-700">{estudoSelecionado.idade ? `${estudoSelecionado.idade} anos` : '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Sexo</span><p className="font-medium text-gray-700">{sexoLabel(estudoSelecionado.sexo)}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Estado Civil</span><p className="font-medium text-gray-700">{estudoSelecionado.estadoCivil || '—'}</p></div>
+              <div><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-0.5">Religião</span><p className="font-medium text-gray-700">{estudoSelecionado.religiao || '—'}</p></div>
+            </div>
+            {estudoSelecionado.observacoes && (
+              <div className="mt-2"><span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-1">Observações</span><p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">{estudoSelecionado.observacoes}</p></div>
+            )}
+          </div>
+          <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+            <button onClick={() => navigate(`/cadastro/estudos-biblicos`)} className="text-sm font-bold text-[#16a34a] hover:text-[#15803d] transition flex items-center gap-1">
+              Gerenciar estudos bíblicos 
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
         </div>
       </div>
     )}
