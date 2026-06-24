@@ -121,6 +121,7 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
   );
 };
 
+
 export default function RegioesDireto() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
@@ -128,6 +129,7 @@ export default function RegioesDireto() {
   const podeCriarDupla = ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
+  const [porRegiao, setPorRegiao] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [regiaoSelecionada, setRegiaoSelecionada] = useState(null);
   const [distritosDetalhados, setDistritosDetalhados] = useState({});
@@ -141,10 +143,12 @@ export default function RegioesDireto() {
     Promise.all([
       api.get('/regioes'),
       api.get('/relatorios/resumo'),
-    ]).then(([r, s]) => {
+      api.get('/relatorios/por-regiao'),
+    ]).then(([r, s, pr]) => {
       if (!ativo) return;
       setRegioes(r.data);
       setResumo(s.data);
+      setPorRegiao(pr.data);
       r.data.forEach(async (regiao) => {
         const foto = await FotoService.resolverFotoParaPreview(regiao.fotoConselheiro).catch(() => '');
         if (ativo) {
@@ -543,6 +547,61 @@ export default function RegioesDireto() {
                   <p className="text-sm">Nenhum distrito nesta região.</p>
                 </div>
               )}
+
+              {/* Dashboard da Região */}
+              {!carregandoDistritos && (() => {
+                const relatorioDaRegiao = porRegiao.find(r => r.id === regiaoSelecionada.id);
+                if (!relatorioDaRegiao) return null;
+                return (
+                  <div className="mt-10 mb-4 animate-fade-in">
+                    <div className="flex items-center gap-2 mb-4">
+                      <svg className="w-4 h-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <h3 className="text-sm font-bold text-[#1A3A6B]">
+                        Dashboard - {regiaoSelecionada.nome}
+                      </h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <span className="text-base">👥</span> Duplas Missionárias
+                        </p>
+                        <p className="text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{relatorioDaRegiao.totalDuplas}</p>
+                        <div className="flex gap-2 mt-2 text-[9px] font-bold uppercase tracking-wider">
+                          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">{relatorioDaRegiao.ativas} ativas</span>
+                          <span className="text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{relatorioDaRegiao.inativas} inativas</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <span className="text-base">📖</span> Estudos Bíblicos
+                        </p>
+                        <p className="text-3xl font-bold text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{relatorioDaRegiao.estudosAtivos}</p>
+                        <p className="text-[10px] text-gray-400 mt-2 font-medium">Duplas dando estudo agora</p>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <span className="text-base">🙏</span> Pessoas Alcançadas
+                        </p>
+                        <p className="text-3xl font-bold text-[#2D6A4F]" style={{ fontFamily: 'Georgia, serif' }}>{relatorioDaRegiao.totalPessoas}</p>
+                        <p className="text-[10px] text-gray-400 mt-2 font-medium">Contatos e interessados</p>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <span className="text-base">💧</span> Batismos
+                        </p>
+                        <p className="text-3xl font-bold text-[#7B2D8B]" style={{ fontFamily: 'Georgia, serif' }}>{relatorioDaRegiao.totalBatismos}</p>
+                        <p className="text-[10px] text-gray-400 mt-2 font-medium">Frutos das duplas</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
