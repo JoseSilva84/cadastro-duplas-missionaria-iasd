@@ -317,6 +317,180 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
   );
 };
 
+// ─── Status e classificação labels ───────────────────────────────────────────
+const statusColors = {
+  ATIVO: '#16a34a',
+  INATIVO: '#9ca3af',
+  EM_FORMACAO: '#d97706',
+  SUSPENSO: '#ef4444',
+};
+const statusLabels = {
+  ATIVO: 'Ativo',
+  INATIVO: 'Inativo',
+  EM_FORMACAO: 'Em formação',
+  SUSPENSO: 'Suspenso',
+};
+
+const FotoPessoaIgreja = ({ src, nome, className }) => {
+  const inicial = (nome || '?').charAt(0).toUpperCase();
+  if (src) {
+    return <img src={src} alt={nome || 'Foto'} className={`${className} object-cover`} />;
+  }
+  return (
+    <div className={`${className} bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold`}>
+      {inicial}
+    </div>
+  );
+};
+
+const WhatsAppLinkIgreja = ({ numero }) => {
+  if (!numero) return <span className="text-gray-400 text-xs">Não informado</span>;
+  const limpo = numero.replace(/\D/g, '');
+  return (
+    <a
+      href={`https://web.whatsapp.com/send?phone=55${limpo}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-[#25D366] text-xs font-medium hover:underline"
+    >
+      <svg viewBox="0 0 24 24" className="w-3 h-3 flex-shrink-0" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+      </svg>
+      {numero}
+    </a>
+  );
+};
+
+const InfoDupla = ({ label, valor }) => (
+  <div className="py-1.5 border-b border-gray-50 last:border-b-0">
+    <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">{label}</p>
+    <p className="text-xs text-gray-700 font-medium mt-0.5 break-words">{valor || 'Não informado'}</p>
+  </div>
+);
+
+const ModalDupla = ({ dupla, onClose }) => {
+  if (!dupla) return null;
+  const cor = statusColors[dupla.status] || '#9ca3af';
+  const label = statusLabels[dupla.status] || dupla.status;
+  const estudos = dupla._count?.estudosBiblicos ?? dupla.estudosBiblicos?.length ?? 0;
+  const classesB = dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0;
+
+  const Membro = ({ titulo, foto, nome, dados }) => (
+    <div className="bg-[#F4F5F7] rounded-xl p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <FotoPessoaIgreja src={foto} nome={nome} className="w-12 h-12 rounded-full flex-shrink-0 shadow-sm" />
+        <div className="min-w-0">
+          <p className="text-[9px] uppercase tracking-wider text-[#C9963A] font-bold">{titulo}</p>
+          <p className="text-sm font-bold text-[#1A3A6B] truncate">{nome || 'Não informado'}</p>
+        </div>
+      </div>
+      <div className="space-y-0">
+        {dados.map(({ label: lb, valor }) => (
+          <InfoDupla key={lb} label={lb} valor={valor} />
+        ))}
+      </div>
+    </div>
+  );
+
+  const formatarData = (valor) => {
+    if (!valor) return '';
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-[#0B1220]/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <FotoPessoaIgreja src={dupla.fotoLiderPreview} nome={dupla.liderNome} className="w-10 h-10 rounded-full shadow" />
+              <FotoPessoaIgreja src={dupla.fotoMembro2Preview} nome={dupla.membro2Nome} className="w-10 h-10 rounded-full shadow -ml-3 border-2 border-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-wider text-[#C9963A] font-bold">Dupla Missionária</p>
+              <h3 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                {dupla.liderNome || 'Sem nome'} + {dupla.membro2Nome || 'Sem nome'}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: cor + '18', color: cor }}>
+              {label}
+            </span>
+            <button type="button" onClick={onClose} className="rounded-full border border-gray-200 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#1A3A6B] hover:border-[#1A3A6B]/40 transition-all">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Indicadores */}
+        <div className="flex-shrink-0 grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
+          {[
+            { icon: '📖', label: 'Estudos Bíblicos', val: estudos },
+            { icon: '🏫', label: 'Classes Bíblicas', val: classesB },
+            { icon: '🏆', label: 'Classificação', val: dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classe' },
+          ].map(({ icon, label: lb, val }) => (
+            <div key={lb} className="bg-white px-4 py-3 text-center">
+              <p className="text-lg">{icon}</p>
+              <p className="text-lg font-bold text-[#1A3A6B]">{val}</p>
+              <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mt-0.5">{lb}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Corpo */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white">
+          {/* Info da dupla */}
+          <div className="grid grid-cols-2 gap-3">
+            <InfoDupla label="Classificação da dupla" valor={dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classificação'} />
+            <InfoDupla label="Atividade da dupla" valor={dupla.atividadeDupla === 'ATIVA' ? 'Ativa' : dupla.atividadeDupla === 'INATIVA' ? 'Inativa' : 'Não informado'} />
+            <InfoDupla label="Projeto" valor={dupla.tipoProjeto ? { CASA_A_CASA: 'Casa a Casa', ESTUDO_BIBLICO: 'Estudo Bíblico', PEQUENOS_GRUPOS: 'Pequenos Grupos', ACAO_SOCIAL: 'Ação Social', EVANGELISMO_PUBLICO: 'Classe Bíblica' }[dupla.tipoProjeto] || dupla.tipoProjeto : ''} />
+            <InfoDupla label="Batismos" valor={dupla.batismos ?? dupla._count?.batismos ?? 0} />
+            <InfoDupla label="Igreja" valor={dupla.igreja?.nome} />
+            <InfoDupla label="Distrito" valor={dupla.igreja?.distrito?.nome} />
+          </div>
+
+          {/* Membros */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Membro
+              titulo="Membro 1 — Líder"
+              foto={dupla.fotoLiderPreview}
+              nome={dupla.liderNome}
+              dados={[
+                { label: 'WhatsApp', valor: <WhatsAppLinkIgreja numero={dupla.whatsappLider} /> },
+                { label: 'Igreja', valor: dupla.igrejaLider?.nome || dupla.igreja?.nome },
+                { label: 'Distrito', valor: dupla.igrejaLider?.distrito?.nome || dupla.igreja?.distrito?.nome },
+                { label: 'Data de nascimento', valor: formatarData(dupla.dataNascimentoLider) },
+                { label: 'Endereço', valor: dupla.enderecoLider },
+                { label: 'Data de batismo', valor: formatarData(dupla.dataBatismoLider) },
+              ]}
+            />
+            <Membro
+              titulo="Membro 2"
+              foto={dupla.fotoMembro2Preview}
+              nome={dupla.membro2Nome}
+              dados={[
+                { label: 'WhatsApp', valor: <WhatsAppLinkIgreja numero={dupla.whatsappMembro2} /> },
+                { label: 'E-mail', valor: dupla.emailMembro2 },
+                { label: 'Igreja', valor: dupla.igrejaMembro2?.nome || dupla.igreja?.nome },
+                { label: 'Distrito', valor: dupla.igrejaMembro2?.distrito?.nome || dupla.igreja?.distrito?.nome },
+                { label: 'Data de nascimento', valor: formatarData(dupla.dataNascimentoMembro2) },
+                { label: 'Endereço', valor: dupla.enderecoMembro2 },
+                { label: 'Data de batismo', valor: formatarData(dupla.dataBatismoMembro2) },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const { usuario } = useAuth();
   const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
@@ -327,6 +501,11 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const [editando, setEditando] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
 
+  // ── Duplas da Igreja ──────────────────────────────────────────────────────
+  const [duplasIgreja, setDuplasIgreja] = useState([]);
+  const [carregandoDuplas, setCarregandoDuplas] = useState(false);
+  const [duplaSelecionada, setDuplaSelecionada] = useState(null);
+
   useEffect(() => {
     let ativo = true;
     if (!igreja?.id) return undefined;
@@ -335,17 +514,30 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
     setRelatorio(null);
     setFotos({});
     setCarregandoRelatorio(true);
+    setDuplasIgreja([]);
 
     api.get(`/relatorios/por-igreja/${igreja.id}`)
-      .then((res) => {
-        if (ativo) setRelatorio(res.data);
+      .then((res) => { if (ativo) setRelatorio(res.data); })
+      .catch(() => { if (ativo) setRelatorio(null); })
+      .finally(() => { if (ativo) setCarregandoRelatorio(false); });
+
+    // Carregar duplas da igreja
+    setCarregandoDuplas(true);
+    api.get('/duplas', { params: { igrejaId: igreja.id } })
+      .then(async (res) => {
+        if (!ativo) return;
+        const lista = Array.isArray(res.data) ? res.data : [];
+        const comFotos = await Promise.all(lista.map(async (dupla) => {
+          const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
+            FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
+            FotoService.resolverFotoParaPreview(dupla.fotoMembro2).catch(() => ''),
+          ]);
+          return { ...dupla, fotoLiderPreview, fotoMembro2Preview };
+        }));
+        if (ativo) setDuplasIgreja(comFotos);
       })
-      .catch(() => {
-        if (ativo) setRelatorio(null);
-      })
-      .finally(() => {
-        if (ativo) setCarregandoRelatorio(false);
-      });
+      .catch(() => {})
+      .finally(() => { if (ativo) setCarregandoDuplas(false); });
 
     const refs = {
       diretor: igreja.fotoDiretorMinisterioPessoal,
@@ -357,9 +549,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
     Promise.all(Object.entries(refs).map(async ([chave, ref]) => [
       chave,
       await FotoService.resolverFotoParaPreview(ref).catch(() => ''),
-    ])).then((pares) => {
-      if (ativo) setFotos(Object.fromEntries(pares));
-    });
+    ])).then((pares) => { if (ativo) setFotos(Object.fromEntries(pares)); });
 
     return () => { ativo = false; };
   }, [igreja]);
@@ -465,6 +655,116 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
         </section>
       </div>
 
+      {/* ── Seção: Duplas Missionárias da Igreja ─────────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-[#C9963A] font-bold">Duplas Missionárias</p>
+            <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              {igrejaAtual.nome}
+            </h3>
+          </div>
+          <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2.5 py-1 rounded-full">
+            {carregandoDuplas ? '...' : `${duplasIgreja.length} dupla${duplasIgreja.length !== 1 ? 's' : ''}`}
+          </span>
+        </div>
+
+        {carregandoDuplas ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full border-[3px] border-[#1A3A6B]/20" />
+              <div className="absolute inset-0 w-10 h-10 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
+            </div>
+          </div>
+        ) : duplasIgreja.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm py-12 text-center text-gray-400">
+            <div className="text-4xl mb-3">👥</div>
+            <p className="font-medium text-sm">Nenhuma dupla cadastrada nesta igreja.</p>
+            {!somenteVisualizacao && onNovaDupla && (
+              <button type="button" onClick={onNovaDupla} className="btn-primary mt-4 text-sm px-5 py-2">
+                Cadastrar Dupla
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {duplasIgreja.map((dupla) => {
+              const cor = statusColors[dupla.status] || '#9ca3af';
+              const label = statusLabels[dupla.status] || dupla.status;
+              const estudos = dupla._count?.estudosBiblicos ?? dupla.estudosBiblicos?.length ?? 0;
+              const classesB = dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0;
+
+              return (
+                <button
+                  type="button"
+                  key={dupla.id}
+                  onClick={() => setDuplaSelecionada(dupla)}
+                  className="group text-left bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#C9963A]/40 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                >
+                  {/* Faixa de status */}
+                  <div className="h-1 w-full" style={{ background: cor }} />
+
+                  <div className="p-4">
+                    {/* Fotos + nomes */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center flex-shrink-0">
+                        <FotoPessoaIgreja
+                          src={dupla.fotoLiderPreview}
+                          nome={dupla.liderNome}
+                          className="w-10 h-10 rounded-full shadow"
+                        />
+                        <FotoPessoaIgreja
+                          src={dupla.fotoMembro2Preview}
+                          nome={dupla.membro2Nome}
+                          className="w-10 h-10 rounded-full shadow -ml-3 border-2 border-white"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#1A3A6B] truncate group-hover:text-[#C9963A] transition-colors">
+                          {dupla.liderNome || 'Sem nome'}
+                        </p>
+                        <p className="text-[10px] text-gray-500 truncate">
+                          + {dupla.membro2Nome || 'Sem nome'}
+                        </p>
+                      </div>
+                      <span
+                        className="flex-shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: cor + '18', color: cor }}
+                      >
+                        {label}
+                      </span>
+                    </div>
+
+                    {/* Indicadores */}
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-50">
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-[#1A3A6B]">{estudos}</p>
+                        <p className="text-[8px] uppercase tracking-wide text-gray-400 font-bold leading-tight">Estudos</p>
+                      </div>
+                      <div className="text-center border-x border-gray-50">
+                        <p className="text-sm font-bold text-[#1A3A6B]">{classesB}</p>
+                        <p className="text-[8px] uppercase tracking-wide text-gray-400 font-bold leading-tight">Classes B.</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-[#1A3A6B]">
+                          {dupla.classificacaoDupla ? `C${dupla.classificacaoDupla}` : '—'}
+                        </p>
+                        <p className="text-[8px] uppercase tracking-wide text-gray-400 font-bold leading-tight">Classif.</p>
+                      </div>
+                    </div>
+
+                    {/* Hint */}
+                    <p className="text-[9px] text-gray-300 text-right mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Clique para ver detalhes →
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {editando && (
         <ModalEdicao
           igreja={igrejaAtual}
@@ -477,6 +777,10 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
             setRelatorio(null);
           }}
         />
+      )}
+
+      {duplaSelecionada && (
+        <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} />
       )}
 
       {fotoAmpliada && (

@@ -113,6 +113,7 @@ export default function ListagemIgrejasDireto() {
           )}
           {igrejasFiltradas.map((igreja) => {
             const selecionado = igrejaSelecionada?.id === igreja.id;
+            const qtdDuplas = igreja._count?.duplas ?? igreja.duplas?.length ?? 0;
 
             return (
               <button
@@ -134,7 +135,7 @@ export default function ListagemIgrejasDireto() {
                     <div className={`w-10 h-10 rounded-lg bg-[#16a34a]/10 flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${selecionado ? 'scale-110' : ''}`}>
                       <span className="text-xl">⛪</span>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h2 className={`text-sm font-semibold truncate transition-colors duration-200 ${selecionado ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>
                         {igreja.nome}
                       </h2>
@@ -152,6 +153,31 @@ export default function ListagemIgrejasDireto() {
                         </p>
                       )}
                     </div>
+                    {/* Badge clicável de duplas */}
+                    {qtdDuplas > 0 && (
+                      <button
+                        type="button"
+                        title={`Ver ${qtdDuplas} dupla${qtdDuplas !== 1 ? 's' : ''} desta igreja`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (igreja.distritoId) {
+                            navigate(`/direto/distritos/${igreja.distritoId}`, {
+                              state: { filtrarIgrejaId: igreja.id, filtrarIgrejaNome: igreja.nome },
+                            });
+                          }
+                        }}
+                        className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
+                          selecionado
+                            ? 'bg-[#C9963A] text-white'
+                            : 'bg-[#1A3A6B]/10 text-[#1A3A6B] hover:bg-[#1A3A6B]/20'
+                        }`}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {qtdDuplas}
+                      </button>
+                    )}
                   </div>
                 </div>
               </button>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
@@ -210,18 +210,24 @@ const ModalPastorDistrital = ({ distrito, fotoPreview, onClose, onSaved }) => {
 export default function DistritosDireto() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const voltarDestino = isPastorDistrital ? '/direto/distritos' : '/direto/regioes';
   const voltarLabel = isPastorDistrital ? 'Voltar para Distritos' : 'Voltar para Regiões';
   const [distrito, setDistrito] = useState(null);
-  const [duplas, setDuplas] = useState([]);
+  const [duplas, setDuplas] = useState([]);             // duplas atualmente exibidas (todas ou filtradas)
+  const [todasDuplas, setTodasDuplas] = useState([]);   // cache de todas as duplas do distrito
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionada, setDuplaSelecionada] = useState(null);
   const [erro, setErro] = useState(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
   const [editandoPastor, setEditandoPastor] = useState(false);
+
+  // Controle de filtro por igreja
+  const [igrejaSelecionadaId, setIgrejaSelecionadaId] = useState(null);
+  const [duplasPorIgreja, setDuplasPorIgreja] = useState({}); // { [igrejaId]: count }
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
@@ -244,9 +250,29 @@ export default function DistritosDireto() {
       const listaDuplas = Array.isArray(p.data) ? p.data : [];
       const listaComFotos = await Promise.all(listaDuplas.map(resolverFotosDaDupla));
       if (ativo) {
-        setDuplas(listaComFotos);
-        if (listaComFotos.length > 0) {
-          setDuplaSelecionada(listaComFotos[0]);
+        setTodasDuplas(listaComFotos);
+
+        // Calcular contagem de duplas por igreja
+        const contagem = {};
+        listaComFotos.forEach((dupla) => {
+          if (dupla.igrejaId) {
+            contagem[dupla.igrejaId] = (contagem[dupla.igrejaId] || 0) + 1;
+          }
+        });
+        setDuplasPorIgreja(contagem);
+
+        // Auto-aplicar filtro de igreja se vier da tela de igrejas
+        const igrejaIdDaNav = location.state?.filtrarIgrejaId;
+        if (igrejaIdDaNav) {
+          const filtradas = listaComFotos.filter((dup) => dup.igrejaId === igrejaIdDaNav);
+          setIgrejaSelecionadaId(igrejaIdDaNav);
+          setDuplas(filtradas);
+          setDuplaSelecionada(filtradas.length > 0 ? filtradas[0] : null);
+          // Limpar o state para não reaplicar ao trocar de tab
+          navigate(location.pathname, { replace: true, state: {} });
+        } else {
+          setDuplas(listaComFotos);
+          if (listaComFotos.length > 0) setDuplaSelecionada(listaComFotos[0]);
         }
       }
     }).catch((err) => {
@@ -257,6 +283,29 @@ export default function DistritosDireto() {
     });
     return () => { ativo = false; };
   }, [distritoId]);
+
+  // Filtrar duplas por igreja (sem nova chamada à API — usa cache)
+  const handleSelecionarIgreja = (igrejaId) => {
+    if (igrejaSelecionadaId === igrejaId) {
+      // Deselecionar — mostrar todas as duplas do distrito
+      setIgrejaSelecionadaId(null);
+      setDuplas(todasDuplas);
+      setDuplaSelecionada(todasDuplas.length > 0 ? todasDuplas[0] : null);
+      return;
+    }
+
+    setIgrejaSelecionadaId(igrejaId);
+    const filtradas = todasDuplas.filter((d) => d.igrejaId === igrejaId);
+    setDuplas(filtradas);
+    setDuplaSelecionada(filtradas.length > 0 ? filtradas[0] : null);
+  };
+
+  // Limpar filtro de igreja — exibe todas as duplas do distrito
+  const limparFiltroIgreja = () => {
+    setIgrejaSelecionadaId(null);
+    setDuplas(todasDuplas);
+    setDuplaSelecionada(todasDuplas.length > 0 ? todasDuplas[0] : null);
+  };
 
   if (carregando) {
     return (
@@ -313,179 +362,280 @@ export default function DistritosDireto() {
   const statusColors = { ATIVA: '#16a34a', PENDENTE: '#C9963A', INATIVA: '#9ca3af' };
   const statusLabels = { ATIVA: 'Ativa', PENDENTE: 'Pendente', INATIVA: 'Inativa' };
 
+  // Nome da igreja filtrada (para exibir no cabeçalho da lista)
+  const igrejaNomeFiltro = igrejaSelecionadaId
+    ? igrejas.find((ig) => ig.id === igrejaSelecionadaId)?.nome
+    : null;
+
   return (
     <>
       <div className="flex h-full overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Info do Distrito + Lista de Duplas (Master) ===== */}
-      <div className="w-full sm:w-80 lg:w-[340px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-y-auto">
-        {/* Breadcrumb */}
-        <div className="flex-shrink-0 px-4 pt-4 pb-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
-            <button type="button" onClick={() => navigate(voltarDestino)} className="hover:text-[#1A3A6B] transition-colors">
-              {isPastorDistrital ? 'Distritos' : 'Associação'}
-            </button>
-            <span className="text-gray-300">/</span>
-            {!isPastorDistrital && (
-              <>
-                <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
+      <div className="w-full sm:w-80 lg:w-[340px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
+        {/* ===== SEÇÃO SUPERIOR (comprime quando igreja está filtrada) ===== */}
+        {igrejaSelecionadaId ? (
+          /* ── Modo Filtrado: mostra apenas a igreja selecionada de forma compacta ── */
+          <div className="flex-shrink-0 border-b border-gray-100">
+            {/* Breadcrumb compacto */}
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
+                <button type="button" onClick={() => navigate(voltarDestino)} className="hover:text-[#1A3A6B] transition-colors">
+                  {isPastorDistrital ? 'Distritos' : 'Associação'}
+                </button>
                 <span className="text-gray-300">/</span>
-              </>
-            )}
-            <span className="text-[#1A3A6B] font-semibold">{distrito.nome}</span>
-          </div>
-        </div>
-
-        {/* Info do distrito — compacta */}
-        <div className="flex-shrink-0 px-4 pb-3 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center shadow-md flex-shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
-                {distrito.nome}
-              </h1>
-              <p className="text-gray-400 text-[10px]">
-                {regiaoNome && `Região ${regiaoNome} •`} {igrejas.length} igrejas • {duplas.length} duplas • {(distrito.membros || 0).toLocaleString('pt-BR')} membros
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Igrejas do Distrito</p>
-            {igrejas.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {igrejas.map((ig) => (
-                  <button
-                    type="button"
-                    key={ig.id}
-                    onClick={() => navigate(`/direto/igrejas/${ig.id}`)}
-                    className="w-full text-left rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-2 transition-all hover:border-[#C9963A]/40 hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-4 h-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#1A3A6B] truncate" title={ig.nome}>{ig.nome}</p>
-                        <p className="text-[10px] text-gray-400">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                {!isPastorDistrital && (
+                  <>
+                    <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
+                    <span className="text-gray-300">/</span>
+                  </>
+                )}
+                <button type="button" onClick={limparFiltroIgreja} className="hover:text-[#1A3A6B] transition-colors">{distrito.nome}</button>
               </div>
-            ) : (
-              <div className="rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-3 text-center text-[11px] text-gray-400">
-                Nenhuma igreja cadastrada.
-              </div>
-            )}
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setEditandoPastor(true)}
-              title="Abrir cadastro do pastor distrital"
-              className="group mt-3 w-full text-left rounded-lg border border-gray-100 bg-white p-3 hover:border-[#C9963A]/50 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <FotoPessoa
-                  src={fotoPastorPreview}
-                  nome={distrito.nomePastor}
-                  className="w-12 h-12 rounded-xl shadow-sm"
-                  fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
-                />
+            {/* Igreja selecionada — barra compacta com botão para voltar */}
+            <div className="px-4 pb-3">
+              <div className="flex items-center gap-2 bg-[#C9963A]/8 border border-[#C9963A]/30 rounded-lg px-3 py-2">
+                <div className="w-7 h-7 rounded-lg bg-[#C9963A]/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-[#C9963A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#C9963A]">Igreja selecionada</p>
+                  <p className="text-xs font-bold text-[#1A3A6B] truncate">{igrejaNomeFiltro}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={limparFiltroIgreja}
+                  className="flex-shrink-0 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#1A3A6B] hover:border-[#1A3A6B]/40 transition-all"
+                  title="Voltar para todas as igrejas"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Cabeçalho da lista de duplas */}
+            <div className="px-4 pb-2">
+              <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor responsável</p>
-                  <p className="text-sm font-bold text-[#1A3A6B] truncate">{distrito.nomePastor || 'Nao informado'}</p>
-                  <p className="text-[11px] text-gray-400 truncate">{distrito.cargoPastor || 'Pastor Distrital'}</p>
-                  <p className="text-[10px] font-semibold text-[#1A3A6B] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Ver e editar cadastro
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Duplas da Igreja
+                  </p>
+                  <p className="text-[10px] text-[#C9963A] font-semibold truncate">{igrejaNomeFiltro} • {duplas.length} dupla{duplas.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── Modo Normal: mostra toda a info do distrito + igrejas ── */
+          <div className="flex-shrink-0 border-b border-gray-100 overflow-y-auto" style={{ maxHeight: '60%' }}>
+            {/* Breadcrumb */}
+            <div className="px-4 pt-4 pb-2">
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-400 flex-wrap">
+                <button type="button" onClick={() => navigate(voltarDestino)} className="hover:text-[#1A3A6B] transition-colors">
+                  {isPastorDistrital ? 'Distritos' : 'Associação'}
+                </button>
+                <span className="text-gray-300">/</span>
+                {!isPastorDistrital && (
+                  <>
+                    <button type="button" onClick={() => navigate('/direto/regioes')} className="hover:text-[#1A3A6B] transition-colors">{regiaoNome || 'Região'}</button>
+                    <span className="text-gray-300">/</span>
+                  </>
+                )}
+                <span className="text-[#1A3A6B] font-semibold">{distrito.nome}</span>
+              </div>
+            </div>
+
+            {/* Info do distrito — compacta */}
+            <div className="px-4 pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center shadow-md flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                    {distrito.nome}
+                  </h1>
+                  <p className="text-gray-400 text-[10px]">
+                    {regiaoNome && `Região ${regiaoNome} •`} {igrejas.length} igrejas • {todasDuplas.length} duplas • {(distrito.membros || 0).toLocaleString('pt-BR')} membros
                   </p>
                 </div>
               </div>
-            </button>
-          </div>
-        </div>
 
-        <div className="flex-shrink-0 px-4 pt-3 pb-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Duplas do Distrito</p>
-        </div>
+              <div className="mt-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Igrejas do Distrito</p>
+                {igrejas.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {igrejas.map((ig) => {
+                      const qtdDuplas = duplasPorIgreja[ig.id] ?? 0;
+                      const isAtiva = igrejaSelecionadaId === ig.id;
+                      return (
+                        <button
+                          type="button"
+                          key={ig.id}
+                          onClick={() => handleSelecionarIgreja(ig.id)}
+                          className={`w-full text-left rounded-lg border px-3 py-2 transition-all focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30 ${
+                            isAtiva
+                              ? 'border-[#C9963A]/60 bg-[#C9963A]/5 shadow-sm'
+                              : 'border-gray-100 bg-[#F4F5F7] hover:border-[#C9963A]/40 hover:bg-white hover:shadow-sm'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${isAtiva ? 'bg-[#C9963A]/20' : 'bg-[#1A3A6B]/10'}`}>
+                              <svg className={`w-4 h-4 ${isAtiva ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-8a2 2 0 012-2h14a2 2 0 012 2v8M12 3v8m0 0l-3-3m3 3l3-3" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs font-semibold truncate ${isAtiva ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`} title={ig.nome}>{ig.nome}</p>
+                              <p className="text-[10px] text-gray-400">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
+                            </div>
+                            {/* Badge de duplas */}
+                            <div className={`flex-shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${isAtiva ? 'bg-[#C9963A] text-white' : 'bg-[#1A3A6B]/10 text-[#1A3A6B]'}`}>
+                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {qtdDuplas}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-gray-100 bg-[#F4F5F7] px-3 py-3 text-center text-[11px] text-gray-400">
+                    Nenhuma igreja cadastrada.
+                  </div>
+                )}
 
-        {/* Lista de duplas */}
-        <div className="flex-1">
-          {duplas.map((dupla) => {
-            const selecionada = duplaSelecionada?.id === dupla.id;
-            const cor = statusColors[dupla.status] || '#9ca3af';
-
-            return (
-              <button
-                type="button"
-                key={dupla.id}
-                onClick={() => setDuplaSelecionada(dupla)}
-                className={`w-full text-left transition-all duration-200 border-l-[3px] ${
-                  selecionada
-                    ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
-                    : 'bg-white border-l-transparent hover:bg-gray-50 hover:border-l-gray-300'
-                }`}
-              >
-                <div className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {/* Fotos lado a lado, mesmo tamanho */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <FotoPessoa
-                          src={dupla.fotoLiderPreview}
-                          nome={dupla.liderNome}
-                          className="w-8 h-8 rounded-full shadow-sm"
-                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
-                          onPreview={abrirFoto}
-                        />
-                        <FotoPessoa
-                          src={dupla.fotoMembro2Preview}
-                          nome={dupla.membro2Nome}
-                          className="w-8 h-8 rounded-full shadow-sm"
-                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
-                          onPreview={abrirFoto}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={`text-xs font-semibold truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>
-                          {dupla.liderNome || 'Sem nome'}
-                        </p>
-                        <p className={`text-[10px] font-medium truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>+ {dupla.membro2Nome || 'Sem nome'}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex-shrink-0">
-                      <span
-                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: cor + '20', color: cor }}
-                      >
-                        {statusLabels[dupla.status] || dupla.status}
-                      </span>
+                <button
+                  type="button"
+                  onClick={() => setEditandoPastor(true)}
+                  title="Abrir cadastro do pastor distrital"
+                  className="group mt-3 w-full text-left rounded-lg border border-gray-100 bg-white p-3 hover:border-[#C9963A]/50 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <FotoPessoa
+                      src={fotoPastorPreview}
+                      nome={distrito.nomePastor}
+                      className="w-12 h-12 rounded-xl shadow-sm"
+                      fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Pastor responsável</p>
+                      <p className="text-sm font-bold text-[#1A3A6B] truncate">{distrito.nomePastor || 'Nao informado'}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{distrito.cargoPastor || 'Pastor Distrital'}</p>
+                      <p className="text-[10px] font-semibold text-[#1A3A6B] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Ver e editar cadastro
+                      </p>
                     </div>
                   </div>
-                </div>
-              </button>
-            );
-          })}
-
-          {duplas.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <div className="text-3xl mb-2 animate-float">👥</div>
-              <p className="text-sm">Nenhuma dupla neste distrito.</p>
-              <button
-                type="button"
-                onClick={() => navigate('/direto/duplas/nova')}
-                className="btn-primary mt-4 text-xs px-4 py-2"
-              >
-                Cadastrar dupla
-              </button>
+                </button>
+              </div>
             </div>
-          )}
+
+            {/* Cabeçalho da seção de duplas — modo normal */}
+            <div className="px-4 pt-2 pb-2 border-t border-gray-100">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Duplas do Distrito</p>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de duplas — sempre visível e scrollável */}
+        <div className="flex-1 overflow-y-auto">
+          {duplas.map((dupla) => {
+                const selecionada = duplaSelecionada?.id === dupla.id;
+                const cor = statusColors[dupla.status] || '#9ca3af';
+
+                return (
+                  <button
+                    type="button"
+                    key={dupla.id}
+                    onClick={() => setDuplaSelecionada(dupla)}
+                    className={`w-full text-left transition-all duration-200 border-l-[3px] ${
+                      selecionada
+                        ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]'
+                        : 'bg-white border-l-transparent hover:bg-gray-50 hover:border-l-gray-300'
+                    }`}
+                  >
+                    <div className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Fotos lado a lado, mesmo tamanho */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <FotoPessoa
+                              src={dupla.fotoLiderPreview}
+                              nome={dupla.liderNome}
+                              className="w-8 h-8 rounded-full shadow-sm"
+                              fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
+                              onPreview={abrirFoto}
+                            />
+                            <FotoPessoa
+                              src={dupla.fotoMembro2Preview}
+                              nome={dupla.membro2Nome}
+                              className="w-8 h-8 rounded-full shadow-sm"
+                              fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-[10px]"
+                              onPreview={abrirFoto}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-xs font-semibold truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>
+                              {dupla.liderNome || 'Sem nome'}
+                            </p>
+                            <p className={`text-[10px] font-medium truncate transition-colors ${selecionada ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>+ {dupla.membro2Nome || 'Sem nome'}</p>
+                            
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border border-gray-200 text-gray-500 whitespace-nowrap">
+                                {getClassificacaoAtividadeText(dupla)}
+                              </span>
+                              {dupla.statusEstudoBiblico === 'ATIVO' && (
+                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-[#16a34a]/10 text-[#16a34a] whitespace-nowrap">
+                                  📖 Dando estudo
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex-shrink-0">
+                          <span
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: cor + '20', color: cor }}
+                          >
+                            {statusLabels[dupla.status] || dupla.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {duplas.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-3xl mb-2 animate-float">👥</div>
+                  <p className="text-sm">
+                    {igrejaSelecionadaId
+                      ? 'Nenhuma dupla nesta igreja.'
+                      : 'Nenhuma dupla neste distrito.'}
+                  </p>
+                  {!igrejaSelecionadaId && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/direto/duplas/nova')}
+                      className="btn-primary mt-4 text-xs px-4 py-2"
+                    >
+                      Cadastrar dupla
+                    </button>
+                  )}
+                </div>
+              )}
         </div>
 
         <div className="flex-shrink-0 p-3 border-t border-gray-100">
