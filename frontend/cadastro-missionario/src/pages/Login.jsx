@@ -26,9 +26,12 @@ export default function Login() {
     distritos: '-',
     duplas: '-',
     classes: '-',
+    pontosEstudo: '-',
+    classesBiblicas: '-',
     estudantes: '-',
     estudosIndividuais: '-',
     estudantesPontos: '-',
+    estudantesClasses: '-',
   });
 
   useEffect(() => {
@@ -39,9 +42,12 @@ export default function Login() {
           distritos: res.data.distritos,
           duplas: res.data.duplas,
           classes: res.data.classes,
+          pontosEstudo: res.data.pontosEstudo,
+          classesBiblicas: res.data.classesBiblicas,
           estudantes: res.data.estudantes,
           estudosIndividuais: res.data.estudosIndividuais,
           estudantesPontos: res.data.estudantesPontos,
+          estudantesClasses: res.data.estudantesClasses,
         });
       })
       .catch((err) => console.error('Erro ao carregar estatísticas:', err));
@@ -127,14 +133,19 @@ export default function Login() {
               { label: 'Regiões', valor: estatisticas.regioes, tooltip: 'Regioes: total de regioes missionarias cadastradas no sistema.' },
               { label: 'Distritos', valor: estatisticas.distritos, tooltip: 'Distritos: total de distritos cadastrados em todas as regioes.' },
               { label: 'Duplas', valor: estatisticas.duplas, tooltip: 'Duplas: total de duplas missionarias cadastradas.' },
-              { label: 'Classes', valor: estatisticas.classes, tooltip: 'Classes: total de classes biblicas cadastradas.' },
+              {
+                label: 'PE + Classe',
+                valor: estatisticas.classes,
+                tooltip: `PE + Classe = pontos de estudo (${estatisticas.pontosEstudo}) + classes biblicas (${estatisticas.classesBiblicas}).`,
+              },
               {
                 label: 'Estudantes',
                 valor: estatisticas.estudantes,
-                tooltip: `Estudantes = estudos biblicos individuais (${estatisticas.estudosIndividuais}) + estudantes dos pontos de estudo (${estatisticas.estudantesPontos}).`,
+                tooltip: `Estudantes = estudos individuais (${estatisticas.estudosIndividuais}) + estudantes dos pontos (${estatisticas.estudantesPontos}) + estudantes das classes (${estatisticas.estudantesClasses}).`,
+                tooltipClass: 'smart-tooltip-up smart-tooltip-right',
               },
             ].map((item) => (
-              <div key={item.label} className="smart-tooltip bg-white/10 rounded-lg px-2 py-2 text-center" data-tooltip={item.tooltip || item.label} tabIndex={0}>
+              <div key={item.label} className={`smart-tooltip ${item.tooltipClass || ''} bg-white/10 rounded-lg px-2 py-2 text-center`} data-tooltip={item.tooltip || item.label} tabIndex={0}>
                 <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>
                 <p className="text-white/70 text-xs">{item.label}</p>
               </div>

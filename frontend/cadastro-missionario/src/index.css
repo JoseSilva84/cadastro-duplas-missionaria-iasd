@@ -165,6 +165,31 @@
   .smart-tooltip:focus-within::before {
     transform: translateY(0) rotate(45deg);
   }
+  .smart-tooltip.smart-tooltip-up::before,
+  .smart-tooltip.smart-tooltip-up::after {
+    top: auto;
+    bottom: calc(100% + 0.7rem);
+    transform: translateY(-6px);
+  }
+  .smart-tooltip.smart-tooltip-up::before {
+    bottom: calc(100% + 0.35rem);
+    transform: translateY(-6px) rotate(225deg);
+  }
+  .smart-tooltip.smart-tooltip-up:hover::before,
+  .smart-tooltip.smart-tooltip-up:hover::after,
+  .smart-tooltip.smart-tooltip-up:focus-within::before,
+  .smart-tooltip.smart-tooltip-up:focus-within::after {
+    transform: translateY(0);
+  }
+  .smart-tooltip.smart-tooltip-up:hover::before,
+  .smart-tooltip.smart-tooltip-up:focus-within::before {
+    transform: translateY(0) rotate(225deg);
+  }
+  .smart-tooltip.smart-tooltip-right::before,
+  .smart-tooltip.smart-tooltip-right::after {
+    left: auto;
+    right: 0.75rem;
+  }
 
   .input-field {
     @apply w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-all duration-200;
