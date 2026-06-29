@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from '../lib/toast';
+import EChart from '../components/EChart';
 
 const Icone = ({ children, cor = '#1A3A6B' }) => (
   <div
@@ -46,6 +47,12 @@ const VisitIcon = () => (
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
+const classeMotivos = {
+  A: 'Motivo da Classe A: duplas que informaram que ja levaram pelo menos uma pessoa ao batismo.',
+  B: 'Motivo da Classe B: duplas que ja deram estudo biblico, mas ainda nao informaram batismo.',
+  C: 'Motivo da Classe C: duplas que ainda nao informaram estudo biblico realizado.',
+};
+
 function Indicador({ label, valor, detalhe, tooltip, cor, icon, onClick }) {
   const Conteudo = (
     <>
@@ -82,19 +89,20 @@ function Indicador({ label, valor, detalhe, tooltip, cor, icon, onClick }) {
   );
 }
 
-function ClasseResumo({ classe, valor, cor, bg }) {
+function ClasseResumo({ classe, valor, cor, bg, onClick }) {
   return (
-    <div
-      className="smart-tooltip rounded-lg p-4 border"
-      data-tooltip={`Classe ${classe}: quantidade de duplas classificadas neste grupo missionario.`}
-      tabIndex={0}
+    <button
+      type="button"
+      onClick={onClick}
+      className="smart-tooltip w-full text-left rounded-lg p-4 border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20"
+      data-tooltip={`Classe ${classe}: quantidade de duplas classificadas neste grupo missionario. ${classeMotivos[classe]} Clique para ver todas as duplas da Classe ${classe}.`}
       style={{ backgroundColor: bg, borderColor: `${cor}30` }}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-bold" style={{ color: cor }}>Classe {classe}</span>
         <span className="text-xl font-bold" style={{ color: cor }}>{numero(valor)}</span>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -184,6 +192,20 @@ function Painel({ titulo, subtitulo, cor, children }) {
   );
 }
 
+function PainelGrafico({ titulo, subtitulo, children }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 overflow-hidden">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[#C9963A]">{subtitulo}</p>
+          <h3 className="text-lg font-bold text-[#1A3A6B] truncate" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function DashboardAssociacao() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -234,6 +256,116 @@ export default function DashboardAssociacao() {
     { label: 'Alunos', valor: visitas.alunos || 0, cor: '#0d9488' },
   ]), [visitas.alunos, visitas.diretores, visitas.professores]);
 
+  const classeChartOption = useMemo(() => {
+    const classes = ministerio.classes || {};
+    return {
+      color: ['#16a34a', '#C9963A', '#dc2626'],
+      tooltip: { trigger: 'item', formatter: '{b}: {c} duplas ({d}%)' },
+      legend: { bottom: 0, icon: 'circle', textStyle: { color: '#64748b', fontSize: 11 } },
+      series: [{
+        name: 'Sub-classificacoes',
+        type: 'pie',
+        radius: ['52%', '74%'],
+        center: ['50%', '42%'],
+        avoidLabelOverlap: true,
+        label: { formatter: '{b}\n{c}', color: '#1A3A6B', fontWeight: 700 },
+        labelLine: { length: 10, length2: 8 },
+        data: [
+          { name: 'Classe A', value: classes.A || 0 },
+          { name: 'Classe B', value: classes.B || 0 },
+          { name: 'Classe C', value: classes.C || 0 },
+        ],
+      }],
+    };
+  }, [ministerio.classes]);
+
+  const regiaoChartOption = useMemo(() => {
+    const lista = dashboardDuplas.porRegiao || [];
+    return {
+      color: ['#1A3A6B', '#C9963A', '#0d9488'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 36, right: 12, top: 24, bottom: 54 },
+      legend: { bottom: 0, textStyle: { color: '#64748b', fontSize: 11 } },
+      xAxis: {
+        type: 'category',
+        data: lista.map((item) => item.nome),
+        axisLabel: { color: '#64748b', rotate: 25, fontSize: 10 },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { color: '#94a3b8', fontSize: 10 },
+        splitLine: { lineStyle: { color: '#e5e7eb' } },
+      },
+      series: [
+        { name: 'Duplas', type: 'bar', data: lista.map((item) => item.duplas), barWidth: 16, itemStyle: { borderRadius: [5, 5, 0, 0] } },
+        { name: 'Estudos', type: 'bar', data: lista.map((item) => item.estudos), barWidth: 16, itemStyle: { borderRadius: [5, 5, 0, 0] } },
+        { name: 'Batismos', type: 'line', smooth: true, data: lista.map((item) => item.batismos), symbolSize: 7, lineStyle: { width: 3 } },
+      ],
+    };
+  }, [dashboardDuplas.porRegiao]);
+
+  const distritoChartOption = useMemo(() => {
+    const lista = dashboardDuplas.porDistrito || [];
+    return {
+      color: ['#7B2D8B'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => `${params[0]?.name}<br/>${numero(params[0]?.value)} duplas` },
+      grid: { left: 118, right: 18, top: 12, bottom: 18 },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: '#94a3b8', fontSize: 10 },
+        splitLine: { lineStyle: { color: '#e5e7eb' } },
+      },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: lista.map((item) => item.nome),
+        axisLabel: { color: '#475569', fontSize: 10, width: 104, overflow: 'truncate' },
+        axisTick: { show: false },
+      },
+      series: [{
+        name: 'Duplas',
+        type: 'bar',
+        data: lista.map((item) => item.duplas),
+        barWidth: 14,
+        itemStyle: { borderRadius: [0, 6, 6, 0] },
+        label: { show: true, position: 'right', color: '#1A3A6B', fontWeight: 700 },
+      }],
+    };
+  }, [dashboardDuplas.porDistrito]);
+
+  const impactoChartOption = useMemo(() => {
+    const listaBase = dashboardDuplas.indicadoresGerais || [];
+    const lista = listaBase.length > 0
+      ? listaBase
+      : [
+        { nome: 'Estudos', valor: 0 },
+        { nome: 'Visitas', valor: 0 },
+        { nome: 'Batismos', valor: 0 },
+        { nome: 'Pessoas', valor: 0 },
+      ];
+    const maximo = Math.max(...lista.map((item) => item.valor || 0), 1);
+    return {
+      color: ['#1A3A6B'],
+      tooltip: { trigger: 'axis' },
+      radar: {
+        radius: '64%',
+        indicator: lista.map((item) => ({ name: item.nome, max: maximo })),
+        axisName: { color: '#475569', fontSize: 11 },
+        splitLine: { lineStyle: { color: '#e5e7eb' } },
+        splitArea: { areaStyle: { color: ['rgba(26,58,107,0.03)', 'rgba(201,150,58,0.05)'] } },
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+      },
+      series: [{
+        type: 'radar',
+        data: [{ value: lista.map((item) => item.valor || 0), name: 'Indicadores' }],
+        areaStyle: { color: 'rgba(26,58,107,0.18)' },
+        lineStyle: { width: 3 },
+        symbolSize: 6,
+      }],
+    };
+  }, [dashboardDuplas.indicadoresGerais]);
+
   const podeEditarEscola = ['ADMINISTRADOR', 'LIDER_REGIOES'].includes(usuario?.perfil);
   const irParaDupla = (dupla) => {
     if (dupla?.id) navigate(isDireto ? `/direto/duplas/${dupla.id}` : `/duplas/${dupla.id}`);
@@ -245,6 +377,9 @@ export default function DashboardAssociacao() {
     navigate(isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas');
   };
   const caminho = (rota) => `${isDireto ? '/direto' : ''}${rota}`;
+  const irParaDuplasPorClasse = (classe) => {
+    navigate(`${caminho('/duplas')}?classe=${classe}`);
+  };
 
   const setCampoEscola = (campo, valor) => {
     setFormEscola((prev) => ({ ...prev, [campo]: valor }));
@@ -312,9 +447,9 @@ export default function DashboardAssociacao() {
           <div className="mt-5">
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Sub-classificações de classes</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <ClasseResumo classe="A" valor={ministerio.classes?.A} cor="#16a34a" bg="#dcfce7" />
-              <ClasseResumo classe="B" valor={ministerio.classes?.B} cor="#b45309" bg="#fef3c7" />
-              <ClasseResumo classe="C" valor={ministerio.classes?.C} cor="#dc2626" bg="#fee2e2" />
+              <ClasseResumo classe="A" valor={ministerio.classes?.A} cor="#16a34a" bg="#dcfce7" onClick={() => irParaDuplasPorClasse('A')} />
+              <ClasseResumo classe="B" valor={ministerio.classes?.B} cor="#b45309" bg="#fef3c7" onClick={() => irParaDuplasPorClasse('B')} />
+              <ClasseResumo classe="C" valor={ministerio.classes?.C} cor="#dc2626" bg="#fee2e2" onClick={() => irParaDuplasPorClasse('C')} />
             </div>
           </div>
         </Painel>
@@ -408,6 +543,59 @@ export default function DashboardAssociacao() {
           </div>
         </Painel>
       </div>
+
+      <section className="mt-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Analise visual</p>
+            <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Panorama da Associacao Paulistana
+            </h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+          <PainelGrafico titulo="Classes das duplas" subtitulo="Distribuicao A/B/C">
+            <EChart option={classeChartOption} className="h-72" />
+          </PainelGrafico>
+          <div className="xl:col-span-2">
+            <PainelGrafico titulo="Forca missionaria por regiao" subtitulo="Duplas, estudos e batismos">
+              <EChart option={regiaoChartOption} className="h-72" />
+            </PainelGrafico>
+          </div>
+          <PainelGrafico titulo="Indicadores de impacto" subtitulo="Comparativo geral">
+            <EChart option={impactoChartOption} className="h-72" />
+          </PainelGrafico>
+          <div className="xl:col-span-2">
+            <PainelGrafico titulo="Distritos com mais duplas" subtitulo="Top distritos">
+              <EChart option={distritoChartOption} className="h-80" />
+            </PainelGrafico>
+          </div>
+          <div className="xl:col-span-2 bg-[#0f2347] rounded-xl border border-[#C9963A]/20 shadow-sm p-5 overflow-hidden">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#e5b05a]">Ranking combinado</p>
+                <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>Duplas em destaque</h3>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(dashboardDuplas.topPerformance || []).map((item, index) => (
+                <div key={`${item.nome}-${index}`} className="rounded-lg bg-white/10 border border-white/10 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#e5b05a]">#{index + 1}</p>
+                      <p className="text-sm font-semibold text-white truncate">{item.nome}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-[#e5b05a]">{numero(item.valor)}</p>
+                  </div>
+                </div>
+              ))}
+              {(dashboardDuplas.topPerformance || []).length === 0 && (
+                <p className="text-sm text-white/60">Sem dados para exibir.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
         <Painel titulo="Duplas Missionárias" subtitulo="Dashboard de desempenho" cor="#1A3A6B">

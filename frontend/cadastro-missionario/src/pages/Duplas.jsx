@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { PERFIS, ehAdmin, useAuth } from '../contexts/AuthContext';
@@ -130,6 +130,8 @@ const BadgeAcompanhamento = ({ data }) => {
 export default function Duplas() {
   const { distritoId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const classeParam = searchParams.get('classe');
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
@@ -137,7 +139,9 @@ export default function Duplas() {
   const [distrito, setDistrito] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
   const [filtro, setFiltro] = useState('');
-  const [filtroClasse, setFiltroClasse] = useState('');
+  const [filtroClasse, setFiltroClasse] = useState(() => {
+    return ['A', 'B', 'C'].includes(classeParam) ? classeParam : '';
+  });
   const [filtroAtividade, setFiltroAtividade] = useState('');
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -160,6 +164,10 @@ export default function Duplas() {
     }).finally(() => { setCarregando(false); });
     return () => { ativo = false; };
   }, [distritoId]);
+
+  useEffect(() => {
+    setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
+  }, [classeParam]);
 
   const duplasComMedalha = useMemo(() =>
     [...duplas]

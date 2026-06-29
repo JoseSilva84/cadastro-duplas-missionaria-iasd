@@ -79,6 +79,33 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
     pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
   }));
 
+  const ordenarPorValor = (lista = []) => [...lista].sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome));
+
+  const consolidar = (chaveFn) => {
+    const mapa = {};
+    duplasComIndicadores.forEach((dupla) => {
+      const chave = chaveFn(dupla);
+      if (!chave?.id) return;
+      if (!mapa[chave.id]) {
+        mapa[chave.id] = {
+          id: chave.id,
+          nome: chave.nome,
+          duplas: 0,
+          estudos: 0,
+          batismos: 0,
+          visitas: 0,
+          pessoasAlcancadas: 0,
+        };
+      }
+      mapa[chave.id].duplas += 1;
+      mapa[chave.id].estudos += dupla.estudos;
+      mapa[chave.id].batismos += dupla.batismos;
+      mapa[chave.id].visitas += dupla.visitas;
+      mapa[chave.id].pessoasAlcancadas += dupla.pessoasAlcancadas;
+    });
+    return Object.values(mapa).sort((a, b) => b.duplas - a.duplas || a.nome.localeCompare(b.nome));
+  };
+
   const regioes = agruparSoma(duplas, (dupla) => ({
     id: dupla.distrito?.regiao?.id,
     nome: dupla.distrito?.regiao?.nome,
@@ -101,6 +128,18 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
     topBatismos: top('batismos'),
     topVisitas: top('visitas'),
     topPessoasAlcancadas: top('pessoasAlcancadas'),
+    porRegiao: consolidar((dupla) => ({ id: dupla.regiao, nome: dupla.regiao })),
+    porDistrito: consolidar((dupla) => ({ id: dupla.distrito, nome: dupla.distrito })).slice(0, 8),
+    indicadoresGerais: [
+      { nome: 'Estudos', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.estudos, 0) },
+      { nome: 'Visitas', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.visitas, 0) },
+      { nome: 'Batismos', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.batismos, 0) },
+      { nome: 'Pessoas', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.pessoasAlcancadas, 0) },
+    ],
+    topPerformance: ordenarPorValor(duplasComIndicadores.map((dupla) => ({
+      nome: dupla.nome,
+      valor: dupla.estudos + dupla.visitas + dupla.batismos + dupla.pessoasAlcancadas,
+    }))).slice(0, 6),
   };
 };
 

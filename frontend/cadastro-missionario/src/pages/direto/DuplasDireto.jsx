@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import { ehAdmin, useAuth } from '../../contexts/AuthContext';
@@ -175,12 +175,17 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
 
 export default function DuplasDireto() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const classeParam = searchParams.get('classe');
   const { usuario } = useAuth();
   const podeExcluir = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
   const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/INATIVA) ou medalha (ouro/prata/bronze)
+  const [filtroClasse, setFiltroClasse] = useState(() => {
+    return ['A', 'B', 'C'].includes(classeParam) ? classeParam : '';
+  });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
@@ -221,6 +226,10 @@ export default function DuplasDireto() {
     return () => { ativo = false; };
   }, []);
 
+  useEffect(() => {
+    setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
+  }, [classeParam]);
+
   // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
   const duplasComMedalha = useMemo(() =>
     [...duplas]
@@ -250,9 +259,10 @@ export default function DuplasDireto() {
         (d.liderNome || '').toLowerCase().includes(termo) ||
         (d.membro2Nome || '').toLowerCase().includes(termo) ||
         (d.bairro || '').toLowerCase().includes(termo);
-      return matchFiltro && matchBusca;
+      const matchClasse = !filtroClasse || d.classificacaoDupla === filtroClasse;
+      return matchFiltro && matchClasse && matchBusca;
     });
-  }, [duplasComMedalha, filtro, busca]);
+  }, [duplasComMedalha, filtro, filtroClasse, busca]);
 
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
@@ -328,9 +338,9 @@ export default function DuplasDireto() {
             {/* Chip "Todas" */}
             <button
               type="button"
-              onClick={() => setFiltro('')}
+              onClick={() => { setFiltro(''); setFiltroClasse(''); }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200 ${
-                filtro === ''
+                filtro === '' && filtroClasse === ''
                   ? 'bg-[#1A3A6B] text-white border-[#1A3A6B] shadow-sm'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-[#1A3A6B]/30'
               }`}
@@ -339,8 +349,8 @@ export default function DuplasDireto() {
               <span
                 className="rounded-full px-1.5 py-px text-[9px] font-bold"
                 style={{
-                  backgroundColor: filtro === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                  color: filtro === '' ? 'white' : '#6b7280',
+                  backgroundColor: filtro === '' && filtroClasse === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                  color: filtro === '' && filtroClasse === '' ? 'white' : '#6b7280',
                 }}
               >
                 {duplas.length}
@@ -371,6 +381,34 @@ export default function DuplasDireto() {
                     }}
                   >
                     {contagemMedalha[m] || 0}
+                  </span>
+                </button>
+              );
+            })}
+
+            {(['A', 'B', 'C']).map((classe) => {
+              const cfg = classeConfig[classe];
+              const ativo = filtroClasse === classe;
+              const total = duplas.filter((dupla) => dupla.classificacaoDupla === classe).length;
+              return (
+                <button
+                  key={classe}
+                  type="button"
+                  onClick={() => setFiltroClasse(ativo ? '' : classe)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200"
+                  style={ativo
+                    ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
+                    : { backgroundColor: cfg.bg, borderColor: cfg.cor + '55', color: cfg.cor }}
+                >
+                  Classe {classe}
+                  <span
+                    className="rounded-full px-1.5 py-px text-[9px] font-bold"
+                    style={{
+                      backgroundColor: ativo ? 'rgba(255,255,255,0.25)' : cfg.cor + '20',
+                      color: ativo ? 'white' : cfg.cor,
+                    }}
+                  >
+                    {total}
                   </span>
                 </button>
               );
