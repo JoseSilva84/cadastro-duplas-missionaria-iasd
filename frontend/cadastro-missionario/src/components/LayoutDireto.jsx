@@ -108,6 +108,7 @@ export default function LayoutDireto() {
 
   const relatorioItems = [
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+    { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
     { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
     ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
@@ -117,6 +118,7 @@ export default function LayoutDireto() {
   ];
   const relatorioItemsVisiveis = isCoordenadorRegional
     ? relatorioItems.filter((item) => (
+      item.to.includes('/relatorios/estudos-geral') ||
       item.to.includes('/relatorios/estudos-biblicos') ||
       item.to.includes('/relatorios/pontos-estudo') ||
       item.to.includes('/relatorios/classes-biblicas')
@@ -143,6 +145,7 @@ export default function LayoutDireto() {
       { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     ] },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: [
+      { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
       { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },

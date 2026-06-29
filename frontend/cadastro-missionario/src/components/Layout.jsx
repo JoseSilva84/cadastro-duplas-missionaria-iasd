@@ -129,6 +129,7 @@ export default function Layout({ children }) {
           ] : []),
         ] },
         ...(isDupla ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           { to: isDireto ? '/direto/relatorios/estudos-biblicos' : '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: isDireto ? '/direto/relatorios/pontos-estudo' : '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
@@ -158,6 +159,7 @@ export default function Layout({ children }) {
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
@@ -189,6 +191,7 @@ export default function Layout({ children }) {
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
+          { to: '/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           { to: '/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
           ...(isAdmin ? [{ to: '/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
@@ -204,6 +207,7 @@ export default function Layout({ children }) {
         return {
           ...link,
           items: link.items.filter((item) => (
+            item.to.includes('/relatorios/estudos-geral') ||
             item.to.includes('/relatorios/estudos-biblicos') ||
             item.to.includes('/relatorios/pontos-estudo') ||
             item.to.includes('/relatorios/classes-biblicas')
