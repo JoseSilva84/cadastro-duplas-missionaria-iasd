@@ -67,6 +67,20 @@ const formatarBooleanoPdf = (valor) => {
   return 'Nao informado';
 };
 
+const dadosCandidatoComissao = (estudo, participante = null) => ({
+  nome: participante?.nome || participantesResumo(estudo),
+  whatsapp: participante?.whatsapp || estudo.whatsapp,
+  endereco: participante?.endereco || estudo.endereco,
+  sexo: participante?.sexo || estudo.sexo,
+  classificacao: participante?.classificacaoInteressado || estudo.classificacaoInteressado,
+  motivoImpedimento: participante?.motivoImpedimento || estudo.motivoImpedimento,
+  vaIgreja: participante ? null : estudo.vaIgreja,
+  leBiblia: participante ? null : estudo.leBiblia,
+  estudaLicao: participante ? null : estudo.estudaLicao,
+  devolveDizimos: participante ? null : estudo.devolveDizimos,
+  cultoFamiliar: participante ? null : estudo.cultoFamiliar,
+});
+
 const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   const linhas = estudos.map((item) => `
     <tr>
@@ -111,16 +125,17 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   janela.print();
 };
 
-const abrirPdfComissao = (estudo) => {
-  if (!estudo || ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) return;
+const abrirPdfComissao = (estudo, participante = null) => {
+  if (!estudo) return;
 
   const tituloDocumento = 'Relatório para Comissão da Igreja: Aprovação de Batismo';
+  const candidato = dadosCandidatoComissao(estudo, participante);
   const perguntas = [
-    ['Está indo à igreja?', formatarBooleanoPdf(estudo.vaIgreja)],
-    ['Estuda a Bíblia?', formatarBooleanoPdf(estudo.leBiblia)],
-    ['Estuda a lição da Escola Sabatina?', formatarBooleanoPdf(estudo.estudaLicao)],
-    ['Devolve os dízimos?', formatarBooleanoPdf(estudo.devolveDizimos)],
-    ['Faz o culto familiar?', formatarBooleanoPdf(estudo.cultoFamiliar)],
+    ['Está indo à igreja?', formatarBooleanoPdf(candidato.vaIgreja)],
+    ['Estuda a Bíblia?', formatarBooleanoPdf(candidato.leBiblia)],
+    ['Estuda a lição da Escola Sabatina?', formatarBooleanoPdf(candidato.estudaLicao)],
+    ['Devolve os dízimos?', formatarBooleanoPdf(candidato.devolveDizimos)],
+    ['Faz o culto familiar?', formatarBooleanoPdf(candidato.cultoFamiliar)],
   ];
   const linhasPerguntas = perguntas.map(([pergunta, resposta]) => `
     <tr>
@@ -128,12 +143,14 @@ const abrirPdfComissao = (estudo) => {
       <td><strong>${escapeHtml(resposta)}</strong></td>
     </tr>
   `).join('');
-  const nomeCandidato = participantesResumo(estudo);
   const dupla = `${estudo.dupla?.liderNome || ''} + ${estudo.dupla?.membro2Nome || ''}`;
   const igreja = estudo.dupla?.igreja?.nome || 'Nao informada';
   const distrito = estudo.dupla?.distrito?.nome || 'Nao informado';
   const regiao = estudo.dupla?.distrito?.regiao?.nome || 'Nao informada';
-  const classificacao = classeInfo[estudo.classificacaoInteressado]?.label || 'Sem classificacao';
+  const classificacao = classeInfo[candidato.classificacao]?.label || 'Sem classificacao';
+  const contexto = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)
+    ? `${estudo.tipoEstudo === 'PONTO' ? 'Ponto de estudo' : 'Classe biblica'}: ${estudo.nomeEstudante || 'Nao informado'}`
+    : 'Estudo biblico individual';
   const janela = window.open('', '_blank');
   if (!janela) return;
 
@@ -164,14 +181,16 @@ const abrirPdfComissao = (estudo) => {
 
         <div class="resumo">
           <div class="grid">
-            <div class="item"><span>Candidato</span><strong>${escapeHtml(nomeCandidato)}</strong></div>
+            <div class="item"><span>Candidato</span><strong>${escapeHtml(candidato.nome)}</strong></div>
             <div class="item"><span>Classificação</span><strong>${escapeHtml(classificacao)}</strong></div>
             <div class="item"><span>Igreja</span><strong>${escapeHtml(igreja)}</strong></div>
             <div class="item"><span>Distrito / Região</span><strong>${escapeHtml(distrito)} / ${escapeHtml(regiao)}</strong></div>
             <div class="item"><span>Dupla responsável</span><strong>${escapeHtml(dupla)}</strong></div>
-            <div class="item"><span>Contato</span><strong>${escapeHtml(estudo.whatsapp || 'Nao informado')}</strong></div>
+            <div class="item"><span>Contato</span><strong>${escapeHtml(candidato.whatsapp || 'Nao informado')}</strong></div>
             <div class="item"><span>Série e lição atual</span><strong>${escapeHtml(getSerieNome(estudo.serie))} - ${escapeHtml(getLicaoLabel(estudo.serie, estudo.licaoAtual))}</strong></div>
             <div class="item"><span>Progresso</span><strong>${progresso(estudo)}%</strong></div>
+            <div class="item"><span>Contexto</span><strong>${escapeHtml(contexto)}</strong></div>
+            <div class="item"><span>Sexo</span><strong>${escapeHtml(candidato.sexo || 'Nao informado')}</strong></div>
           </div>
         </div>
 
@@ -186,9 +205,9 @@ const abrirPdfComissao = (estudo) => {
           <tbody>
             <tr><td><strong>Dia / horário do estudo</strong></td><td>${escapeHtml(estudo.diaEstudo || 'Nao informado')} - ${escapeHtml(estudo.horarioEstudo || 'Nao informado')}</td></tr>
             <tr><td><strong>Cidade / Estado</strong></td><td>${escapeHtml(estudo.cidade || 'Nao informada')} / ${escapeHtml(estudo.estado || 'Nao informado')}</td></tr>
-            <tr><td><strong>Endereço</strong></td><td>${escapeHtml(estudo.endereco || 'Nao informado')}</td></tr>
+            <tr><td><strong>Endereço</strong></td><td>${escapeHtml(candidato.endereco || 'Nao informado')}</td></tr>
             <tr><td><strong>Observações</strong></td><td>${escapeHtml(estudo.observacoes || 'Sem observacoes registradas.')}</td></tr>
-            <tr><td><strong>Motivo de impedimento</strong></td><td>${escapeHtml(estudo.motivoImpedimento || 'Nao informado')}</td></tr>
+            <tr><td><strong>Motivo de impedimento</strong></td><td>${escapeHtml(candidato.motivoImpedimento || 'Nao informado')}</td></tr>
           </tbody>
         </table>
 
@@ -367,6 +386,31 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     }
     setSelecionado(estudo);
   };
+  const BotoesBatismo = ({ estudo, participante = null, compacto = false }) => {
+    const classificacao = participante?.classificacaoInteressado || estudo.classificacaoInteressado;
+    if (!classificacao) return null;
+    const baseClasses = compacto ? 'text-[10px] px-2 py-1' : 'text-xs px-3 py-1.5';
+    return (
+      <div className="inline-flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className={`rounded-lg border border-[#1A3A6B]/30 bg-white font-semibold text-[#1A3A6B] hover:bg-[#1A3A6B]/5 ${baseClasses}`}
+          onClick={() => abrirPdfComissao(estudo, participante)}
+        >
+          Recomendar o batismo
+        </button>
+        {classificacao === 'A' && (
+          <button
+            type="button"
+            className={`rounded-lg bg-emerald-600 font-semibold text-white shadow-sm hover:bg-emerald-700 ${baseClasses}`}
+            onClick={() => abrirPdfComissao(estudo, participante)}
+          >
+            Batismo
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -477,11 +521,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                   <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
-                    <button type="button" className="btn-outline px-4 py-2" onClick={() => abrirPdfComissao(selecionado)}>
-                      Recomendar à comissão
-                    </button>
-                  )}
+                  {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && <BotoesBatismo estudo={selecionado} />}
                   <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado))}>
                     Ver detalhes
                   </button>
@@ -489,18 +529,26 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               </div>
             </div>
             {['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && selecionado.participantes?.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {selecionado.participantes.map((participante) => (
-                  <span key={participante.id} className="inline-flex items-center gap-2 rounded-full bg-[#1A3A6B]/5 px-2 py-1">
-                    <span className="text-xs font-semibold text-[#1A3A6B]">{participante.nome}</span>
-                    <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
-                  </span>
+                  <div key={participante.id} className="rounded-xl border border-gray-100 bg-[#1A3A6B]/5 px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-[#1A3A6B]">{participante.nome}</span>
+                      <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
+                    </div>
+                    {participante.classificacaoInteressado && (
+                      <div className="mt-2">
+                        <BotoesBatismo estudo={selecionado} participante={participante} compacto />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
             {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <ClassificacaoBadge classe={selecionado.classificacaoInteressado} motivo={selecionado.motivoImpedimento} />
+                <BotoesBatismo estudo={selecionado} compacto />
                 {selecionado.classificacaoInteressado === 'B' && selecionado.motivoImpedimento && (
                   <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
                     Motivo: {selecionado.motivoImpedimento}
@@ -546,11 +594,20 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           {['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (
                             <div className="flex flex-wrap gap-1">
                               {(estudo.participantes || []).map((participante) => (
-                                <ClassificacaoBadge key={participante.id} classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
+                                <div key={participante.id} className="inline-flex flex-col gap-1 rounded-lg bg-white p-1">
+                                  <span className="text-[10px] font-semibold text-[#1A3A6B]">{participante.nome}</span>
+                                  <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
+                                  {participante.classificacaoInteressado && (
+                                    <BotoesBatismo estudo={estudo} participante={participante} compacto />
+                                  )}
+                                </div>
                               ))}
                             </div>
                           ) : (
-                            <ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} compacto />
+                            <div className="flex flex-col items-start gap-1">
+                              <ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} compacto />
+                              <BotoesBatismo estudo={estudo} compacto />
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
