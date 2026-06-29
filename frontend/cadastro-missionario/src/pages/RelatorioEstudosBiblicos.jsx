@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
 import { ehAdmin, useAuth } from '../contexts/AuthContext';
+import EChart from '../components/EChart';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 const progresso = (estudo) => {
@@ -21,6 +22,12 @@ const participantesResumo = (estudo) => (
 const totalEstudantesDoEstudo = (estudo) => (
   ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (estudo.participantes?.length || 0) : 1
 );
+
+const agruparSoma = (itens = [], chaveFn, valorFn = () => 1) => itens.reduce((acc, item) => {
+  const chave = chaveFn(item) || 'Nao informado';
+  acc[chave] = (acc[chave] || 0) + valorFn(item);
+  return acc;
+}, {});
 
 const contarClassificacoes = (estudos = []) => estudos.reduce((acc, estudo) => {
   if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
@@ -411,6 +418,172 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       </div>
     );
   };
+  const analisesGraficos = useMemo(() => {
+    const estudos = resultado.estudos || [];
+    const estudantes = estudos.flatMap((estudo) => {
+      if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
+        return (estudo.participantes || []).map((participante) => ({
+          nome: participante.nome,
+          classificacao: participante.classificacaoInteressado || 'SEM',
+          serie: estudo.serie,
+          progresso: progresso(estudo),
+          igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
+          dupla: `${estudo.dupla?.liderNome || 'Sem lider'} + ${estudo.dupla?.membro2Nome || 'Sem parceiro'}`,
+        }));
+      }
+
+      return [{
+        nome: estudo.nomeEstudante,
+        classificacao: estudo.classificacaoInteressado || 'SEM',
+        serie: estudo.serie,
+        progresso: progresso(estudo),
+        igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
+        dupla: `${estudo.dupla?.liderNome || 'Sem lider'} + ${estudo.dupla?.membro2Nome || 'Sem parceiro'}`,
+        vaIgreja: estudo.vaIgreja,
+        leBiblia: estudo.leBiblia,
+        estudaLicao: estudo.estudaLicao,
+        devolveDizimos: estudo.devolveDizimos,
+        cultoFamiliar: estudo.cultoFamiliar,
+      }];
+    });
+
+    const porSerie = Object.entries(agruparSoma(estudantes, (item) => getSerieNome(item.serie)))
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+      .slice(0, 8);
+    const porIgreja = Object.entries(agruparSoma(estudantes, (item) => item.igreja))
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+      .slice(0, 8);
+    const porDupla = Object.entries(agruparSoma(estudantes, (item) => item.dupla))
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+      .slice(0, 8);
+    const faixasProgresso = estudantes.reduce((acc, item) => {
+      if (item.progresso >= 100) acc['100%'] += 1;
+      else if (item.progresso >= 76) acc['76-99%'] += 1;
+      else if (item.progresso >= 51) acc['51-75%'] += 1;
+      else if (item.progresso >= 26) acc['26-50%'] += 1;
+      else acc['0-25%'] += 1;
+      return acc;
+    }, { '0-25%': 0, '26-50%': 0, '51-75%': 0, '76-99%': 0, '100%': 0 });
+
+    const individuais = estudantes.filter((item) => item.vaIgreja !== undefined);
+    const baseEspiritual = Math.max(1, individuais.length);
+    const sim = (campo) => individuais.filter((item) => item[campo] === true).length;
+
+    return {
+      porSerie,
+      porIgreja,
+      porDupla,
+      faixasProgresso,
+      espiritual: [
+        Math.round((sim('vaIgreja') / baseEspiritual) * 100),
+        Math.round((sim('leBiblia') / baseEspiritual) * 100),
+        Math.round((sim('estudaLicao') / baseEspiritual) * 100),
+        Math.round((sim('devolveDizimos') / baseEspiritual) * 100),
+        Math.round((sim('cultoFamiliar') / baseEspiritual) * 100),
+      ],
+    };
+  }, [resultado.estudos]);
+
+  const chartBase = {
+    textStyle: { fontFamily: 'Inter, Arial, sans-serif', color: '#334155' },
+    tooltip: { trigger: 'item', backgroundColor: '#0f172a', borderWidth: 0, textStyle: { color: '#fff' } },
+  };
+  const classificacaoOption = {
+    ...chartBase,
+    color: ['#047857', '#C9963A', '#b91c1c'],
+    legend: { bottom: 0, icon: 'circle' },
+    series: [{
+      name: 'Classificacao',
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['50%', '43%'],
+      itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 3 },
+      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      data: ['A', 'B', 'C'].map((classe) => ({
+        name: classeInfo[classe].label,
+        value: totaisPorClassificacao[classe] || 0,
+      })),
+    }],
+  };
+  const progressoOption = {
+    ...chartBase,
+    color: ['#1A3A6B'],
+    grid: { left: 44, right: 18, top: 28, bottom: 36 },
+    xAxis: { type: 'category', data: Object.keys(analisesGraficos.faixasProgresso), axisTick: { show: false } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [{
+      type: 'bar',
+      barWidth: 34,
+      itemStyle: { borderRadius: [8, 8, 0, 0], color: '#1A3A6B' },
+      label: { show: true, position: 'top', fontWeight: 700 },
+      data: Object.values(analisesGraficos.faixasProgresso),
+    }],
+  };
+  const serieOption = {
+    ...chartBase,
+    color: ['#C9963A'],
+    grid: { left: 44, right: 20, top: 28, bottom: 76 },
+    xAxis: {
+      type: 'category',
+      data: analisesGraficos.porSerie.map((item) => item.nome),
+      axisLabel: { rotate: 35, width: 90, overflow: 'truncate' },
+    },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [{
+      type: 'bar',
+      barWidth: 28,
+      itemStyle: { borderRadius: [8, 8, 0, 0], color: '#C9963A' },
+      data: analisesGraficos.porSerie.map((item) => item.total),
+    }],
+  };
+  const ranking = isPonto || isClasse ? analisesGraficos.porIgreja : analisesGraficos.porDupla;
+  const rankingOption = {
+    ...chartBase,
+    color: ['#0d9488'],
+    grid: { left: 132, right: 24, top: 20, bottom: 30 },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: ranking.map((item) => item.nome),
+      axisLabel: { width: 112, overflow: 'truncate' },
+    },
+    series: [{
+      type: 'bar',
+      barWidth: 16,
+      itemStyle: { borderRadius: [0, 8, 8, 0], color: '#0d9488' },
+      label: { show: true, position: 'right', fontWeight: 700 },
+      data: ranking.map((item) => item.total),
+    }],
+  };
+  const espiritualOption = {
+    ...chartBase,
+    radar: {
+      radius: '67%',
+      indicator: [
+        { name: 'Igreja', max: 100 },
+        { name: 'Biblia', max: 100 },
+        { name: 'Licao', max: 100 },
+        { name: 'Dizimos', max: 100 },
+        { name: 'Culto', max: 100 },
+      ],
+      splitArea: { areaStyle: { color: ['#f8fafc', '#eef2f7'] } },
+      axisName: { color: '#475569', fontWeight: 700 },
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: analisesGraficos.espiritual,
+        name: 'Acompanhamento espiritual',
+        areaStyle: { color: 'rgba(26,58,107,0.18)' },
+        lineStyle: { color: '#1A3A6B', width: 3 },
+        itemStyle: { color: '#1A3A6B' },
+      }],
+    }],
+  };
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -479,6 +652,37 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               </button>
             );
           })}
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Classificacao dos estudantes</h2>
+            <p className="text-sm text-gray-400 mb-3">Distribuicao A/B/C no recorte atual.</p>
+            <EChart option={classificacaoOption} className="h-80" />
+          </section>
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Faixas de progresso</h2>
+            <p className="text-sm text-gray-400 mb-3">Quantidade de estudantes por etapa da serie.</p>
+            <EChart option={progressoOption} className="h-80" />
+          </section>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Series mais usadas</h2>
+            <p className="text-sm text-gray-400 mb-3">Séries com maior volume de estudantes.</p>
+            <EChart option={serieOption} className="h-80" />
+          </section>
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">{isPonto || isClasse ? 'Igrejas com mais estudantes' : 'Duplas com mais estudantes'}</h2>
+            <p className="text-sm text-gray-400 mb-3">Ranking do recorte filtrado.</p>
+            <EChart option={rankingOption} className="h-80" />
+          </section>
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Acompanhamento espiritual</h2>
+            <p className="text-sm text-gray-400 mb-3">Percentual positivo nas cinco perguntas dos estudos individuais.</p>
+            <EChart option={espiritualOption} className="h-80" />
+          </section>
         </div>
 
         <div className="card">

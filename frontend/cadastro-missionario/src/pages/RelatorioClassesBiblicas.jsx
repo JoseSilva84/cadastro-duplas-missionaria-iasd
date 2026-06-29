@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
+import EChart from '../components/EChart';
 
 const faixaIgrejaConfig = {
   A: { titulo: 'Classe A', regra: '150 ou mais estudantes', cor: '#047857', bg: '#d1fae5' },
@@ -156,6 +157,88 @@ export default function RelatorioClassesBiblicas() {
   const pctB = totalClassificados ? Math.round((resumo.classificacoes.B / totalClassificados) * 100) : 0;
   const pctC = Math.max(0, 100 - pctA - pctB);
   const registrosPath = `${isDireto ? '/direto' : ''}/relatorios/classes-biblicas/registros`;
+  const topClasses = [...classesBiblicas]
+    .map((classe) => ({ nome: classe.nomeEstudante || `Classe ${classe.id}`, total: classe.participantes?.length || 0 }))
+    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+    .slice(0, 8);
+  const chartBase = {
+    textStyle: { fontFamily: 'Inter, Arial, sans-serif', color: '#334155' },
+    tooltip: { trigger: 'item', backgroundColor: '#0f172a', borderWidth: 0, textStyle: { color: '#fff' } },
+  };
+  const classificacaoOption = {
+    ...chartBase,
+    color: ['#047857', '#C9963A', '#b91c1c', '#94a3b8'],
+    legend: { bottom: 0, icon: 'circle' },
+    series: [{
+      name: 'Classificacao',
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['50%', '43%'],
+      itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 3 },
+      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      data: [
+        { name: 'Classe A', value: resumo.classificacoes.A },
+        { name: 'Classe B', value: resumo.classificacoes.B },
+        { name: 'Classe C', value: resumo.classificacoes.C },
+        { name: 'Sem classificacao', value: resumo.classificacoes.SEM },
+      ],
+    }],
+  };
+  const faixaOption = {
+    ...chartBase,
+    color: ['#047857', '#b45309', '#1A3A6B', '#64748b'],
+    legend: { bottom: 0, icon: 'circle' },
+    series: [{
+      name: 'Faixas de igreja',
+      type: 'pie',
+      radius: '68%',
+      center: ['50%', '43%'],
+      roseType: 'radius',
+      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 },
+      data: ['A', 'B', 'C', 'SEM'].map((faixa) => ({
+        name: faixaIgrejaConfig[faixa].titulo,
+        value: resumo.porFaixa[faixa].reduce((acc, igreja) => acc + igreja.total, 0),
+      })),
+    }],
+  };
+  const igrejaOption = {
+    ...chartBase,
+    color: ['#1A3A6B'],
+    grid: { left: 132, right: 24, top: 20, bottom: 30 },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: resumo.igrejas.slice(0, 8).map((item) => item.nome),
+      axisLabel: { width: 112, overflow: 'truncate' },
+    },
+    series: [{
+      type: 'bar',
+      barWidth: 16,
+      itemStyle: { borderRadius: [0, 8, 8, 0], color: '#1A3A6B' },
+      label: { show: true, position: 'right', fontWeight: 700 },
+      data: resumo.igrejas.slice(0, 8).map((item) => item.total),
+    }],
+  };
+  const classesOption = {
+    ...chartBase,
+    color: ['#C9963A'],
+    grid: { left: 132, right: 24, top: 20, bottom: 30 },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: topClasses.map((item) => item.nome),
+      axisLabel: { width: 112, overflow: 'truncate' },
+    },
+    series: [{
+      type: 'bar',
+      barWidth: 16,
+      itemStyle: { borderRadius: [0, 8, 8, 0], color: '#C9963A' },
+      label: { show: true, position: 'right', fontWeight: 700 },
+      data: topClasses.map((item) => item.total),
+    }],
+  };
 
   if (carregando) {
     return (
@@ -201,6 +284,32 @@ export default function RelatorioClassesBiblicas() {
               <p className="text-3xl font-bold mt-1" style={{ color: cor }}>{valor}</p>
             </div>
           ))}
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Distribuicao A/B/C</h2>
+            <p className="text-sm text-gray-400 mb-3">Classificacao individual dos estudantes em classes biblicas.</p>
+            <EChart option={classificacaoOption} className="h-80" />
+          </section>
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Faixas das igrejas</h2>
+            <p className="text-sm text-gray-400 mb-3">Total de estudantes por faixa de classificacao da igreja.</p>
+            <EChart option={faixaOption} className="h-80" />
+          </section>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Ranking por igreja</h2>
+            <p className="text-sm text-gray-400 mb-3">Igrejas com maior volume de estudantes em classe biblica.</p>
+            <EChart option={igrejaOption} className="h-96" />
+          </section>
+          <section className="card">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Maiores classes biblicas</h2>
+            <p className="text-sm text-gray-400 mb-3">Classes com mais estudantes cadastrados.</p>
+            <EChart option={classesOption} className="h-96" />
+          </section>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
