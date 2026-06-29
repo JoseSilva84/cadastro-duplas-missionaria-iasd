@@ -18,6 +18,10 @@ const participantesResumo = (estudo) => (
     : estudo.nomeEstudante
 );
 
+const totalEstudantesDoEstudo = (estudo) => (
+  ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (estudo.participantes?.length || 0) : 1
+);
+
 const classeInfo = {
   A: { label: 'A - Pronto para o batismo', curto: 'A', dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   B: { label: 'B - Quer, mas tem impedimento', curto: 'B', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -38,11 +42,11 @@ const ClassificacaoBadge = ({ classe, motivo, compacto = false }) => {
 const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   const linhas = estudos.map((item) => `
     <tr>
-      <td>${tipoRelatorio === 'PONTO' ? item.nomeEstudante : participantesResumo(item)}</td>
+      <td>${['PONTO', 'CLASSE'].includes(item.tipoEstudo) ? item.nomeEstudante : participantesResumo(item)}</td>
       <td>${item.cidade || ''}/${item.estado || ''}</td>
       <td>${getSerieNome(item.serie)}</td>
       <td>${getLicaoLabel(item.serie, item.licaoAtual)}</td>
-      <td>${tipoRelatorio === 'PONTO' ? (item.participantes || []).map((p) => `${p.nome}: ${p.classificacaoInteressado || '-'}`).join(', ') : (classeInfo[item.classificacaoInteressado]?.label || '-')}</td>
+      <td>${['PONTO', 'CLASSE'].includes(item.tipoEstudo) ? (item.participantes || []).map((p) => `${p.nome}: ${p.classificacaoInteressado || '-'}`).join(', ') : (classeInfo[item.classificacaoInteressado]?.label || '-')}</td>
       <td>${progresso(item)}%</td>
       <td>${item.dupla?.liderNome || ''} + ${item.dupla?.membro2Nome || ''}</td>
       <td>${item.diaEstudo || ''}</td>
@@ -86,8 +90,17 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const isDireto = location.pathname.startsWith('/direto');
   const podeExcluir = ehAdmin(usuario);
   const isPonto = tipoRelatorio === 'PONTO';
-  const titulo = isPonto ? 'Pontos de Estudo Bíblico' : 'Estudantes Bíblicos';
-  const [resultado, setResultado] = useState({ total: 0, estudos: [], porSerie: [] });
+  const isClasse = tipoRelatorio === 'CLASSE';
+  const isTodos = tipoRelatorio === 'TODOS';
+  const isGrupo = isPonto || isClasse;
+  const titulo = isPonto
+    ? 'Pontos de Estudo Bíblico'
+    : isClasse
+      ? 'Classes Bíblicas Cadastradas'
+      : isTodos
+        ? 'Registros de Estudos Bíblicos'
+        : 'Estudantes Bíblicos';
+  const [resultado, setResultado] = useState({ total: 0, totalEstudantes: 0, estudos: [], porSerie: [] });
   const [duplas, setDuplas] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [licoesEditadas, setLicoesEditadas] = useState({});
@@ -110,7 +123,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     setCarregando(true);
     const params = {
       ...Object.fromEntries(Object.entries(filtros).filter(([, valor]) => valor)),
-      tipoEstudo: tipoRelatorio,
+      ...(isTodos ? {} : { tipoEstudo: tipoRelatorio }),
     };
     Promise.all([
       api.get('/relatorios/estudos-biblicos', { params }),
@@ -162,7 +175,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
 
   const excluirEstudo = async (estudo) => {
-    const nome = isPonto ? estudo.nomeEstudante : participantesResumo(estudo);
+    const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
     if (!window.confirm(`Excluir ${nome}?`)) return;
     try {
       await api.delete(`/estudos-biblicos/${estudo.id}`);
@@ -183,13 +196,25 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     ? Math.round(resultado.estudos.reduce((acc, estudo) => acc + progresso(estudo), 0) / resultado.estudos.length)
     : 0;
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
-  const detalhesPath = (id) => {
+  const totalEstudantes = resultado.totalEstudantes ?? resultado.estudos.reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
+  const tooltipTotalEstudantes = isPonto
+    ? 'Estudos nos pontos: soma dos estudantes/participantes cadastrados em todos os pontos filtrados.'
+    : isClasse
+      ? 'Estudantes em classes: soma dos participantes cadastrados em todas as classes biblicas filtradas.'
+      : isTodos
+        ? 'Pessoas envolvidas: estudos individuais + estudantes nos pontos + estudantes em classes.'
+        : 'Estudantes: total de estudos biblicos individuais cadastrados nos filtros atuais.';
+  const detalhesPath = (estudo) => {
+    const id = typeof estudo === 'object' ? estudo.id : estudo;
+    const tipo = typeof estudo === 'object' ? estudo.tipoEstudo : tipoRelatorio;
     const base = isDireto ? '/direto/relatorios' : '/relatorios';
-    return `${base}/${isPonto ? 'pontos-estudo' : 'estudos-biblicos'}/${id}`;
+    if (tipo === 'PONTO') return `${base}/pontos-estudo/${id}`;
+    if (tipo === 'CLASSE') return `${base}/classes-biblicas/registros/${id}`;
+    return `${base}/estudos-biblicos/${id}`;
   };
   const abrirEstudo = (estudo) => {
     if (podeExcluir) {
-      navigate(detalhesPath(estudo.id));
+      navigate(detalhesPath(estudo));
       return;
     }
     setSelecionado(estudo);
@@ -209,15 +234,38 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="card"><p className="text-xs text-gray-400">Registros</p><p className="text-2xl font-bold text-[#1A3A6B]">{resultado.total}</p></div>
-          <div className="card"><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
-          <div className="card"><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
+        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+          {isGrupo && (
+            <div
+              className="smart-tooltip card"
+              data-tooltip={isPonto ? 'Pontos de estudo: quantidade de pontos cadastrados nos filtros atuais.' : 'Classes biblicas: quantidade de classes cadastradas nos filtros atuais.'}
+              tabIndex={0}
+            >
+              <p className="text-xs text-gray-400">{isPonto ? 'Pontos de estudo' : 'Classes bíblicas'}</p>
+              <p className="text-2xl font-bold text-[#1A3A6B]">{resultado.total}</p>
+            </div>
+          )}
+          {isTodos && (
+            <div
+              className="smart-tooltip card"
+              data-tooltip="Registros cadastrados: soma dos estudos individuais, pontos de estudo e classes biblicas filtrados."
+              tabIndex={0}
+            >
+              <p className="text-xs text-gray-400">Registros cadastrados</p>
+              <p className="text-2xl font-bold text-[#1A3A6B]">{resultado.total}</p>
+            </div>
+          )}
+          <div className="smart-tooltip card" data-tooltip={tooltipTotalEstudantes} tabIndex={0}>
+            <p className="text-xs text-gray-400">{isPonto ? 'Estudos nos pontos' : isClasse ? 'Estudantes em classes' : isTodos ? 'Pessoas envolvidas' : 'Estudantes'}</p>
+            <p className="text-2xl font-bold text-[#1A3A6B]">{isGrupo || isTodos ? totalEstudantes : resultado.total}</p>
+          </div>
+          <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
+          <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
         </div>
 
         <div className="card">
           <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-7 gap-3">
-            <input className="input-field" placeholder={isPonto ? 'Buscar ponto/estudante' : 'Buscar estudante'} value={filtros.nome} onChange={(e) => set('nome', e.target.value)} />
+            <input className="input-field" placeholder={isPonto ? 'Buscar ponto/estudante' : isClasse ? 'Buscar classe/estudante' : isTodos ? 'Buscar registro/estudante' : 'Buscar estudante'} value={filtros.nome} onChange={(e) => set('nome', e.target.value)} />
             <select className="input-field" value={filtros.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
               <option value="">Todas as duplas</option>
               {duplas.map((dupla) => <option key={dupla.id} value={dupla.id}>{dupla.liderNome} + {dupla.membro2Nome}</option>)}
@@ -245,8 +293,8 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           <div className="card border-l-4 border-l-[#C9963A]">
             <div className="flex flex-col lg:flex-row lg:items-center gap-5 justify-between">
               <div>
-                <p className="text-xs text-gray-400">{isPonto ? 'Ponto selecionado' : 'Estudante selecionado'}</p>
-                <h2 className="text-xl font-bold text-[#1A3A6B]">{isPonto ? selecionado.nomeEstudante : participantesResumo(selecionado)}</h2>
+                <p className="text-xs text-gray-400">{isPonto ? 'Ponto selecionado' : isClasse ? 'Classe selecionada' : isTodos ? 'Registro selecionado' : 'Estudante selecionado'}</p>
+                <h2 className="text-xl font-bold text-[#1A3A6B]">{['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) ? selecionado.nomeEstudante : participantesResumo(selecionado)}</h2>
                 <p className="text-sm text-gray-500">{getSerieNome(selecionado.serie)} · {getLicaoLabel(selecionado.serie, selecionado.licaoAtual)}</p>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -254,12 +302,12 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                   <div className="flex items-center justify-between text-sm mb-1"><span>Progresso</span><strong>{progresso(selecionado)}%</strong></div>
                   <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
                 </div>
-                <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado.id))}>
+                <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado))}>
                   Ver detalhes
                 </button>
               </div>
             </div>
-            {isPonto && selecionado.participantes?.length > 0 && (
+            {['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && selecionado.participantes?.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {selecionado.participantes.map((participante) => (
                   <span key={participante.id} className="inline-flex items-center gap-2 rounded-full bg-[#1A3A6B]/5 px-2 py-1">
@@ -269,7 +317,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                 ))}
               </div>
             )}
-            {!isPonto && (
+            {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <ClassificacaoBadge classe={selecionado.classificacaoInteressado} motivo={selecionado.motivoImpedimento} />
                 {selecionado.classificacaoInteressado === 'B' && selecionado.motivoImpedimento && (
@@ -290,7 +338,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               <table className="w-full min-w-[1280px] text-sm">
                 <thead>
                   <tr className="bg-[#F4F5F7] text-gray-500">
-                    <th className="w-40 text-left px-4 py-3">{isPonto ? 'Ponto/Estudantes' : 'Estudante'}</th>
+                    <th className="w-40 text-left px-4 py-3">{isGrupo ? (isPonto ? 'Ponto/Estudantes' : 'Classe/Estudantes') : isTodos ? 'Registro/Estudantes' : 'Estudante'}</th>
                     <th className="w-40 text-left px-4 py-3">Cidade/Estado</th>
                     <th className="w-32 text-left px-4 py-3">Série</th>
                     <th className="w-72 text-left px-4 py-3">Lição Atual</th>
@@ -305,7 +353,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === estudo.serie)?.licoes || [];
                     return (
                       <tr key={estudo.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => abrirEstudo(estudo)}>
-                        <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{isPonto ? <><span>{estudo.nomeEstudante}</span><p className="text-xs text-gray-400 font-normal">{participantesResumo(estudo)}</p></> : estudo.nomeEstudante}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? <><span>{estudo.nomeEstudante}</span><p className="text-xs text-gray-400 font-normal">{participantesResumo(estudo)}</p></> : estudo.nomeEstudante}</td>
                         <td className="px-4 py-3 text-gray-600">{estudo.cidade}/{estudo.estado}</td>
                         <td className="px-4 py-3 text-gray-600">{getSerieNome(estudo.serie)}</td>
                         <td className="px-4 py-3 text-gray-600" onClick={(e) => e.stopPropagation()}>
@@ -314,7 +362,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           </select>
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {isPonto ? (
+                          {['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (
                             <div className="flex flex-wrap gap-1">
                               {(estudo.participantes || []).map((participante) => (
                                 <ClassificacaoBadge key={participante.id} classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
@@ -330,7 +378,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                         <td className="px-4 py-3 text-gray-600 break-words">{estudo.dupla?.liderNome} + {estudo.dupla?.membro2Nome}</td>
                         <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_16px_rgba(15,35,71,0.06)]" onClick={(e) => e.stopPropagation()}>
                           <div className="flex w-32 flex-col gap-2">
-                            <button type="button" className="btn-outline w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo.id))}>Detalhes</button>
+                            <button type="button" className="btn-outline w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo))}>Detalhes</button>
                             <button type="button" className="btn-primary w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
                             {podeExcluir && (
                               <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>

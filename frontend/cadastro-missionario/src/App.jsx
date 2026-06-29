@@ -273,10 +273,13 @@ function AppRoutes() {
         />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><RelatorioPersonalizado /></RotaComPerfis>} />
+        <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
+        <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
+        <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
         <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
       </Route>
@@ -366,10 +369,13 @@ function AppRoutes() {
         <Route path="relatorios" element={<RelatoriosDireto />} />
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
+        <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/pontos-estudo" element={<RelatorioEstudosBiblicos tipoRelatorio="PONTO" />} />
         <Route path="relatorios/pontos-estudo/:id" element={<EstudanteDashboard />} />
+        <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
+        <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
         <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
       </Route>

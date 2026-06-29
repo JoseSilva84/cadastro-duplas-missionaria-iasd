@@ -101,6 +101,8 @@ export default function EstudanteDashboard() {
   const [form, setForm] = useState(montarForm(null));
 
   const isPonto = estudo?.tipoEstudo === 'PONTO';
+  const isClasse = estudo?.tipoEstudo === 'CLASSE';
+  const isGrupo = isPonto || isClasse;
   const licoes = useMemo(() => (
     SERIES_ESTUDO.find((serie) => serie.id === estudo?.serie)?.licoes || []
   ), [estudo?.serie]);
@@ -185,7 +187,7 @@ export default function EstudanteDashboard() {
     devolveDizimos: dadosForm.devolveDizimos === '' ? undefined : dadosForm.devolveDizimos,
     cultoFamiliar: dadosForm.cultoFamiliar === '' ? undefined : dadosForm.cultoFamiliar,
     observacoes: dadosForm.observacoes || '',
-    participantes: estudo.tipoEstudo === 'PONTO' ? dadosForm.participantes.map((participante) => ({
+    participantes: ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? dadosForm.participantes.map((participante) => ({
       ...participante,
       motivoImpedimento: participante.classificacaoInteressado === 'B' ? participante.motivoImpedimento : '',
     })) : undefined,
@@ -232,7 +234,7 @@ export default function EstudanteDashboard() {
 
   const percentual = progresso(estudo);
   const titulo = isPonto ? estudo.nomeEstudante : estudo.nomeEstudante;
-  const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : 'estudos-biblicos'}`;
+  const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : isClasse ? 'classes-biblicas/registros' : 'estudos-biblicos'}`;
 
   return (
     <div className={isDireto ? 'flex flex-col h-full bg-[#F4F5F7] animate-fade-in' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -242,7 +244,7 @@ export default function EstudanteDashboard() {
         </button>
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
-            <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">{isPonto ? 'Ponto de Estudo' : 'Dashboard do Estudante'}</p>
+            <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">{isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Bíblica' : 'Dashboard do Estudante'}</p>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h1>
             <p className="text-gray-400 text-sm mt-1">{getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)}</p>
           </div>
@@ -269,8 +271,8 @@ export default function EstudanteDashboard() {
           <div className="card"><p className="text-xs text-gray-400">Total da série</p><p className="text-2xl font-bold text-[#1A3A6B]">{totalLicoes(estudo.serie)}</p></div>
           <div className="card"><p className="text-xs text-gray-400">Progresso</p><p className="text-2xl font-bold text-[#C9963A]">{percentual}%</p></div>
           <div className="card">
-            <p className="text-xs text-gray-400">{isPonto ? 'Estudantes' : 'Classificacao'}</p>
-            {isPonto ? (
+            <p className="text-xs text-gray-400">{isGrupo ? 'Estudantes' : 'Classificacao'}</p>
+            {isGrupo ? (
               <p className="text-2xl font-bold text-emerald-600">{estudo.participantes?.length || 0}</p>
             ) : (
               <div className="mt-2"><ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} /></div>
@@ -296,7 +298,7 @@ export default function EstudanteDashboard() {
           <div className="card">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
               <div>
-                <h2 className="text-lg font-bold text-[#1A3A6B]">Editar dados {isPonto ? 'do ponto de estudo' : 'do estudante'}</h2>
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Editar dados {isPonto ? 'do ponto de estudo' : isClasse ? 'da classe bíblica' : 'do estudante'}</h2>
                 <p className="text-sm text-gray-400">Atualize cadastro, acompanhamento e decisao em um so lugar.</p>
               </div>
               <div className="flex gap-2">
@@ -318,7 +320,7 @@ export default function EstudanteDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <label>
-                <span className="block text-sm font-medium text-gray-600 mb-1.5">{isPonto ? 'Nome do ponto' : 'Nome do estudante'}</span>
+                <span className="block text-sm font-medium text-gray-600 mb-1.5">{isPonto ? 'Nome do ponto' : isClasse ? 'Nome da classe' : 'Nome do estudante'}</span>
                 <input className="input-field" value={form.nomeEstudante} onChange={(e) => alterarCampo('nomeEstudante', e.target.value)} />
               </label>
               <label>
@@ -346,7 +348,7 @@ export default function EstudanteDashboard() {
                 <input className="input-field" value={form.horarioEstudo} onChange={(e) => alterarCampo('horarioEstudo', e.target.value)} />
               </label>
 
-              {!isPonto && (
+              {!isGrupo && (
                 <>
                   <label>
                     <span className="block text-sm font-medium text-gray-600 mb-1.5">Sexo</span>
@@ -375,7 +377,7 @@ export default function EstudanteDashboard() {
               )}
             </div>
 
-            {!isPonto && (
+            {!isGrupo && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-5">
                 {[
                   ['vaIgreja', 'Vai a igreja?'],
@@ -396,9 +398,9 @@ export default function EstudanteDashboard() {
               </div>
             )}
 
-            {isPonto && (
+            {isGrupo && (
               <div className="mt-6">
-                <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">Estudantes do ponto</h3>
+                <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">{isPonto ? 'Estudantes do ponto' : 'Estudantes da classe'}</h3>
                 <div className="space-y-4">
                   {form.participantes.map((participante, index) => (
                     <div key={`${participante.nome}-${index}`} className="rounded-xl bg-[#F4F5F7] p-4">
@@ -458,7 +460,7 @@ export default function EstudanteDashboard() {
             <Info label="WhatsApp" valor={estudo.whatsapp} />
             <Info label="Endereço" valor={estudo.endereco} />
             <Info label="Cidade/Estado" valor={`${estudo.cidade}/${estudo.estado}`} />
-            {!isPonto && <Info label="Sexo" valor={estudo.sexo} />}
+            {!isGrupo && <Info label="Sexo" valor={estudo.sexo} />}
           </KanbanCard>
 
           <KanbanCard titulo="Jornada do Estudo">
@@ -475,8 +477,8 @@ export default function EstudanteDashboard() {
             <Info label="Culto familiar?" valor={formatarBooleano(estudo.cultoFamiliar)} />
           </KanbanCard>
 
-          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : 'Decisão'}>
-            {isPonto ? (
+          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'}>
+            {isGrupo ? (
               estudo.participantes?.map((participante) => (
                 <div key={participante.id} className="rounded-lg bg-[#F4F5F7] px-4 py-3">
                   <p className="text-xs text-gray-400 mb-1">{participante.nome}</p>

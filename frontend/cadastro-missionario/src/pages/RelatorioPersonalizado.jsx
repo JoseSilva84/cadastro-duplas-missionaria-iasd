@@ -102,7 +102,12 @@ export default function RelatorioPersonalizado() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {cards.map(([key, label]) => (
-              <div key={key} className="card p-4">
+              <div
+                key={key}
+                className="smart-tooltip card p-4"
+                data-tooltip={`${label}: total consolidado para o escopo selecionado nos filtros do relatorio personalizado.`}
+                tabIndex={0}
+              >
                 <p className="text-xs font-semibold text-gray-500">{label}</p>
                 <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">{Number(dados[key] || 0).toLocaleString('pt-BR')}</p>
               </div>
@@ -112,7 +117,12 @@ export default function RelatorioPersonalizado() {
             <h2 className="text-lg font-bold text-[#1A3A6B]">Escola Sabatina</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
               {Object.entries(dados.escolaSabatina || {}).map(([key, valor]) => (
-                <div key={key} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <div
+                  key={key}
+                  className="smart-tooltip rounded-lg border border-gray-100 bg-gray-50 p-3"
+                  data-tooltip={`${key}: total da Escola Sabatina no escopo selecionado.`}
+                  tabIndex={0}
+                >
                   <p className="text-xs font-semibold text-gray-500">{key}</p>
                   <p className="mt-1 text-xl font-bold text-[#C9963A]">{Number(valor || 0).toLocaleString('pt-BR')}</p>
                 </div>

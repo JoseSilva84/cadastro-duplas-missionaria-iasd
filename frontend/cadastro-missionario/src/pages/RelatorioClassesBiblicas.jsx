@@ -49,14 +49,18 @@ export default function RelatorioClassesBiblicas() {
           {classes.map((classe) => {
             const grupo = dados?.[classe.id] || { total: 0, igrejas: [] };
             return (
-              <section key={classe.id} className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
+              <section key={classe.id} className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-visible">
                 <div className="p-4 border-b border-gray-100" style={{ borderTop: `4px solid ${classe.cor}` }}>
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{classe.titulo}</h2>
                       <p className="text-xs text-gray-400 mt-0.5">{classe.regra}</p>
                     </div>
-                    <div className="text-right">
+                    <div
+                      className="smart-tooltip text-right"
+                      data-tooltip={`${classe.titulo}: ${classe.regra}. O total mostra estudantes somados nas igrejas desta faixa.`}
+                      tabIndex={0}
+                    >
                       <p className="text-2xl font-bold" style={{ color: classe.cor }}>{grupo.total || 0}</p>
                       <p className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">estudantes</p>
                     </div>
@@ -72,7 +76,12 @@ export default function RelatorioClassesBiblicas() {
                         <p className="font-semibold text-[#1A3A6B] truncate">{igreja.nome}</p>
                         <p className="text-xs text-gray-400">Classe {classe.id}</p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ color: classe.cor, backgroundColor: classe.bg }}>
+                      <span
+                        className="smart-tooltip px-2.5 py-1 rounded-full text-xs font-bold"
+                        data-tooltip={`${igreja.nome}: total de estudantes considerados na Classe ${classe.id}.`}
+                        tabIndex={0}
+                        style={{ color: classe.cor, backgroundColor: classe.bg }}
+                      >
                         {igreja.total} estudantes
                       </span>
                     </div>

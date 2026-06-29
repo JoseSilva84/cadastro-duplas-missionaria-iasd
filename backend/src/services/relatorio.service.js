@@ -71,6 +71,10 @@ const RelatorioService = {
 
   async estudosBiblicos(query, usuario) {
     const estudos = await EstudoBiblicoService.listar(query, usuario);
+    const totalEstudantes = estudos.reduce((acc, estudo) => {
+      if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) return acc + (estudo.participantes?.length || 0);
+      return acc + 1;
+    }, 0);
     const porSerieMap = estudos.reduce((acc, estudo) => {
       const serie = estudo.serie || 'Sem série';
       acc[serie] = (acc[serie] || 0) + 1;
@@ -80,7 +84,7 @@ const RelatorioService = {
       serie,
       _count: { serie: total },
     }));
-    return { total: estudos.length, porSerie, estudos };
+    return { total: estudos.length, totalEstudantes, porSerie, estudos };
   },
 
   async dashboardAssociacao() {

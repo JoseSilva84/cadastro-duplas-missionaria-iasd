@@ -27,6 +27,8 @@ export default function Login() {
     duplas: '-',
     classes: '-',
     estudantes: '-',
+    estudosIndividuais: '-',
+    estudantesPontos: '-',
   });
 
   useEffect(() => {
@@ -38,6 +40,8 @@ export default function Login() {
           duplas: res.data.duplas,
           classes: res.data.classes,
           estudantes: res.data.estudantes,
+          estudosIndividuais: res.data.estudosIndividuais,
+          estudantesPontos: res.data.estudantesPontos,
         });
       })
       .catch((err) => console.error('Erro ao carregar estatísticas:', err));
@@ -120,13 +124,17 @@ export default function Login() {
           {/* Estatísticas decorativas dinâmicas */}
           <div className="grid grid-cols-5 gap-3 w-full max-w-xl">
             {[
-              { label: 'Regiões', valor: estatisticas.regioes },
-              { label: 'Distritos', valor: estatisticas.distritos },
-              { label: 'Duplas', valor: estatisticas.duplas },
-              { label: 'Classes', valor: estatisticas.classes },
-              { label: 'Estudantes', valor: estatisticas.estudantes },
+              { label: 'Regiões', valor: estatisticas.regioes, tooltip: 'Regioes: total de regioes missionarias cadastradas no sistema.' },
+              { label: 'Distritos', valor: estatisticas.distritos, tooltip: 'Distritos: total de distritos cadastrados em todas as regioes.' },
+              { label: 'Duplas', valor: estatisticas.duplas, tooltip: 'Duplas: total de duplas missionarias cadastradas.' },
+              { label: 'Classes', valor: estatisticas.classes, tooltip: 'Classes: total de classes biblicas cadastradas.' },
+              {
+                label: 'Estudantes',
+                valor: estatisticas.estudantes,
+                tooltip: `Estudantes = estudos biblicos individuais (${estatisticas.estudosIndividuais}) + estudantes dos pontos de estudo (${estatisticas.estudantesPontos}).`,
+              },
             ].map((item) => (
-              <div key={item.label} className="bg-white/10 rounded-lg px-2 py-2 text-center">
+              <div key={item.label} className="smart-tooltip bg-white/10 rounded-lg px-2 py-2 text-center" data-tooltip={item.tooltip || item.label} tabIndex={0}>
                 <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>
                 <p className="text-white/70 text-xs">{item.label}</p>
               </div>

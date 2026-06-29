@@ -174,12 +174,18 @@ export default function RelatoriosDireto() {
                   {[
                     { label: 'Total de Duplas', valor: resumo.totalDuplas, icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
                     { label: 'Duplas Ativas', valor: resumo.totalAtivas, icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
-                    { label: 'Estudos Bíblicos Ativos', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
+                    { label: 'Duplas com Estudo Ativo', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7', detalhe: 'Duplas cujo status do estudo biblico esta ATIVO.' },
                     { label: 'Classes Bíblicas Ativas', valor: resumo.evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
                     { label: 'Batismos Realizados', valor: resumo.totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
                     { label: 'Metas de contatos', valor: resumo.totalPessoasAlcancadas, icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
                   ].map((item) => (
-                    <div key={item.label} className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300" style={{ borderLeft: `3px solid ${item.cor}` }}>
+                    <div
+                      key={item.label}
+                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300"
+                      data-tooltip={item.detalhe || `${item.label}: total consolidado no relatorio global.`}
+                      tabIndex={0}
+                      style={{ borderLeft: `3px solid ${item.cor}` }}
+                    >
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg shadow-md flex-shrink-0`}>{item.icon}</div>
                       <div>
                         <p className="text-xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
@@ -196,7 +202,11 @@ export default function RelatoriosDireto() {
                       <div key={classe} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-bold text-[#1A3A6B]">Estudos Classe {classe}</p>
-                          <span className="text-xl font-bold text-[#C9963A]">{resumo.classesBiblicas[classe]?.total || 0}</span>
+                          <span
+                            className="smart-tooltip text-xl font-bold text-[#C9963A]"
+                            data-tooltip={`Classe ${classe}: total de estudantes em igrejas classificadas nesta faixa.`}
+                            tabIndex={0}
+                          >{resumo.classesBiblicas[classe]?.total || 0}</span>
                         </div>
                         <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                           {(resumo.classesBiblicas[classe]?.igrejas || []).map((igreja) => (
@@ -221,7 +231,12 @@ export default function RelatoriosDireto() {
                     {resumo.porProjeto.map((p) => {
                       const pct = Math.round((p._count.tipoProjeto / Math.max(resumo.totalDuplas, 1)) * 100);
                       return (
-                        <div key={p.tipoProjeto} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                        <div
+                          key={p.tipoProjeto}
+                          className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+                          data-tooltip={`${projetoLabel[p.tipoProjeto]}: ${p._count.tipoProjeto} dupla(s), equivalente a ${pct}% do total.`}
+                          tabIndex={0}
+                        >
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{projetoIcon[p.tipoProjeto]}</span>
@@ -279,12 +294,17 @@ export default function RelatoriosDireto() {
                   {[
                     { label: 'Total de Duplas', valor: regiaoSelecionada.totalDuplas, icon: '✝️' },
                     { label: 'Duplas Ativas', valor: regiaoSelecionada.ativas, icon: '✅' },
-                    { label: 'Estudos Bíblicos Ativos', valor: regiaoSelecionada.estudosAtivos, icon: '📖' },
+                    { label: 'Duplas com Estudo Ativo', valor: regiaoSelecionada.estudosAtivos, icon: '📖', detalhe: 'Duplas desta regiao cujo status do estudo biblico esta ATIVO.' },
                     { label: 'Classes Bíblicas Ativas', valor: regiaoSelecionada.evangelismosAtivos, icon: '📢' },
                     { label: 'Batismos Realizados', valor: regiaoSelecionada.totalBatismos, icon: '💧' },
                     { label: 'metas de contatos', valor: regiaoSelecionada.totalPessoas, icon: '🙏' },
                   ].map((item) => (
-                    <div key={item.label} className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
+                    <div
+                      key={item.label}
+                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300"
+                      data-tooltip={item.detalhe || `${item.label}: total consolidado nesta regiao.`}
+                      tabIndex={0}
+                    >
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-md flex-shrink-0" style={{ background: `linear-gradient(135deg, ${regiaoSelecionada.cor}, ${regiaoSelecionada.cor}cc)` }}>
                         {item.icon}
                       </div>
@@ -302,7 +322,12 @@ export default function RelatoriosDireto() {
                   {regiaoSelecionada.distritos.map((distrito, index) => {
                     const pct = Math.round((distrito.totalDuplas / Math.max(regiaoSelecionada.totalDuplas, 1)) * 100);
                     return (
-                      <div key={distrito.id} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                      <div
+                        key={distrito.id}
+                        className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 relative"
+                        data-tooltip={`${distrito.nome}: ${distrito.totalDuplas} dupla(s), ${pct}% das duplas da regiao.`}
+                        tabIndex={0}
+                      >
                         {index === 0 && <div className="absolute top-0 right-0 w-10 h-10 bg-[#C9963A] transform translate-x-5 -translate-y-5 rotate-45" />}
                         {index === 0 && <span className="absolute top-1 right-1 text-[10px] text-white font-bold" title="1º Lugar">🏆</span>}
                         

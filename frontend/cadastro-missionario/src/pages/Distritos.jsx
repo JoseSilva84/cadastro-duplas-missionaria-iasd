@@ -119,14 +119,16 @@ export default function Distritos() {
 
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
         {[
-          { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
-          { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
-          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: '👥', gradient: 'from-[#C9963A] to-[#e5b05a]' },
-          { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
+          { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Distritos: total de distritos vinculados a esta regiao.' },
+          { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Igrejas: soma das igrejas cadastradas nos distritos desta regiao.' },
+          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: '👥', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas: soma das duplas missionarias vinculadas aos distritos desta regiao.' },
+          { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Membros: soma de membros informados nos distritos desta regiao.' },
         ].map((item) => (
           <div
             key={item.label}
-            className="card group cursor-default"
+            className="smart-tooltip card group cursor-default"
+            data-tooltip={item.tooltip}
+            tabIndex={0}
             style={{ borderTop: `3px solid ${item.cor}` }}
           >
             <div className="flex items-center gap-3 sm:gap-4">

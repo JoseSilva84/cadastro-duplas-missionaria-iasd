@@ -575,7 +575,7 @@ export default function GestaoUsuarios() {
 
   return (
     <div className="space-y-5">
-      <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+      <section className="overflow-visible rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-[#C9963A]">Acessos do sistema</p>
@@ -593,15 +593,15 @@ export default function GestaoUsuarios() {
           </button>
         </div>
         <div className="grid grid-cols-3 divide-x divide-gray-100">
-          <div className="px-4 py-3 sm:px-5">
+          <div className="smart-tooltip px-4 py-3 sm:px-5" data-tooltip="Total: quantidade completa de usuarios cadastrados." tabIndex={0}>
             <p className="text-2xl font-bold text-[#1A3A6B]">{usuarios.length}</p>
             <p className="text-xs font-medium text-gray-500">Total</p>
           </div>
-          <div className="px-4 py-3 sm:px-5">
+          <div className="smart-tooltip px-4 py-3 sm:px-5" data-tooltip="Ativos: usuarios habilitados para acessar o sistema." tabIndex={0}>
             <p className="text-2xl font-bold text-emerald-600">{totalAtivos}</p>
             <p className="text-xs font-medium text-gray-500">Ativos</p>
           </div>
-          <div className="px-4 py-3 sm:px-5">
+          <div className="smart-tooltip px-4 py-3 sm:px-5" data-tooltip="Exibidos: usuarios que permanecem visiveis apos os filtros atuais." tabIndex={0}>
             <p className="text-2xl font-bold text-gray-500">{usuariosFiltrados.length}</p>
             <p className="text-xs font-medium text-gray-500">Exibidos</p>
           </div>
@@ -614,9 +614,10 @@ export default function GestaoUsuarios() {
             key={perfil}
             type="button"
             onClick={() => setFiltroPerfil(filtroPerfil === perfil ? '' : perfil)}
-            className={`rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+            className={`smart-tooltip rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
               filtroPerfil === perfil ? 'border-[#1A3A6B] ring-2 ring-[#1A3A6B]/15' : 'border-gray-100 hover:border-gray-200'
             }`}
+            data-tooltip={`${cfg.label}: quantidade de usuarios cadastrados neste perfil.`}
           >
             <div className="flex items-start justify-between gap-3">
               <span className={`h-9 w-9 rounded-lg ${cfg.dot}`} />

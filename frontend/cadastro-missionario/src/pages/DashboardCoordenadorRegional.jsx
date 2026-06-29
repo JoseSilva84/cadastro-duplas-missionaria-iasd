@@ -42,9 +42,13 @@ const ChartIcon = () => (
   </svg>
 );
 
-function Indicador({ label, valor, detalhe, cor, icon }) {
+function Indicador({ label, valor, detalhe, tooltip, cor, icon }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+    <div
+      className="smart-tooltip bg-white border border-gray-100 rounded-lg p-4 shadow-sm"
+      data-tooltip={tooltip || detalhe || `${label}: total consolidado conforme os acompanhamentos registrados.`}
+      tabIndex={0}
+    >
       <div className="flex items-start gap-3">
         <Icone cor={cor}>{icon}</Icone>
         <div className="min-w-0">
@@ -59,7 +63,7 @@ function Indicador({ label, valor, detalhe, cor, icon }) {
 
 function Painel({ titulo, subtitulo, cor, children }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
       <div className="px-5 py-4 border-b border-gray-100" style={{ borderTop: `4px solid ${cor}` }}>
         <p className="text-xs font-bold uppercase tracking-widest" style={{ color: cor }}>{subtitulo}</p>
         <h2 className="text-xl font-bold text-[#1A3A6B] mt-1" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h2>
@@ -75,7 +79,12 @@ function Ranking({ titulo, itens = [], campo, label, cor }) {
       <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">{titulo}</h3>
       <div className="space-y-2">
         {itens.length ? itens.map((item, index) => (
-          <div key={`${titulo}-${item.id}`} className="bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3">
+          <div
+            key={`${titulo}-${item.id}`}
+            className="smart-tooltip bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3"
+            data-tooltip={`${titulo}: ${item.nome} possui ${numero(item[campo])} ${label}.`}
+            tabIndex={0}
+          >
             <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{index + 1}</div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[#1A3A6B] truncate">{item.nome}</p>
@@ -141,10 +150,10 @@ export default function DashboardCoordenadorRegional() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
-        <Indicador label="Coordenadores ativos" valor={resumo.totalCoordenadores} cor="#1A3A6B" icon={<UsersIcon />} />
-        <Indicador label="Assistências registradas" valor={resumo.totalAssistencias} cor="#C9963A" icon={<VisitIcon />} />
-        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetições" cor="#0d9488" icon={<ChartIcon />} />
-        <Indicador label="Relatórios preenchidos" valor={resumo.totalRelatorios} cor="#7B2D8B" icon={<ClipboardIcon />} />
+        <Indicador label="Coordenadores ativos" valor={resumo.totalCoordenadores} tooltip="Coordenadores ativos: total de usuarios ativos com perfil de coordenador regional." cor="#1A3A6B" icon={<UsersIcon />} />
+        <Indicador label="Assistências registradas" valor={resumo.totalAssistencias} tooltip="Assistencias registradas: total de saidas/acompanhamentos cadastrados pelos coordenadores." cor="#C9963A" icon={<VisitIcon />} />
+        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetições" tooltip="Duplas acompanhadas: soma de todas as duplas visitadas nas assistencias, incluindo repeticoes quando a mesma dupla aparece em mais de uma saida." cor="#0d9488" icon={<ChartIcon />} />
+        <Indicador label="Relatórios preenchidos" valor={resumo.totalRelatorios} tooltip="Relatorios preenchidos: quantidade de assistencias que possuem observacoes ou relato registrado." cor="#7B2D8B" icon={<ClipboardIcon />} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -172,10 +181,10 @@ export default function DashboardCoordenadorRegional() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                  <div className="bg-white rounded-lg p-3"><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></div>
-                  <div className="bg-white rounded-lg p-3"><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></div>
-                  <div className="bg-white rounded-lg p-3"><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></div>
-                  <div className="bg-white rounded-lg p-3"><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></div>
+                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Assistencias: total de saidas registradas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></div>
+                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Duplas: soma de duplas acompanhadas por este coordenador, incluindo repeticoes." tabIndex={0}><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></div>
+                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Unicas: quantidade de duplas distintas acompanhadas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></div>
+                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Relatorios: quantidade de acompanhamentos com relato preenchido." tabIndex={0}><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></div>
                 </div>
                 <div className="mt-3 text-xs text-gray-400">
                   Último acompanhamento: <span className="font-semibold text-gray-600">{formatarData(coordenador.ultimoAcompanhamento)}</span>
@@ -199,7 +208,7 @@ export default function DashboardCoordenadorRegional() {
                     <p className="font-bold text-[#1A3A6B] truncate">{item.coordenador}</p>
                     <p className="text-xs text-gray-400">{item.regiao} · {formatarData(item.dataSaida)}</p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-white text-[#0d9488] text-xs font-bold">{numero(item.totalDuplas)} duplas</span>
+                  <span className="smart-tooltip px-2.5 py-1 rounded-full bg-white text-[#0d9488] text-xs font-bold" data-tooltip="Total de duplas vinculadas a este acompanhamento recente." tabIndex={0}>{numero(item.totalDuplas)} duplas</span>
                 </div>
                 {item.relatorio && <p className="text-sm text-gray-600 mt-3 line-clamp-3">{item.relatorio}</p>}
                 <div className="flex flex-wrap gap-2 mt-3">

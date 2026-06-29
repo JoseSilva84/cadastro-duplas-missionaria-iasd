@@ -55,14 +55,16 @@ app.get('/api/health', (req, res) => {
 // Rota pública de estatísticas
 app.get('/api/public/estatisticas', async (req, res) => {
   try {
-    const [regioes, distritos, duplas, classes, estudantes] = await Promise.all([
+    const [regioes, distritos, duplas, classes, estudosIndividuais, estudantesPontos] = await Promise.all([
       prisma.regiao.count(),
       prisma.distrito.count(),
       prisma.dupla.count(),
       prisma.estudoBiblico.count({ where: { tipoEstudo: 'CLASSE' } }),
       prisma.estudoBiblico.count({ where: { tipoEstudo: 'UNICO' } }),
+      prisma.participante.count({ where: { estudo: { tipoEstudo: 'PONTO' } } }),
     ]);
-    res.json({ regioes, distritos, duplas, classes, estudantes });
+    const estudantes = estudosIndividuais + estudantesPontos;
+    res.json({ regioes, distritos, duplas, classes, estudantes, estudosIndividuais, estudantesPontos });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao buscar estatísticas' });

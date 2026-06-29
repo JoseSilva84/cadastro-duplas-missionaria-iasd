@@ -46,9 +46,9 @@ const VisitIcon = () => (
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
-function Indicador({ label, valor, detalhe, cor, icon }) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+function Indicador({ label, valor, detalhe, tooltip, cor, icon, onClick }) {
+  const Conteudo = (
+    <>
       <div className="flex items-start gap-3">
         <Icone cor={cor}>{icon}</Icone>
         <div className="min-w-0">
@@ -57,13 +57,39 @@ function Indicador({ label, valor, detalhe, cor, icon }) {
           {detalhe && <p className="text-xs text-gray-400 mt-1">{detalhe}</p>}
         </div>
       </div>
+    </>
+  );
+
+  const classes = `smart-tooltip bg-white border border-gray-100 rounded-lg p-4 shadow-sm hover:-translate-y-0.5 transition-all duration-200 ${onClick ? 'w-full text-left cursor-pointer hover:border-[#C9963A]/50 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25' : ''}`;
+
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className={classes}
+      data-tooltip={tooltip || detalhe || `${label}: total consolidado conforme os registros atualmente carregados.`}
+    >
+      {Conteudo}
+    </button>
+  ) : (
+    <div
+      className={classes}
+      data-tooltip={tooltip || detalhe || `${label}: total consolidado conforme os registros atualmente carregados.`}
+      tabIndex={0}
+    >
+      {Conteudo}
     </div>
   );
 }
 
 function ClasseResumo({ classe, valor, cor, bg }) {
   return (
-    <div className="rounded-lg p-4 border" style={{ backgroundColor: bg, borderColor: `${cor}30` }}>
+    <div
+      className="smart-tooltip rounded-lg p-4 border"
+      data-tooltip={`Classe ${classe}: quantidade de duplas classificadas neste grupo missionario.`}
+      tabIndex={0}
+      style={{ backgroundColor: bg, borderColor: `${cor}30` }}
+    >
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-bold" style={{ color: cor }}>Classe {classe}</span>
         <span className="text-xl font-bold" style={{ color: cor }}>{numero(valor)}</span>
@@ -74,7 +100,11 @@ function ClasseResumo({ classe, valor, cor, bg }) {
 
 function DestaqueRanking({ label, item, cor, icon, detalhe }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+    <div
+      className="smart-tooltip bg-white border border-gray-100 rounded-lg p-4 shadow-sm"
+      data-tooltip={`${label}: exibe o registro com maior total no indicador selecionado. Valor mostrado: ${numero(item?.total)} ${detalhe || 'registros'}.`}
+      tabIndex={0}
+    >
       <div className="flex items-start gap-3">
         <Icone cor={cor}>{icon}</Icone>
         <div className="min-w-0 flex-1">
@@ -117,12 +147,18 @@ function ListaRanking({ titulo, itens = [], valorCampo, valorLabel, cor = '#1A3A
               key={`${titulo}-${item.id}-${index}`}
               type="button"
               onClick={() => onItemClick(item)}
-              className="w-full bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3 text-left hover:border-[#C9963A]/50 hover:shadow-sm transition-all active:scale-[0.99] active:opacity-80"
+              className="smart-tooltip w-full bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3 text-left hover:border-[#C9963A]/50 hover:shadow-sm transition-all active:scale-[0.99] active:opacity-80"
+              data-tooltip={`${titulo}: ${item.nome} possui ${numero(item[valorCampo])} ${valorLabel}. Clique para abrir o detalhe relacionado.`}
             >
               {Conteudo}
             </button>
           ) : (
-            <div key={`${titulo}-${item.id}-${index}`} className="bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3">
+            <div
+              key={`${titulo}-${item.id}-${index}`}
+              className="smart-tooltip bg-white rounded-lg border border-gray-100 px-3 py-3 flex items-center gap-3"
+              data-tooltip={`${titulo}: ${item.nome} possui ${numero(item[valorCampo])} ${valorLabel}.`}
+              tabIndex={0}
+            >
               {Conteudo}
             </div>
           );
@@ -136,7 +172,7 @@ function ListaRanking({ titulo, itens = [], valorCampo, valorLabel, cor = '#1A3A
 
 function Painel({ titulo, subtitulo, cor, children }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
       <div className="px-5 py-4 border-b border-gray-100" style={{ borderTop: `4px solid ${cor}` }}>
         <p className="text-xs font-bold uppercase tracking-widest" style={{ color: cor }}>{subtitulo}</p>
         <h2 className="text-xl font-bold text-[#1A3A6B] mt-1" style={{ fontFamily: 'Georgia, serif' }}>
@@ -203,8 +239,12 @@ export default function DashboardAssociacao() {
     if (dupla?.id) navigate(isDireto ? `/direto/duplas/${dupla.id}` : `/duplas/${dupla.id}`);
   };
   const irParaClassesBiblicas = () => {
+    navigate(isDireto ? '/direto/relatorios/classes-biblicas/registros' : '/relatorios/classes-biblicas/registros');
+  };
+  const irParaClassificacaoClasses = () => {
     navigate(isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas');
   };
+  const caminho = (rota) => `${isDireto ? '/direto' : ''}${rota}`;
 
   const setCampoEscola = (campo, valor) => {
     setFormEscola((prev) => ({ ...prev, [campo]: valor }));
@@ -249,17 +289,22 @@ export default function DashboardAssociacao() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <Painel titulo="Ministério Pessoal" subtitulo="Painel esquerdo" cor="#1A3A6B">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Indicador label="Atas duplas" valor={ministerio.atasDuplas} cor="#1A3A6B" icon={<ClipboardIcon />} />
-            <Indicador label="Qtidade estudos" valor={ministerio.quantidadeEstudos} cor="#0284c7" icon={<BookIcon />} />
-            <Indicador label="Qtidade classes" valor={ministerio.quantidadeClasses} cor="#7B2D8B" icon={<UsersIcon />} />
-            <Indicador label="Pontos estudos bíblicos" valor={ministerio.quantidadePontosEstudos} cor="#0d9488" icon={<GaugeIcon />} />
+            <Indicador label="Atas duplas" valor={ministerio.atasDuplas} tooltip="Atas duplas: total de atas de acompanhamento registradas pelas duplas missionarias. Toque para abrir Registro de Assistencia." cor="#1A3A6B" icon={<ClipboardIcon />} onClick={() => navigate(caminho('/registro-saida'))} />
+            <Indicador label="Registros cadastrados" valor={ministerio.quantidadeEstudos} tooltip="Registros cadastrados: estudos individuais + pontos de estudo + classes biblicas. Toque para abrir todos os registros que formam este total." cor="#0284c7" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-cadastrados'))} />
+            <Indicador label="Estudos individuais" valor={ministerio.quantidadeEstudosIndividuais} tooltip="Estudos individuais: total de estudantes cadastrados como estudo biblico individual. Toque para abrir Estudantes Biblicos." cor="#1A3A6B" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-biblicos'))} />
+            <Indicador label="Pontos estudos bíblicos" valor={ministerio.quantidadePontosEstudos} tooltip="Pontos de estudo biblico: quantidade de pontos cadastrados. Toque para abrir Pontos de Estudo." cor="#0d9488" icon={<GaugeIcon />} onClick={() => navigate(caminho('/relatorios/pontos-estudo'))} />
+            <Indicador label="Estudantes nos pontos" valor={ministerio.quantidadeEstudantesPontos} tooltip="Estudantes nos pontos: soma dos participantes cadastrados dentro dos pontos. Toque para abrir Pontos de Estudo." cor="#0d9488" icon={<UsersIcon />} onClick={() => navigate(caminho('/relatorios/pontos-estudo'))} />
+            <Indicador label="Classes bíblicas" valor={ministerio.quantidadeClasses} tooltip="Classes biblicas: total de classes cadastradas no sistema. Toque para abrir os registros de classes biblicas." cor="#7B2D8B" icon={<UsersIcon />} onClick={irParaClassesBiblicas} />
+            <Indicador label="Estudantes em classes" valor={ministerio.quantidadeEstudantesClasses} tooltip="Estudantes em classes: soma dos participantes cadastrados dentro das classes. Toque para abrir os registros de classes biblicas." cor="#7B2D8B" icon={<ClipboardIcon />} onClick={irParaClassesBiblicas} />
             <div className="sm:col-span-2">
               <Indicador
                 label="Qtidade de pessoas estudando"
                 valor={ministerio.quantidadePessoasEstudando}
-                detalhe="Soma estudos únicos e participantes de pontos/classes."
+                detalhe="Individuais + pontos + classes."
+                tooltip="Quantidade de pessoas estudando: estudos individuais + estudantes nos pontos + estudantes em classes. Toque para abrir todos os registros cadastrados."
                 cor="#C9963A"
                 icon={<UsersIcon />}
+                onClick={() => navigate(caminho('/relatorios/estudos-cadastrados'))}
               />
             </div>
           </div>
@@ -323,10 +368,10 @@ export default function DashboardAssociacao() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Indicador label="Unidades de ação" valor={escola.unidadesAcao} cor="#1A3A6B" icon={<UsersIcon />} />
-            <Indicador label="Classe dos professores" valor={escola.classeProfessores} cor="#7B2D8B" icon={<BookIcon />} />
-            <Indicador label="Classe de interessados" valor={escola.classeInteressados} cor="#0d9488" icon={<UsersIcon />} />
-            <Indicador label="Pequenos Grupos" valor={escola.quantidadePequenosGrupos} cor="#C9963A" icon={<GaugeIcon />} />
+            <Indicador label="Unidades de ação" valor={escola.unidadesAcao} tooltip="Unidades de acao: total informado para as unidades ativas da Escola Sabatina." cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Classe dos professores" valor={escola.classeProfessores} tooltip="Classe dos professores: quantidade registrada para classes de professores da Escola Sabatina." cor="#7B2D8B" icon={<BookIcon />} />
+            <Indicador label="Classe de interessados" valor={escola.classeInteressados} tooltip="Classe de interessados: quantidade registrada para classes de interessados da Escola Sabatina." cor="#0d9488" icon={<UsersIcon />} />
+            <Indicador label="Pequenos Grupos" valor={escola.quantidadePequenosGrupos} tooltip="Pequenos Grupos: total de pequenos grupos informado no resumo da Escola Sabatina." cor="#C9963A" icon={<GaugeIcon />} />
           </div>
 
           <div className="mt-5 bg-[#F4F5F7] rounded-lg p-4 border border-gray-100">
@@ -335,14 +380,23 @@ export default function DashboardAssociacao() {
                 <h3 className="text-sm font-bold text-[#1A3A6B]">Visitas realizadas</h3>
                 <p className="text-xs text-gray-400">Detalhamento por responsáveis</p>
               </div>
-              <div className="text-right">
+              <div
+                className="smart-tooltip text-right"
+                data-tooltip="Visitas realizadas: soma das visitas registradas para diretores, professores e alunos."
+                tabIndex={0}
+              >
                 <p className="text-2xl font-bold text-[#1A3A6B]">{numero(visitas.total)}</p>
                 <p className="text-xs text-gray-400">total</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {visitasDetalhe.map((item) => (
-                <div key={item.label} className="bg-white rounded-lg p-3 border border-gray-100">
+                <div
+                  key={item.label}
+                  className="smart-tooltip bg-white rounded-lg p-3 border border-gray-100"
+                  data-tooltip={`Visitas de ${item.label.toLowerCase()}: total registrado neste grupo da Escola Sabatina.`}
+                  tabIndex={0}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <Icone cor={item.cor}><VisitIcon /></Icone>
                     <span className="text-xs font-semibold text-gray-500">{item.label}</span>
@@ -358,7 +412,7 @@ export default function DashboardAssociacao() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
         <Painel titulo="Duplas Missionárias" subtitulo="Dashboard de desempenho" cor="#1A3A6B">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} tooltip="Total de duplas missionarias cadastradas no escopo do dashboard." cor="#1A3A6B" icon={<UsersIcon />} />
             <DestaqueRanking
               label="Região com mais duplas"
               item={dashboardDuplas.regiaoMaisDuplas}
@@ -417,9 +471,9 @@ export default function DashboardAssociacao() {
 
         <Painel titulo="Classes Bíblicas" subtitulo="Dashboard detalhado" cor="#7B2D8B">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <Indicador label="Classes bíblicas" valor={dashboardClasses.totalClasses} cor="#7B2D8B" icon={<BookIcon />} />
-            <Indicador label="Duplas com classe" valor={dashboardClasses.totalDuplasComClasse} cor="#1A3A6B" icon={<UsersIcon />} />
-            <Indicador label="Estudantes em classes" valor={dashboardClasses.totalEstudantes} cor="#C9963A" icon={<ClipboardIcon />} />
+            <Indicador label="Classes bíblicas" valor={dashboardClasses.totalClasses} tooltip="Classes biblicas: total de classes cadastradas para acompanhamento." cor="#7B2D8B" icon={<BookIcon />} />
+            <Indicador label="Duplas com classe" valor={dashboardClasses.totalDuplasComClasse} tooltip="Duplas com classe: quantidade de duplas que possuem ao menos uma classe biblica vinculada." cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Estudantes em classes" valor={dashboardClasses.totalEstudantes} tooltip="Estudantes em classes: soma dos participantes cadastrados nas classes biblicas." cor="#C9963A" icon={<ClipboardIcon />} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -447,7 +501,7 @@ export default function DashboardAssociacao() {
               valorLabel="estud."
               detalheCampo="dupla"
               cor="#C9963A"
-              onItemClick={irParaClassesBiblicas}
+              onItemClick={irParaClassificacaoClasses}
             />
             <ListaRanking
               titulo="Classes com mais batismos"
@@ -456,7 +510,7 @@ export default function DashboardAssociacao() {
               valorLabel="batismos"
               detalheCampo="dupla"
               cor="#0d9488"
-              onItemClick={irParaClassesBiblicas}
+              onItemClick={irParaClassificacaoClasses}
             />
             <div className="lg:col-span-2">
               <ListaRanking
@@ -466,7 +520,7 @@ export default function DashboardAssociacao() {
                 valorLabel="lição"
                 detalheCampo="dupla"
                 cor="#1A3A6B"
-                onItemClick={irParaClassesBiblicas}
+                onItemClick={irParaClassificacaoClasses}
               />
             </div>
           </div>

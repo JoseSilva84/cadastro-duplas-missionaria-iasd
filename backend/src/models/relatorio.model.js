@@ -416,7 +416,8 @@ const RelatorioModel = {
       quantidadeClasses,
       quantidadePontosEstudos,
       pessoasEstudandoUnico,
-      pessoasEstudandoGrupos,
+      estudantesPontos,
+      estudantesClasses,
       classesDuplas,
       escolaSabatinaResumo,
       escolaSabatinaCadastros,
@@ -432,7 +433,14 @@ const RelatorioModel = {
       prisma.participante.count({
         where: {
           estudo: {
-            tipoEstudo: { in: ['PONTO', 'CLASSE'] },
+            tipoEstudo: 'PONTO',
+          },
+        },
+      }),
+      prisma.participante.count({
+        where: {
+          estudo: {
+            tipoEstudo: 'CLASSE',
           },
         },
       }),
@@ -559,7 +567,10 @@ const RelatorioModel = {
         quantidadeEstudos,
         quantidadeClasses,
         quantidadePontosEstudos,
-        quantidadePessoasEstudando: pessoasEstudandoUnico + pessoasEstudandoGrupos,
+        quantidadeEstudosIndividuais: pessoasEstudandoUnico,
+        quantidadeEstudantesPontos: estudantesPontos,
+        quantidadeEstudantesClasses: estudantesClasses,
+        quantidadePessoasEstudando: pessoasEstudandoUnico + estudantesPontos + estudantesClasses,
         classes,
       },
       escolaSabatina: {

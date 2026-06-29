@@ -66,14 +66,16 @@ export default function Regioes() {
        {resumo && (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 stagger-children">
           {[
-            { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
-            { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]' },
-            { label: 'Duplas Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]' },
-            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
+            { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionarias cadastradas em todas as regioes.' },
+            { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Duplas ativas: quantidade de duplas com status ATIVA.' },
+            { label: 'Duplas Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas pendentes: quantidade de duplas aguardando ativacao ou regularizacao.' },
+            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Metas de contatos: soma das pessoas alcancadas informadas pelas duplas.' },
           ].map((item) => (
             <div
               key={item.label}
-              className="card group hover:-translate-y-1 transition-all duration-300 cursor-default"
+              className="smart-tooltip card group hover:-translate-y-1 transition-all duration-300 cursor-default"
+              data-tooltip={item.tooltip}
+              tabIndex={0}
               style={{ borderTop: `3px solid ${item.cor}` }}
             >
               <div className="flex items-center gap-3 sm:gap-4">
@@ -134,7 +136,9 @@ export default function Regioes() {
 
                   {/* Contadores */}
                   <div
-                    className="rounded-xl p-4 flex justify-around transition-all duration-300 group-hover:scale-[1.02]"
+                    className="smart-tooltip rounded-xl p-4 flex justify-around transition-all duration-300 group-hover:scale-[1.02]"
+                    data-tooltip={`${regiao.nome}: totais consolidados de distritos, duplas e membros desta regiao.`}
+                    tabIndex={0}
                     style={{ backgroundColor: cor + '10' }}
                   >
                     <div className="text-center">

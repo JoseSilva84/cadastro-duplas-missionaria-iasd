@@ -61,15 +61,17 @@ export default function Relatorios() {
       {resumo && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8 stagger-children">
           {[
-            { label: 'Total Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
-            { label: 'Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]' },
-            { label: 'Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]' },
-            { label: 'Inativas', valor: resumo.totalInativas, cor: '#9ca3af', icon: '⏸️', gradient: 'from-gray-400 to-gray-500' },
-            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
+            { label: 'Total Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionarias cadastradas no sistema.' },
+            { label: 'Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Ativas: duplas com status ATIVA.' },
+            { label: 'Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Pendentes: duplas que ainda aguardam validacao ou regularizacao.' },
+            { label: 'Inativas', valor: resumo.totalInativas, cor: '#9ca3af', icon: '⏸️', gradient: 'from-gray-400 to-gray-500', tooltip: 'Inativas: duplas com status INATIVA.' },
+            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Metas de contatos: soma das pessoas alcancadas registradas pelas duplas.' },
           ].map((item) => (
             <div
               key={item.label}
-              className="card text-center p-4 sm:p-6 hover:-translate-y-1 transition-all duration-300 cursor-default group"
+              className="smart-tooltip card text-center p-4 sm:p-6 hover:-translate-y-1 transition-all duration-300 cursor-default group"
+              data-tooltip={item.tooltip}
+              tabIndex={0}
               style={{ borderTop: `3px solid ${item.cor}` }}
             >
               <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl sm:text-2xl mx-auto mb-3 shadow-md group-hover:scale-110 transition-transform duration-300`}>
@@ -95,7 +97,11 @@ export default function Relatorios() {
               <div key={classe} className="rounded-lg border border-gray-100 bg-[#F4F5F7] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-bold text-[#1A3A6B]">Estudos Classe {classe}</p>
-                  <span className="text-xl font-bold text-[#C9963A]">{resumo.classesBiblicas[classe]?.total || 0}</span>
+                  <span
+                    className="smart-tooltip text-xl font-bold text-[#C9963A]"
+                    data-tooltip={`Classe ${classe}: total de estudantes em igrejas classificadas nesta faixa.`}
+                    tabIndex={0}
+                  >{resumo.classesBiblicas[classe]?.total || 0}</span>
                 </div>
                 <div className="space-y-2">
                   {(resumo.classesBiblicas[classe]?.igrejas || []).slice(0, 8).map((igreja) => (
@@ -185,7 +191,12 @@ export default function Relatorios() {
               const total = resumo.totalDuplas || 1;
               const pct = Math.round((p._count.tipoProjeto / total) * 100);
               return (
-                <div key={p.tipoProjeto} className="bg-gradient-to-br from-[#F4F5F7] to-[#F4F5F7]/50 rounded-xl p-4 border border-gray-100 hover:border-[#1A3A6B]/20 hover:shadow-md transition-all duration-300 group">
+                <div
+                  key={p.tipoProjeto}
+                  className="smart-tooltip bg-gradient-to-br from-[#F4F5F7] to-[#F4F5F7]/50 rounded-xl p-4 border border-gray-100 hover:border-[#1A3A6B]/20 hover:shadow-md transition-all duration-300 group"
+                  data-tooltip={`${projetoLabel[p.tipoProjeto]}: ${p._count.tipoProjeto} dupla(s), equivalente a ${pct}% do total.`}
+                  tabIndex={0}
+                >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{projetoIcon[p.tipoProjeto]}</span>
