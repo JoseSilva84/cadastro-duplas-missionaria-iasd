@@ -381,8 +381,8 @@ export default function EstudanteDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-5">
                 {[
                   ['vaIgreja', 'Vai a igreja?'],
-                  ['leBiblia', 'Le a Biblia?'],
-                  ['estudaLicao', 'Estuda a licao?'],
+                  ['leBiblia', 'Estuda a Bíblia?'],
+                  ['estudaLicao', 'Estuda a lição da Escola Sabatina?'],
                   ['devolveDizimos', 'Devolve dizimos?'],
                   ['cultoFamiliar', 'Culto familiar?'],
                 ].map(([campo, label]) => (
@@ -471,8 +471,8 @@ export default function EstudanteDashboard() {
 
           <KanbanCard titulo="Acompanhamento Espiritual">
             <Info label="Vai à igreja?" valor={formatarBooleano(estudo.vaIgreja)} />
-            <Info label="Lê a Bíblia?" valor={formatarBooleano(estudo.leBiblia)} />
-            <Info label="Estuda a lição?" valor={formatarBooleano(estudo.estudaLicao)} />
+            <Info label="Estuda a Bíblia?" valor={formatarBooleano(estudo.leBiblia)} />
+            <Info label="Estuda a lição da Escola Sabatina?" valor={formatarBooleano(estudo.estudaLicao)} />
             <Info label="Devolve dízimos?" valor={formatarBooleano(estudo.devolveDizimos)} />
             <Info label="Culto familiar?" valor={formatarBooleano(estudo.cultoFamiliar)} />
           </KanbanCard>

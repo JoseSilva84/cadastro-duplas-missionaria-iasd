@@ -342,8 +342,8 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
             {isEstudo && (
               <Secao numero="4" titulo="Informações do Estudante">
                 <Campo label="Está indo à igreja?"><BooleanSelect value={form.vaIgreja} onChange={(valor) => set('vaIgreja', valor)} /></Campo>
-                <Campo label="Lê a Bíblia?"><BooleanSelect value={form.leBiblia} onChange={(valor) => set('leBiblia', valor)} /></Campo>
-                <Campo label="Estuda a lição?"><BooleanSelect value={form.estudaLicao} onChange={(valor) => set('estudaLicao', valor)} /></Campo>
+                <Campo label="Estuda a Bíblia?"><BooleanSelect value={form.leBiblia} onChange={(valor) => set('leBiblia', valor)} /></Campo>
+                <Campo label="Estuda a lição da Escola Sabatina?"><BooleanSelect value={form.estudaLicao} onChange={(valor) => set('estudaLicao', valor)} /></Campo>
                 <Campo label="Devolve os dízimos?"><BooleanSelect value={form.devolveDizimos} onChange={(valor) => set('devolveDizimos', valor)} /></Campo>
                 <Campo label="Faz o culto familiar?"><BooleanSelect value={form.cultoFamiliar} onChange={(valor) => set('cultoFamiliar', valor)} /></Campo>
               </Secao>

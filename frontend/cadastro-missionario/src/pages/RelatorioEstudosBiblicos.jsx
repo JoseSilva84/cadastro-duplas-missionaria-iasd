@@ -54,6 +54,19 @@ const ClassificacaoBadge = ({ classe, motivo, compacto = false }) => {
   );
 };
 
+const escapeHtml = (valor = '') => String(valor ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+const formatarBooleanoPdf = (valor) => {
+  if (valor === true) return 'Sim';
+  if (valor === false) return 'Nao';
+  return 'Nao informado';
+};
+
 const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   const linhas = estudos.map((item) => `
     <tr>
@@ -90,6 +103,99 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
           <thead><tr><th>Nome</th><th>Cidade/UF</th><th>Série</th><th>Lição</th><th>Classificação</th><th>Progresso</th><th>Dupla</th><th>Dia</th></tr></thead>
           <tbody>${linhas || '<tr><td colspan="7">Nenhum registro encontrado.</td></tr>'}</tbody>
         </table>
+      </body>
+    </html>
+  `);
+  janela.document.close();
+  janela.focus();
+  janela.print();
+};
+
+const abrirPdfComissao = (estudo) => {
+  if (!estudo || ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) return;
+
+  const tituloDocumento = 'Relatório para Comissão da Igreja: Aprovação de Batismo';
+  const perguntas = [
+    ['Está indo à igreja?', formatarBooleanoPdf(estudo.vaIgreja)],
+    ['Estuda a Bíblia?', formatarBooleanoPdf(estudo.leBiblia)],
+    ['Estuda a lição da Escola Sabatina?', formatarBooleanoPdf(estudo.estudaLicao)],
+    ['Devolve os dízimos?', formatarBooleanoPdf(estudo.devolveDizimos)],
+    ['Faz o culto familiar?', formatarBooleanoPdf(estudo.cultoFamiliar)],
+  ];
+  const linhasPerguntas = perguntas.map(([pergunta, resposta]) => `
+    <tr>
+      <td>${escapeHtml(pergunta)}</td>
+      <td><strong>${escapeHtml(resposta)}</strong></td>
+    </tr>
+  `).join('');
+  const nomeCandidato = participantesResumo(estudo);
+  const dupla = `${estudo.dupla?.liderNome || ''} + ${estudo.dupla?.membro2Nome || ''}`;
+  const igreja = estudo.dupla?.igreja?.nome || 'Nao informada';
+  const distrito = estudo.dupla?.distrito?.nome || 'Nao informado';
+  const regiao = estudo.dupla?.distrito?.regiao?.nome || 'Nao informada';
+  const classificacao = classeInfo[estudo.classificacaoInteressado]?.label || 'Sem classificacao';
+  const janela = window.open('', '_blank');
+  if (!janela) return;
+
+  janela.document.write(`
+    <html>
+      <head>
+        <title>${escapeHtml(tituloDocumento)}</title>
+        <style>
+          @page { margin: 18mm; }
+          body { font-family: Arial, sans-serif; color: #1f2937; line-height: 1.45; }
+          h1 { color: #1A3A6B; font-size: 24px; margin: 0 0 8px; }
+          h2 { color: #1A3A6B; font-size: 16px; margin: 24px 0 10px; }
+          .subtitulo { color: #6b7280; margin: 0 0 22px; }
+          .resumo { border-left: 4px solid #C9963A; background: #f8fafc; padding: 14px 16px; margin-bottom: 18px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+          .item span { color: #6b7280; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+          .item strong { display: block; font-size: 14px; margin-top: 2px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th { background: #1A3A6B; color: white; padding: 10px; text-align: left; }
+          td { border: 1px solid #e5e7eb; padding: 10px; vertical-align: top; }
+          .nota { background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; margin-top: 18px; color: #7c2d12; }
+          .rodape { color: #6b7280; font-size: 11px; margin-top: 28px; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(tituloDocumento)}</h1>
+        <p class="subtitulo">Histórico detalhado da jornada do candidato para auxiliar a comissão da igreja na decisão sobre o voto de batismo.</p>
+
+        <div class="resumo">
+          <div class="grid">
+            <div class="item"><span>Candidato</span><strong>${escapeHtml(nomeCandidato)}</strong></div>
+            <div class="item"><span>Classificação</span><strong>${escapeHtml(classificacao)}</strong></div>
+            <div class="item"><span>Igreja</span><strong>${escapeHtml(igreja)}</strong></div>
+            <div class="item"><span>Distrito / Região</span><strong>${escapeHtml(distrito)} / ${escapeHtml(regiao)}</strong></div>
+            <div class="item"><span>Dupla responsável</span><strong>${escapeHtml(dupla)}</strong></div>
+            <div class="item"><span>Contato</span><strong>${escapeHtml(estudo.whatsapp || 'Nao informado')}</strong></div>
+            <div class="item"><span>Série e lição atual</span><strong>${escapeHtml(getSerieNome(estudo.serie))} - ${escapeHtml(getLicaoLabel(estudo.serie, estudo.licaoAtual))}</strong></div>
+            <div class="item"><span>Progresso</span><strong>${progresso(estudo)}%</strong></div>
+          </div>
+        </div>
+
+        <h2>Informações espirituais do estudante</h2>
+        <table>
+          <thead><tr><th>Pergunta</th><th>Resposta registrada</th></tr></thead>
+          <tbody>${linhasPerguntas}</tbody>
+        </table>
+
+        <h2>Histórico do acompanhamento</h2>
+        <table>
+          <tbody>
+            <tr><td><strong>Dia / horário do estudo</strong></td><td>${escapeHtml(estudo.diaEstudo || 'Nao informado')} - ${escapeHtml(estudo.horarioEstudo || 'Nao informado')}</td></tr>
+            <tr><td><strong>Cidade / Estado</strong></td><td>${escapeHtml(estudo.cidade || 'Nao informada')} / ${escapeHtml(estudo.estado || 'Nao informado')}</td></tr>
+            <tr><td><strong>Endereço</strong></td><td>${escapeHtml(estudo.endereco || 'Nao informado')}</td></tr>
+            <tr><td><strong>Observações</strong></td><td>${escapeHtml(estudo.observacoes || 'Sem observacoes registradas.')}</td></tr>
+            <tr><td><strong>Motivo de impedimento</strong></td><td>${escapeHtml(estudo.motivoImpedimento || 'Nao informado')}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="nota">
+          Este relatório organiza as informações cadastradas para consulta rápida da comissão. A recomendação final deve considerar a avaliação pastoral e o diálogo com o candidato.
+        </div>
+        <p class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Sistema de Duplas Missionárias.</p>
       </body>
     </html>
   `);
@@ -370,9 +476,16 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                   <div className="flex items-center justify-between text-sm mb-1"><span>Progresso</span><strong>{progresso(selecionado)}%</strong></div>
                   <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
                 </div>
-                <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado))}>
-                  Ver detalhes
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
+                    <button type="button" className="btn-outline px-4 py-2" onClick={() => abrirPdfComissao(selecionado)}>
+                      Recomendar à comissão
+                    </button>
+                  )}
+                  <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado))}>
+                    Ver detalhes
+                  </button>
+                </div>
               </div>
             </div>
             {['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && selecionado.participantes?.length > 0 && (
