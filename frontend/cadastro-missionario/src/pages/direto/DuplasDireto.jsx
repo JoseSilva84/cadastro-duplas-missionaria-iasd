@@ -69,14 +69,19 @@ const statusAcompanhamentoLabels = {
 };
 
 const classeConfig = {
-  A: { label: 'Classe A', cor: '#1A3A6B', bg: '#1A3A6B14' },
-  B: { label: 'Classe B', cor: '#C9963A', bg: '#C9963A18' },
-  C: { label: 'Classe C', cor: '#6b7280', bg: '#6b728014' },
+  A: { label: 'Classe A', cor: '#047857', bg: '#d1fae5' },
+  B: { label: 'Classe B', cor: '#b45309', bg: '#fef3c7' },
+  C: { label: 'Classe C', cor: '#b91c1c', bg: '#fee2e2' },
 };
 
 const atividadeConfig = {
-  ATIVA: { label: 'Ativa', cor: '#16a34a', bg: '#16a34a18' },
-  INATIVA: { label: 'Inativa', cor: '#6b7280', bg: '#6b728014' },
+  ATIVA: { label: 'Ativa', cor: '#2563eb', bg: '#dbeafe' },
+  INATIVA: { label: 'Sem atividade', cor: '#6b7280', bg: '#f3f4f6' },
+};
+
+const indicadorConfig = {
+  estudos: { label: 'Estudos', cor: '#0f766e', bg: '#ccfbf1', border: '#99f6e4' },
+  visitacoes: { label: 'Visitacoes', cor: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
 };
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
@@ -95,19 +100,33 @@ const getClassificacaoAtividadeText = (dupla) => {
   return `${classe} · ${atividade}`;
 };
 
+const Chip = ({ children, config, compact = false }) => (
+  <span
+    className={`inline-flex items-center gap-1 rounded-full border font-semibold ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}
+    style={{ backgroundColor: config.bg, color: config.cor, borderColor: config.border || `${config.cor}35` }}
+  >
+    {children}
+  </span>
+);
+
 const ClassificacaoAtividadeBadge = ({ dupla, compact = false }) => {
-  const classe = classeConfig[dupla?.classificacaoDupla];
-  const atividade = atividadeConfig[dupla?.atividadeDupla];
-  const cor = classe?.cor || atividade?.cor || '#6b7280';
-  const bg = classe?.bg || atividade?.bg || '#f3f4f6';
+  const classe = classeConfig[dupla?.classificacaoDupla] || { label: 'Sem classe', cor: '#475569', bg: '#f1f5f9' };
+  const atividade = atividadeConfig[dupla?.atividadeDupla] || atividadeConfig.INATIVA;
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full border font-semibold ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}
-      style={{ backgroundColor: bg, color: cor, borderColor: `${cor}35` }}
-    >
-      {getClassificacaoAtividadeText(dupla)}
-    </span>
+    <>
+      <Chip config={classe} compact={compact}>{classe.label}</Chip>
+      <Chip config={atividade} compact={compact}>{atividade.label}</Chip>
+    </>
+  );
+};
+
+const IndicadorBadge = ({ tipo, valor, compact = false }) => {
+  const config = indicadorConfig[tipo];
+  return (
+    <Chip config={config} compact={compact}>
+      {config.label} {valor}
+    </Chip>
   );
 };
 
@@ -485,10 +504,8 @@ export default function DuplasDireto() {
 
                   <div className={`mt-2 pt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400 ${selecionada ? 'border-t border-gray-100' : ''}`}>
                     <span>{dupla.distrito?.nome || 'Sem distrito'}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span>Estudos {getEstudosCount(dupla)}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <span>Visitações {getVisitacoesCount(dupla)}</span>
+                    <IndicadorBadge tipo="estudos" valor={getEstudosCount(dupla)} compact />
+                    <IndicadorBadge tipo="visitacoes" valor={getVisitacoesCount(dupla)} compact />
                     <ClassificacaoAtividadeBadge dupla={dupla} compact />
                   </div>
                 </div>

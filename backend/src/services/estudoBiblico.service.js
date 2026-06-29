@@ -22,7 +22,28 @@ const montarFiltro = async (query = {}, usuario = null) => {
   if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
   if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
   if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;
-  if (query.classificacaoInteressado) where.classificacaoInteressado = query.classificacaoInteressado;
+  if (query.nome) {
+    where.AND = [
+      ...(where.AND || []),
+      {
+        OR: [
+          { nomeEstudante: { contains: query.nome, mode: 'insensitive' } },
+          { participantes: { some: { nome: { contains: query.nome, mode: 'insensitive' } } } },
+        ],
+      },
+    ];
+  }
+  if (query.classificacaoInteressado) {
+    where.AND = [
+      ...(where.AND || []),
+      {
+        OR: [
+          { classificacaoInteressado: query.classificacaoInteressado },
+          { participantes: { some: { classificacaoInteressado: query.classificacaoInteressado } } },
+        ],
+      },
+    ];
+  }
   if (query.dataInicio || query.dataFim) {
     where.criadoEm = {};
     if (query.dataInicio) where.criadoEm.gte = new Date(query.dataInicio);

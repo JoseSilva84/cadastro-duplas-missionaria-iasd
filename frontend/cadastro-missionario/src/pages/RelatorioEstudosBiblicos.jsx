@@ -22,6 +22,21 @@ const totalEstudantesDoEstudo = (estudo) => (
   ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (estudo.participantes?.length || 0) : 1
 );
 
+const contarClassificacoes = (estudos = []) => estudos.reduce((acc, estudo) => {
+  if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
+    (estudo.participantes || []).forEach((participante) => {
+      if (participante.classificacaoInteressado && acc[participante.classificacaoInteressado] !== undefined) {
+        acc[participante.classificacaoInteressado] += 1;
+      }
+    });
+    return acc;
+  }
+  if (estudo.classificacaoInteressado && acc[estudo.classificacaoInteressado] !== undefined) {
+    acc[estudo.classificacaoInteressado] += 1;
+  }
+  return acc;
+}, { A: 0, B: 0, C: 0 });
+
 const classeInfo = {
   A: { label: 'A - Pronto para o batismo', curto: 'A', dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   B: { label: 'B - Quer, mas tem impedimento', curto: 'B', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -93,6 +108,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const isClasse = tipoRelatorio === 'CLASSE';
   const isTodos = tipoRelatorio === 'TODOS';
   const isGrupo = isPonto || isClasse;
+  const parametrosUrl = new URLSearchParams(location.search);
   const titulo = isPonto
     ? 'Pontos de Estudo Bíblico'
     : isClasse
@@ -101,6 +117,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         ? 'Registros de Estudos Bíblicos'
         : 'Estudantes Bíblicos';
   const [resultado, setResultado] = useState({ total: 0, totalEstudantes: 0, estudos: [], porSerie: [] });
+  const [totaisPorClassificacao, setTotaisPorClassificacao] = useState({ A: 0, B: 0, C: 0 });
   const [duplas, setDuplas] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [licoesEditadas, setLicoesEditadas] = useState({});
@@ -113,23 +130,28 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     nome: '',
     dataInicio: '',
     dataFim: '',
+    classificacaoInteressado: parametrosUrl.get('classificacaoInteressado') || '',
   });
 
   const licoes = useMemo(() => (
     SERIES_ESTUDO.find((serie) => serie.id === filtros.serie)?.licoes || []
   ), [filtros.serie]);
 
-  const carregar = () => {
+  const carregar = (filtrosAtuais = filtros) => {
     setCarregando(true);
     const params = {
-      ...Object.fromEntries(Object.entries(filtros).filter(([, valor]) => valor)),
+      ...Object.fromEntries(Object.entries(filtrosAtuais).filter(([, valor]) => valor)),
       ...(isTodos ? {} : { tipoEstudo: tipoRelatorio }),
     };
+    const paramsTotaisClassificacao = { ...params };
+    delete paramsTotaisClassificacao.classificacaoInteressado;
     Promise.all([
       api.get('/relatorios/estudos-biblicos', { params }),
+      api.get('/relatorios/estudos-biblicos', { params: paramsTotaisClassificacao }),
       api.get('/duplas'),
-    ]).then(([relatorio, duplasRes]) => {
+    ]).then(([relatorio, totaisClassificacaoRes, duplasRes]) => {
       setResultado(relatorio.data);
+      setTotaisPorClassificacao(contarClassificacoes(totaisClassificacaoRes.data.estudos || []));
       setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
       setSelecionado(relatorio.data.estudos?.[0] || null);
     }).finally(() => setCarregando(false));
@@ -139,6 +161,17 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipoRelatorio]);
+
+  useEffect(() => {
+    const classificacaoInteressado = new URLSearchParams(location.search).get('classificacaoInteressado') || '';
+    setFiltros((prev) => {
+      if (prev.classificacaoInteressado === classificacaoInteressado) return prev;
+      const proximos = { ...prev, classificacaoInteressado };
+      carregar(proximos);
+      return proximos;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const set = (campo, valor) => {
     setFiltros((prev) => ({
@@ -188,8 +221,10 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
 
   const limpar = () => {
-    setFiltros({ duplaId: '', serie: '', licaoAtual: '', cidade: '', nome: '', dataInicio: '', dataFim: '' });
-    setTimeout(carregar, 0);
+    const filtrosLimpos = { duplaId: '', serie: '', licaoAtual: '', cidade: '', nome: '', dataInicio: '', dataFim: '', classificacaoInteressado: '' };
+    setFiltros(filtrosLimpos);
+    navigate(location.pathname, { replace: true });
+    carregar(filtrosLimpos);
   };
 
   const mediaProgresso = resultado.estudos.length
@@ -204,6 +239,13 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       : isTodos
         ? 'Pessoas envolvidas: estudos individuais + estudantes nos pontos + estudantes em classes.'
         : 'Estudantes: total de estudos biblicos individuais cadastrados nos filtros atuais.';
+  const abrirClassificacao = (classe) => {
+    const ativo = filtros.classificacaoInteressado === classe;
+    const proximos = { ...filtros, classificacaoInteressado: ativo ? '' : classe };
+    setFiltros(proximos);
+    navigate(`${location.pathname}${ativo ? '' : `?classificacaoInteressado=${classe}`}`);
+    carregar(proximos);
+  };
   const detalhesPath = (estudo) => {
     const id = typeof estudo === 'object' ? estudo.id : estudo;
     const tipo = typeof estudo === 'object' ? estudo.tipoEstudo : tipoRelatorio;
@@ -261,6 +303,32 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           </div>
           <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
           <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {['A', 'B', 'C'].map((classe) => {
+            const info = classeInfo[classe];
+            const ativo = filtros.classificacaoInteressado === classe;
+            return (
+              <button
+                key={classe}
+                type="button"
+                onClick={() => abrirClassificacao(classe)}
+                className={`card text-left border transition-all hover:-translate-y-0.5 hover:shadow-md ${info.bg} ${info.border} ${ativo ? 'ring-2 ring-offset-2 ring-[#1A3A6B]/30' : ''}`}
+                title={`Ver registros com classificacao ${classe}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${info.text}`}>Classificacao {classe}</p>
+                    <p className="text-sm text-gray-500">{info.label.replace(`${classe} - `, '')}</p>
+                  </div>
+                  <span className={`inline-flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-xl font-bold ${info.text} bg-white/80`}>
+                    {totaisPorClassificacao[classe]}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <div className="card">
