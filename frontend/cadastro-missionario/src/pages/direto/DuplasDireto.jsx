@@ -86,6 +86,12 @@ const indicadorConfig = {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
+const pertenceClasseFiltro = (dupla, classe) => {
+  if (!classe) return true;
+  if (classe === 'A') return dupla.classificacaoDupla === 'A' && temEstudoCadastrado(dupla);
+  return dupla.classificacaoDupla === classe;
+};
 
 const formatarData = (valor) => {
   if (!valor) return null;
@@ -177,6 +183,14 @@ export default function DuplasDireto() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classeParam = searchParams.get('classe');
+  const statusParam = searchParams.get('status');
+  const atividadeParam = searchParams.get('atividade');
+  const estudoAtivoParam = searchParams.get('estudoAtivo');
+  const igrejaIdParam = searchParams.get('igrejaId');
+  const regiaoIdParam = searchParams.get('regiaoId');
+  const tipoProjetoParam = searchParams.get('tipoProjeto');
+  const minBatismosParam = Number(searchParams.get('minBatismos') || 0);
+  const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
   const { usuario } = useAuth();
   const podeExcluir = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
@@ -185,6 +199,9 @@ export default function DuplasDireto() {
   const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/INATIVA) ou medalha (ouro/prata/bronze)
   const [filtroClasse, setFiltroClasse] = useState(() => {
     return ['A', 'B', 'C'].includes(classeParam) ? classeParam : '';
+  });
+  const [filtroAtividade, setFiltroAtividade] = useState(() => {
+    return ['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -230,6 +247,14 @@ export default function DuplasDireto() {
     setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
   }, [classeParam]);
 
+  useEffect(() => {
+    setFiltro(['ATIVA', 'PENDENTE', 'INATIVA', 'ouro', 'prata', 'bronze'].includes(statusParam) ? statusParam : '');
+  }, [statusParam]);
+
+  useEffect(() => {
+    setFiltroAtividade(['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '');
+  }, [atividadeParam]);
+
   // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
   const duplasComMedalha = useMemo(() =>
     [...duplas]
@@ -259,10 +284,17 @@ export default function DuplasDireto() {
         (d.liderNome || '').toLowerCase().includes(termo) ||
         (d.membro2Nome || '').toLowerCase().includes(termo) ||
         (d.bairro || '').toLowerCase().includes(termo);
-      const matchClasse = !filtroClasse || d.classificacaoDupla === filtroClasse;
-      return matchFiltro && matchClasse && matchBusca;
+      const matchClasse = pertenceClasseFiltro(d, filtroClasse);
+      const matchAtividade = !filtroAtividade || d.atividadeDupla === filtroAtividade;
+      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO';
+      const matchIgreja = !igrejaIdParam || String(d.igreja?.id || d.igrejaId || '') === igrejaIdParam;
+      const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
+      const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
+      const matchBatismos = !minBatismosParam || (d.batismos || 0) >= minBatismosParam;
+      const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
+      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchBusca;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, busca]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, busca]);
 
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
@@ -338,9 +370,9 @@ export default function DuplasDireto() {
             {/* Chip "Todas" */}
             <button
               type="button"
-              onClick={() => { setFiltro(''); setFiltroClasse(''); }}
+              onClick={() => { setFiltro(''); setFiltroClasse(''); setFiltroAtividade(''); }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200 ${
-                filtro === '' && filtroClasse === ''
+                filtro === '' && filtroClasse === '' && filtroAtividade === ''
                   ? 'bg-[#1A3A6B] text-white border-[#1A3A6B] shadow-sm'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-[#1A3A6B]/30'
               }`}
@@ -349,8 +381,8 @@ export default function DuplasDireto() {
               <span
                 className="rounded-full px-1.5 py-px text-[9px] font-bold"
                 style={{
-                  backgroundColor: filtro === '' && filtroClasse === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                  color: filtro === '' && filtroClasse === '' ? 'white' : '#6b7280',
+                  backgroundColor: filtro === '' && filtroClasse === '' && filtroAtividade === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                  color: filtro === '' && filtroClasse === '' && filtroAtividade === '' ? 'white' : '#6b7280',
                 }}
               >
                 {duplas.length}
@@ -389,7 +421,7 @@ export default function DuplasDireto() {
             {(['A', 'B', 'C']).map((classe) => {
               const cfg = classeConfig[classe];
               const ativo = filtroClasse === classe;
-              const total = duplas.filter((dupla) => dupla.classificacaoDupla === classe).length;
+              const total = duplas.filter((dupla) => pertenceClasseFiltro(dupla, classe)).length;
               return (
                 <button
                   key={classe}

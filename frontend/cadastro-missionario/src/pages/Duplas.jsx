@@ -57,6 +57,13 @@ const medalhaConfig = {
 };
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
+const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
+const pertenceClasseFiltro = (dupla, classe) => {
+  if (!classe) return true;
+  if (classe === 'A') return dupla.classificacaoDupla === 'A' && temEstudoCadastrado(dupla);
+  return dupla.classificacaoDupla === classe;
+};
 
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
@@ -132,6 +139,14 @@ export default function Duplas() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classeParam = searchParams.get('classe');
+  const statusParam = searchParams.get('status');
+  const atividadeParam = searchParams.get('atividade');
+  const estudoAtivoParam = searchParams.get('estudoAtivo');
+  const igrejaIdParam = searchParams.get('igrejaId');
+  const regiaoIdParam = searchParams.get('regiaoId');
+  const tipoProjetoParam = searchParams.get('tipoProjeto');
+  const minBatismosParam = Number(searchParams.get('minBatismos') || 0);
+  const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
@@ -169,6 +184,14 @@ export default function Duplas() {
     setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
   }, [classeParam]);
 
+  useEffect(() => {
+    setFiltro(['ATIVA', 'PENDENTE', 'INATIVA', 'ouro', 'prata', 'bronze'].includes(statusParam) ? statusParam : '');
+  }, [statusParam]);
+
+  useEffect(() => {
+    setFiltroAtividade(['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '');
+  }, [atividadeParam]);
+
   const duplasComMedalha = useMemo(() =>
     [...duplas]
       .map(d => ({ ...d, _medalha: getMedalha(d) }))
@@ -182,16 +205,22 @@ export default function Duplas() {
       const matchFiltro = !filtro ? true
         : isMedalha ? d._medalha === filtro
         : d.status === filtro;
-      const matchClasse = !filtroClasse || d.classificacaoDupla === filtroClasse;
+      const matchClasse = pertenceClasseFiltro(d, filtroClasse);
       const matchAtividade = !filtroAtividade || d.atividadeDupla === filtroAtividade;
+      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO';
       const matchBusca = !busca ||
         (d.liderNome || '').toLowerCase().includes(busca.toLowerCase()) ||
         (d.membro2Nome || '').toLowerCase().includes(busca.toLowerCase()) ||
         (d.bairro || '').toLowerCase().includes(busca.toLowerCase());
       const matchIgreja = !filtroIgrejaId || (d.igreja?.id === filtroIgrejaId || d.igrejaId === filtroIgrejaId);
-      return matchFiltro && matchClasse && matchAtividade && matchBusca && matchIgreja;
+      const matchIgrejaQuery = !igrejaIdParam || String(d.igreja?.id || d.igrejaId || '') === igrejaIdParam;
+      const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
+      const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
+      const matchBatismos = !minBatismosParam || (d.batismos || 0) >= minBatismosParam;
+      const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
+      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchBusca && matchIgreja && matchIgrejaQuery && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, busca, filtroIgrejaId]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, busca, filtroIgrejaId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam]);
 
   const contagemMedalha = useMemo(() => {
     const c = { ouro: 0, prata: 0, bronze: 0 };

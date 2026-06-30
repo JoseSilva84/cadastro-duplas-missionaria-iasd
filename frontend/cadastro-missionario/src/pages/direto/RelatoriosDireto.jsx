@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { PERFIS, useAuth } from '../../contexts/AuthContext';
+import EChart from '../../components/EChart';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -56,6 +57,65 @@ export default function RelatoriosDireto() {
   }
 
   const regiaoSelecionada = porRegiao.find(r => r.id === selecionado);
+  const irParaDuplas = (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([chave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') query.set(chave, valor);
+    });
+    navigate(`/direto/duplas${query.toString() ? `?${query.toString()}` : ''}`);
+  };
+  const graficoStatusGeral = {
+    color: ['#16a34a', '#C9963A', '#9ca3af'],
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, textStyle: { color: '#64748b', fontSize: 11 } },
+    series: [{
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['50%', '43%'],
+      label: { formatter: '{b}\n{c}', color: '#1A3A6B', fontWeight: 700 },
+      data: [
+        { name: 'Ativas', value: resumo?.totalAtivas || 0 },
+        { name: 'Pendentes', value: resumo?.totalPendentes || 0 },
+        { name: 'Inativas', value: resumo?.totalInativas || 0 },
+      ],
+    }],
+  };
+  const graficoClassesGeral = {
+    color: ['#047857', '#b45309', '#b91c1c'],
+    tooltip: { trigger: 'axis' },
+    grid: { left: 34, right: 12, top: 20, bottom: 32 },
+    xAxis: { type: 'category', data: ['Classe A', 'Classe B', 'Classe C'], axisLabel: { color: '#64748b' } },
+    yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
+    series: [{ type: 'bar', barWidth: 34, data: ['A', 'B', 'C'].map((classe) => resumo?.classesBiblicas?.[classe]?.total || 0) }],
+  };
+  const graficoStatusRegiao = regiaoSelecionada ? {
+    color: ['#16a34a', '#C9963A', '#9ca3af'],
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, textStyle: { color: '#64748b', fontSize: 11 } },
+    series: [{
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['50%', '43%'],
+      label: { formatter: '{b}\n{c}', color: '#1A3A6B', fontWeight: 700 },
+      data: [
+        { name: 'Ativas', value: regiaoSelecionada.ativas || 0 },
+        { name: 'Pendentes', value: regiaoSelecionada.pendentes || 0 },
+        { name: 'Inativas', value: regiaoSelecionada.inativas || 0 },
+      ],
+    }],
+  } : null;
+  const graficoDistritosRegiao = regiaoSelecionada ? {
+    color: [regiaoSelecionada.cor],
+    tooltip: { trigger: 'axis' },
+    grid: { left: 42, right: 12, top: 20, bottom: 58 },
+    xAxis: {
+      type: 'category',
+      data: regiaoSelecionada.distritos.map((distrito) => distrito.nome),
+      axisLabel: { color: '#64748b', rotate: 35, interval: 0 },
+    },
+    yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
+    series: [{ type: 'bar', barWidth: 24, data: regiaoSelecionada.distritos.map((distrito) => distrito.totalDuplas) }],
+  } : null;
 
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">
@@ -181,10 +241,29 @@ export default function RelatoriosDireto() {
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300"
+                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
                       data-tooltip={item.detalhe || `${item.label}: total consolidado no relatorio global.`}
                       tabIndex={0}
                       style={{ borderLeft: `3px solid ${item.cor}` }}
+                      role="button"
+                      onClick={() => {
+                        if (item.label === 'Total de Duplas') irParaDuplas();
+                        if (item.label === 'Duplas Ativas') irParaDuplas({ status: 'ATIVA' });
+                        if (item.label === 'Duplas com Estudo Ativo') irParaDuplas({ estudoAtivo: '1' });
+                        if (item.label === 'Classes Bíblicas Ativas') navigate('/direto/relatorios/classes-biblicas');
+                        if (item.label === 'Batismos Realizados') irParaDuplas({ minBatismos: '1' });
+                        if (item.label === 'Metas de contatos') irParaDuplas({ minPessoas: '1' });
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        event.preventDefault();
+                        if (item.label === 'Total de Duplas') irParaDuplas();
+                        if (item.label === 'Duplas Ativas') irParaDuplas({ status: 'ATIVA' });
+                        if (item.label === 'Duplas com Estudo Ativo') irParaDuplas({ estudoAtivo: '1' });
+                        if (item.label === 'Classes Bíblicas Ativas') navigate('/direto/relatorios/classes-biblicas');
+                        if (item.label === 'Batismos Realizados') irParaDuplas({ minBatismos: '1' });
+                        if (item.label === 'Metas de contatos') irParaDuplas({ minPessoas: '1' });
+                      }}
                     >
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg shadow-md flex-shrink-0`}>{item.icon}</div>
                       <div>
@@ -193,13 +272,43 @@ export default function RelatoriosDireto() {
                       </div>
                     </div>
                   ))}
+                  <div
+                    className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                    data-tooltip="Duplas Inativas: quantidade real de duplas com status INATIVA. Toque para abrir a lista filtrada."
+                    tabIndex={0}
+                    role="button"
+                    style={{ borderLeft: '3px solid #64748b' }}
+                    onClick={() => irParaDuplas({ status: 'INATIVA' })}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return;
+                      event.preventDefault();
+                      irParaDuplas({ status: 'INATIVA' });
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#64748b] to-[#94a3b8] flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0">II</div>
+                    <div>
+                      <p className="text-xl font-bold text-[#64748b]">{resumo.totalInativas}</p>
+                      <p className="text-xs text-gray-500 font-medium">Duplas Inativas</p>
+                    </div>
+                  </div>
                 </div>
 
                 {resumo?.classesBiblicas && (
                   <div className="w-[380px] flex-shrink-0 space-y-3">
                     <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Classe Bíblica</h2>
                     {['A', 'B', 'C'].map((classe) => (
-                      <div key={classe} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <div
+                        key={classe}
+                        className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigate('/direto/relatorios/classes-biblicas')}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          navigate('/direto/relatorios/classes-biblicas');
+                        }}
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-bold text-[#1A3A6B]">Estudos Classe {classe}</p>
                           <span
@@ -233,9 +342,16 @@ export default function RelatoriosDireto() {
                       return (
                         <div
                           key={p.tipoProjeto}
-                          className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+                          className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
                           data-tooltip={`${projetoLabel[p.tipoProjeto]}: ${p._count.tipoProjeto} dupla(s), equivalente a ${pct}% do total.`}
                           tabIndex={0}
+                          role="button"
+                          onClick={() => irParaDuplas({ tipoProjeto: p.tipoProjeto })}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return;
+                            event.preventDefault();
+                            irParaDuplas({ tipoProjeto: p.tipoProjeto });
+                          }}
                         >
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
@@ -253,7 +369,21 @@ export default function RelatoriosDireto() {
                     })}
                   </div>
                 )}
-                
+
+                <div className="w-[360px] flex-shrink-0 space-y-3">
+                  <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Status das Duplas</h2>
+                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                    <EChart option={graficoStatusGeral} className="h-64" />
+                  </div>
+                </div>
+
+                <div className="w-[420px] flex-shrink-0 space-y-3">
+                  <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Estudantes por Classe</h2>
+                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                    <EChart option={graficoClassesGeral} className="h-64" />
+                  </div>
+                </div>
+                 
               </div>
             </div>
           </div>
@@ -301,9 +431,28 @@ export default function RelatoriosDireto() {
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300"
+                      className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
                       data-tooltip={item.detalhe || `${item.label}: total consolidado nesta regiao.`}
                       tabIndex={0}
+                      role="button"
+                      onClick={() => {
+                        if (item.label === 'Total de Duplas') irParaDuplas({ regiaoId: regiaoSelecionada.id });
+                        if (item.label === 'Duplas Ativas') irParaDuplas({ regiaoId: regiaoSelecionada.id, status: 'ATIVA' });
+                        if (item.label === 'Duplas com Estudo Ativo') irParaDuplas({ regiaoId: regiaoSelecionada.id, estudoAtivo: '1' });
+                        if (item.label === 'Classes Bíblicas Ativas') navigate('/direto/relatorios/classes-biblicas');
+                        if (item.label === 'Batismos Realizados') irParaDuplas({ regiaoId: regiaoSelecionada.id, minBatismos: '1' });
+                        if (item.label === 'metas de contatos') irParaDuplas({ regiaoId: regiaoSelecionada.id, minPessoas: '1' });
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        event.preventDefault();
+                        if (item.label === 'Total de Duplas') irParaDuplas({ regiaoId: regiaoSelecionada.id });
+                        if (item.label === 'Duplas Ativas') irParaDuplas({ regiaoId: regiaoSelecionada.id, status: 'ATIVA' });
+                        if (item.label === 'Duplas com Estudo Ativo') irParaDuplas({ regiaoId: regiaoSelecionada.id, estudoAtivo: '1' });
+                        if (item.label === 'Classes Bíblicas Ativas') navigate('/direto/relatorios/classes-biblicas');
+                        if (item.label === 'Batismos Realizados') irParaDuplas({ regiaoId: regiaoSelecionada.id, minBatismos: '1' });
+                        if (item.label === 'metas de contatos') irParaDuplas({ regiaoId: regiaoSelecionada.id, minPessoas: '1' });
+                      }}
                     >
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-md flex-shrink-0" style={{ background: `linear-gradient(135deg, ${regiaoSelecionada.cor}, ${regiaoSelecionada.cor}cc)` }}>
                         {item.icon}
@@ -314,6 +463,24 @@ export default function RelatoriosDireto() {
                       </div>
                     </div>
                   ))}
+                  <div
+                    className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                    data-tooltip="Duplas Inativas desta regiao. Toque para abrir a lista filtrada."
+                    tabIndex={0}
+                    role="button"
+                    onClick={() => irParaDuplas({ regiaoId: regiaoSelecionada.id, status: 'INATIVA' })}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return;
+                      event.preventDefault();
+                      irParaDuplas({ regiaoId: regiaoSelecionada.id, status: 'INATIVA' });
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0 bg-[#64748b]">II</div>
+                    <div>
+                      <p className="text-xl font-bold text-gray-800">{regiaoSelecionada.inativas}</p>
+                      <p className="text-xs text-gray-500 font-medium">Duplas Inativas</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Painel: Performance dos Distritos */}
@@ -324,9 +491,16 @@ export default function RelatoriosDireto() {
                     return (
                       <div
                         key={distrito.id}
-                        className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 relative"
+                        className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
                         data-tooltip={`${distrito.nome}: ${distrito.totalDuplas} dupla(s), ${pct}% das duplas da regiao.`}
                         tabIndex={0}
+                        role="button"
+                        onClick={() => navigate(`/direto/distritos/${distrito.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          navigate(`/direto/distritos/${distrito.id}`);
+                        }}
                       >
                         {index === 0 && <div className="absolute top-0 right-0 w-10 h-10 bg-[#C9963A] transform translate-x-5 -translate-y-5 rotate-45" />}
                         {index === 0 && <span className="absolute top-1 right-1 text-[10px] text-white font-bold" title="1º Lugar">🏆</span>}
@@ -346,6 +520,24 @@ export default function RelatoriosDireto() {
                     );
                   })}
                 </div>
+
+                {graficoStatusRegiao && (
+                  <div className="w-[360px] flex-shrink-0 space-y-3">
+                    <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Status na Regiao</h2>
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <EChart option={graficoStatusRegiao} className="h-64" />
+                    </div>
+                  </div>
+                )}
+
+                {graficoDistritosRegiao && (
+                  <div className="w-[520px] flex-shrink-0 space-y-3">
+                    <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Duplas por Distrito</h2>
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <EChart option={graficoDistritosRegiao} className="h-64" />
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>

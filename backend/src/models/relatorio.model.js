@@ -483,10 +483,12 @@ const RelatorioModel = {
           },
         },
       }),
-      prisma.dupla.groupBy({
-        by: ['classificacaoDupla'],
+      prisma.dupla.findMany({
         where: { classificacaoDupla: { not: null } },
-        _count: { classificacaoDupla: true },
+        select: {
+          classificacaoDupla: true,
+          _count: { select: { estudosBiblicos: true } },
+        },
       }),
       prisma.escolaSabatinaResumo.findUnique({ where: { id: 1 } }),
       prisma.escolaSabatinaCadastro.findMany({
@@ -568,7 +570,8 @@ const RelatorioModel = {
     const classes = { A: 0, B: 0, C: 0 };
     classesDuplas.forEach((item) => {
       if (item.classificacaoDupla) {
-        classes[item.classificacaoDupla] = item._count.classificacaoDupla;
+        if (item.classificacaoDupla === 'A' && (item._count?.estudosBiblicos || 0) === 0) return;
+        classes[item.classificacaoDupla] += 1;
       }
     });
 

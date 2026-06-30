@@ -228,7 +228,7 @@ export default function DistritosDireto() {
 
   // Controle de filtro por igreja
   const [igrejaSelecionadaId, setIgrejaSelecionadaId] = useState(null);
-  const [duplasPorIgreja, setDuplasPorIgreja] = useState({}); // { [igrejaId]: count }
+  const [duplasPorIgreja, setDuplasPorIgreja] = useState({}); // { [igrejaId]: { total, ativas, inativas, pendentes } }
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
@@ -257,7 +257,13 @@ export default function DistritosDireto() {
         const contagem = {};
         listaComFotos.forEach((dupla) => {
           if (dupla.igrejaId) {
-            contagem[dupla.igrejaId] = (contagem[dupla.igrejaId] || 0) + 1;
+            if (!contagem[dupla.igrejaId]) {
+              contagem[dupla.igrejaId] = { total: 0, ativas: 0, inativas: 0, pendentes: 0 };
+            }
+            contagem[dupla.igrejaId].total += 1;
+            if (dupla.status === 'ATIVA') contagem[dupla.igrejaId].ativas += 1;
+            if (dupla.status === 'INATIVA') contagem[dupla.igrejaId].inativas += 1;
+            if (dupla.status === 'PENDENTE') contagem[dupla.igrejaId].pendentes += 1;
           }
         });
         setDuplasPorIgreja(contagem);
@@ -367,6 +373,9 @@ export default function DistritosDireto() {
   const igrejaNomeFiltro = igrejaSelecionadaId
     ? igrejas.find((ig) => ig.id === igrejaSelecionadaId)?.nome
     : null;
+  const statsIgrejaSelecionada = igrejaSelecionadaId
+    ? duplasPorIgreja[igrejaSelecionadaId] || { total: duplas.length, ativas: 0, inativas: 0, pendentes: 0 }
+    : null;
 
   return (
     <>
@@ -425,6 +434,9 @@ export default function DistritosDireto() {
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                     Duplas da Igreja
+                    <span className="block text-[10px] text-[#1A3A6B] normal-case tracking-normal truncate">
+                      Total {statsIgrejaSelecionada?.total ?? duplas.length} - Ativas {statsIgrejaSelecionada?.ativas ?? 0} - Inativas {statsIgrejaSelecionada?.inativas ?? 0}
+                    </span>
                   </p>
                   <p className="text-[10px] text-[#C9963A] font-semibold truncate">{igrejaNomeFiltro} • {duplas.length} dupla{duplas.length !== 1 ? 's' : ''}</p>
                 </div>
@@ -474,7 +486,8 @@ export default function DistritosDireto() {
                 {igrejas.length > 0 ? (
                   <div className="grid grid-cols-1 gap-2">
                     {igrejas.map((ig) => {
-                      const qtdDuplas = duplasPorIgreja[ig.id] ?? 0;
+                      const stats = duplasPorIgreja[ig.id] || { total: 0, ativas: 0, inativas: 0, pendentes: 0 };
+                      const qtdDuplas = stats.total;
                       const isAtiva = igrejaSelecionadaId === ig.id;
                       return (
                         <button
@@ -496,6 +509,9 @@ export default function DistritosDireto() {
                             <div className="min-w-0 flex-1">
                               <p className={`text-xs font-semibold truncate ${isAtiva ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`} title={ig.nome}>{ig.nome}</p>
                               <p className="text-[10px] text-gray-400">{(ig.membros || 0).toLocaleString('pt-BR')} membros</p>
+                              <p className="text-[9px] text-gray-500 mt-0.5">
+                                {qtdDuplas} duplas - {stats.ativas} ativas - {stats.inativas} inativas
+                              </p>
                             </div>
                             {/* Badge de duplas */}
                             <div className={`flex-shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${isAtiva ? 'bg-[#C9963A] text-white' : 'bg-[#1A3A6B]/10 text-[#1A3A6B]'}`}>
