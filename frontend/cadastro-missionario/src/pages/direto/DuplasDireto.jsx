@@ -21,6 +21,11 @@ const medalhaConfig = {
 };
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
+const medalhaRegras = {
+  ouro: 'Ouro: estudo bíblico ativo, pelo menos 1 batismo e pessoas alcançadas acima de 0.',
+  prata: 'Prata: estudo bíblico ativo, pessoas alcançadas acima de 0 e ainda sem batismo registrado.',
+  bronze: 'Bronze: dupla que ainda não atingiu todos os critérios de Ouro ou Prata.',
+};
 
 // Link clicável do WhatsApp Web
 const WhatsAppLink = ({ numero }) => {
@@ -73,6 +78,11 @@ const classeConfig = {
   B: { label: 'Classe B', cor: '#b45309', bg: '#fef3c7' },
   C: { label: 'Classe C', cor: '#b91c1c', bg: '#fee2e2' },
 };
+const classeRegras = {
+  A: 'Classe A: levou pessoa ao batismo e possui pelo menos 1 estudo cadastrado.',
+  B: 'Classe B: já deu estudo bíblico, mas ainda não registrou batismo.',
+  C: 'Classe C: informou que ainda não deu estudo bíblico.',
+};
 
 const atividadeConfig = {
   ATIVA: { label: 'Ativa', cor: '#2563eb', bg: '#dbeafe' },
@@ -106,10 +116,11 @@ const getClassificacaoAtividadeText = (dupla) => {
   return `${classe} · ${atividade}`;
 };
 
-const Chip = ({ children, config, compact = false }) => (
+const Chip = ({ children, config, compact = false, title }) => (
   <span
     className={`inline-flex items-center gap-1 rounded-full border font-semibold ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}
     style={{ backgroundColor: config.bg, color: config.cor, borderColor: config.border || `${config.cor}35` }}
+    title={title}
   >
     {children}
   </span>
@@ -121,7 +132,7 @@ const ClassificacaoAtividadeBadge = ({ dupla, compact = false }) => {
 
   return (
     <>
-      <Chip config={classe} compact={compact}>{classe.label}</Chip>
+      <Chip config={classe} compact={compact} title={classeRegras[dupla?.classificacaoDupla] || 'Sem regra de classe informada.'}>{classe.label}</Chip>
       <Chip config={atividade} compact={compact}>{atividade.label}</Chip>
     </>
   );
@@ -191,6 +202,7 @@ export default function DuplasDireto() {
   const tipoProjetoParam = searchParams.get('tipoProjeto');
   const minBatismosParam = Number(searchParams.get('minBatismos') || 0);
   const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
+  const filtroEspecialParam = searchParams.get('filtro');
   const { usuario } = useAuth();
   const podeExcluir = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
@@ -202,6 +214,9 @@ export default function DuplasDireto() {
   });
   const [filtroAtividade, setFiltroAtividade] = useState(() => {
     return ['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '';
+  });
+  const [filtroEspecial, setFiltroEspecial] = useState(() => {
+    return ['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -255,6 +270,10 @@ export default function DuplasDireto() {
     setFiltroAtividade(['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '');
   }, [atividadeParam]);
 
+  useEffect(() => {
+    setFiltroEspecial(['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+  }, [filtroEspecialParam]);
+
   // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
   const duplasComMedalha = useMemo(() =>
     [...duplas]
@@ -292,9 +311,12 @@ export default function DuplasDireto() {
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
       const matchBatismos = !minBatismosParam || (d.batismos || 0) >= minBatismosParam;
       const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
-      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchBusca;
+      const matchEspecial = !filtroEspecial
+        || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
+        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
+      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial && matchBusca;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, busca]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial, busca]);
 
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
@@ -370,9 +392,9 @@ export default function DuplasDireto() {
             {/* Chip "Todas" */}
             <button
               type="button"
-              onClick={() => { setFiltro(''); setFiltroClasse(''); setFiltroAtividade(''); }}
+              onClick={() => { setFiltro(''); setFiltroClasse(''); setFiltroAtividade(''); setFiltroEspecial(''); }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200 ${
-                filtro === '' && filtroClasse === '' && filtroAtividade === ''
+                filtro === '' && filtroClasse === '' && filtroAtividade === '' && filtroEspecial === ''
                   ? 'bg-[#1A3A6B] text-white border-[#1A3A6B] shadow-sm'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-[#1A3A6B]/30'
               }`}
@@ -381,8 +403,8 @@ export default function DuplasDireto() {
               <span
                 className="rounded-full px-1.5 py-px text-[9px] font-bold"
                 style={{
-                  backgroundColor: filtro === '' && filtroClasse === '' && filtroAtividade === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                  color: filtro === '' && filtroClasse === '' && filtroAtividade === '' ? 'white' : '#6b7280',
+                  backgroundColor: filtro === '' && filtroClasse === '' && filtroAtividade === '' && filtroEspecial === '' ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                  color: filtro === '' && filtroClasse === '' && filtroAtividade === '' && filtroEspecial === '' ? 'white' : '#6b7280',
                 }}
               >
                 {duplas.length}
@@ -398,6 +420,7 @@ export default function DuplasDireto() {
                   key={m}
                   type="button"
                   onClick={() => setFiltro(ativo ? '' : m)}
+                  title={medalhaRegras[m]}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200"
                   style={ativo
                     ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
@@ -427,6 +450,7 @@ export default function DuplasDireto() {
                   key={classe}
                   type="button"
                   onClick={() => setFiltroClasse(ativo ? '' : classe)}
+                  title={classeRegras[classe]}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200"
                   style={ativo
                     ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
@@ -441,6 +465,50 @@ export default function DuplasDireto() {
                     }}
                   >
                     {total}
+                  </span>
+                </button>
+              );
+            })}
+
+            {[
+              {
+                key: 'semEstudos',
+                label: 'Sem atividade',
+                total: duplas.filter((dupla) => getEstudosCount(dupla) === 0).length,
+                title: 'Dupla sem atividade: duplas com Estudos 0.',
+                cor: '#64748b',
+                bg: '#f1f5f9',
+              },
+              {
+                key: 'comVisitacoes',
+                label: 'Com visitação',
+                total: duplas.filter((dupla) => getVisitacoesCount(dupla) >= 1).length,
+                title: 'Duplas com visitação: duplas com Visitações 1 ou mais. Visitações 0 não entram.',
+                cor: '#7c3aed',
+                bg: '#ede9fe',
+              },
+            ].map((item) => {
+              const ativo = filtroEspecial === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setFiltroEspecial(ativo ? '' : item.key)}
+                  title={item.title}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-200"
+                  style={ativo
+                    ? { backgroundColor: item.cor, borderColor: item.cor, color: 'white' }
+                    : { backgroundColor: item.bg, borderColor: item.cor + '55', color: item.cor }}
+                >
+                  {item.label}
+                  <span
+                    className="rounded-full px-1.5 py-px text-[9px] font-bold"
+                    style={{
+                      backgroundColor: ativo ? 'rgba(255,255,255,0.25)' : item.cor + '20',
+                      color: ativo ? 'white' : item.cor,
+                    }}
+                  >
+                    {item.total}
                   </span>
                 </button>
               );
@@ -567,6 +635,7 @@ export default function DuplasDireto() {
                     <span
                       className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
+                      title={medalhaRegras[dupla._medalha]}
                     >
                       {mcfg.emoji} {mcfg.label}
                     </span>

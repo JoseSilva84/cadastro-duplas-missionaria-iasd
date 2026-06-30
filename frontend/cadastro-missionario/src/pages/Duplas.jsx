@@ -58,6 +58,17 @@ const medalhaConfig = {
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const medalhaRegras = {
+  ouro: 'Ouro: estudo bíblico ativo, pelo menos 1 batismo e pessoas alcançadas acima de 0.',
+  prata: 'Prata: estudo bíblico ativo, pessoas alcançadas acima de 0 e ainda sem batismo registrado.',
+  bronze: 'Bronze: dupla que ainda não atingiu todos os critérios de Ouro ou Prata.',
+};
+const classeRegras = {
+  A: 'Classe A: levou pessoa ao batismo e possui pelo menos 1 estudo cadastrado.',
+  B: 'Classe B: já deu estudo bíblico, mas ainda não registrou batismo.',
+  C: 'Classe C: informou que ainda não deu estudo bíblico.',
+};
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
 const pertenceClasseFiltro = (dupla, classe) => {
   if (!classe) return true;
@@ -147,6 +158,7 @@ export default function Duplas() {
   const tipoProjetoParam = searchParams.get('tipoProjeto');
   const minBatismosParam = Number(searchParams.get('minBatismos') || 0);
   const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
+  const filtroEspecialParam = searchParams.get('filtro');
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
@@ -158,6 +170,9 @@ export default function Duplas() {
     return ['A', 'B', 'C'].includes(classeParam) ? classeParam : '';
   });
   const [filtroAtividade, setFiltroAtividade] = useState('');
+  const [filtroEspecial, setFiltroEspecial] = useState(() => {
+    return ['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
+  });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
   const [filtroIgrejaId, setFiltroIgrejaId] = useState(null);
@@ -192,6 +207,10 @@ export default function Duplas() {
     setFiltroAtividade(['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '');
   }, [atividadeParam]);
 
+  useEffect(() => {
+    setFiltroEspecial(['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+  }, [filtroEspecialParam]);
+
   const duplasComMedalha = useMemo(() =>
     [...duplas]
       .map(d => ({ ...d, _medalha: getMedalha(d) }))
@@ -218,9 +237,12 @@ export default function Duplas() {
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
       const matchBatismos = !minBatismosParam || (d.batismos || 0) >= minBatismosParam;
       const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
-      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchBusca && matchIgreja && matchIgrejaQuery && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas;
+      const matchEspecial = !filtroEspecial
+        || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
+        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
+      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchBusca && matchIgreja && matchIgrejaQuery && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, busca, filtroIgrejaId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, busca, filtroIgrejaId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial]);
 
   const contagemMedalha = useMemo(() => {
     const c = { ouro: 0, prata: 0, bronze: 0 };
@@ -386,16 +408,16 @@ export default function Duplas() {
         {/* Chip "Todas" */}
         <button
           type="button"
-          onClick={() => { setFiltro(''); setFiltroClasse(''); setFiltroAtividade(''); }}
+          onClick={() => { setFiltro(''); setFiltroClasse(''); setFiltroAtividade(''); setFiltroEspecial(''); }}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
-            !filtro && !filtroClasse && !filtroAtividade
+            !filtro && !filtroClasse && !filtroAtividade && !filtroEspecial
               ? 'bg-[#1A3A6B] text-white border-[#1A3A6B] shadow-md'
               : 'bg-white text-gray-500 border-gray-200 hover:border-[#1A3A6B]/40'
           }`}
         >
           Todas
           <span className="rounded-full px-1.5 py-px text-[10px] font-bold"
-            style={{ backgroundColor: (!filtro && !filtroClasse && !filtroAtividade) ? 'rgba(255,255,255,0.25)' : '#f3f4f6', color: (!filtro && !filtroClasse && !filtroAtividade) ? 'white' : '#6b7280' }}>
+            style={{ backgroundColor: (!filtro && !filtroClasse && !filtroAtividade && !filtroEspecial) ? 'rgba(255,255,255,0.25)' : '#f3f4f6', color: (!filtro && !filtroClasse && !filtroAtividade && !filtroEspecial) ? 'white' : '#6b7280' }}>
             {duplas.length}
           </span>
         </button>
@@ -407,6 +429,7 @@ export default function Duplas() {
           return (
             <button key={m} type="button"
               onClick={() => setFiltro(ativo ? '' : m)}
+              title={medalhaRegras[m]}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200"
               style={ativo ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
                 : { backgroundColor: cfg.cor + '18', borderColor: cfg.cor + '55', color: cfg.cor }}
@@ -433,9 +456,45 @@ export default function Duplas() {
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-all duration-200"
               style={ativo ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
                 : { backgroundColor: cfg.bg, borderColor: cfg.cor + '60', color: cfg.cor }}
-              title={cfg.desc}
+              title={classeRegras[cls]}
             >
               Classe {cls}
+            </button>
+          );
+        })}
+
+        {[
+          {
+            key: 'semEstudos',
+            label: 'Sem atividade',
+            total: duplas.filter((dupla) => getEstudosCount(dupla) === 0).length,
+            title: 'Dupla sem atividade: duplas com Estudos 0.',
+            cor: '#64748b',
+            bg: '#f1f5f9',
+          },
+          {
+            key: 'comVisitacoes',
+            label: 'Com visitação',
+            total: duplas.filter((dupla) => getVisitacoesCount(dupla) >= 1).length,
+            title: 'Duplas com visitação: duplas com Visitações 1 ou mais. Visitações 0 não entram.',
+            cor: '#7c3aed',
+            bg: '#ede9fe',
+          },
+        ].map((item) => {
+          const ativo = filtroEspecial === item.key;
+          return (
+            <button key={item.key} type="button"
+              onClick={() => setFiltroEspecial(ativo ? '' : item.key)}
+              title={item.title}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200"
+              style={ativo ? { backgroundColor: item.cor, borderColor: item.cor, color: 'white' }
+                : { backgroundColor: item.bg, borderColor: item.cor + '60', color: item.cor }}
+            >
+              {item.label}
+              <span className="rounded-full px-1.5 py-px text-[10px] font-bold"
+                style={{ backgroundColor: ativo ? 'rgba(255,255,255,0.25)' : item.cor + '25', color: ativo ? 'white' : item.cor }}>
+                {item.total}
+              </span>
             </button>
           );
         })}
@@ -555,7 +614,8 @@ export default function Duplas() {
                 <div className="hidden sm:flex items-center gap-2 flex-shrink-0 ml-2">
                   {clsCfg && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border"
-                      style={{ backgroundColor: clsCfg.bg, color: clsCfg.cor, borderColor: clsCfg.cor + '40' }}>
+                      style={{ backgroundColor: clsCfg.bg, color: clsCfg.cor, borderColor: clsCfg.cor + '40' }}
+                      title={classeRegras[dupla.classificacaoDupla]}>
                       {dupla.classificacaoDupla}
                     </span>
                   )}
@@ -576,7 +636,8 @@ export default function Duplas() {
                     </span>
                   )}
                   <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{ backgroundColor: cfg.cor + '18', color: cfg.cor }}>
+                    style={{ backgroundColor: cfg.cor + '18', color: cfg.cor }}
+                    title={medalhaRegras[dupla._medalha]}>
                     {cfg.emoji} {cfg.label}
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-[#1A3A6B] transition-all duration-200">

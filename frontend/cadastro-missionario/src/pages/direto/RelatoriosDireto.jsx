@@ -294,12 +294,13 @@ export default function RelatoriosDireto() {
                 </div>
 
                 {resumo?.classesBiblicas && (
-                  <div className="w-[380px] flex-shrink-0 space-y-3">
+                  <div className="w-[430px] flex-shrink-0 space-y-3">
                     <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Classe Bíblica</h2>
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30">
                     {['A', 'B', 'C'].map((classe) => (
                       <div
                         key={classe}
-                        className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                        className="border-b border-gray-100 last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0"
                         role="button"
                         tabIndex={0}
                         onClick={() => navigate('/direto/relatorios/classes-biblicas')}
@@ -330,12 +331,17 @@ export default function RelatoriosDireto() {
                         </div>
                       </div>
                     ))}
+                    </div>
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-[#1A3A6B] uppercase tracking-widest mb-2">Status das Duplas</h3>
+                      <EChart option={graficoStatusGeral} className="h-56" />
+                    </div>
                   </div>
                 )}
 
                 {/* Painel: Distribuição por Projetos */}
                 {resumo?.porProjeto?.length > 0 && (
-                  <div className="w-[300px] flex-shrink-0 space-y-3">
+                  <div className="w-[380px] flex-shrink-0 space-y-3">
                     <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Por Tipo de Projeto</h2>
                     {resumo.porProjeto.map((p) => {
                       const pct = Math.round((p._count.tipoProjeto / Math.max(resumo.totalDuplas, 1)) * 100);
@@ -367,23 +373,13 @@ export default function RelatoriosDireto() {
                         </div>
                       );
                     })}
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-[#1A3A6B] uppercase tracking-widest mb-2">Estudantes por Classe</h3>
+                      <EChart option={graficoClassesGeral} className="h-56" />
+                    </div>
                   </div>
                 )}
 
-                <div className="w-[360px] flex-shrink-0 space-y-3">
-                  <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Status das Duplas</h2>
-                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                    <EChart option={graficoStatusGeral} className="h-64" />
-                  </div>
-                </div>
-
-                <div className="w-[420px] flex-shrink-0 space-y-3">
-                  <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Estudantes por Classe</h2>
-                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                    <EChart option={graficoClassesGeral} className="h-64" />
-                  </div>
-                </div>
-                 
               </div>
             </div>
           </div>
