@@ -19,6 +19,7 @@ import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
 import RelatorioEstudosGeral from './pages/RelatorioEstudosGeral';
 import RelatorioEstudosBiblicos from './pages/RelatorioEstudosBiblicos';
+import RelatorioRankingDecisoes from './pages/RelatorioRankingDecisoes';
 import EstudanteDashboard from './pages/EstudanteDashboard';
 import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
 import DashboardCoordenadorRegional from './pages/DashboardCoordenadorRegional';
@@ -275,6 +276,7 @@ function AppRoutes() {
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
+        <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
@@ -372,6 +374,7 @@ function AppRoutes() {
         <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
+        <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />

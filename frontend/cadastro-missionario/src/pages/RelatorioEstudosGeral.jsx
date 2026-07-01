@@ -311,6 +311,7 @@ export default function RelatorioEstudosGeral() {
             <p className="text-gray-400 text-sm mt-1">Visao consolidada de estudantes biblicos, pontos de estudo e classes biblicas.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/ranking-decisoes'))}>Ranking Decisões</button>
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/estudos-biblicos'))}>Estudantes</button>
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/pontos-estudo'))}>Pontos</button>
             <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(caminho('/relatorios/classes-biblicas'))}>Classes</button>

@@ -815,7 +815,7 @@ export default function DistritosDireto() {
                 </div>
 
                 {/* Card: Observações */}
-                <div className="w-full bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                <div className="w-full sm:row-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center text-xs font-bold text-[#1A3A6B]">AC</div>
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Acompanhamento</h4>
@@ -870,6 +870,24 @@ export default function DistritosDireto() {
                                  {estudo.classificacaoInteressado || 'Estudando'}
                                </span>
                             </div>
+                            {estudo.observacoes && (
+                              <div className="mt-2 rounded-lg border border-[#C9963A]/20 bg-[#C9963A]/10 px-2.5 py-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#C9963A]">Obs.</span>
+                                  <p
+                                    className="text-[11px] leading-snug text-gray-600"
+                                    style={{
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                                    }}
+                                  >
+                                    {estudo.observacoes}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
