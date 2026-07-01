@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import { DIAS_SEMANA, SERIES_ESTUDO, UFS_BRASIL, formatarWhatsApp } from '../lib/seriesEstudo';
@@ -50,8 +50,12 @@ const Secao = ({ numero, titulo, children }) => (
 export default function CadastroClasseBiblica() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isDireto = location.pathname.startsWith('/direto');
-  const [form, setForm] = useState(estadoInicial);
+  const modoEdicao = Boolean(id);
+  const duplaIdParam = searchParams.get('duplaId') || '';
+  const [form, setForm] = useState({ ...estadoInicial, duplaId: duplaIdParam });
   const [participantes, setParticipantes] = useState([criarParticipante(1)]);
   const [duplas, setDuplas] = useState([]);
   const [enviando, setEnviando] = useState(false);
@@ -59,6 +63,44 @@ export default function CadastroClasseBiblica() {
   useEffect(() => {
     api.get('/duplas').then((res) => setDuplas(Array.isArray(res.data) ? res.data : []));
   }, []);
+
+  useEffect(() => {
+    if (!modoEdicao) {
+      if (duplaIdParam) setForm((prev) => ({ ...prev, duplaId: duplaIdParam }));
+      return;
+    }
+
+    api.get(`/estudos-biblicos/${id}`).then((res) => {
+      const classe = res.data || {};
+      setForm({
+        ...estadoInicial,
+        nomeClasse: classe.nomeEstudante || '',
+        endereco: classe.endereco || '',
+        cidade: classe.cidade || '',
+        estado: classe.estado || 'SP',
+        diaEstudo: classe.diaEstudo || '',
+        horarioEstudo: classe.horarioEstudo || '',
+        duplaId: String(classe.duplaId || classe.dupla?.id || ''),
+        serie: classe.serie || '',
+        licaoAtual: classe.licaoAtual ? String(classe.licaoAtual) : '',
+      });
+      const lista = Array.isArray(classe.participantes) && classe.participantes.length > 0
+        ? classe.participantes
+        : [{ nome: classe.nomeEstudante, whatsapp: classe.whatsapp, sexo: classe.sexo, endereco: classe.endereco, classificacaoInteressado: classe.classificacaoInteressado, motivoImpedimento: classe.motivoImpedimento }];
+      setParticipantes(lista.map((p, index) => ({
+        ordem: index + 1,
+        nome: p.nome || '',
+        whatsapp: formatarWhatsApp(p.whatsapp || ''),
+        sexo: p.sexo || '',
+        endereco: p.endereco || '',
+        classificacaoInteressado: p.classificacaoInteressado || '',
+        motivoImpedimento: p.motivoImpedimento || '',
+      })));
+    }).catch((err) => {
+      toast.error(err.response?.data?.erro || 'Erro ao carregar classe bíblica.');
+      navigate(-1);
+    });
+  }, [id, modoEdicao, navigate, duplaIdParam]);
 
   const licoes = useMemo(() => (
     SERIES_ESTUDO.find((serie) => serie.id === form.serie)?.licoes || []
@@ -125,7 +167,7 @@ export default function CadastroClasseBiblica() {
 
     setEnviando(true);
     try {
-      await api.post('/estudos-biblicos', {
+      const payload = {
         nomeEstudante: form.nomeClasse,
         endereco: form.endereco,
         cidade: form.cidade,
@@ -138,12 +180,20 @@ export default function CadastroClasseBiblica() {
         licaoAtual: form.licaoAtual,
         tipoEstudo: 'CLASSE',
         participantes: participantesValidos,
-      });
+      };
 
-      toast.success('Classe Bíblica cadastrada com sucesso.');
-      setForm(estadoInicial);
-      setParticipantes([criarParticipante(1)]);
-      setTimeout(() => navigate(isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas'), 500);
+      if (modoEdicao) {
+        await api.put(`/estudos-biblicos/${id}`, payload);
+      } else {
+        await api.post('/estudos-biblicos', payload);
+      }
+
+      toast.success(modoEdicao ? 'Classe bíblica atualizada com sucesso.' : 'Classe Bíblica cadastrada com sucesso.');
+      if (!modoEdicao) {
+        setForm({ ...estadoInicial, duplaId: duplaIdParam });
+        setParticipantes([criarParticipante(1)]);
+      }
+      setTimeout(() => navigate(-1), 500);
     } catch (err) {
       const erros = err.response?.data?.erros;
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : err.response?.data?.erro || 'Erro ao salvar classe bíblica.');
@@ -160,7 +210,7 @@ export default function CadastroClasseBiblica() {
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Cadastro</p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Classe Bíblica
+          {modoEdicao ? 'Editar Classe Bíblica' : 'Classe Bíblica'}
         </h1>
         <p className="text-gray-400 text-sm mt-1">Registre a classe, horário, série de estudos e até 10 estudantes.</p>
       </div>
@@ -298,7 +348,7 @@ export default function CadastroClasseBiblica() {
 
         <div className={isDireto ? 'flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3' : 'max-w-6xl mx-auto flex justify-end gap-3 pb-8'}>
           <button type="button" onClick={() => navigate(-1)} className="btn-outline">Cancelar</button>
-          <button type="submit" disabled={enviando} className="btn-primary">{enviando ? 'Salvando...' : 'Salvar Classe Bíblica'}</button>
+          <button type="submit" disabled={enviando} className="btn-primary">{enviando ? 'Salvando...' : modoEdicao ? 'Atualizar classe bíblica' : 'Salvar Classe Bíblica'}</button>
         </div>
       </form>
     </div>

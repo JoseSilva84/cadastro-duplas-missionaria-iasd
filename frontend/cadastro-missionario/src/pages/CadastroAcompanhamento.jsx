@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import { DIAS_SEMANA, SERIES_ESTUDO, UFS_BRASIL, formatarWhatsApp } from '../lib/seriesEstudo';
@@ -124,8 +124,12 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
   const isPonto = tipo === 'ponto';
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isDireto = location.pathname.startsWith('/direto');
-  const [form, setForm] = useState(estadoInicial);
+  const modoEdicao = Boolean(id);
+  const duplaIdParam = searchParams.get('duplaId') || '';
+  const [form, setForm] = useState({ ...estadoInicial, duplaId: duplaIdParam });
   const [participantes, setParticipantes] = useState([participanteVazio()]);
   const [duplas, setDuplas] = useState([]);
   const [enviando, setEnviando] = useState(false);
@@ -133,6 +137,55 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
   useEffect(() => {
     api.get('/duplas').then((res) => setDuplas(Array.isArray(res.data) ? res.data : []));
   }, []);
+
+  useEffect(() => {
+    if (!modoEdicao) {
+      if (duplaIdParam) setForm((prev) => ({ ...prev, duplaId: duplaIdParam }));
+      return;
+    }
+
+    api.get(`/estudos-biblicos/${id}`).then((res) => {
+      const estudo = res.data || {};
+      setForm({
+        ...estadoInicial,
+        nomeEstudante: estudo.nomeEstudante || '',
+        endereco: estudo.endereco || '',
+        cidade: estudo.cidade || '',
+        estado: estudo.estado || 'SP',
+        whatsapp: formatarWhatsApp(estudo.whatsapp || ''),
+        sexo: estudo.sexo || '',
+        classificacaoInteressado: estudo.classificacaoInteressado || '',
+        motivoImpedimento: estudo.motivoImpedimento || '',
+        vaIgreja: estudo.vaIgreja === null || estudo.vaIgreja === undefined ? '' : String(estudo.vaIgreja),
+        leBiblia: estudo.leBiblia === null || estudo.leBiblia === undefined ? '' : String(estudo.leBiblia),
+        estudaLicao: estudo.estudaLicao === null || estudo.estudaLicao === undefined ? '' : String(estudo.estudaLicao),
+        devolveDizimos: estudo.devolveDizimos === null || estudo.devolveDizimos === undefined ? '' : String(estudo.devolveDizimos),
+        cultoFamiliar: estudo.cultoFamiliar === null || estudo.cultoFamiliar === undefined ? '' : String(estudo.cultoFamiliar),
+        observacoes: estudo.observacoes || '',
+        diaEstudo: estudo.diaEstudo || '',
+        horarioEstudo: estudo.horarioEstudo || '',
+        duplaId: String(estudo.duplaId || estudo.dupla?.id || ''),
+        serie: estudo.serie || '',
+        licaoAtual: estudo.licaoAtual ? String(estudo.licaoAtual) : '',
+      });
+      if (isPonto) {
+        const lista = Array.isArray(estudo.participantes) && estudo.participantes.length > 0
+          ? estudo.participantes
+          : [{ nome: estudo.nomeEstudante, whatsapp: estudo.whatsapp, sexo: estudo.sexo, endereco: estudo.endereco, classificacaoInteressado: estudo.classificacaoInteressado, motivoImpedimento: estudo.motivoImpedimento }];
+        setParticipantes(lista.map((p) => ({
+          nome: p.nome || '',
+          whatsapp: formatarWhatsApp(p.whatsapp || ''),
+          sexo: p.sexo || '',
+          endereco: p.endereco || '',
+          classificacaoInteressado: p.classificacaoInteressado || '',
+          motivoImpedimento: p.motivoImpedimento || '',
+        })));
+      }
+    }).catch((err) => {
+      toast.error(err.response?.data?.erro || 'Erro ao carregar estudo.');
+      navigate(-1);
+    });
+  }, [id, isPonto, modoEdicao, navigate, duplaIdParam]);
 
   const licoes = useMemo(() => (
     SERIES_ESTUDO.find((serie) => serie.id === form.serie)?.licoes || []
@@ -163,7 +216,7 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
   };
 
   const limpar = () => {
-    setForm(estadoInicial);
+    setForm({ ...estadoInicial, duplaId: duplaIdParam });
     setParticipantes([participanteVazio()]);
   };
 
@@ -217,10 +270,14 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
         payload.participantes = participantesValidos;
       }
 
-      await api.post(config.endpoint, removerVazios(payload));
-      toast.success(config.sucesso);
-      limpar();
-      setTimeout(() => navigate(isDireto ? '/direto/relatorios/estudos-biblicos' : '/relatorios/estudos-biblicos'), 600);
+      if (modoEdicao) {
+        await api.put(`${config.endpoint}/${id}`, removerVazios(payload));
+      } else {
+        await api.post(config.endpoint, removerVazios(payload));
+      }
+      toast.success(modoEdicao ? 'Estudo atualizado com sucesso!' : config.sucesso);
+      if (!modoEdicao) limpar();
+      setTimeout(() => navigate(-1), 600);
     } catch (err) {
       const erros = err.response?.data?.erros;
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : err.response?.data?.erro || 'Erro ao salvar cadastro.');
@@ -237,7 +294,7 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Cadastro</p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          {config.titulo}
+          {modoEdicao ? `Editar ${isPonto ? 'Ponto de Estudo' : 'Estudo Bíblico'}` : config.titulo}
         </h1>
         <p className="text-gray-400 text-sm mt-1">{config.subtitulo}</p>
       </div>
@@ -427,8 +484,8 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
 
         <div className={isDireto ? 'flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3' : 'max-w-5xl mx-auto flex justify-end gap-3 pb-8'}>
           <button type="button" onClick={() => navigate(-1)} className="btn-outline">Cancelar</button>
-          <button type="button" onClick={limpar} className="btn-outline">Limpar</button>
-          <button type="submit" disabled={enviando} className="btn-primary">{enviando ? 'Salvando...' : 'Salvar'}</button>
+          {!modoEdicao && <button type="button" onClick={limpar} className="btn-outline">Limpar</button>}
+          <button type="submit" disabled={enviando} className="btn-primary">{enviando ? 'Salvando...' : modoEdicao ? 'Atualizar estudo' : 'Salvar'}</button>
         </div>
       </form>
     </div>

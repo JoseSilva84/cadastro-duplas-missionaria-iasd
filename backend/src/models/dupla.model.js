@@ -10,7 +10,10 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
-        estudosBiblicos: true,
+        estudosBiblicos: {
+          include: { participantes: true },
+          orderBy: { atualizadoEm: 'desc' },
+        },
         _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
       orderBy: { criadoEm: 'desc' },
@@ -24,7 +27,10 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
-        estudosBiblicos: true,
+        estudosBiblicos: {
+          include: { participantes: true },
+          orderBy: { atualizadoEm: 'desc' },
+        },
         _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
     });

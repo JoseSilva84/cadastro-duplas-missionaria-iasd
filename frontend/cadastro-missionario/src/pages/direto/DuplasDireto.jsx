@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import { ehAdmin, useAuth } from '../../contexts/AuthContext';
+import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 
 // ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
 function getMedalha(dupla) {
@@ -108,6 +109,38 @@ const formatarData = (valor) => {
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return null;
   return data.toLocaleDateString('pt-BR');
+};
+
+const tipoEstudoLabels = {
+  UNICO: 'Estudo Bíblico',
+  PONTO: 'Ponto de Estudo',
+  CLASSE: 'Classe Bíblica',
+};
+
+const tipoEstudoCadastroPath = {
+  UNICO: '/direto/cadastro/estudos-biblicos',
+  PONTO: '/direto/cadastro/ponto-estudo',
+  CLASSE: '/direto/cadastro/classe-biblica',
+};
+
+const tipoEstudoRelatorioPath = {
+  UNICO: '/direto/relatorios/estudos-biblicos',
+  PONTO: '/direto/relatorios/pontos-estudo',
+  CLASSE: '/direto/relatorios/classes-biblicas/registros',
+};
+
+const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
+
+const progressoEstudo = (estudo) => {
+  const total = totalLicoesSerie(estudo?.serie);
+  const atual = Number(estudo?.licaoAtual || 0);
+  if (!total || !atual) return 0;
+  return Math.min(100, Math.round((atual / total) * 100));
+};
+
+const editarEstudoPath = (estudo) => {
+  const base = tipoEstudoCadastroPath[estudo?.tipoEstudo || 'UNICO'] || tipoEstudoCadastroPath.UNICO;
+  return `${base}/${estudo.id}/editar`;
 };
 
 const getClassificacaoAtividadeText = (dupla) => {
@@ -915,6 +948,92 @@ export default function DuplasDireto() {
                     <div><span className="text-gray-400 text-xs">Último acompanhamento:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.ultimoAcompanhamento) || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Início da dupla:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.dataInicio) || '—'}</p></div>
                   </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm md:col-span-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs font-bold text-[#16a34a]">EB</div>
+                      <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Estudos da Dupla</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(tipoEstudoCadastroPath).map(([tipo, path]) => (
+                        <button
+                          key={tipo}
+                          type="button"
+                          onClick={() => navigate(`${path}?duplaId=${duplaSelecionada.id}`)}
+                          className="btn-outline text-xs px-3 py-1.5"
+                        >
+                          Novo {tipoEstudoLabels[tipo]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(!duplaSelecionada.estudosBiblicos || duplaSelecionada.estudosBiblicos.length === 0) ? (
+                    <div className="rounded-lg border border-dashed border-gray-200 bg-[#F4F5F7] p-4 text-sm text-gray-500">
+                      Nenhum estudo, ponto de estudo ou classe bíblica cadastrado para esta dupla.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {duplaSelecionada.estudosBiblicos.map((estudo) => {
+                        const percentual = progressoEstudo(estudo);
+                        const total = totalLicoesSerie(estudo.serie);
+                        return (
+                          <div key={estudo.id} className="rounded-lg border border-gray-100 bg-[#F8FAFC] p-4">
+                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#1A3A6B]/10 text-[#1A3A6B]">
+                                    {tipoEstudoLabels[estudo.tipoEstudo] || 'Estudo'}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">Atualizado em {formatarData(estudo.atualizadoEm) || '—'}</span>
+                                </div>
+                                <h5 className="font-bold text-[#1A3A6B] break-words">{estudo.nomeEstudante || 'Sem nome'}</h5>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-3 text-xs">
+                                  <div><span className="text-gray-400">Série:</span><p className="font-semibold text-gray-700">{getSerieNome(estudo.serie)}</p></div>
+                                  <div><span className="text-gray-400">Lição atual:</span><p className="font-semibold text-gray-700">{getLicaoLabel(estudo.serie, estudo.licaoAtual)}</p></div>
+                                  <div><span className="text-gray-400">Dia/horário:</span><p className="font-semibold text-gray-700">{estudo.diaEstudo || '—'} {estudo.horarioEstudo ? `às ${estudo.horarioEstudo}` : ''}</p></div>
+                                  <div><span className="text-gray-400">Participantes:</span><p className="font-semibold text-gray-700">{estudo.participantes?.length || 1}</p></div>
+                                </div>
+                                <div className="mt-3">
+                                  <div className="flex items-center justify-between text-[11px] text-gray-500 mb-1">
+                                    <span>Progressão do estudo</span>
+                                    <span>{percentual}%{total ? ` (${estudo.licaoAtual || 0}/${total})` : ''}</span>
+                                  </div>
+                                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                    <div className="h-full rounded-full bg-[#16a34a]" style={{ width: `${percentual}%` }} />
+                                  </div>
+                                </div>
+                                {estudo.observacoes && (
+                                  <div className="mt-3 rounded-lg bg-white border border-gray-100 p-3">
+                                    <span className="text-gray-400 text-xs">Observação:</span>
+                                    <p className="text-sm text-gray-600 leading-relaxed break-words">{estudo.observacoes}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap lg:flex-col gap-2 lg:w-44">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(editarEstudoPath(estudo))}
+                                  className="btn-primary text-xs px-3 py-2"
+                                >
+                                  Atualizar estudo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`${tipoEstudoRelatorioPath[estudo.tipoEstudo] || tipoEstudoRelatorioPath.UNICO}/${estudo.id}`)}
+                                  className="btn-outline text-xs px-3 py-2"
+                                >
+                                  Ver detalhes
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {duplaSelecionada.observacoes && (
