@@ -289,26 +289,25 @@ export default function DuplasDireto() {
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [excluindoId, setExcluindoId] = useState(null);
+  const [estudoLicaoModal, setEstudoLicaoModal] = useState(null);
   const [licoesRapidas, setLicoesRapidas] = useState({});
   const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
-  const alternarEdicaoLicao = (estudo) => {
-    setLicoesRapidas((atual) => {
-      if (atual[estudo.id]) {
-        const proximo = { ...atual };
-        delete proximo[estudo.id];
-        return proximo;
-      }
-      return {
-        ...atual,
-        [estudo.id]: {
-          serie: estudo.serie || '',
-          licaoAtual: estudo.licaoAtual ? String(estudo.licaoAtual) : '',
-        },
-      };
+  const abrirModalLicao = (estudo) => {
+    setEstudoLicaoModal(estudo);
+    setLicoesRapidas({
+      [estudo.id]: {
+        serie: estudo.serie || '',
+        licaoAtual: estudo.licaoAtual ? String(estudo.licaoAtual) : '',
+      },
     });
+  };
+
+  const fecharModalLicao = () => {
+    setEstudoLicaoModal(null);
+    setLicoesRapidas({});
   };
 
   const setLicaoRapida = (estudoId, campo, valor) => {
@@ -342,11 +341,7 @@ export default function DuplasDireto() {
           }
           : dupla
       )));
-      setLicoesRapidas((atual) => {
-        const proximo = { ...atual };
-        delete proximo[estudo.id];
-        return proximo;
-      });
+      fecharModalLicao();
     } catch (err) {
       alert(err.response?.data?.erro || 'Erro ao atualizar a lição.');
     } finally {
@@ -1074,8 +1069,6 @@ export default function DuplasDireto() {
                       {duplaSelecionada.estudosBiblicos.map((estudo) => {
                         const percentual = progressoEstudo(estudo);
                         const total = totalLicoesSerie(estudo.serie);
-                        const edicaoLicao = licoesRapidas[estudo.id];
-                        const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao?.serie)?.licoes || [];
                         return (
                           <div key={estudo.id} className="rounded-lg border border-gray-100 bg-[#F8FAFC] p-4">
                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
@@ -1102,57 +1095,6 @@ export default function DuplasDireto() {
                                     <div className="h-full rounded-full bg-[#16a34a]" style={{ width: `${percentual}%` }} />
                                   </div>
                                 </div>
-                                {edicaoLicao && (
-                                  <div className="mt-3 rounded-lg bg-white border border-[#16a34a]/20 p-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <label className="block">
-                                        <span className="block text-xs font-semibold text-gray-500 mb-1">Série</span>
-                                        <select
-                                          className="input-field text-sm"
-                                          value={edicaoLicao.serie}
-                                          onChange={(event) => setLicaoRapida(estudo.id, 'serie', event.target.value)}
-                                        >
-                                          <option value="">Selecione a série</option>
-                                          {SERIES_ESTUDO.map((serie) => (
-                                            <option key={serie.id} value={serie.id}>{serie.nome}</option>
-                                          ))}
-                                        </select>
-                                      </label>
-                                      <label className="block">
-                                        <span className="block text-xs font-semibold text-gray-500 mb-1">Lição atual</span>
-                                        <select
-                                          className="input-field text-sm"
-                                          value={edicaoLicao.licaoAtual}
-                                          onChange={(event) => setLicaoRapida(estudo.id, 'licaoAtual', event.target.value)}
-                                          disabled={!edicaoLicao.serie}
-                                        >
-                                          <option value="">Selecione a lição</option>
-                                          {licoesDaSerie.map((licao) => (
-                                            <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>
-                                          ))}
-                                        </select>
-                                      </label>
-                                    </div>
-                                    <div className="flex justify-end gap-2 mt-3">
-                                      <button
-                                        type="button"
-                                        onClick={() => alternarEdicaoLicao(estudo)}
-                                        className="btn-outline text-xs px-3 py-2"
-                                        disabled={salvandoLicaoId === estudo.id}
-                                      >
-                                        Cancelar
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => salvarLicaoRapida(estudo)}
-                                        className="btn-primary text-xs px-3 py-2"
-                                        disabled={salvandoLicaoId === estudo.id}
-                                      >
-                                        {salvandoLicaoId === estudo.id ? 'Salvando...' : 'Salvar lição'}
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
                                 {estudo.observacoes && (
                                   <div className="mt-3 rounded-lg bg-white border border-gray-100 p-3">
                                     <span className="text-gray-400 text-xs">Observação:</span>
@@ -1163,7 +1105,7 @@ export default function DuplasDireto() {
                               <div className="flex flex-wrap lg:flex-col gap-2 lg:w-44">
                                 <button
                                   type="button"
-                                  onClick={() => alternarEdicaoLicao(estudo)}
+                                  onClick={() => abrirModalLicao(estudo)}
                                   className="btn-outline text-xs px-3 py-2"
                                 >
                                   Atualizar lição
@@ -1206,6 +1148,92 @@ export default function DuplasDireto() {
         )}
       </div>
     </div>
+    {estudoLicaoModal && (() => {
+      const edicaoLicao = licoesRapidas[estudoLicaoModal.id] || {};
+      const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao.serie)?.licoes || [];
+      return (
+        <div
+          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={fecharModalLicao}
+        >
+          <div
+            className="w-full max-w-xl rounded-xl bg-white shadow-2xl border border-gray-100 overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-gray-100">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#16a34a]">Atualizar lição</p>
+                <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  {estudoLicaoModal.nomeEstudante || 'Estudo bíblico'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={fecharModalLicao}
+                className="w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-[#1A3A6B] hover:border-[#1A3A6B]/30 transition flex items-center justify-center"
+                title="Fechar"
+                disabled={salvandoLicaoId === estudoLicaoModal.id}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="block text-xs font-semibold text-gray-500 mb-1">Série</span>
+                  <select
+                    className="input-field text-sm"
+                    value={edicaoLicao.serie || ''}
+                    onChange={(event) => setLicaoRapida(estudoLicaoModal.id, 'serie', event.target.value)}
+                  >
+                    <option value="">Selecione a série</option>
+                    {SERIES_ESTUDO.map((serie) => (
+                      <option key={serie.id} value={serie.id}>{serie.nome}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-xs font-semibold text-gray-500 mb-1">Lição atual</span>
+                  <select
+                    className="input-field text-sm"
+                    value={edicaoLicao.licaoAtual || ''}
+                    onChange={(event) => setLicaoRapida(estudoLicaoModal.id, 'licaoAtual', event.target.value)}
+                    disabled={!edicaoLicao.serie}
+                  >
+                    <option value="">Selecione a lição</option>
+                    {licoesDaSerie.map((licao) => (
+                      <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 bg-[#F8FAFC]">
+              <button
+                type="button"
+                onClick={fecharModalLicao}
+                className="btn-outline text-sm px-4 py-2"
+                disabled={salvandoLicaoId === estudoLicaoModal.id}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => salvarLicaoRapida(estudoLicaoModal)}
+                className="btn-primary text-sm px-4 py-2"
+                disabled={salvandoLicaoId === estudoLicaoModal.id}
+              >
+                {salvandoLicaoId === estudoLicaoModal.id ? 'Salvando...' : 'Salvar lição'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
     {fotoAmpliada && (
       <div
         className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
