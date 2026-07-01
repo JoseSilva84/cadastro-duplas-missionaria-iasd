@@ -143,6 +143,39 @@ const editarEstudoPath = (estudo) => {
   return `${base}/${estudo.id}/editar`;
 };
 
+const montarPayloadAtualizacaoLicao = (estudo, dadosLicao) => ({
+  nomeEstudante: estudo.nomeEstudante || 'Nao informado',
+  endereco: estudo.endereco || 'Nao informado',
+  cidade: estudo.cidade || 'Nao informada',
+  estado: estudo.estado || 'SP',
+  whatsapp: estudo.whatsapp || estudo.participantes?.[0]?.whatsapp || '00000000000',
+  diaEstudo: estudo.diaEstudo || 'Nao informado',
+  horarioEstudo: estudo.horarioEstudo || null,
+  duplaId: estudo.duplaId || estudo.dupla?.id,
+  serie: dadosLicao.serie,
+  licaoAtual: Number(dadosLicao.licaoAtual),
+  tipoEstudo: estudo.tipoEstudo || 'UNICO',
+  sexo: estudo.sexo || null,
+  classificacaoInteressado: estudo.classificacaoInteressado || null,
+  motivoImpedimento: estudo.motivoImpedimento || null,
+  vaIgreja: estudo.vaIgreja,
+  leBiblia: estudo.leBiblia,
+  estudaLicao: estudo.estudaLicao,
+  devolveDizimos: estudo.devolveDizimos,
+  cultoFamiliar: estudo.cultoFamiliar,
+  observacoes: estudo.observacoes || null,
+  participantes: ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)
+    ? (estudo.participantes || []).map((participante) => ({
+      nome: participante.nome,
+      whatsapp: participante.whatsapp || null,
+      sexo: participante.sexo || null,
+      endereco: participante.endereco || null,
+      classificacaoInteressado: participante.classificacaoInteressado || null,
+      motivoImpedimento: participante.motivoImpedimento || null,
+    }))
+    : undefined,
+});
+
 const getClassificacaoAtividadeText = (dupla) => {
   const classe = classeConfig[dupla?.classificacaoDupla]?.label || 'Sem classe';
   const atividade = atividadeConfig[dupla?.atividadeDupla]?.label || 'Sem atividade';
@@ -256,8 +289,70 @@ export default function DuplasDireto() {
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [excluindoId, setExcluindoId] = useState(null);
+  const [licoesRapidas, setLicoesRapidas] = useState({});
+  const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
+
+  const alternarEdicaoLicao = (estudo) => {
+    setLicoesRapidas((atual) => {
+      if (atual[estudo.id]) {
+        const proximo = { ...atual };
+        delete proximo[estudo.id];
+        return proximo;
+      }
+      return {
+        ...atual,
+        [estudo.id]: {
+          serie: estudo.serie || '',
+          licaoAtual: estudo.licaoAtual ? String(estudo.licaoAtual) : '',
+        },
+      };
+    });
+  };
+
+  const setLicaoRapida = (estudoId, campo, valor) => {
+    setLicoesRapidas((atual) => ({
+      ...atual,
+      [estudoId]: {
+        ...(atual[estudoId] || {}),
+        [campo]: valor,
+        ...(campo === 'serie' ? { licaoAtual: '' } : {}),
+      },
+    }));
+  };
+
+  const salvarLicaoRapida = async (estudo) => {
+    const dadosLicao = licoesRapidas[estudo.id] || {};
+    if (!dadosLicao.serie || !dadosLicao.licaoAtual) {
+      alert('Selecione a série e a lição atual.');
+      return;
+    }
+
+    try {
+      setSalvandoLicaoId(estudo.id);
+      const atualizado = await api.put(`/estudos-biblicos/${estudo.id}`, montarPayloadAtualizacaoLicao(estudo, dadosLicao));
+      setDuplas((lista) => lista.map((dupla) => (
+        dupla.id === duplaSelecionadaId
+          ? {
+            ...dupla,
+            estudosBiblicos: (dupla.estudosBiblicos || []).map((item) => (
+              item.id === estudo.id ? atualizado.data : item
+            )),
+          }
+          : dupla
+      )));
+      setLicoesRapidas((atual) => {
+        const proximo = { ...atual };
+        delete proximo[estudo.id];
+        return proximo;
+      });
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao atualizar a lição.');
+    } finally {
+      setSalvandoLicaoId(null);
+    }
+  };
 
   const excluirDupla = async () => {
     if (!duplaSelecionada || excluindoId) return;
@@ -979,6 +1074,8 @@ export default function DuplasDireto() {
                       {duplaSelecionada.estudosBiblicos.map((estudo) => {
                         const percentual = progressoEstudo(estudo);
                         const total = totalLicoesSerie(estudo.serie);
+                        const edicaoLicao = licoesRapidas[estudo.id];
+                        const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao?.serie)?.licoes || [];
                         return (
                           <div key={estudo.id} className="rounded-lg border border-gray-100 bg-[#F8FAFC] p-4">
                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
@@ -1005,6 +1102,57 @@ export default function DuplasDireto() {
                                     <div className="h-full rounded-full bg-[#16a34a]" style={{ width: `${percentual}%` }} />
                                   </div>
                                 </div>
+                                {edicaoLicao && (
+                                  <div className="mt-3 rounded-lg bg-white border border-[#16a34a]/20 p-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <label className="block">
+                                        <span className="block text-xs font-semibold text-gray-500 mb-1">Série</span>
+                                        <select
+                                          className="input-field text-sm"
+                                          value={edicaoLicao.serie}
+                                          onChange={(event) => setLicaoRapida(estudo.id, 'serie', event.target.value)}
+                                        >
+                                          <option value="">Selecione a série</option>
+                                          {SERIES_ESTUDO.map((serie) => (
+                                            <option key={serie.id} value={serie.id}>{serie.nome}</option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                      <label className="block">
+                                        <span className="block text-xs font-semibold text-gray-500 mb-1">Lição atual</span>
+                                        <select
+                                          className="input-field text-sm"
+                                          value={edicaoLicao.licaoAtual}
+                                          onChange={(event) => setLicaoRapida(estudo.id, 'licaoAtual', event.target.value)}
+                                          disabled={!edicaoLicao.serie}
+                                        >
+                                          <option value="">Selecione a lição</option>
+                                          {licoesDaSerie.map((licao) => (
+                                            <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                    </div>
+                                    <div className="flex justify-end gap-2 mt-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => alternarEdicaoLicao(estudo)}
+                                        className="btn-outline text-xs px-3 py-2"
+                                        disabled={salvandoLicaoId === estudo.id}
+                                      >
+                                        Cancelar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => salvarLicaoRapida(estudo)}
+                                        className="btn-primary text-xs px-3 py-2"
+                                        disabled={salvandoLicaoId === estudo.id}
+                                      >
+                                        {salvandoLicaoId === estudo.id ? 'Salvando...' : 'Salvar lição'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                                 {estudo.observacoes && (
                                   <div className="mt-3 rounded-lg bg-white border border-gray-100 p-3">
                                     <span className="text-gray-400 text-xs">Observação:</span>
@@ -1013,6 +1161,13 @@ export default function DuplasDireto() {
                                 )}
                               </div>
                               <div className="flex flex-wrap lg:flex-col gap-2 lg:w-44">
+                                <button
+                                  type="button"
+                                  onClick={() => alternarEdicaoLicao(estudo)}
+                                  className="btn-outline text-xs px-3 py-2"
+                                >
+                                  Atualizar lição
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => navigate(editarEstudoPath(estudo))}
