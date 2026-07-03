@@ -2,6 +2,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const regiaoRoutes = require('./routes/regioes');
@@ -44,6 +46,16 @@ app.use('/api/acompanhamentos', acompanhamentosRoutes);
 app.use('/api/escola-sabatina', escolaSabatinaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+
+const publicDir = path.join(__dirname, '..', 'public');
+const indexHtml = path.join(publicDir, 'index.html');
+if (fs.existsSync(indexHtml)) {
+  app.use(express.static(publicDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return res.sendFile(indexHtml);
+  });
+}
 
 const prisma = require('./lib/prisma');
 

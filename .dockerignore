@@ -1,0 +1,12 @@
+.git
+.agents
+.codex
+node_modules
+backend/node_modules
+frontend/cadastro-missionario/node_modules
+frontend/cadastro-missionario/dist
+npm-debug.log
+Dockerfile
+.env
+backend/.env
+frontend/cadastro-missionario/.env.local
