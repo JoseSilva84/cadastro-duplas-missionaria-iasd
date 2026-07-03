@@ -38,9 +38,35 @@ const valorDataInput = (valor) => {
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 
+const getClassificacaoDuplaDisplay = (dupla) => {
+  const totalEstudos = getEstudosCount(dupla);
+  if (dupla?.levouPessoaBatismo === true) return 'A';
+  if (totalEstudos > 0 || dupla?.jaDeuEstudoBiblico === true) return 'B';
+  return dupla?.classificacaoDupla || null;
+};
+
+const getAtividadeDuplaDisplay = (dupla) => {
+  const totalEstudos = getEstudosCount(dupla);
+  if (
+    dupla?.atividadeDupla === 'ATIVA'
+    || dupla?.statusEstudoBiblico === 'ATIVO'
+    || (dupla?.status === 'ATIVA' && totalEstudos > 0)
+  ) {
+    return 'ATIVA';
+  }
+  return dupla?.atividadeDupla || null;
+};
+
 const getClassificacaoAtividadeText = (dupla) => {
   if (!dupla?.classificacaoDupla) return 'Sem classe';
   return `Classe ${dupla.classificacaoDupla}${dupla.atividadeDupla ? ` · ${dupla.atividadeDupla === 'ATIVA' ? 'Ativa' : 'Inativa'}` : ''}`;
+};
+
+const getClassificacaoAtividadeDisplayText = (dupla) => {
+  const classificacao = getClassificacaoDuplaDisplay(dupla);
+  const atividade = getAtividadeDuplaDisplay(dupla);
+  if (!classificacao) return 'Sem classe';
+  return `Classe ${classificacao}${atividade ? ` - ${atividade === 'ATIVA' ? 'Ativa' : 'Inativa'}` : ''}`;
 };
 
 const boolLabel = (valor) => {
@@ -609,9 +635,9 @@ export default function DistritosDireto() {
                             
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border border-gray-200 text-gray-500 whitespace-nowrap">
-                                {getClassificacaoAtividadeText(dupla)}
+                                {getClassificacaoAtividadeDisplayText(dupla)}
                               </span>
-                              {dupla.statusEstudoBiblico === 'ATIVO' ? (
+                              {getEstudosCount(dupla) > 0 ? (
                                 <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-[#16a34a]/10 text-[#16a34a] whitespace-nowrap">
                                   📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
                                 </span>
@@ -780,7 +806,7 @@ export default function DistritosDireto() {
                   </div>
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Tipo:</span><p className="text-gray-700 font-medium">{duplaSelecionada.tipoProjeto?.replace(/_/g, ' ') || '—'}</p></div>
-                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeText(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeDisplayText(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudos biblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Visitacoes:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     {(() => {

@@ -7,7 +7,8 @@ import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstu
 
 // ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
 function getMedalha(dupla) {
-  const estudoAtivo = dupla.statusEstudoBiblico === 'ATIVO';
+  const estudoAtivo = dupla.statusEstudoBiblico === 'ATIVO'
+    || ((dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0) > 0);
   const temBatismo  = (dupla.batismos || 0) > 0;
   const temPessoas  = (dupla.pessoasAlcancadas || 0) > 0;
   if (estudoAtivo && temBatismo && temPessoas) return 'ouro';
@@ -98,10 +99,24 @@ const indicadorConfig = {
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
+const getClassificacaoDuplaDisplay = (dupla) => {
+  if (dupla?.levouPessoaBatismo === true) return 'A';
+  if (temEstudoCadastrado(dupla) || dupla?.jaDeuEstudoBiblico === true) return 'B';
+  return dupla?.classificacaoDupla || null;
+};
+const getAtividadeDuplaDisplay = (dupla) => {
+  if (
+    dupla?.atividadeDupla === 'ATIVA'
+    || dupla?.statusEstudoBiblico === 'ATIVO'
+    || (dupla?.status === 'ATIVA' && temEstudoCadastrado(dupla))
+  ) {
+    return 'ATIVA';
+  }
+  return dupla?.atividadeDupla || null;
+};
 const pertenceClasseFiltro = (dupla, classe) => {
   if (!classe) return true;
-  if (classe === 'A') return dupla.classificacaoDupla === 'A' && temEstudoCadastrado(dupla);
-  return dupla.classificacaoDupla === classe;
+  return getClassificacaoDuplaDisplay(dupla) === classe;
 };
 
 const formatarData = (valor) => {
@@ -182,6 +197,12 @@ const getClassificacaoAtividadeText = (dupla) => {
   return `${classe} · ${atividade}`;
 };
 
+const getClassificacaoAtividadeDisplayText = (dupla) => {
+  const classe = classeConfig[getClassificacaoDuplaDisplay(dupla)]?.label || 'Sem classe';
+  const atividade = atividadeConfig[getAtividadeDuplaDisplay(dupla)]?.label || 'Sem atividade';
+  return `${classe} - ${atividade}`;
+};
+
 const Chip = ({ children, config, compact = false, title }) => (
   <span
     className={`inline-flex items-center gap-1 rounded-full border font-semibold ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}
@@ -193,12 +214,13 @@ const Chip = ({ children, config, compact = false, title }) => (
 );
 
 const ClassificacaoAtividadeBadge = ({ dupla, compact = false }) => {
-  const classe = classeConfig[dupla?.classificacaoDupla] || { label: 'Sem classe', cor: '#475569', bg: '#f1f5f9' };
-  const atividade = atividadeConfig[dupla?.atividadeDupla] || atividadeConfig.INATIVA;
+  const classificacao = getClassificacaoDuplaDisplay(dupla);
+  const classe = classeConfig[classificacao] || { label: 'Sem classe', cor: '#475569', bg: '#f1f5f9' };
+  const atividade = atividadeConfig[getAtividadeDuplaDisplay(dupla)] || atividadeConfig.INATIVA;
 
   return (
     <>
-      <Chip config={classe} compact={compact} title={classeRegras[dupla?.classificacaoDupla] || 'Sem regra de classe informada.'}>{classe.label}</Chip>
+      <Chip config={classe} compact={compact} title={classeRegras[classificacao] || 'Sem regra de classe informada.'}>{classe.label}</Chip>
       <Chip config={atividade} compact={compact}>{atividade.label}</Chip>
     </>
   );
@@ -427,8 +449,8 @@ export default function DuplasDireto() {
         (d.membro2Nome || '').toLowerCase().includes(termo) ||
         (d.bairro || '').toLowerCase().includes(termo);
       const matchClasse = pertenceClasseFiltro(d, filtroClasse);
-      const matchAtividade = !filtroAtividade || d.atividadeDupla === filtroAtividade;
-      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO';
+      const matchAtividade = !filtroAtividade || getAtividadeDuplaDisplay(d) === filtroAtividade;
+      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO' || temEstudoCadastrado(d);
       const matchIgreja = !igrejaIdParam || String(d.igreja?.id || d.igrejaId || '') === igrejaIdParam;
       const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
@@ -710,7 +732,7 @@ export default function DuplasDireto() {
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const mcfg = medalhaConfig[dupla._medalha];
-            const classCfg = classeConfig[dupla.classificacaoDupla];
+            const classCfg = classeConfig[getClassificacaoDuplaDisplay(dupla)];
             const borderColor = classCfg?.cor || mcfg.cor;
 
             return (
@@ -1000,7 +1022,7 @@ export default function DuplasDireto() {
                   </div>
                   <div className="space-y-2.5 text-sm">
                     <div><span className="text-gray-400 text-xs">Tipo:</span><p className="text-gray-700 font-medium">{projetoLabel[duplaSelecionada.tipoProjeto] || duplaSelecionada.tipoProjeto || '—'}</p></div>
-                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeText(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeDisplayText(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudos bíblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Visitações:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     {(() => {
