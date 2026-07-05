@@ -75,13 +75,21 @@ const RelatorioService = {
     let duplasComEstudoNaoRegistrado = [];
     try {
       const duplasComEstudoEmAndamento = await prisma.dupla.findMany({
-        where: combinar(escopo.dupla, { estudoAtualEmAndamento: true }),
+        where: combinar(escopo.dupla, {
+          OR: [
+            { estudoAtualEmAndamento: true },
+            { atividadeDupla: 'ATIVA' },
+            { statusEstudoBiblico: 'ATIVO' },
+          ],
+        }),
         select: {
           id: true,
           liderNome: true,
           membro2Nome: true,
           status: true,
           estudoAtualEmAndamento: true,
+          atividadeDupla: true,
+          statusEstudoBiblico: true,
           igreja: { select: { id: true, nome: true } },
           distrito: { select: { id: true, nome: true, regiao: { select: { id: true, nome: true } } } },
           _count: { select: { estudosBiblicos: true } },

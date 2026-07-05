@@ -341,7 +341,7 @@ export default function RelatorioEstudosGeral() {
             onClick={abrirDuplasComEstudoNaoRegistrado}
             title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram estudo biblico."
           >
-            <p className="text-xs text-amber-700">Tem estudo sem cadastro</p>
+            <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
             <p className="text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
           </button>
         </div>

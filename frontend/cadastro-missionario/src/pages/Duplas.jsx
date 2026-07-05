@@ -59,7 +59,10 @@ const medalhaConfig = {
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
-const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && getEstudosCount(dupla) === 0;
+const temEstudoNaoRegistrado = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && getEstudosCount(dupla) === 0
+);
 const medalhaRegras = {
   ouro: 'Ouro: estudo bíblico ativo, pelo menos 1 batismo e pessoas alcançadas acima de 0.',
   prata: 'Prata: estudo bíblico ativo, pessoas alcançadas acima de 0 e ainda sem batismo registrado.',
@@ -468,7 +471,7 @@ export default function Duplas() {
         {[
           {
             key: 'estudoNaoRegistrado',
-            label: 'Tem estudo sem cadastro',
+            label: 'Dupla com estudo sem cadastro',
             total: duplas.filter(temEstudoNaoRegistrado).length,
             title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram o estudo biblico.',
             cor: '#b45309',

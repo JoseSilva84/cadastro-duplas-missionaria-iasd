@@ -99,7 +99,10 @@ const indicadorConfig = {
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
-const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && !temEstudoCadastrado(dupla);
+const temEstudoNaoRegistrado = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && !temEstudoCadastrado(dupla)
+);
 const getClassificacaoDuplaDisplay = (dupla) => {
   if (dupla?.levouPessoaBatismo === true) return 'A';
   if (temEstudoCadastrado(dupla) || dupla?.jaDeuEstudoBiblico === true) return 'B';
@@ -620,7 +623,7 @@ export default function DuplasDireto() {
             {[
               {
                 key: 'estudoNaoRegistrado',
-                label: 'Tem estudo sem cadastro',
+                label: 'Dupla com estudo sem cadastro',
                 total: duplas.filter(temEstudoNaoRegistrado).length,
                 title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram o estudo biblico.',
                 cor: '#b45309',

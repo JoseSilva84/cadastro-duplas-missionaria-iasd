@@ -37,7 +37,10 @@ const valorDataInput = (valor) => {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
-const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && getEstudosCount(dupla) === 0;
+const temEstudoNaoRegistrado = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && getEstudosCount(dupla) === 0
+);
 
 const getClassificacaoDuplaDisplay = (dupla) => {
   const totalEstudos = getEstudosCount(dupla);

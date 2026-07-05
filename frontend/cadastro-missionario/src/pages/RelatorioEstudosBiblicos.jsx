@@ -635,7 +635,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             data-tooltip="Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram estudo biblico."
             onClick={abrirDuplasComEstudoNaoRegistrado}
           >
-            <p className="text-xs text-amber-700">Tem estudo sem cadastro</p>
+            <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
             <p className="text-2xl font-bold text-amber-700">{resultado.totalDuplasComEstudoNaoRegistrado || 0}</p>
           </button>
         </div>
@@ -699,7 +699,15 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
 
         <div className="card">
           <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-7 gap-3">
-            <input className="input-field" placeholder={isPonto ? 'Buscar ponto/estudante' : isClasse ? 'Buscar classe/estudante' : isTodos ? 'Buscar registro/estudante' : 'Buscar estudante'} value={filtros.nome} onChange={(e) => set('nome', e.target.value)} />
+            <input
+              className="input-field"
+              placeholder={isPonto ? 'Buscar ponto/estudante' : isClasse ? 'Buscar classe/estudante' : isTodos ? 'Buscar registro/estudante' : 'Buscar estudante'}
+              value={filtros.nome}
+              onChange={(e) => set('nome', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') carregar();
+              }}
+            />
             <select className="input-field" value={filtros.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
               <option value="">Todas as duplas</option>
               {duplas.map((dupla) => <option key={dupla.id} value={dupla.id}>{dupla.liderNome} + {dupla.membro2Nome}</option>)}
@@ -719,7 +727,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           <div className="flex justify-end gap-2 mt-4">
             <button type="button" className="btn-outline" onClick={limpar}>Limpar</button>
             <button type="button" className="btn-outline" onClick={() => abrirPdf({ titulo, estudos: resultado.estudos, tipoRelatorio })}>Exportar PDF</button>
-            <button type="button" className="btn-primary" onClick={carregar}>Filtrar</button>
+            <button type="button" className="btn-primary" onClick={() => carregar()}>Filtrar</button>
           </div>
         </div>
 
