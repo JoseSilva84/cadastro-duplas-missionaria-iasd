@@ -326,7 +326,7 @@ export default function RelatorioEstudosGeral() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
-            ['Total de Estudos', resumo.totalEstudantes, '#0d9488'],
+            ['Pessoas envolvidas', resumo.totalEstudantes, '#0d9488'],
             ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
           ].map(([label, valor, cor]) => (

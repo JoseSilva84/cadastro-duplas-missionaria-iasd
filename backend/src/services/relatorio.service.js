@@ -71,16 +71,11 @@ const RelatorioService = {
 
   async estudosBiblicos(query, usuario) {
     const escopo = await montarEscopo(usuario);
-    const [estudos, duplasComEstudoNaoRegistrado] = await Promise.all([
-      EstudoBiblicoService.listar(query, usuario),
-      prisma.dupla.findMany({
-        where: combinar(
-          escopo.dupla,
-          {
-            estudoAtualEmAndamento: true,
-            estudosBiblicos: { none: {} },
-          },
-        ),
+    const estudos = await EstudoBiblicoService.listar(query, usuario);
+    let duplasComEstudoNaoRegistrado = [];
+    try {
+      const duplasComEstudoEmAndamento = await prisma.dupla.findMany({
+        where: combinar(escopo.dupla, { estudoAtualEmAndamento: true }),
         select: {
           id: true,
           liderNome: true,
@@ -89,10 +84,14 @@ const RelatorioService = {
           estudoAtualEmAndamento: true,
           igreja: { select: { id: true, nome: true } },
           distrito: { select: { id: true, nome: true, regiao: { select: { id: true, nome: true } } } },
+          _count: { select: { estudosBiblicos: true } },
         },
         orderBy: [{ liderNome: 'asc' }, { membro2Nome: 'asc' }],
-      }),
-    ]);
+      });
+      duplasComEstudoNaoRegistrado = duplasComEstudoEmAndamento.filter((dupla) => (dupla._count?.estudosBiblicos || 0) === 0);
+    } catch (err) {
+      console.error('Erro ao calcular duplas com estudo nao registrado.', err);
+    }
     const totalEstudantes = estudos.reduce((acc, estudo) => {
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) return acc + (estudo.participantes?.length || 0);
       return acc + 1;
