@@ -66,16 +66,29 @@ const agruparSoma = (itens, chaveFn) => itens.reduce((acc, item) => {
   return acc;
 }, {});
 
+const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const temEstudoNaoRegistrado = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && getEstudosCount(dupla) === 0
+);
+
 export default function RelatorioEstudosGeral() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
-  const [dados, setDados] = useState({ estudos: [] });
+  const [dados, setDados] = useState({ estudos: [], duplas: [] });
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    api.get('/relatorios/estudos-biblicos')
-      .then((res) => setDados(res.data || { estudos: [] }))
+    Promise.allSettled([
+      api.get('/relatorios/estudos-biblicos'),
+      api.get('/duplas'),
+    ])
+      .then(([relatorioRes, duplasRes]) => {
+        const relatorio = relatorioRes.status === 'fulfilled' ? (relatorioRes.value.data || { estudos: [] }) : { estudos: [] };
+        const duplas = duplasRes.status === 'fulfilled' && Array.isArray(duplasRes.value.data) ? duplasRes.value.data : [];
+        setDados({ ...relatorio, duplas });
+      })
       .finally(() => setCarregando(false));
   }, []);
 
@@ -133,6 +146,9 @@ export default function RelatorioEstudosGeral() {
       ? Math.round(estudantes.reduce((acc, item) => acc + item.progresso, 0) / estudantes.length)
       : 0;
     const estudosIndividuais = estudos.filter((item) => item.tipoEstudo === 'UNICO');
+    const duplasComEstudoNaoRegistrado = Array.isArray(dados.duplas)
+      ? dados.duplas.filter(temEstudoNaoRegistrado)
+      : (dados.duplasComEstudoNaoRegistrado || []);
     const sim = (campo) => estudosIndividuais.filter((item) => item[campo] === true).length;
     const baseEspiritual = Math.max(1, estudosIndividuais.length);
 
@@ -144,8 +160,8 @@ export default function RelatorioEstudosGeral() {
       porIgreja,
       porSerie,
       porMes,
-      duplasComEstudoNaoRegistrado: dados.duplasComEstudoNaoRegistrado || [],
-      totalDuplasComEstudoNaoRegistrado: dados.totalDuplasComEstudoNaoRegistrado || 0,
+      duplasComEstudoNaoRegistrado,
+      totalDuplasComEstudoNaoRegistrado: duplasComEstudoNaoRegistrado.length,
       totalRegistros: estudos.length,
       totalEstudantes: estudantes.length,
       mediaProgresso,

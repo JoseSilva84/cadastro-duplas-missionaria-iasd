@@ -29,6 +29,12 @@ const agruparSoma = (itens = [], chaveFn, valorFn = () => 1) => itens.reduce((ac
   return acc;
 }, {});
 
+const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const temEstudoNaoRegistrado = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && getEstudosCount(dupla) === 0
+);
+
 const contarClassificacoes = (estudos = []) => estudos.reduce((acc, estudo) => {
   if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
     (estudo.participantes || []).forEach((participante) => {
@@ -364,6 +370,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     : 0;
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
   const totalEstudantes = resultado.totalEstudantes ?? resultado.estudos.reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
+  const totalDuplasComEstudoNaoRegistrado = duplas.filter(temEstudoNaoRegistrado).length;
   const tooltipTotalEstudantes = isPonto
     ? 'Estudos nos pontos: soma dos estudantes/participantes cadastrados em todos os pontos filtrados.'
     : isClasse
@@ -636,7 +643,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             onClick={abrirDuplasComEstudoNaoRegistrado}
           >
             <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
-            <p className="text-2xl font-bold text-amber-700">{resultado.totalDuplasComEstudoNaoRegistrado || 0}</p>
+            <p className="text-2xl font-bold text-amber-700">{totalDuplasComEstudoNaoRegistrado}</p>
           </button>
         </div>
 
