@@ -145,7 +145,7 @@ export default function Login() {
                 tooltipClass: 'smart-tooltip-up smart-tooltip-right',
               },
             ].map((item) => (
-              <div key={item.label} className={`smart-tooltip ${item.tooltipClass || ''} bg-white/10 rounded-lg px-2 py-2 text-center`} data-tooltip={item.tooltip || item.label} tabIndex={0}>
+              <div key={item.label} className={`smart-tooltip smart-tooltip-up ${item.tooltipClass || ''} bg-white/10 rounded-lg px-2 py-2 text-center`} data-tooltip={item.tooltip || item.label} tabIndex={0}>
                 <p className="text-[#C9963A] font-bold text-lg">{item.valor}</p>
                 <p className="text-white/70 text-xs">{item.label}</p>
               </div>
