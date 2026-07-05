@@ -70,7 +70,29 @@ const RelatorioService = {
   },
 
   async estudosBiblicos(query, usuario) {
-    const estudos = await EstudoBiblicoService.listar(query, usuario);
+    const escopo = await montarEscopo(usuario);
+    const [estudos, duplasComEstudoNaoRegistrado] = await Promise.all([
+      EstudoBiblicoService.listar(query, usuario),
+      prisma.dupla.findMany({
+        where: combinar(
+          escopo.dupla,
+          {
+            estudoAtualEmAndamento: true,
+            estudosBiblicos: { none: {} },
+          },
+        ),
+        select: {
+          id: true,
+          liderNome: true,
+          membro2Nome: true,
+          status: true,
+          estudoAtualEmAndamento: true,
+          igreja: { select: { id: true, nome: true } },
+          distrito: { select: { id: true, nome: true, regiao: { select: { id: true, nome: true } } } },
+        },
+        orderBy: [{ liderNome: 'asc' }, { membro2Nome: 'asc' }],
+      }),
+    ]);
     const totalEstudantes = estudos.reduce((acc, estudo) => {
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) return acc + (estudo.participantes?.length || 0);
       return acc + 1;
@@ -84,7 +106,14 @@ const RelatorioService = {
       serie,
       _count: { serie: total },
     }));
-    return { total: estudos.length, totalEstudantes, porSerie, estudos };
+    return {
+      total: estudos.length,
+      totalEstudantes,
+      porSerie,
+      estudos,
+      totalDuplasComEstudoNaoRegistrado: duplasComEstudoNaoRegistrado.length,
+      duplasComEstudoNaoRegistrado,
+    };
   },
 
   async dashboardAssociacao() {

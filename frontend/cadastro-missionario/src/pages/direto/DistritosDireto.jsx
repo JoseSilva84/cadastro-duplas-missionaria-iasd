@@ -37,6 +37,7 @@ const valorDataInput = (valor) => {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && getEstudosCount(dupla) === 0;
 
 const getClassificacaoDuplaDisplay = (dupla) => {
   const totalEstudos = getEstudosCount(dupla);
@@ -642,8 +643,8 @@ export default function DistritosDireto() {
                                   📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
                                 </span>
                               ) : (
-                                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 whitespace-nowrap">
-                                  Sem estudo bíblico
+                                <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${temEstudoNaoRegistrado(dupla) ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                                  {temEstudoNaoRegistrado(dupla) ? 'Tem estudo, mas não registrou' : 'Sem estudo bíblico'}
                                 </span>
                               )}
                             </div>
@@ -872,7 +873,9 @@ export default function DistritosDireto() {
                   
                   <div className="space-y-3">
                     {(!duplaSelecionada.estudosBiblicos || duplaSelecionada.estudosBiblicos.length === 0) ? (
-                      <p className="text-sm text-gray-400 mt-2">Nenhum estudo bíblico registrado para esta dupla.</p>
+                      <p className="text-sm text-gray-400 mt-2">
+                        {temEstudoNaoRegistrado(duplaSelecionada) ? 'Tem estudo, mas não registrou o cadastro do estudo bíblico.' : 'Nenhum estudo bíblico registrado para esta dupla.'}
+                      </p>
                     ) : (
                       <div className="space-y-2 mt-1 max-h-[300px] overflow-y-auto pr-1">
                         {duplaSelecionada.estudosBiblicos.map((estudo) => (

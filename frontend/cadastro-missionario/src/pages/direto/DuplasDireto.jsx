@@ -99,6 +99,7 @@ const indicadorConfig = {
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
+const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && !temEstudoCadastrado(dupla);
 const getClassificacaoDuplaDisplay = (dupla) => {
   if (dupla?.levouPessoaBatismo === true) return 'A';
   if (temEstudoCadastrado(dupla) || dupla?.jaDeuEstudoBiblico === true) return 'B';
@@ -304,7 +305,7 @@ export default function DuplasDireto() {
     return ['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '';
   });
   const [filtroEspecial, setFiltroEspecial] = useState(() => {
-    return ['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
+    return ['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -416,7 +417,7 @@ export default function DuplasDireto() {
   }, [atividadeParam]);
 
   useEffect(() => {
-    setFiltroEspecial(['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
   }, [filtroEspecialParam]);
 
   // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
@@ -450,7 +451,7 @@ export default function DuplasDireto() {
         (d.bairro || '').toLowerCase().includes(termo);
       const matchClasse = pertenceClasseFiltro(d, filtroClasse);
       const matchAtividade = !filtroAtividade || getAtividadeDuplaDisplay(d) === filtroAtividade;
-      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO' || temEstudoCadastrado(d);
+      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.estudoAtualEmAndamento === true || d.statusEstudoBiblico === 'ATIVO' || temEstudoCadastrado(d);
       const matchIgreja = !igrejaIdParam || String(d.igreja?.id || d.igrejaId || '') === igrejaIdParam;
       const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
@@ -458,6 +459,7 @@ export default function DuplasDireto() {
       const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
       const matchEspecial = !filtroEspecial
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
+        || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
         || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
       return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial && matchBusca;
     });
@@ -617,10 +619,18 @@ export default function DuplasDireto() {
 
             {[
               {
+                key: 'estudoNaoRegistrado',
+                label: 'Tem estudo sem cadastro',
+                total: duplas.filter(temEstudoNaoRegistrado).length,
+                title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram o estudo biblico.',
+                cor: '#b45309',
+                bg: '#fef3c7',
+              },
+              {
                 key: 'semEstudos',
                 label: 'Sem atividade',
-                total: duplas.filter((dupla) => getEstudosCount(dupla) === 0).length,
-                title: 'Dupla sem atividade: duplas com Estudos 0.',
+                total: duplas.filter((dupla) => dupla.estudoAtualEmAndamento !== true && getEstudosCount(dupla) === 0).length,
+                title: 'Duplas que responderam Nao em Estudo em andamento e nao possuem estudo biblico cadastrado.',
                 cor: '#64748b',
                 bg: '#f1f5f9',
               },

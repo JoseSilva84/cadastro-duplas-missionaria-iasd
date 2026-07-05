@@ -316,7 +316,7 @@ export default function RelatorioClassesBiblicas() {
           <section className="card xl:col-span-2">
             <div className="flex items-center justify-between gap-4 mb-5">
               <div>
-                <h2 className="text-lg font-bold text-[#1A3A6B]">Classificacao dos estudantes</h2>
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
                 <p className="text-sm text-gray-400">Distribuicao A/B/C entre todos os alunos das classes biblicas.</p>
               </div>
               <div

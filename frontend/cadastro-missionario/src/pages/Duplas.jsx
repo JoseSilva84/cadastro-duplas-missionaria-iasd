@@ -59,6 +59,7 @@ const medalhaConfig = {
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const temEstudoNaoRegistrado = (dupla) => dupla?.estudoAtualEmAndamento === true && getEstudosCount(dupla) === 0;
 const medalhaRegras = {
   ouro: 'Ouro: estudo bíblico ativo, pelo menos 1 batismo e pessoas alcançadas acima de 0.',
   prata: 'Prata: estudo bíblico ativo, pessoas alcançadas acima de 0 e ainda sem batismo registrado.',
@@ -171,7 +172,7 @@ export default function Duplas() {
   });
   const [filtroAtividade, setFiltroAtividade] = useState('');
   const [filtroEspecial, setFiltroEspecial] = useState(() => {
-    return ['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
+    return ['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -208,7 +209,7 @@ export default function Duplas() {
   }, [atividadeParam]);
 
   useEffect(() => {
-    setFiltroEspecial(['semEstudos', 'comVisitacoes'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
   }, [filtroEspecialParam]);
 
   const duplasComMedalha = useMemo(() =>
@@ -226,7 +227,7 @@ export default function Duplas() {
         : d.status === filtro;
       const matchClasse = pertenceClasseFiltro(d, filtroClasse);
       const matchAtividade = !filtroAtividade || d.atividadeDupla === filtroAtividade;
-      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.statusEstudoBiblico === 'ATIVO';
+      const matchEstudoAtivo = estudoAtivoParam !== '1' || d.estudoAtualEmAndamento === true || d.statusEstudoBiblico === 'ATIVO';
       const matchBusca = !busca ||
         (d.liderNome || '').toLowerCase().includes(busca.toLowerCase()) ||
         (d.membro2Nome || '').toLowerCase().includes(busca.toLowerCase()) ||
@@ -239,6 +240,7 @@ export default function Duplas() {
       const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
       const matchEspecial = !filtroEspecial
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
+        || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
         || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
       return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchBusca && matchIgreja && matchIgrejaQuery && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial;
     });
@@ -465,10 +467,18 @@ export default function Duplas() {
 
         {[
           {
+            key: 'estudoNaoRegistrado',
+            label: 'Tem estudo sem cadastro',
+            total: duplas.filter(temEstudoNaoRegistrado).length,
+            title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram o estudo biblico.',
+            cor: '#b45309',
+            bg: '#fef3c7',
+          },
+          {
             key: 'semEstudos',
             label: 'Sem atividade',
-            total: duplas.filter((dupla) => getEstudosCount(dupla) === 0).length,
-            title: 'Dupla sem atividade: duplas com Estudos 0.',
+            total: duplas.filter((dupla) => dupla.estudoAtualEmAndamento !== true && getEstudosCount(dupla) === 0).length,
+            title: 'Duplas que responderam Nao em Estudo em andamento e nao possuem estudo biblico cadastrado.',
             cor: '#64748b',
             bg: '#f1f5f9',
           },
@@ -626,13 +636,13 @@ export default function Duplas() {
                       {atvCfg.label}
                     </span>
                   )}
-                  {dupla.statusEstudoBiblico === 'ATIVO' ? (
+                  {getEstudosCount(dupla) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20">
                       📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-100 text-red-600 border-red-200">
-                      Sem estudo bíblico
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${temEstudoNaoRegistrado(dupla) ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200'}`}>
+                      {temEstudoNaoRegistrado(dupla) ? 'Tem estudo, mas não registrou' : 'Sem estudo bíblico'}
                     </span>
                   )}
                   <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"

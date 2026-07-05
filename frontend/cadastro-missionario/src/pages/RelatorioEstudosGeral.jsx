@@ -144,6 +144,8 @@ export default function RelatorioEstudosGeral() {
       porIgreja,
       porSerie,
       porMes,
+      duplasComEstudoNaoRegistrado: dados.duplasComEstudoNaoRegistrado || [],
+      totalDuplasComEstudoNaoRegistrado: dados.totalDuplasComEstudoNaoRegistrado || 0,
       totalRegistros: estudos.length,
       totalEstudantes: estudantes.length,
       mediaProgresso,
@@ -284,6 +286,7 @@ export default function RelatorioEstudosGeral() {
   };
 
   const caminho = (rota) => `${isDireto ? '/direto' : ''}${rota}`;
+  const abrirDuplasComEstudoNaoRegistrado = () => navigate(caminho('/duplas?filtro=estudoNaoRegistrado'));
 
   if (carregando) {
     return (
@@ -320,11 +323,11 @@ export default function RelatorioEstudosGeral() {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
-            ['Pessoas envolvidas', resumo.totalEstudantes, '#0d9488'],
-            ['Progresso medio', `${resumo.mediaProgresso}%`, '#C9963A'],
+            ['Total de Estudos', resumo.totalEstudantes, '#0d9488'],
+            ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
           ].map(([label, valor, cor]) => (
             <div key={label} className="card">
@@ -332,6 +335,15 @@ export default function RelatorioEstudosGeral() {
               <p className="text-3xl font-bold mt-1" style={{ color: cor }}>{valor}</p>
             </div>
           ))}
+          <button
+            type="button"
+            className="card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"
+            onClick={abrirDuplasComEstudoNaoRegistrado}
+            title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram estudo biblico."
+          >
+            <p className="text-xs text-amber-700">Tem estudo sem cadastro</p>
+            <p className="text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -341,7 +353,7 @@ export default function RelatorioEstudosGeral() {
             <Chart option={tipoOption} className="h-80" />
           </section>
           <section className="card xl:col-span-2">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Classificacao dos estudantes</h2>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
             <p className="text-sm text-gray-400 mb-3">Volume de estudantes por prontidao para batismo.</p>
             <Chart option={classeOption} className="h-80" />
           </section>

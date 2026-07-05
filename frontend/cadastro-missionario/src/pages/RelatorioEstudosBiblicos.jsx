@@ -248,7 +248,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       : isTodos
         ? 'Registros de Estudos Bíblicos'
         : 'Estudantes Bíblicos';
-  const [resultado, setResultado] = useState({ total: 0, totalEstudantes: 0, estudos: [], porSerie: [] });
+  const [resultado, setResultado] = useState({ total: 0, totalEstudantes: 0, estudos: [], porSerie: [], totalDuplasComEstudoNaoRegistrado: 0, duplasComEstudoNaoRegistrado: [] });
   const [totaisPorClassificacao, setTotaisPorClassificacao] = useState({ A: 0, B: 0, C: 0 });
   const [duplas, setDuplas] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
@@ -377,6 +377,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     setFiltros(proximos);
     navigate(`${location.pathname}${ativo ? '' : `?classificacaoInteressado=${classe}`}`);
     carregar(proximos);
+  };
+  const abrirDuplasComEstudoNaoRegistrado = () => {
+    navigate(`${isDireto ? '/direto' : ''}/duplas?filtro=estudoNaoRegistrado`);
   };
   const detalhesPath = (estudo) => {
     const id = typeof estudo === 'object' ? estudo.id : estudo;
@@ -599,7 +602,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
           {isGrupo && (
             <div
               className="smart-tooltip card"
@@ -626,6 +629,15 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           </div>
           <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
           <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
+          <button
+            type="button"
+            className="smart-tooltip card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"
+            data-tooltip="Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram estudo biblico."
+            onClick={abrirDuplasComEstudoNaoRegistrado}
+          >
+            <p className="text-xs text-amber-700">Tem estudo sem cadastro</p>
+            <p className="text-2xl font-bold text-amber-700">{resultado.totalDuplasComEstudoNaoRegistrado || 0}</p>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -656,20 +668,20 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <section className="card">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Classificacao dos estudantes</h2>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
             <p className="text-sm text-gray-400 mb-3">Distribuicao A/B/C no recorte atual.</p>
             <EChart option={classificacaoOption} className="h-80" />
           </section>
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Faixas de progresso</h2>
-            <p className="text-sm text-gray-400 mb-3">Quantidade de estudantes por etapa da serie.</p>
+            <p className="text-sm text-gray-400 mb-3">Quantidade de estudantes por etapa da série.</p>
             <EChart option={progressoOption} className="h-80" />
           </section>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
           <section className="card">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Series mais usadas</h2>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Séries mais usadas</h2>
             <p className="text-sm text-gray-400 mb-3">Séries com maior volume de estudantes.</p>
             <EChart option={serieOption} className="h-80" />
           </section>
