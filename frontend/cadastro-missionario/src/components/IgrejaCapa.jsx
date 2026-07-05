@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { toast } from '../lib/toast';
@@ -361,19 +362,31 @@ const WhatsAppLinkIgreja = ({ numero }) => {
   );
 };
 
-const InfoDupla = ({ label, valor }) => (
-  <div className="py-1.5 border-b border-gray-50 last:border-b-0">
+const InfoDupla = ({ label, valor, onClick }) => {
+  const Wrapper = onClick ? 'button' : 'div';
+  return (
+  <Wrapper
+    type={onClick ? 'button' : undefined}
+    onClick={onClick}
+    className={`w-full py-1.5 border-b border-gray-50 last:border-b-0 text-left ${onClick ? 'rounded-md px-1 -mx-1 transition-colors hover:bg-[#1A3A6B]/5 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30' : ''}`}
+  >
     <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">{label}</p>
     <p className="text-xs text-gray-700 font-medium mt-0.5 break-words">{valor || 'Não informado'}</p>
-  </div>
-);
+  </Wrapper>
+  );
+};
 
-const ModalDupla = ({ dupla, onClose }) => {
+const ModalDupla = ({ dupla, onClose, onNavigate }) => {
   if (!dupla) return null;
   const cor = statusColors[dupla.status] || '#9ca3af';
   const label = statusLabels[dupla.status] || dupla.status;
   const estudos = dupla._count?.estudosBiblicos ?? dupla.estudosBiblicos?.length ?? 0;
   const classesB = dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0;
+  const classe = dupla.classificacaoDupla || '';
+  const igrejaId = dupla.igreja?.id || dupla.igrejaId || '';
+  const abrirEstudos = () => onNavigate?.(`/direto/relatorios/estudos-biblicos?duplaId=${dupla.id}`);
+  const abrirClasses = () => onNavigate?.(`/direto/relatorios/classes-biblicas/registros?duplaId=${dupla.id}`);
+  const abrirClassificacao = () => onNavigate?.(`/direto/duplas?classe=${classe}${igrejaId ? `&igrejaId=${igrejaId}` : ''}`);
 
   const Membro = ({ titulo, foto, nome, dados }) => (
     <div className="bg-[#F4F5F7] rounded-xl p-4">
@@ -434,20 +447,29 @@ const ModalDupla = ({ dupla, onClose }) => {
             { icon: '📖', label: 'Estudos Bíblicos', val: estudos },
             { icon: '🏫', label: 'Classes Bíblicas', val: classesB },
             { icon: '🏆', label: 'Classificação', val: dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classe' },
-          ].map(({ icon, label: lb, val }) => (
-            <div key={lb} className="bg-white px-4 py-3 text-center">
+          ].map(({ icon, label: lb, val }, index) => {
+            const onClick = index === 0 ? abrirEstudos : index === 1 ? abrirClasses : (classe ? abrirClassificacao : undefined);
+            return (
+            <button
+              key={lb}
+              type="button"
+              onClick={onClick}
+              disabled={!onClick}
+              className="bg-white px-4 py-3 text-center transition-colors hover:bg-[#1A3A6B]/5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C9963A]/30 disabled:cursor-default disabled:hover:bg-white"
+            >
               <p className="text-lg">{icon}</p>
               <p className="text-lg font-bold text-[#1A3A6B]">{val}</p>
               <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mt-0.5">{lb}</p>
-            </div>
-          ))}
+            </button>
+          );
+          })}
         </div>
 
         {/* Corpo */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white">
           {/* Info da dupla */}
           <div className="grid grid-cols-2 gap-3">
-            <InfoDupla label="Classificação da dupla" valor={dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classificação'} />
+            <InfoDupla label="Classificação da dupla" valor={dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classificação'} onClick={classe ? abrirClassificacao : undefined} />
             <InfoDupla label="Atividade da dupla" valor={dupla.atividadeDupla === 'ATIVA' ? 'Ativa' : dupla.atividadeDupla === 'INATIVA' ? 'Inativa' : 'Não informado'} />
             <InfoDupla label="Projeto" valor={dupla.tipoProjeto ? { CASA_A_CASA: 'Casa a Casa', ESTUDO_BIBLICO: 'Estudo Bíblico', PEQUENOS_GRUPOS: 'Pequenos Grupos', ACAO_SOCIAL: 'Ação Social', EVANGELISMO_PUBLICO: 'Classe Bíblica' }[dupla.tipoProjeto] || dupla.tipoProjeto : ''} />
             <InfoDupla label="Batismos" valor={dupla.batismos ?? dupla._count?.batismos ?? 0} />
@@ -492,6 +514,7 @@ const ModalDupla = ({ dupla, onClose }) => {
 };
 
 export default function IgrejaCapa({ igreja, onNovaDupla }) {
+  const navigate = useNavigate();
   const { usuario } = useAuth();
   const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const [igrejaAtual, setIgrejaAtual] = useState(igreja);
@@ -505,6 +528,11 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const [duplasIgreja, setDuplasIgreja] = useState([]);
   const [carregandoDuplas, setCarregandoDuplas] = useState(false);
   const [duplaSelecionada, setDuplaSelecionada] = useState(null);
+
+  const navegarDoModal = (rota) => {
+    setDuplaSelecionada(null);
+    navigate(rota);
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -780,7 +808,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       )}
 
       {duplaSelecionada && (
-        <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} />
+        <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} onNavigate={navegarDoModal} />
       )}
 
       {fotoAmpliada && (
