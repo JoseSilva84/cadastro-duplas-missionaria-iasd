@@ -95,16 +95,15 @@ export default function ListagemIgrejas() {
           <div className="max-h-[260px] xl:max-h-[calc(100vh-260px)] overflow-y-auto">
             {igrejasFiltradas.map((igreja) => {
               const sel = igrejaSelecionada?.id === igreja.id;
+              const totalDuplas = igreja._count?.duplas ?? igreja.duplas?.length ?? 0;
               return (
-                <button
+                <div
                   key={igreja.id}
-                  type="button"
-                  onClick={() => setIgrejaSelecionada(igreja)}
                   className={`w-full text-left px-4 py-3.5 border-l-[3px] transition-all duration-200 ${
                     sel ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]' : 'border-l-transparent hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setIgrejaSelecionada(igreja)} className="w-full text-left flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-lg bg-[#16a34a]/10 flex items-center justify-center flex-shrink-0 transition-transform ${sel ? 'scale-110' : ''}`}>
                       <span className="text-lg">⛪</span>
                     </div>
@@ -120,8 +119,16 @@ export default function ListagemIgrejas() {
                         </p>
                       )}
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/duplas?igrejaId=${igreja.id}`)}
+                    className="mt-2 inline-flex min-h-0 items-center gap-1 rounded-full bg-[#1A3A6B]/8 px-2 py-1 text-[10px] font-bold text-[#1A3A6B] transition hover:bg-[#1A3A6B] hover:text-white"
+                    title={`Ver duplas de ${igreja.nome}`}
+                  >
+                    👥 {totalDuplas} dupla{totalDuplas === 1 ? '' : 's'}
+                  </button>
+                </div>
               );
             })}
             {igrejasFiltradas.length === 0 && (

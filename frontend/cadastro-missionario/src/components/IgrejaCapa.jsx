@@ -119,7 +119,7 @@ const FotoBloco = ({ src, alt, tipo, onClick }) => (
     type="button"
     onClick={src ? onClick : undefined}
     disabled={!src}
-    className={`group relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-[#F4F5F7] border border-gray-100 flex items-center justify-center transition-all duration-200 ${src ? 'cursor-zoom-in hover:-translate-y-0.5 hover:border-[#C9963A] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/50' : 'cursor-default'}`}
+    className={`group relative h-36 w-full overflow-hidden rounded-lg bg-[#F4F5F7] border border-gray-100 flex items-center justify-center transition-all duration-200 ${src ? 'cursor-zoom-in hover:-translate-y-0.5 hover:border-[#C9963A] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/50' : 'cursor-default'}`}
   >
     {src ? (
       <>
@@ -147,7 +147,7 @@ const InfoLinha = ({ label, valor }) => (
 
 const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
   <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
-    <div className="mb-3">
+    <div className="mb-3 min-h-20">
       <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo}</p>
       <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
     </div>
@@ -359,6 +359,35 @@ const WhatsAppLinkIgreja = ({ numero }) => {
       </svg>
       {numero}
     </a>
+  );
+};
+
+const getEstudosDupla = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const temEstudoNaoRegistradoDupla = (dupla) => (
+  (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
+  && getEstudosDupla(dupla) === 0
+);
+
+const BadgeEstudoDupla = ({ dupla }) => {
+  const estudos = getEstudosDupla(dupla);
+  if (estudos > 0) {
+    return (
+      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+        {estudos} estudo{estudos === 1 ? '' : 's'} bíblico{estudos === 1 ? '' : 's'}
+      </span>
+    );
+  }
+  if (temEstudoNaoRegistradoDupla(dupla)) {
+    return (
+      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+        Tem estudo, mas não cadastrado
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
+      Sem estudo bíblico
+    </span>
   );
 };
 
@@ -660,7 +689,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
         <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
 
         <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
-          <div className="mb-3">
+          <div className="mb-3 min-h-20">
             <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Coluna 4</p>
             <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
           </div>
@@ -719,7 +748,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
             {duplasIgreja.map((dupla) => {
               const cor = statusColors[dupla.status] || '#9ca3af';
               const label = statusLabels[dupla.status] || dupla.status;
-              const estudos = dupla._count?.estudosBiblicos ?? dupla.estudosBiblicos?.length ?? 0;
+              const estudos = getEstudosDupla(dupla);
               const classesB = dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0;
 
               return (
@@ -761,6 +790,14 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
                       >
                         {label}
                       </span>
+                    </div>
+                    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                      <BadgeEstudoDupla dupla={dupla} />
+                      {dupla.classificacaoDupla && (
+                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600">
+                          Classe {dupla.classificacaoDupla} - {dupla.atividadeDupla === 'ATIVA' ? 'Ativa' : 'Inativa'}
+                        </span>
+                      )}
                     </div>
 
                     {/* Indicadores */}

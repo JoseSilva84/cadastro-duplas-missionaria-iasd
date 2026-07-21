@@ -239,6 +239,39 @@ const IndicadorBadge = ({ tipo, valor, compact = false }) => {
   );
 };
 
+const EstudoSituacaoBadge = ({ dupla, compact = false }) => {
+  const estudos = getEstudosCount(dupla);
+  if (estudos > 0) {
+    return (
+      <Chip config={indicadorConfig.estudos} compact={compact}>
+        {compact ? `${estudos} estudo${estudos === 1 ? '' : 's'}` : `${estudos} estudo${estudos === 1 ? '' : 's'} biblico${estudos === 1 ? '' : 's'}`}
+      </Chip>
+    );
+  }
+
+  if (temEstudoNaoRegistrado(dupla)) {
+    return (
+      <Chip
+        config={{ cor: '#b45309', bg: '#fef3c7', border: '#fcd34d' }}
+        compact={compact}
+        title="A dupla informou estudo em andamento, mas ainda nao cadastrou o estudo biblico."
+      >
+        Tem estudo, mas nao cadastrado
+      </Chip>
+    );
+  }
+
+  return (
+    <Chip
+      config={{ cor: '#dc2626', bg: '#fee2e2', border: '#fecaca' }}
+      compact={compact}
+      title="Nenhum estudo biblico cadastrado para esta dupla."
+    >
+      Sem estudo biblico
+    </Chip>
+  );
+};
+
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
     FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
@@ -876,7 +909,7 @@ export default function DuplasDireto() {
 
                   <div className={`mt-2 pt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400 ${selecionada ? 'border-t border-gray-100' : ''}`}>
                     <span>{dupla.distrito?.nome || 'Sem distrito'}</span>
-                    <IndicadorBadge tipo="estudos" valor={getEstudosCount(dupla)} compact />
+                    <EstudoSituacaoBadge dupla={dupla} compact />
                     <IndicadorBadge tipo="visitacoes" valor={getVisitacoesCount(dupla)} compact />
                     <ClassificacaoAtividadeBadge dupla={dupla} compact />
                   </div>
