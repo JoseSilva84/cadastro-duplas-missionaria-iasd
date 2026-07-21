@@ -916,8 +916,7 @@ export default function DuplasDireto() {
         ) : (
           <div
             key={duplaSelecionada.id}
-            className="flex flex-col h-full border-l-4 animate-slide-in-right"
-            style={{ borderLeftColor: corBordaDetalhe }}
+            className="flex flex-col h-full animate-slide-in-right"
           >
             {/* Cabeçalho do detail */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
@@ -1154,7 +1153,10 @@ export default function DuplasDireto() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm md:col-span-2">
+                <div
+                  className="bg-white rounded-xl p-5 border border-l-4 border-gray-100 shadow-sm md:col-span-2"
+                  style={{ borderLeftColor: corBordaDetalhe }}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-[#16a34a]/10 flex items-center justify-center text-xs font-bold text-[#16a34a]">EB</div>
