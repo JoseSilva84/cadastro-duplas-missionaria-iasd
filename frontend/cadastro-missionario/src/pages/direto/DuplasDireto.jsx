@@ -282,6 +282,58 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
   );
 };
 
+const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, navigate }) => {
+  const totalEstudos = duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
+  const totalClasses = duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
+  const totalBatismos = duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0);
+
+  const cards = [
+    { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: '👥', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
+    { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
+    { label: 'Classe Biblica', valor: totalClasses, cor: '#ea580c', icon: '📣', gradient: 'from-[#ea580c] to-[#f97316]' },
+    { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
+  ];
+
+  return (
+    <div className="animate-fade-in-down mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
+            <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Duplas</p>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            Duplas Missionarias
+          </h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`)}
+          className="btn-primary flex items-center gap-2 self-start"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Nova Dupla
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {cards.map((item) => (
+          <div key={item.label} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+            <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2`}>
+              {item.icon}
+            </div>
+            <p className="text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
+            <p className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">{item.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function DuplasDireto() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -513,11 +565,19 @@ export default function DuplasDireto() {
 
   return (
     <>
-    <div className="flex h-full min-h-[calc(100vh-8rem)] overflow-hidden animate-fade-in">
+    {!isDireto && (
+      <AdvancedOverview
+        duplas={duplas}
+        duplasFiltradas={duplasFiltradas}
+        distritoId={distritoId}
+        navigate={navigate}
+      />
+    )}
+    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)]' : 'h-[calc(100vh-21rem)] min-h-[680px] rounded-xl border border-gray-200 shadow-sm'} flex overflow-hidden animate-fade-in bg-white`}>
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
       <div className={`${
         mostraDetalhe ? 'hidden sm:flex' : 'flex'
-      } w-full sm:w-80 lg:w-[360px] flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-y-auto`}>
+      } w-full sm:w-80 lg:w-[360px] flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
         {/* Cabeçalho + Filtros */}
         <div className="flex-shrink-0 p-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
@@ -747,7 +807,7 @@ export default function DuplasDireto() {
         </div>
 
         {/* Lista de duplas */}
-        <div className="flex-1">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const mcfg = medalhaConfig[dupla._medalha];
