@@ -321,12 +321,15 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, navigate }) => 
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((item) => (
-          <div key={item.label} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-            <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2`}>
+          <div
+            key={item.label}
+            className="group bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35"
+          >
+            <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}>
               {item.icon}
             </div>
-            <p className="text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
-            <p className="text-gray-500 text-[11px] font-bold uppercase tracking-wider">{item.label}</p>
+            <p className="text-2xl font-bold transition-transform duration-300 group-hover:scale-105" style={{ color: item.cor }}>{item.valor}</p>
+            <p className="text-gray-500 text-[11px] font-bold uppercase tracking-wider transition-colors duration-300 group-hover:text-[#1A3A6B]">{item.label}</p>
           </div>
         ))}
       </div>
@@ -548,6 +551,12 @@ export default function DuplasDireto() {
     if (!duplaSelecionadaId) return null;
     return duplas.find((d) => d.id === duplaSelecionadaId) || null;
   }, [duplaSelecionadaId, duplas]);
+
+  const corBordaDetalhe = useMemo(() => {
+    if (!duplaSelecionada) return '#1A3A6B';
+    const classe = getClassificacaoDuplaDisplay(duplaSelecionada);
+    return classeConfig[classe]?.cor || medalhaConfig[duplaSelecionada._medalha]?.cor || '#1A3A6B';
+  }, [duplaSelecionada]);
 
   if (carregando) {
     return (
@@ -905,7 +914,11 @@ export default function DuplasDireto() {
             </div>
           </div>
         ) : (
-          <div key={duplaSelecionada.id} className="flex flex-col h-full animate-slide-in-right">
+          <div
+            key={duplaSelecionada.id}
+            className="flex flex-col h-full border-l-4 animate-slide-in-right"
+            style={{ borderLeftColor: corBordaDetalhe }}
+          >
             {/* Cabeçalho do detail */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
               {/* Botão voltar (mobile) */}
