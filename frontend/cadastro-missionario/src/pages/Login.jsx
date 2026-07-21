@@ -16,7 +16,7 @@ const Cruz = ({ size = 'w-25 h-25' }) => (
 );
 
 export default function Login() {
-  const { login, layout } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', senha: '' });
   const [carregando, setCarregando] = useState(false);
@@ -58,14 +58,7 @@ export default function Login() {
     setCarregando(true);
     try {
       const usuarioLogado = await login(form.email, form.senha);
-      // Se já tem layout salvo, vai direto para o destino
-      if (layout === 'direto') {
-        navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/direto/distritos' : '/direto/regioes');
-      } else if (layout === 'avancado') {
-        navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
-      } else {
-        navigate('/escolha-layout');
-      }
+      navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
     } catch (err) {
       console.error('Erro no login:', err);
       const mensagem = err.response?.data?.erro

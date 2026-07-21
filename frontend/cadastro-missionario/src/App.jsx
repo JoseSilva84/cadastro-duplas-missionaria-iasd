@@ -4,11 +4,10 @@ import { Toaster } from 'sonner';
 
 // Páginas
 import Login from './pages/Login';
-import EscolhaLayout from './pages/EscolhaLayout';
 import Layout from './components/Layout';
 import Regioes from './pages/Regioes';
 import Distritos from './pages/Distritos';
-import Duplas from './pages/Duplas';
+import Duplas from './pages/direto/DuplasDireto';
 import DadosDupla from './pages/DadosDupla';
 import Cadastro from './pages/Cadastro';
 import CadastroAcompanhamento from './pages/CadastroAcompanhamento';
@@ -94,7 +93,7 @@ function destinoInicial(usuario, layout = 'avancado') {
 function RotaComLayout({ children, modelo }) {
   const { usuario, layout, carregando } = useAuth();
   if (carregando) return null;
-  if (!layout) return <Navigate to="/escolha-layout" replace />;
+  if (!layout) return <Navigate to={destinoInicial(usuario, 'avancado')} replace />;
 
   if (modelo === 'avancado' && layout !== 'avancado') {
     return <Navigate to={destinoInicial(usuario, 'direto')} replace />;
@@ -124,7 +123,7 @@ function AppRoutes() {
         path="/escolha-layout"
         element={
           <RotaProtegida>
-            <EscolhaLayout />
+            <RedirectPosLogin />
           </RotaProtegida>
         }
       />

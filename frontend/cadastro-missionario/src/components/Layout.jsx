@@ -75,32 +75,13 @@ const formatarNomeUsuario = (nome) => (
 );
 
 export default function Layout({ children }) {
-  const { usuario, logout, layout, setLayout } = useAuth();
+  const { usuario, logout, layout } = useAuth();
   const navigate = useNavigate();
   const [sidebarAberta, setSidebarAberta] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
-  };
-
-  const handleTrocarLayout = () => {
-    const novoLayout = layout === 'avancado' ? 'direto' : 'avancado';
-    const destinoDupla = novoLayout === 'avancado' ? '/igrejas' : '/direto/igrejas';
-    setLayout(novoLayout);
-    if ([PERFIS.DUPLA_MISSIONARIA, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil)) {
-      navigate(destinoDupla);
-      return;
-    }
-    if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) {
-      navigate(novoLayout === 'avancado' ? '/distritos' : '/direto/distritos');
-      return;
-    }
-    if (novoLayout === 'avancado') {
-      navigate('/regioes');
-    } else {
-      navigate('/direto/regioes');
-    }
   };
 
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
@@ -229,7 +210,6 @@ export default function Layout({ children }) {
           usuario={usuario}
           navLinks={navLinksVisiveis}
           handleLogout={handleLogout}
-          handleTrocarLayout={handleTrocarLayout}
           setSidebarAberta={setSidebarAberta}
           layout={layout}
         />
@@ -249,7 +229,6 @@ export default function Layout({ children }) {
              usuario={usuario}
              navLinks={navLinksVisiveis}
              handleLogout={handleLogout}
-             handleTrocarLayout={handleTrocarLayout}
              setSidebarAberta={setSidebarAberta}
              layout={layout}
            />
@@ -322,7 +301,7 @@ function BottomNavigation({ navLinks, onMenuClick }) {
   );
 }
 
-function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, setSidebarAberta, layout }) {
+function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, layout }) {
   const isDireto = layout === 'direto';
   const [submenuAberto, setSubmenuAberto] = useState(null);
 
@@ -407,18 +386,8 @@ function SidebarContent({ usuario, navLinks, handleLogout, handleTrocarLayout, s
         })}
       </nav>
 
-      {/* Trocar layout + Usuário */}
+      {/* Usuário */}
       <div className="flex-shrink-0 px-3 py-4 border-t border-white/10 bg-[#162d54]/40 backdrop-blur-sm">
-        {/* Botão trocar layout */}
-        <button
-          type="button"
-          onClick={handleTrocarLayout}
-          className="sidebar-link w-full text-[#C9963A]/80 hover:text-[#C9963A] hover:bg-[#C9963A]/10 mb-2"
-        >
-          {icons.trocaLayout}
-          Trocar para {isDireto ? 'Avançado' : 'Direto'}
-        </button>
-
         {/* Usuário logado */}
         <div className="bg-white/8 rounded-xl p-3 mb-3 backdrop-blur-sm border border-white/5">
           <div className="flex items-center gap-2.5">

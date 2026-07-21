@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import { ehAdmin, useAuth } from '../../contexts/AuthContext';
@@ -137,15 +137,15 @@ const tipoEstudoLabels = {
 };
 
 const tipoEstudoCadastroPath = {
-  UNICO: '/direto/cadastro/estudos-biblicos',
-  PONTO: '/direto/cadastro/ponto-estudo',
-  CLASSE: '/direto/cadastro/classe-biblica',
+  UNICO: '/cadastro/estudos-biblicos',
+  PONTO: '/cadastro/ponto-estudo',
+  CLASSE: '/cadastro/classe-biblica',
 };
 
 const tipoEstudoRelatorioPath = {
-  UNICO: '/direto/relatorios/estudos-biblicos',
-  PONTO: '/direto/relatorios/pontos-estudo',
-  CLASSE: '/direto/relatorios/classes-biblicas/registros',
+  UNICO: '/relatorios/estudos-biblicos',
+  PONTO: '/relatorios/pontos-estudo',
+  CLASSE: '/relatorios/classes-biblicas/registros',
 };
 
 const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
@@ -157,9 +157,9 @@ const progressoEstudo = (estudo) => {
   return Math.min(100, Math.round((atual / total) * 100));
 };
 
-const editarEstudoPath = (estudo) => {
+const editarEstudoPath = (estudo, prefix = '') => {
   const base = tipoEstudoCadastroPath[estudo?.tipoEstudo || 'UNICO'] || tipoEstudoCadastroPath.UNICO;
-  return `${base}/${estudo.id}/editar`;
+  return `${prefix}${base}/${estudo.id}/editar`;
 };
 
 const montarPayloadAtualizacaoLicao = (estudo, dadosLicao) => ({
@@ -284,7 +284,12 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
 
 export default function DuplasDireto() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { distritoId } = useParams();
   const [searchParams] = useSearchParams();
+  const isDireto = location.pathname.startsWith('/direto');
+  const prefix = isDireto ? '/direto' : '';
+  const caminho = (path) => `${prefix}${path}`;
   const classeParam = searchParams.get('classe');
   const statusParam = searchParams.get('status');
   const atividadeParam = searchParams.get('atividade');
@@ -394,7 +399,7 @@ export default function DuplasDireto() {
 
   useEffect(() => {
     let ativo = true;
-    api.get('/duplas').then(async (d) => {
+    api.get('/duplas', { params: { distritoId } }).then(async (d) => {
       if (!ativo) return;
       const lista = Array.isArray(d.data) ? d.data : [];
       const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
@@ -405,7 +410,7 @@ export default function DuplasDireto() {
       if (ativo) setCarregando(false);
     });
     return () => { ativo = false; };
-  }, []);
+  }, [distritoId]);
 
   useEffect(() => {
     setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
@@ -455,6 +460,7 @@ export default function DuplasDireto() {
       const matchClasse = pertenceClasseFiltro(d, filtroClasse);
       const matchAtividade = !filtroAtividade || getAtividadeDuplaDisplay(d) === filtroAtividade;
       const matchEstudoAtivo = estudoAtivoParam !== '1' || d.estudoAtualEmAndamento === true || d.statusEstudoBiblico === 'ATIVO' || temEstudoCadastrado(d);
+      const matchDistrito = !distritoId || String(d.distrito?.id || d.distritoId || '') === String(distritoId);
       const matchIgreja = !igrejaIdParam || String(d.igreja?.id || d.igrejaId || '') === igrejaIdParam;
       const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
@@ -464,9 +470,9 @@ export default function DuplasDireto() {
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
         || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
         || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
-      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial && matchBusca;
+      return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchDistrito && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial && matchBusca;
     });
-  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial, busca]);
+  }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, distritoId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial, busca]);
 
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
@@ -507,7 +513,7 @@ export default function DuplasDireto() {
 
   return (
     <>
-    <div className="flex h-full overflow-hidden animate-fade-in">
+    <div className="flex h-full min-h-[calc(100vh-8rem)] overflow-hidden animate-fade-in">
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
       <div className={`${
         mostraDetalhe ? 'hidden sm:flex' : 'flex'
@@ -518,7 +524,7 @@ export default function DuplasDireto() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-                <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Visão Direta</p>
+                <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">{isDireto ? 'Visão Direta' : 'Duplas Missionárias'}</p>
               </div>
               <h1 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                 Duplas
@@ -527,7 +533,7 @@ export default function DuplasDireto() {
             </div>
             <button
               type="button"
-              onClick={() => navigate('/direto/duplas/nova')}
+              onClick={() => navigate(caminho(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`))}
               className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2 flex-shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -816,7 +822,7 @@ export default function DuplasDireto() {
               <p className="text-sm">Nenhuma dupla encontrada.</p>
               <button
                 type="button"
-                onClick={() => navigate('/direto/duplas/nova')}
+                onClick={() => navigate(caminho(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`))}
                 className="btn-primary mt-4 text-xs px-4 py-2"
               >
                 Cadastrar dupla
@@ -918,7 +924,7 @@ export default function DuplasDireto() {
                   )}
                   <button
                     type="button"
-                    onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}
+                    onClick={() => navigate(caminho(`/duplas/${duplaSelecionada.id}/editar`))}
                     className="btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -928,7 +934,7 @@ export default function DuplasDireto() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}`)}
+                    onClick={() => navigate(caminho(`/duplas/${duplaSelecionada.id}`))}
                     className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1086,7 +1092,7 @@ export default function DuplasDireto() {
                         <button
                           key={tipo}
                           type="button"
-                          onClick={() => navigate(`${path}?duplaId=${duplaSelecionada.id}`)}
+                          onClick={() => navigate(`${prefix}${path}?duplaId=${duplaSelecionada.id}`)}
                           className="btn-outline text-xs px-3 py-1.5"
                         >
                           Novo {tipoEstudoLabels[tipo]}
@@ -1147,14 +1153,14 @@ export default function DuplasDireto() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => navigate(editarEstudoPath(estudo))}
+                                  onClick={() => navigate(editarEstudoPath(estudo, prefix))}
                                   className="btn-primary text-xs px-3 py-2"
                                 >
                                   Atualizar estudo
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => navigate(`${tipoEstudoRelatorioPath[estudo.tipoEstudo] || tipoEstudoRelatorioPath.UNICO}/${estudo.id}`)}
+                                  onClick={() => navigate(`${prefix}${tipoEstudoRelatorioPath[estudo.tipoEstudo] || tipoEstudoRelatorioPath.UNICO}/${estudo.id}`)}
                                   className="btn-outline text-xs px-3 py-2"
                                 >
                                   Ver detalhes

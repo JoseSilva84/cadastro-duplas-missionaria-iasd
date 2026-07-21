@@ -71,9 +71,10 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('usuario');
       }
     }
-    if (layoutSalvo) {
-      setLayoutState(layoutSalvo);
+    if (layoutSalvo !== 'avancado') {
+      localStorage.setItem('layout', 'avancado');
     }
+    setLayoutState('avancado');
     setCarregando(false);
   }, []);
 
@@ -82,7 +83,9 @@ export function AuthProvider({ children }) {
     const { data } = await api.post('/auth/login', { email, senha });
     localStorage.setItem('token', data.token);
     localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    localStorage.setItem('layout', 'avancado');
     setUsuario(data.usuario);
+    setLayoutState('avancado');
     return data.usuario;
   };
 
