@@ -76,13 +76,14 @@ export default function ListagemIgrejas() {
           <p className="text-gray-400 text-xs mt-1">{igrejas.length} congregações cadastradas</p>
         </div>
         <div className="relative w-full sm:w-72">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
             placeholder="Buscar por nome ou distrito..."
             className="input-field pl-12"
+            style={{ paddingLeft: '3.25rem' }}
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
           />

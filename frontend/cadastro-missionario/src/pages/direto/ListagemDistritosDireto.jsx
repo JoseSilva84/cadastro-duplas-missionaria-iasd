@@ -64,13 +64,14 @@ export default function ListagemDistritosDireto() {
 
           {/* Campo de busca */}
           <div className="relative mt-3">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
               placeholder="Buscar por nome ou região..."
               className="w-full pl-10 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/20 focus:border-[#1A3A6B]/40 bg-gray-50 text-gray-700 placeholder-gray-400 transition-all"
+              style={{ paddingLeft: '2.875rem' }}
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
