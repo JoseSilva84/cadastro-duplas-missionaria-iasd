@@ -4,6 +4,11 @@ import { useAuth, PERFIS } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
 
 const icons = {
+  dashboard: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z" />
+    </svg>
+  ),
   regioes: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
@@ -78,11 +83,11 @@ export default function LayoutDireto() {
 
   const handleTrocarLayout = () => {
     setLayout('avancado');
-    if ([PERFIS.DUPLA_MISSIONARIA, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil)) {
+    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
       navigate('/igrejas');
       return;
     }
-    navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
+    navigate('/dashboard');
   };
 
   const isAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuario?.perfil);
@@ -151,10 +156,12 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
   ] : isDiretorMissionario ? [
+    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
   ] : [
+    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', shortLabel: 'Reg.', icon: icons.regioes }] : []),
     { to: '/direto/distritos', label: 'Distritos', shortLabel: 'Dist.', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', shortLabel: 'Igrej.', icon: icons.igrejas },

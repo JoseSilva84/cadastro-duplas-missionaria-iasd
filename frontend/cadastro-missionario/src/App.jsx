@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla, ehDiretorMissionarioIgreja } from './contexts/AuthContext';
+import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 
 // Páginas
@@ -23,6 +23,7 @@ import EstudanteDashboard from './pages/EstudanteDashboard';
 import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
 import DashboardCoordenadorRegional from './pages/DashboardCoordenadorRegional';
 import DashboardAssociacao from './pages/DashboardAssociacao';
+import Dashboard from './pages/Dashboard';
 import RelatorioPersonalizado from './pages/RelatorioPersonalizado';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
@@ -84,9 +85,8 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
 
 function destinoInicial(usuario, layout = 'avancado') {
   const prefix = layout === 'direto' ? '/direto' : '';
-  if (ehDupla(usuario) || ehDiretorMissionarioIgreja(usuario)) return `${prefix}/igrejas`;
-  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return `${prefix}/distritos`;
-  return `${prefix}/regioes`;
+  if (ehDupla(usuario)) return `${prefix}/igrejas`;
+  return `${prefix}/dashboard`;
 }
 
 // ─── Redireciona para escolha de layout ou rota correta após login ────────────
@@ -163,6 +163,17 @@ function AppRoutes() {
         <Route index element={<RedirectPosLogin />} />
 
         {/* Regiões — bloqueado para DUPLA_MISSIONARIA (já tratado em RotaBloqueadaParaDupla) */}
+        <Route
+          path="dashboard"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}
+              redirectTo="/igrejas"
+            >
+              <Dashboard />
+            </RotaComPerfis>
+          }
+        />
         <Route
           path="regioes"
           element={
@@ -306,6 +317,17 @@ function AppRoutes() {
         }
       >
         <Route index element={<RedirectPosLogin />} />
+        <Route
+          path="dashboard"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}
+              redirectTo="/direto/igrejas"
+            >
+              <Dashboard />
+            </RotaComPerfis>
+          }
+        />
         <Route
           path="regioes"
           element={

@@ -3,6 +3,11 @@ import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const icons = {
+  dashboard: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z" />
+    </svg>
+  ),
   regioes: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
@@ -97,6 +102,7 @@ export default function Layout({ children }) {
 
   const navLinks = isDupla || isDiretorMissionario
     ? [
+        ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/dashboard' : '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -118,6 +124,7 @@ export default function Layout({ children }) {
       ]
     : isDireto
     ? [
+        { to: '/direto/dashboard', label: 'Dashboard', icon: icons.dashboard },
         ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
@@ -150,6 +157,7 @@ export default function Layout({ children }) {
         ] }] : []),
       ]
     : [
+        { to: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
         ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
