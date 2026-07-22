@@ -108,9 +108,9 @@ export default function ListagemDistritos() {
         </div>
       </div>
 
-      <div className="flex gap-6 h-[calc(100vh-260px)] min-h-[400px]">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-260px)] lg:min-h-[400px]">
         {/* Lista de distritos */}
-        <div className="w-72 lg:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-y-auto">
+        <div className="w-full lg:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden lg:overflow-y-auto">
           {distritosFiltrados.map((distrito) => {
             const sel = distritoSelecionado?.id === distrito.id;
             return (
@@ -129,17 +129,20 @@ export default function ListagemDistritos() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className={`text-sm font-semibold truncate ${sel ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>{distrito.nome}</p>
                     {distrito.regiao && (
                       <p className="text-[10px] text-gray-400 truncate uppercase tracking-wide">{distrito.regiao.nome}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-[10px] text-gray-400">👨‍👩‍👧‍👦 {(distrito.membros || 0).toLocaleString('pt-BR')}</span>
                       <span className="text-[10px] text-gray-400">⛪ {(distrito.igrejas || []).length}</span>
                       <span className="text-[10px] font-bold text-[#1A3A6B]">👥 {distrito._count?.duplas || distrito.duplas?.length || 0}</span>
                     </div>
                   </div>
+                  <span className="lg:hidden flex-shrink-0 rounded-full bg-[#1A3A6B]/8 px-2 py-1 text-[10px] font-bold text-[#1A3A6B]">
+                    Ver
+                  </span>
                 </div>
               </button>
             );
@@ -151,7 +154,7 @@ export default function ListagemDistritos() {
 
         {/* Painel de detalhes */}
         {distritoSelecionado && (
-          <div key={distritoSelecionado.id} className="flex-1 overflow-y-auto animate-fade-in">
+          <div key={distritoSelecionado.id} className="hidden lg:block flex-1 overflow-y-auto animate-fade-in">
             {/* Cabeçalho do detalhe */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-4">
               <div className="flex items-start justify-between gap-4 flex-wrap">

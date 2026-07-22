@@ -10,6 +10,7 @@ export default function ListagemIgrejas() {
   const podeExcluir = ehAdmin(usuario);
   const [igrejas, setIgrejas] = useState([]);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);
+  const [igrejaModal, setIgrejaModal] = useState(null);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
@@ -27,6 +28,13 @@ export default function ListagemIgrejas() {
     const termo = busca.toLowerCase();
     return !termo || ig.nome.toLowerCase().includes(termo) || ig.distrito?.nome?.toLowerCase().includes(termo);
   });
+
+  const selecionarIgreja = (igreja) => {
+    setIgrejaSelecionada(igreja);
+    if (window.matchMedia('(max-width: 1279px)').matches) {
+      setIgrejaModal(igreja);
+    }
+  };
 
   const excluirIgreja = async () => {
     if (!igrejaSelecionada) return;
@@ -91,7 +99,7 @@ export default function ListagemIgrejas() {
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 min-h-[520px]">
-        <div className="xl:w-80 flex-shrink-0 bg-white rounded-lg border border-gray-100 shadow-sm overflow-y-auto max-h-[calc(100vh-220px)]">
+        <div className="xl:w-80 flex-shrink-0 bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden xl:overflow-y-auto xl:max-h-[calc(100vh-220px)]">
           <div className="pb-6">
             {igrejasFiltradas.map((igreja) => {
               const sel = igrejaSelecionada?.id === igreja.id;
@@ -103,7 +111,7 @@ export default function ListagemIgrejas() {
                     sel ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]' : 'border-l-transparent hover:bg-gray-50'
                   }`}
                 >
-                  <button type="button" onClick={() => setIgrejaSelecionada(igreja)} className="w-full text-left flex items-center gap-3">
+                  <button type="button" onClick={() => selecionarIgreja(igreja)} className="w-full text-left flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-lg bg-[#16a34a]/10 flex items-center justify-center flex-shrink-0 transition-transform ${sel ? 'scale-110' : ''}`}>
                       <span className="text-lg">⛪</span>
                     </div>
@@ -135,7 +143,7 @@ export default function ListagemIgrejas() {
           </div>
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="hidden xl:block flex-1 min-w-0">
           {igrejaSelecionada && (
             <IgrejaCapa
               igreja={igrejaSelecionada}
@@ -144,6 +152,43 @@ export default function ListagemIgrejas() {
           )}
         </div>
       </div>
+
+      {igrejaModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-[#0f2347]/45 backdrop-blur-sm xl:hidden"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIgrejaModal(null)}
+        >
+          <div
+            className="max-h-[88vh] w-full overflow-hidden rounded-t-2xl bg-[#F4F5F7] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#C9963A]">Capa da igreja</p>
+                <h2 className="truncate text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  {igrejaModal.nome}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIgrejaModal(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl font-bold text-gray-500"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+            <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-3 pb-6">
+              <IgrejaCapa
+                igreja={igrejaModal}
+                onNovaDupla={() => navigate(`/duplas/nova?igrejaId=${igrejaModal.id}&distritoId=${igrejaModal.distritoId}`)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
