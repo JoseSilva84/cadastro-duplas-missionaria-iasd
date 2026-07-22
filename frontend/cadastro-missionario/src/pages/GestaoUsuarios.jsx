@@ -631,7 +631,7 @@ export default function GestaoUsuarios() {
       <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -639,7 +639,7 @@ export default function GestaoUsuarios() {
               placeholder="Buscar por nome ou e-mail"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-[#1A3A6B]/20"
+              className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-12 pr-4 text-sm outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-[#1A3A6B]/20"
             />
           </div>
           <select
