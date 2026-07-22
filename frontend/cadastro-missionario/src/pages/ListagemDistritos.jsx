@@ -37,6 +37,56 @@ const BadgeEvangelismo = ({ status }) => {
   return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status]}`}>{label[status]}</span>;
 };
 
+const IconBase = ({ children, className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const MembersIcon = () => (
+  <IconBase>
+    <circle cx="8" cy="8" r="3" strokeWidth={2} />
+    <circle cx="16" cy="8" r="3" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-1a5 5 0 015-5M21 21v-1a5 5 0 00-5-5M8 15h8" />
+  </IconBase>
+);
+
+const ChurchIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v8M9 6h6M4 21v-8a2 2 0 012-2h12a2 2 0 012 2v8" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 21v-5a3 3 0 016 0v5M2 21h20" />
+  </IconBase>
+);
+
+const UsersIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </IconBase>
+);
+
+const BookOpenIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 7v14" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5.5A2.5 2.5 0 015.5 3H12v18H5.5A2.5 2.5 0 013 18.5v-13zM12 3h6.5A2.5 2.5 0 0121 5.5v13a2.5 2.5 0 01-2.5 2.5H12V3z" />
+  </IconBase>
+);
+
+const MegaphoneIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13V8a2 2 0 012-2h2l9-3v16l-9-3H6a2 2 0 01-2-2v-1z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16l1.5 4H12l-1.5-4M20 8.5a4 4 0 010 5" />
+  </IconBase>
+);
+
+const DropletIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3.5S5.5 10.4 5.5 15a6.5 6.5 0 0013 0C18.5 10.4 12 3.5 12 3.5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 16.5A3.2 3.2 0 0012 19" />
+  </IconBase>
+);
+
 export default function ListagemDistritos() {
   const navigate = useNavigate();
   const [distritos, setDistritos] = useState([]);
@@ -197,15 +247,15 @@ export default function ListagemDistritos() {
             {/* Cards de indicadores */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
               {[
-                { label: 'Membros', valor: (distritoSelecionado.membros || 0).toLocaleString('pt-BR'), icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
-                { label: 'Igrejas', valor: (distritoSelecionado.igrejas || []).length, icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
-                { label: 'Duplas', valor: distritoSelecionado._count?.duplas || 0, icon: '👥', gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
-                { label: 'Est. Bíblicos', valor: estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
-                { label: 'Classes Bíblicas', valor: evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
-                { label: 'Batismos', valor: totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
+                { label: 'Membros', valor: (distritoSelecionado.membros || 0).toLocaleString('pt-BR'), icon: <MembersIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
+                { label: 'Igrejas', valor: (distritoSelecionado.igrejas || []).length, icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
+                { label: 'Duplas', valor: distritoSelecionado._count?.duplas || 0, icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
+                { label: 'Est. Bíblicos', valor: estudosAtivos, icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
+                { label: 'Classes Bíblicas', valor: evangelismosAtivos, icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
+                { label: 'Batismos', valor: totalBatismos, icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
               ].map((item, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg shadow-md mb-1.5 group-hover:scale-110 transition-transform`}>
+                <div key={idx} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35 transition-all duration-300">
+                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg shadow-md mb-1.5 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
                     {item.icon}
                   </div>
                   <p className="text-lg font-bold" style={{ color: item.cor }}>{item.valor}</p>

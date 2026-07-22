@@ -146,10 +146,10 @@ const InfoLinha = ({ label, valor }) => (
 );
 
 const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
-  <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
+  <section className="group bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/45 hover:shadow-xl">
     <div className="mb-3 min-h-20">
       <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo}</p>
-      <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
+      <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
     </div>
     <FotoBloco src={foto} alt={pessoa.nome || titulo} onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
     <div className="mt-3">
@@ -688,10 +688,10 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
         <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onFotoClick={setFotoAmpliada} />
         <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
 
-        <section className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0">
+        <section className="group bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/45 hover:shadow-xl">
           <div className="mb-3 min-h-20">
             <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Coluna 4</p>
-            <h3 className="text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
+            <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
           </div>
           <FotoBloco
             src={fotos.igreja}

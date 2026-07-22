@@ -5,6 +5,41 @@ import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
+const IconBase = ({ children, className = 'w-6 h-6 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const UsersIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </IconBase>
+);
+
+const CheckIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M20 6L9 17l-5-5" />
+  </IconBase>
+);
+
+const ClockIcon = () => (
+  <IconBase>
+    <circle cx="12" cy="12" r="8.5" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M12 7v5l3 2" />
+  </IconBase>
+);
+
+const TargetIcon = () => (
+  <IconBase>
+    <circle cx="12" cy="12" r="8" strokeWidth={2} />
+    <circle cx="12" cy="12" r="4" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </IconBase>
+);
+
 export default function Regioes() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
@@ -66,14 +101,14 @@ export default function Regioes() {
        {resumo && (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 stagger-children">
           {[
-            { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionarias cadastradas em todas as regioes.' },
-            { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Duplas ativas: quantidade de duplas com status ATIVA.' },
-            { label: 'Duplas Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas pendentes: quantidade de duplas aguardando ativacao ou regularizacao.' },
-            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Metas de contatos: soma das pessoas alcancadas informadas pelas duplas.' },
+            { label: 'Total de Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionarias cadastradas em todas as regioes.' },
+            { label: 'Duplas Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: <CheckIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Duplas ativas: quantidade de duplas com status ATIVA.' },
+            { label: 'Duplas Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: <ClockIcon />, gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas pendentes: quantidade de duplas aguardando ativacao ou regularizacao.' },
+            { label: 'Metas de Contatos', valor: resumo.totalPessoasAlcancadas, cor: '#7B2D8B', icon: <TargetIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Metas de contatos: soma das pessoas alcancadas informadas pelas duplas.' },
           ].map((item) => (
             <div
               key={item.label}
-              className="smart-tooltip smart-tooltip-up card group hover:-translate-y-1 transition-all duration-300 cursor-default"
+              className="smart-tooltip smart-tooltip-up card group hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35 transition-all duration-300 cursor-default"
               data-tooltip={item.tooltip}
               tabIndex={0}
               style={{ borderTop: `3px solid ${item.cor}` }}

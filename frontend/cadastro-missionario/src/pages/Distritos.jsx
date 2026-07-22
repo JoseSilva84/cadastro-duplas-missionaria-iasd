@@ -14,6 +14,42 @@ const FotoConselheiro = ({ src, nome }) => {
   );
 };
 
+const IconBase = ({ children, className = 'w-6 h-6 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const BuildingIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 21V5a2 2 0 012-2h12a2 2 0 012 2v16" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M8 7h2M14 7h2M8 11h2M14 11h2M10 21v-5a2 2 0 014 0v5" />
+  </IconBase>
+);
+
+const ChurchIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v8M9 6h6M4 21v-8a2 2 0 012-2h12a2 2 0 012 2v8" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 21v-5a3 3 0 016 0v5M2 21h20" />
+  </IconBase>
+);
+
+const UsersIcon = () => (
+  <IconBase>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </IconBase>
+);
+
+const MembersIcon = () => (
+  <IconBase>
+    <circle cx="8" cy="8" r="3" strokeWidth={2} />
+    <circle cx="16" cy="8" r="3" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-1a5 5 0 015-5M21 21v-1a5 5 0 00-5-5M8 15h8" />
+  </IconBase>
+);
+
 export default function Distritos() {
   const { regiaoId } = useParams();
   const navigate = useNavigate();
@@ -119,20 +155,20 @@ export default function Distritos() {
 
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
         {[
-          { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: '🏛️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Distritos: total de distritos vinculados a esta regiao.' },
-          { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Igrejas: soma das igrejas cadastradas nos distritos desta regiao.' },
-          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: '👥', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas: soma das duplas missionarias vinculadas aos distritos desta regiao.' },
-          { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Membros: soma de membros informados nos distritos desta regiao.' },
+          { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: <BuildingIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Distritos: total de distritos vinculados a esta regiao.' },
+          { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Igrejas: soma das igrejas cadastradas nos distritos desta regiao.' },
+          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: <UsersIcon />, gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas: soma das duplas missionarias vinculadas aos distritos desta regiao.' },
+          { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: <MembersIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Membros: soma de membros informados nos distritos desta regiao.' },
         ].map((item) => (
           <div
             key={item.label}
-            className="smart-tooltip smart-tooltip-up card group cursor-default"
+            className="smart-tooltip smart-tooltip-up card group cursor-default hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35 transition-all duration-300"
             data-tooltip={item.tooltip}
             tabIndex={0}
             style={{ borderTop: `3px solid ${item.cor}` }}
           >
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl sm:text-2xl shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl sm:text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                 {item.icon}
               </div>
               <div>
