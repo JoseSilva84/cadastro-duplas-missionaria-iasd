@@ -109,7 +109,7 @@ export default function LayoutDireto() {
   const relatorioItems = [
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
     { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
-    { to: '/direto/relatorios/dashboard-associacao', label: 'Assoc. Paulistana', icon: 'AP' },
+    { to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' },
     ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
     { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },

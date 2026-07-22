@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -118,9 +118,9 @@ function DestaqueRanking({ label, item, cor, icon, detalhe }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
           <p className="text-lg font-bold text-[#1A3A6B] truncate mt-1">{item?.nome || 'Sem dados'}</p>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 mt-2">
-            <p className="min-w-0 text-xs text-gray-400 leading-snug">{detalhe || 'Maior volume registrado'}</p>
-            <p className="max-w-24 text-right text-2xl font-bold leading-none break-words" style={{ color: cor }}>{numero(item?.total)}</p>
+          <div className="mt-2">
+            <p className="text-xs text-gray-400 leading-snug">{detalhe || 'Maior volume registrado'}</p>
+            <p className="mt-1 text-right text-2xl font-bold leading-none break-words" style={{ color: cor }}>{numero(item?.total)}</p>
           </div>
         </div>
       </div>
@@ -366,11 +366,19 @@ export default function DashboardAssociacao() {
     const maximo = Math.max(...lista.map((item) => item.valor || 0), 1);
     return {
       color: ['#1A3A6B'],
-      tooltip: { trigger: 'axis', appendToBody: true, confine: false },
+      tooltip: {
+        trigger: 'item',
+        appendToBody: true,
+        confine: false,
+        formatter: () => lista.map((item) => (
+          `${item.nome}: <strong>${numero(item.valor)}</strong> ${item.nome === 'Pessoas' ? 'pessoas alcancadas' : item.nome.toLowerCase()}`
+        )).join('<br/>'),
+      },
       radar: {
-        radius: '64%',
+        center: ['51%', '55%'],
+        radius: '48%',
         indicator: lista.map((item) => ({ name: item.nome, max: maximo })),
-        axisName: { color: '#475569', fontSize: 11 },
+        axisName: { color: '#475569', fontSize: 11, padding: [2, 4] },
         splitLine: { lineStyle: { color: '#e5e7eb' } },
         splitArea: { areaStyle: { color: ['rgba(26,58,107,0.03)', 'rgba(201,150,58,0.05)'] } },
         axisLine: { lineStyle: { color: '#cbd5e1' } },
@@ -467,12 +475,8 @@ export default function DashboardAssociacao() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Associação Paulistana</p>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Duplas Missionárias</p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Ministério Pessoal e Escola Sabatina
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">Visão de resumo solicitada no planejamento das mudanças.</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -722,7 +726,7 @@ export default function DashboardAssociacao() {
       </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
-        <Painel titulo="Duplas Missionárias" subtitulo="Dashboard de desempenho" cor="#1A3A6B">
+        <Painel titulo="Duplas" subtitulo="Dashboard de desempenho" cor="#1A3A6B">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} tooltip="Total de duplas missionarias cadastradas no escopo do dashboard." cor="#1A3A6B" icon={<UsersIcon />} />
             <DestaqueRanking
@@ -730,14 +734,14 @@ export default function DashboardAssociacao() {
               item={dashboardDuplas.regiaoMaisDuplas}
               cor="#C9963A"
               icon={<VisitIcon />}
-              detalhe="duplas missionárias"
+              detalhe="duplas"
             />
             <DestaqueRanking
               label="Distrito com mais duplas"
               item={dashboardDuplas.distritoMaisDuplas}
               cor="#0d9488"
               icon={<GaugeIcon />}
-              detalhe="duplas missionárias"
+              detalhe="duplas"
             />
           </div>
 
