@@ -165,10 +165,17 @@ export default function ListagemDistritos() {
           {distritosFiltrados.map((distrito) => {
             const sel = distritoSelecionado?.id === distrito.id;
             return (
-              <button
+              <div
                 key={distrito.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/distritos/${distrito.id}/duplas`)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(`/distritos/${distrito.id}/duplas`);
+                  }
+                }}
                 className={`w-full text-left px-4 py-3.5 border-l-[3px] transition-all duration-200 ${
                   sel ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]' : 'border-l-transparent hover:bg-gray-50'
                 }`}
@@ -181,7 +188,32 @@ export default function ListagemDistritos() {
                     </svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-semibold truncate ${sel ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>{distrito.nome}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className={`text-sm font-semibold truncate ${sel ? 'text-[#C9963A]' : 'text-[#1A3A6B]'}`}>{distrito.nome}</p>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setDistritoSelecionado(distrito);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDistritoSelecionado(distrito);
+                          }
+                        }}
+                        className={`min-h-0 flex-shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-200 ${
+                          sel
+                            ? 'bg-[#C9963A]/15 text-[#C9963A]'
+                            : 'bg-[#1A3A6B]/8 text-[#1A3A6B] hover:bg-[#C9963A]/15 hover:text-[#C9963A]'
+                        }`}
+                        title={`Ver parcial de ${distrito.nome}`}
+                      >
+                        Parcial
+                      </button>
+                    </div>
                     {distrito.regiao && (
                       <p className="text-[10px] text-gray-400 truncate uppercase tracking-wide">{distrito.regiao.nome}</p>
                     )}
@@ -195,7 +227,7 @@ export default function ListagemDistritos() {
                     Ver
                   </span>
                 </div>
-              </button>
+              </div>
             );
           })}
           {distritosFiltrados.length === 0 && (
