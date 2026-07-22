@@ -90,6 +90,27 @@ const UsersIcon = ({ className = 'w-5 h-5 text-white' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
   </svg>
 );
+
+const BookOpenIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 7v14" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5.5A2.5 2.5 0 015.5 3H12v18H5.5A2.5 2.5 0 013 18.5v-13zM12 3h6.5A2.5 2.5 0 0121 5.5v13a2.5 2.5 0 01-2.5 2.5H12V3z" />
+  </svg>
+);
+
+const MegaphoneIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13V8a2 2 0 012-2h2l9-3v16l-9-3H6a2 2 0 01-2-2v-1z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16l1.5 4H12l-1.5-4M20 8.5a4 4 0 010 5" />
+  </svg>
+);
+
+const DropletIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3.5S5.5 10.4 5.5 15a6.5 6.5 0 0013 0C18.5 10.4 12 3.5 12 3.5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 16.5A3.2 3.2 0 0012 19" />
+  </svg>
+);
 const classeRegras = {
   A: 'Classe A: levou pessoa ao batismo e possui pelo menos 1 estudo cadastrado.',
   B: 'Classe B: já deu estudo bíblico, mas ainda não registrou batismo.',
@@ -417,9 +438,9 @@ export default function Duplas() {
             { label: 'Igrejas', valor: distrito.igrejas?.length || 0, cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
             { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
           ] : []),
-          { label: 'Estudos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
-          { label: 'Classe Bíblica', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]' },
-          { label: 'Batismos', valor: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0), cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
+          { label: 'Estudos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
+          { label: 'Classe Bíblica', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
+          { label: 'Batismos', valor: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0), cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
         ].map((item, idx) => (
           <div key={idx} className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">
             <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2 group-hover:scale-110 transition-transform`}>

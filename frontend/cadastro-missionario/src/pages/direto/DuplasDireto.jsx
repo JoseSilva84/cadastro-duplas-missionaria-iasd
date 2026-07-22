@@ -28,6 +28,27 @@ const UsersIcon = ({ className = 'w-5 h-5 text-white' }) => (
   </svg>
 );
 
+const BookOpenIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 7v14" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5.5A2.5 2.5 0 015.5 3H12v18H5.5A2.5 2.5 0 013 18.5v-13zM12 3h6.5A2.5 2.5 0 0121 5.5v13a2.5 2.5 0 01-2.5 2.5H12V3z" />
+  </svg>
+);
+
+const MegaphoneIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13V8a2 2 0 012-2h2l9-3v16l-9-3H6a2 2 0 01-2-2v-1z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16l1.5 4H12l-1.5-4M20 8.5a4 4 0 010 5" />
+  </svg>
+);
+
+const DropletIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3.5S5.5 10.4 5.5 15a6.5 6.5 0 0013 0C18.5 10.4 12 3.5 12 3.5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 16.5A3.2 3.2 0 0012 19" />
+  </svg>
+);
+
 // Link clicável do WhatsApp Web
 const WhatsAppLink = ({ numero }) => {
   if (!numero) return null;
@@ -343,9 +364,9 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, navigate }) => 
 
   const cards = [
     { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
-    { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
-    { label: 'Classe Biblica', valor: totalClasses, cor: '#ea580c', icon: '📣', gradient: 'from-[#ea580c] to-[#f97316]' },
-    { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
+    { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
+    { label: 'Classe Biblica', valor: totalClasses, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
+    { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
   ];
 
   return (
