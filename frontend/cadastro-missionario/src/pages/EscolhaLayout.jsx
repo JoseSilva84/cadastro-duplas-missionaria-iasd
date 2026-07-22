@@ -42,9 +42,9 @@ export default function EscolhaLayout() {
     setLayout(layoutId);
     setTimeout(() => {
       if (layoutId === 'avancado') {
-        navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
+        navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/dashboard');
       } else {
-        navigate(usuario?.perfil === PERFIS.PASTOR_DISTRITAL ? '/direto/distritos' : '/direto/regioes');
+        navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/direto/igrejas' : '/direto/dashboard');
       }
     }, 400);
   };

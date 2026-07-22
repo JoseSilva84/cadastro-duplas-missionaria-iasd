@@ -58,7 +58,7 @@ export default function Login() {
     setCarregando(true);
     try {
       const usuarioLogado = await login(form.email, form.senha);
-      navigate(usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL ? '/distritos' : '/regioes');
+      navigate(usuarioLogado?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/dashboard');
     } catch (err) {
       console.error('Erro no login:', err);
       const mensagem = err.response?.data?.erro
