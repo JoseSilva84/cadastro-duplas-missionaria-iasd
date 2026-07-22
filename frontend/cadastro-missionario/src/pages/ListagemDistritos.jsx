@@ -117,10 +117,11 @@ export default function ListagemDistritos() {
               <button
                 key={distrito.id}
                 type="button"
-                onClick={() => setDistritoSelecionado(distrito)}
+                onClick={() => navigate(`/distritos/${distrito.id}/duplas`)}
                 className={`w-full text-left px-4 py-3.5 border-l-[3px] transition-all duration-200 ${
                   sel ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]' : 'border-l-transparent hover:bg-gray-50'
                 }`}
+                title={`Ver duplas de ${distrito.nome}`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0 transition-transform ${sel ? 'scale-110' : ''}`}>
@@ -136,6 +137,7 @@ export default function ListagemDistritos() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-gray-400">👨‍👩‍👧‍👦 {(distrito.membros || 0).toLocaleString('pt-BR')}</span>
                       <span className="text-[10px] text-gray-400">⛪ {(distrito.igrejas || []).length}</span>
+                      <span className="text-[10px] font-bold text-[#1A3A6B]">👥 {distrito._count?.duplas || distrito.duplas?.length || 0}</span>
                     </div>
                   </div>
                 </div>

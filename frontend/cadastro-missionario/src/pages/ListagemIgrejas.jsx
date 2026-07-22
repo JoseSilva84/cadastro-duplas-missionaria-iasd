@@ -91,8 +91,8 @@ export default function ListagemIgrejas() {
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 min-h-[520px]">
-        <div className="xl:w-80 flex-shrink-0 bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-          <div className="max-h-[260px] xl:max-h-[calc(100vh-260px)] overflow-y-auto">
+        <div className="xl:w-80 flex-shrink-0 bg-white rounded-lg border border-gray-100 shadow-sm overflow-y-auto max-h-[calc(100vh-220px)]">
+          <div className="pb-6">
             {igrejasFiltradas.map((igreja) => {
               const sel = igrejaSelecionada?.id === igreja.id;
               const totalDuplas = igreja._count?.duplas ?? igreja.duplas?.length ?? 0;
@@ -118,15 +118,13 @@ export default function ListagemIgrejas() {
                           {igreja.classeBiblica.classe ? `Classe ${igreja.classeBiblica.classe}` : 'Sem classificação'} · {igreja.classeBiblica.totalEstudantes || 0} estudantes
                         </p>
                       )}
+                      <span
+                        className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#1A3A6B]/8 px-2 py-1 text-[10px] font-bold text-[#1A3A6B]"
+                        title={`Duplas de ${igreja.nome}`}
+                      >
+                        👥 {totalDuplas} dupla{totalDuplas === 1 ? '' : 's'}
+                      </span>
                     </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/duplas?igrejaId=${igreja.id}`)}
-                    className="mt-2 inline-flex min-h-0 items-center gap-1 rounded-full bg-[#1A3A6B]/8 px-2 py-1 text-[10px] font-bold text-[#1A3A6B] transition hover:bg-[#1A3A6B] hover:text-white"
-                    title={`Ver duplas de ${igreja.nome}`}
-                  >
-                    👥 {totalDuplas} dupla{totalDuplas === 1 ? '' : 's'}
                   </button>
                 </div>
               );
