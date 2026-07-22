@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { toast } from '../lib/toast';
 import AvatarUpload from './AvatarUpload';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 
 const formatarNumero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -363,6 +364,19 @@ const WhatsAppLinkIgreja = ({ numero }) => {
 };
 
 const getEstudosDupla = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
+const progressoEstudo = (estudo) => {
+  const total = totalLicoesSerie(estudo?.serie);
+  const atual = Number(estudo?.licaoAtual || 0);
+  if (!total || !atual) return 0;
+  return Math.min(100, Math.round((atual / total) * 100));
+};
+
+const tipoEstudoInfo = {
+  UNICO: { label: 'Estudo Bíblico', path: '/relatorios/estudos-biblicos', cor: '#0284c7' },
+  PONTO: { label: 'Ponto de Estudo', path: '/relatorios/pontos-estudo', cor: '#0f766e' },
+  CLASSE: { label: 'Classe Bíblica', path: '/relatorios/classes-biblicas/registros', cor: '#ea580c' },
+};
 const temEstudoNaoRegistradoDupla = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
   && getEstudosDupla(dupla) === 0
@@ -405,17 +419,32 @@ const InfoDupla = ({ label, valor, onClick }) => {
   );
 };
 
-const ModalDupla = ({ dupla, onClose, onNavigate }) => {
+const ModalDupla = ({ dupla, onClose, onNavigate, prefix = '' }) => {
   if (!dupla) return null;
   const cor = statusColors[dupla.status] || '#9ca3af';
   const label = statusLabels[dupla.status] || dupla.status;
-  const estudos = dupla._count?.estudosBiblicos ?? dupla.estudosBiblicos?.length ?? 0;
-  const classesB = dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0;
+  const estudosLista = Array.isArray(dupla.estudosBiblicos) ? dupla.estudosBiblicos : [];
+  const estudosIndividuais = estudosLista.filter((estudo) => (estudo.tipoEstudo || 'UNICO') === 'UNICO');
+  const classesLista = estudosLista.filter((estudo) => estudo.tipoEstudo === 'CLASSE');
+  const pontosLista = estudosLista.filter((estudo) => estudo.tipoEstudo === 'PONTO');
+  const estudos = estudosLista.length > 0 ? estudosIndividuais.length : (dupla._count?.estudosBiblicos ?? 0);
+  const classesB = estudosLista.length > 0 ? classesLista.length : (dupla._count?.acompanhamentos ?? dupla.acompanhamentos?.length ?? 0);
   const classe = dupla.classificacaoDupla || '';
   const igrejaId = dupla.igreja?.id || dupla.igrejaId || '';
-  const abrirEstudos = () => onNavigate?.(`/direto/relatorios/estudos-biblicos?duplaId=${dupla.id}`);
-  const abrirClasses = () => onNavigate?.(`/direto/relatorios/classes-biblicas/registros?duplaId=${dupla.id}`);
-  const abrirClassificacao = () => onNavigate?.(`/direto/duplas?classe=${classe}${igrejaId ? `&igrejaId=${igrejaId}` : ''}`);
+  const abrirListaOuUnico = (lista, basePath) => {
+    if (lista.length === 1) {
+      onNavigate?.(`${prefix}${basePath}/${lista[0].id}`);
+      return;
+    }
+    onNavigate?.(`${prefix}${basePath}?duplaId=${dupla.id}`);
+  };
+  const abrirEstudos = () => abrirListaOuUnico(estudosIndividuais, '/relatorios/estudos-biblicos');
+  const abrirClasses = () => abrirListaOuUnico(classesLista, '/relatorios/classes-biblicas/registros');
+  const abrirClassificacao = () => onNavigate?.(`${prefix}/duplas?classe=${classe}${igrejaId ? `&igrejaId=${igrejaId}` : ''}`);
+  const abrirEstudo = (estudo) => {
+    const info = tipoEstudoInfo[estudo.tipoEstudo || 'UNICO'] || tipoEstudoInfo.UNICO;
+    onNavigate?.(`${prefix}${info.path}/${estudo.id}`);
+  };
 
   const Membro = ({ titulo, foto, nome, dados }) => (
     <div className="bg-[#F4F5F7] rounded-xl p-4">
@@ -439,6 +468,88 @@ const ModalDupla = ({ dupla, onClose, onNavigate }) => {
     const d = new Date(valor);
     if (Number.isNaN(d.getTime())) return '';
     return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  };
+
+  const EstudoCard = ({ estudo }) => {
+    const info = tipoEstudoInfo[estudo.tipoEstudo || 'UNICO'] || tipoEstudoInfo.UNICO;
+    const progresso = progressoEstudo(estudo);
+    const totalLicoes = totalLicoesSerie(estudo.serie);
+    const participantes = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)
+      ? (estudo.participantes?.length || 0)
+      : 1;
+
+    return (
+      <button
+        type="button"
+        onClick={() => abrirEstudo(estudo)}
+        className="group w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span
+                className="rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide"
+                style={{ backgroundColor: `${info.cor}18`, color: info.cor }}
+              >
+                {info.label}
+              </span>
+              <span className="text-[10px] font-semibold text-gray-400">
+                Atualizado em {formatarData(estudo.atualizadoEm) || 'Não informado'}
+              </span>
+            </div>
+            <h4 className="font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]">
+              {estudo.nomeEstudante || 'Estudante sem nome'}
+            </h4>
+            <p className="mt-1 text-xs text-gray-500">
+              {getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-[#F4F5F7] px-3 py-2 text-center sm:min-w-24">
+            <p className="text-lg font-bold text-[#1A3A6B]">{progresso}%</p>
+            <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Progressão</p>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-gray-400">
+            <span>Onde parou</span>
+            <span>{totalLicoes ? `${estudo.licaoAtual || 0}/${totalLicoes}` : `Lição ${estudo.licaoAtual || 0}`}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${progresso}%`, background: `linear-gradient(90deg, ${info.cor}, #C9963A)` }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+          <div>
+            <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Dia/horário</span>
+            <p className="font-semibold text-gray-700">{estudo.diaEstudo || 'Não informado'}{estudo.horarioEstudo ? ` às ${estudo.horarioEstudo}` : ''}</p>
+          </div>
+          <div>
+            <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Participantes</span>
+            <p className="font-semibold text-gray-700">{participantes}</p>
+          </div>
+          <div>
+            <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Contato</span>
+            <p className="font-semibold text-gray-700 break-all">{estudo.whatsapp || 'Não informado'}</p>
+          </div>
+        </div>
+
+        {estudo.observacoes && (
+          <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/70 p-3">
+            <p className="text-[9px] font-bold uppercase tracking-wide text-amber-700">Observações</p>
+            <p className="mt-1 text-xs leading-relaxed text-gray-700">{estudo.observacoes}</p>
+          </div>
+        )}
+
+        <p className="mt-3 text-right text-[9px] font-semibold text-gray-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          Abrir acompanhamento →
+        </p>
+      </button>
+    );
   };
 
   return (
@@ -473,10 +584,10 @@ const ModalDupla = ({ dupla, onClose, onNavigate }) => {
         {/* Indicadores */}
         <div className="flex-shrink-0 grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
           {[
-            { icon: '📖', label: 'Estudos Bíblicos', val: estudos },
-            { icon: '🏫', label: 'Classes Bíblicas', val: classesB },
-            { icon: '🏆', label: 'Classificação', val: dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classe' },
-          ].map(({ icon, label: lb, val }, index) => {
+            { icon: '📖', label: 'Estudos Bíblicos', val: estudos, hint: estudosIndividuais.length === 1 ? 'Abrir estudo' : 'Ver estudos' },
+            { icon: '🏫', label: 'Classes Bíblicas', val: classesB, hint: classesLista.length === 1 ? 'Abrir classe' : 'Ver classes' },
+            { icon: '🏆', label: 'Classificação', val: dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classe', hint: 'Filtrar duplas' },
+          ].map(({ icon, label: lb, val, hint }, index) => {
             const onClick = index === 0 ? abrirEstudos : index === 1 ? abrirClasses : (classe ? abrirClassificacao : undefined);
             return (
             <button
@@ -484,11 +595,14 @@ const ModalDupla = ({ dupla, onClose, onNavigate }) => {
               type="button"
               onClick={onClick}
               disabled={!onClick}
-              className="bg-white px-4 py-3 text-center transition-colors hover:bg-[#1A3A6B]/5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C9963A]/30 disabled:cursor-default disabled:hover:bg-white"
+              className="group bg-white px-4 py-3 text-center transition-all duration-300 hover:bg-[#1A3A6B]/5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C9963A]/30 disabled:cursor-default disabled:hover:bg-white"
             >
-              <p className="text-lg">{icon}</p>
-              <p className="text-lg font-bold text-[#1A3A6B]">{val}</p>
+              <p className="text-lg transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110">{icon}</p>
+              <p className="text-lg font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]">{val}</p>
               <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mt-0.5">{lb}</p>
+              <p className="mt-1 text-[8px] font-bold uppercase tracking-wide text-[#1A3A6B] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                {hint}
+              </p>
             </button>
           );
           })}
@@ -536,6 +650,32 @@ const ModalDupla = ({ dupla, onClose, onNavigate }) => {
               ]}
             />
           </div>
+
+          <section className="rounded-xl border border-gray-100 bg-[#F8FAFC] p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[#C9963A]">Estudos da Dupla</p>
+                <h4 className="text-sm font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  Progressão e acompanhamento
+                </h4>
+              </div>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-gray-500 shadow-sm">
+                {estudosLista.length} registro{estudosLista.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {estudosLista.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">
+                Nenhum estudo bíblico, ponto de estudo ou classe bíblica cadastrado para esta dupla.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {estudosLista.map((estudo) => (
+                  <EstudoCard key={estudo.id} estudo={estudo} />
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>
@@ -544,7 +684,9 @@ const ModalDupla = ({ dupla, onClose, onNavigate }) => {
 
 export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { usuario } = useAuth();
+  const prefix = location.pathname.startsWith('/direto') ? '/direto' : '';
   const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const [igrejaAtual, setIgrejaAtual] = useState(igreja);
   const [relatorio, setRelatorio] = useState(null);
@@ -845,7 +987,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       )}
 
       {duplaSelecionada && (
-        <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} onNavigate={navegarDoModal} />
+        <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} onNavigate={navegarDoModal} prefix={prefix} />
       )}
 
       {fotoAmpliada && (
