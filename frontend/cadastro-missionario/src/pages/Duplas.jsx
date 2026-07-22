@@ -175,7 +175,7 @@ export default function Duplas() {
   });
   const [filtroAtividade, setFiltroAtividade] = useState('');
   const [filtroEspecial, setFiltroEspecial] = useState(() => {
-    return ['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
+    return ['semEstudos', 'comVisitacoes', 'comEstudo', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -212,7 +212,7 @@ export default function Duplas() {
   }, [atividadeParam]);
 
   useEffect(() => {
-    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'comEstudo', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
   }, [filtroEspecialParam]);
 
   const duplasComMedalha = useMemo(() =>
@@ -244,7 +244,8 @@ export default function Duplas() {
       const matchEspecial = !filtroEspecial
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
         || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
-        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
+        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1)
+        || (filtroEspecial === 'comEstudo' && getEstudosCount(d) >= 1);
       return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchBusca && matchIgreja && matchIgrejaQuery && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial;
     });
   }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, busca, filtroIgrejaId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial]);
@@ -492,6 +493,14 @@ export default function Duplas() {
             title: 'Duplas com visitação: duplas com Visitações 1 ou mais. Visitações 0 não entram.',
             cor: '#7c3aed',
             bg: '#ede9fe',
+          },
+          {
+            key: 'comEstudo',
+            label: 'Estudo',
+            total: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
+            title: 'Duplas com estudo: duplas com 1 ou mais estudos biblicos cadastrados.',
+            cor: '#0284c7',
+            bg: '#e0f2fe',
           },
         ].map((item) => {
           const ativo = filtroEspecial === item.key;

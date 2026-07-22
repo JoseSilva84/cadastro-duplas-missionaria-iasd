@@ -1,6 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { FotoService } from '../foto.service';
+
+const resolverFotosDaDupla = async (dupla) => {
+  const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
+    FotoService.resolverFotoParaPreview(dupla.fotoLider).catch(() => ''),
+    FotoService.resolverFotoParaPreview(dupla.fotoMembro2).catch(() => ''),
+  ]);
+  return { ...dupla, fotoLiderPreview, fotoMembro2Preview };
+};
+
+const FotoDupla = ({ src, nome, className, fallbackClassName }) => {
+  const inicial = (nome || '?').charAt(0).toUpperCase();
+  if (src) {
+    return <img src={src} alt={nome || 'Foto'} className={`${className} object-cover bg-gray-100`} />;
+  }
+  return (
+    <div className={`${className} ${fallbackClassName} flex items-center justify-center text-white font-bold`}>
+      {inicial}
+    </div>
+  );
+};
 
 const BadgeEstudo = ({ status }) => {
   if (!status) return null;
@@ -25,9 +46,14 @@ export default function ListagemDistritos() {
 
   useEffect(() => {
     api.get('/distritos')
-      .then((res) => {
-        setDistritos(res.data);
-        if (res.data.length > 0) setDistritoSelecionado(res.data[0]);
+      .then(async (res) => {
+        const lista = Array.isArray(res.data) ? res.data : [];
+        const listaComFotos = await Promise.all(lista.map(async (distrito) => ({
+          ...distrito,
+          duplas: await Promise.all((distrito.duplas || []).map(resolverFotosDaDupla)),
+        })));
+        setDistritos(listaComFotos);
+        if (listaComFotos.length > 0) setDistritoSelecionado(listaComFotos[0]);
       })
       .catch((err) => console.error(err))
       .finally(() => setCarregando(false));
@@ -227,12 +253,18 @@ export default function ListagemDistritos() {
                     <div key={dupla.id} className="px-5 py-3.5 hover:bg-gray-50 transition-colors flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="relative flex-shrink-0">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-xs shadow">
-                            {dupla.liderNome?.charAt(0)}
-                          </div>
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[9px] font-bold absolute -bottom-1 -right-1 border-2 border-white">
-                            {dupla.membro2Nome?.charAt(0)}
-                          </div>
+                          <FotoDupla
+                            src={dupla.fotoLiderPreview}
+                            nome={dupla.liderNome}
+                            className="w-9 h-9 rounded-full shadow"
+                            fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-xs"
+                          />
+                          <FotoDupla
+                            src={dupla.fotoMembro2Preview}
+                            nome={dupla.membro2Nome}
+                            className="w-6 h-6 rounded-full absolute -bottom-1 -right-1 border-2 border-white shadow-sm"
+                            fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[9px]"
+                          />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[#1A3A6B] truncate">{dupla.liderNome} + {dupla.membro2Nome}</p>

@@ -126,7 +126,7 @@ export default function Distritos() {
         ].map((item) => (
           <div
             key={item.label}
-            className="smart-tooltip card group cursor-default"
+            className="smart-tooltip smart-tooltip-up card group cursor-default"
             data-tooltip={item.tooltip}
             tabIndex={0}
             style={{ borderTop: `3px solid ${item.cor}` }}

@@ -73,7 +73,7 @@ export default function Regioes() {
           ].map((item) => (
             <div
               key={item.label}
-              className="smart-tooltip card group hover:-translate-y-1 transition-all duration-300 cursor-default"
+              className="smart-tooltip smart-tooltip-up card group hover:-translate-y-1 transition-all duration-300 cursor-default"
               data-tooltip={item.tooltip}
               tabIndex={0}
               style={{ borderTop: `3px solid ${item.cor}` }}
@@ -136,7 +136,7 @@ export default function Regioes() {
 
                   {/* Contadores */}
                   <div
-                    className="smart-tooltip rounded-xl p-4 flex justify-around transition-all duration-300 group-hover:scale-[1.02]"
+                    className="smart-tooltip smart-tooltip-up rounded-xl p-4 flex justify-around transition-all duration-300 group-hover:scale-[1.02]"
                     data-tooltip={`${regiao.nome}: totais consolidados de distritos, duplas e membros desta regiao.`}
                     tabIndex={0}
                     style={{ backgroundColor: cor + '10' }}
