@@ -58,9 +58,9 @@ function Indicador({ label, valor, detalhe, tooltip, cor, icon, onClick }) {
     <>
       <div className="flex items-start gap-3">
         <Icone cor={cor}>{icon}</Icone>
-        <div className="min-w-0">
-          <p className="text-2xl font-bold leading-tight" style={{ color: cor }}>{numero(valor)}</p>
-          <p className="text-sm font-semibold text-[#1A3A6B] mt-1">{label}</p>
+        <div className="min-w-0 flex-1">
+          <p className="max-w-full text-2xl font-bold leading-tight break-words" style={{ color: cor }}>{numero(valor)}</p>
+          <p className="text-sm font-semibold text-[#1A3A6B] mt-1 leading-snug">{label}</p>
           {detalhe && <p className="text-xs text-gray-400 mt-1">{detalhe}</p>}
         </div>
       </div>
@@ -118,10 +118,28 @@ function DestaqueRanking({ label, item, cor, icon, detalhe }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
           <p className="text-lg font-bold text-[#1A3A6B] truncate mt-1">{item?.nome || 'Sem dados'}</p>
-          <div className="flex items-end justify-between gap-3 mt-2">
-            <p className="text-xs text-gray-400">{detalhe || 'Maior volume registrado'}</p>
-            <p className="text-2xl font-bold leading-none" style={{ color: cor }}>{numero(item?.total)}</p>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 mt-2">
+            <p className="min-w-0 text-xs text-gray-400 leading-snug">{detalhe || 'Maior volume registrado'}</p>
+            <p className="max-w-24 text-right text-2xl font-bold leading-none break-words" style={{ color: cor }}>{numero(item?.total)}</p>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CoberturaCard({ label, valor, detalhe, cor, icon }) {
+  return (
+    <div
+      className="smart-tooltip smart-tooltip-up bg-white rounded-lg border border-gray-100 p-4 shadow-sm"
+      data-tooltip={detalhe}
+      tabIndex={0}
+    >
+      <div className="flex items-start gap-3">
+        <Icone cor={cor}>{icon}</Icone>
+        <div className="min-w-0 flex-1">
+          <p className="max-w-full text-2xl font-bold leading-tight break-words" style={{ color: cor }}>{numero(valor)}</p>
+          <p className="mt-1 text-sm font-semibold leading-snug text-[#1A3A6B]">{label}</p>
         </div>
       </div>
     </div>
@@ -194,7 +212,7 @@ function Painel({ titulo, subtitulo, cor, children }) {
 
 function PainelGrafico({ titulo, subtitulo, children }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 overflow-visible">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest text-[#C9963A]">{subtitulo}</p>
@@ -249,6 +267,7 @@ export default function DashboardAssociacao() {
   const dashboardDuplas = dados?.duplasMissionarias || {};
   const dashboardClasses = dados?.classesBiblicasDetalhes || {};
   const visitas = escola.visitasRealizadas || {};
+  const coberturaDuplas = dashboardDuplas.cobertura || {};
 
   const visitasDetalhe = useMemo(() => ([
     { label: 'Diretores', valor: visitas.diretores || 0, cor: '#1A3A6B' },
@@ -260,7 +279,7 @@ export default function DashboardAssociacao() {
     const classes = ministerio.classes || {};
     return {
       color: ['#16a34a', '#C9963A', '#dc2626'],
-      tooltip: { trigger: 'item', formatter: '{b}: {c} duplas ({d}%)' },
+      tooltip: { trigger: 'item', appendToBody: true, confine: false, formatter: '{b}: {c} duplas ({d}%)' },
       legend: { bottom: 0, icon: 'circle', textStyle: { color: '#64748b', fontSize: 11 } },
       series: [{
         name: 'Sub-classificacoes',
@@ -283,7 +302,7 @@ export default function DashboardAssociacao() {
     const lista = dashboardDuplas.porRegiao || [];
     return {
       color: ['#1A3A6B', '#C9963A', '#0d9488'],
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      tooltip: { trigger: 'axis', appendToBody: true, confine: false, axisPointer: { type: 'shadow' } },
       grid: { left: 36, right: 12, top: 24, bottom: 54 },
       legend: { bottom: 0, textStyle: { color: '#64748b', fontSize: 11 } },
       xAxis: {
@@ -309,7 +328,7 @@ export default function DashboardAssociacao() {
     const lista = dashboardDuplas.porDistrito || [];
     return {
       color: ['#7B2D8B'],
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => `${params[0]?.name}<br/>${numero(params[0]?.value)} duplas` },
+      tooltip: { trigger: 'axis', appendToBody: true, confine: false, axisPointer: { type: 'shadow' }, formatter: (params) => `${params[0]?.name}<br/>${numero(params[0]?.value)} duplas` },
       grid: { left: 118, right: 18, top: 12, bottom: 18 },
       xAxis: {
         type: 'value',
@@ -347,7 +366,7 @@ export default function DashboardAssociacao() {
     const maximo = Math.max(...lista.map((item) => item.valor || 0), 1);
     return {
       color: ['#1A3A6B'],
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', appendToBody: true, confine: false },
       radar: {
         radius: '64%',
         indicator: lista.map((item) => ({ name: item.nome, max: maximo })),
@@ -367,6 +386,41 @@ export default function DashboardAssociacao() {
   }, [dashboardDuplas.indicadoresGerais]);
 
   const podeEditarEscola = ['ADMINISTRADOR', 'LIDER_REGIOES'].includes(usuario?.perfil);
+  const criarCoberturaChartOption = (titulo, dadosCobertura = {}, corCom) => ({
+    color: [corCom, '#cbd5e1'],
+    tooltip: {
+      trigger: 'item',
+      appendToBody: true,
+      confine: false,
+      formatter: '{b}: {c} duplas ({d}%)',
+    },
+    legend: { bottom: 0, icon: 'circle', textStyle: { color: '#64748b', fontSize: 11 } },
+    series: [{
+      name: titulo,
+      type: 'pie',
+      radius: ['50%', '72%'],
+      center: ['50%', '42%'],
+      avoidLabelOverlap: true,
+      label: { formatter: '{b}\n{c}', color: '#1A3A6B', fontWeight: 700 },
+      labelLine: { length: 10, length2: 8 },
+      data: [
+        { name: 'Com', value: dadosCobertura.com || 0 },
+        { name: 'Sem', value: dadosCobertura.sem || 0 },
+      ],
+    }],
+  });
+  const estudoCoberturaChartOption = useMemo(
+    () => criarCoberturaChartOption('Estudo biblico', coberturaDuplas.estudoBiblico, '#0284c7'),
+    [coberturaDuplas.estudoBiblico],
+  );
+  const classeCoberturaChartOption = useMemo(
+    () => criarCoberturaChartOption('Classe biblica', coberturaDuplas.classeBiblica, '#7B2D8B'),
+    [coberturaDuplas.classeBiblica],
+  );
+  const pontoCoberturaChartOption = useMemo(
+    () => criarCoberturaChartOption('Ponto de estudo', coberturaDuplas.pontoEstudo, '#0d9488'),
+    [coberturaDuplas.pontoEstudo],
+  );
   const irParaDupla = (dupla) => {
     if (dupla?.id) navigate(isDireto ? `/direto/duplas/${dupla.id}` : `/duplas/${dupla.id}`);
   };
@@ -545,6 +599,70 @@ export default function DashboardAssociacao() {
       </div>
 
       <section className="mt-5">
+        <div className="mb-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Cobertura das duplas</p>
+          <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            Estudos, classes e pontos cadastrados
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
+          <CoberturaCard
+            label="Duplas com estudo bíblico"
+            valor={coberturaDuplas.estudoBiblico?.com}
+            detalhe="Duplas com estudo biblico: considera duplas com pelo menos 1 estudo individual cadastrado. Duplas com 0 estudo individual cadastrado ficam no grupo sem estudo."
+            cor="#0284c7"
+            icon={<BookIcon />}
+          />
+          <CoberturaCard
+            label="Duplas com classe bíblica"
+            valor={coberturaDuplas.classeBiblica?.com}
+            detalhe="Duplas com classe biblica: considera duplas com pelo menos 1 classe biblica cadastrada."
+            cor="#7B2D8B"
+            icon={<UsersIcon />}
+          />
+          <CoberturaCard
+            label="Duplas com ponto de estudo"
+            valor={coberturaDuplas.pontoEstudo?.com}
+            detalhe="Duplas com ponto de estudo: considera duplas com pelo menos 1 ponto de estudo cadastrado."
+            cor="#0d9488"
+            icon={<GaugeIcon />}
+          />
+          <CoberturaCard
+            label="Duplas sem estudo bíblico"
+            valor={coberturaDuplas.estudoBiblico?.sem}
+            detalhe="Duplas sem estudo biblico: duplas que ainda nao possuem estudo individual cadastrado."
+            cor="#64748b"
+            icon={<BookIcon />}
+          />
+          <CoberturaCard
+            label="Duplas sem classe bíblica"
+            valor={coberturaDuplas.classeBiblica?.sem}
+            detalhe="Duplas sem classe biblica: duplas que ainda nao possuem classe biblica cadastrada."
+            cor="#64748b"
+            icon={<UsersIcon />}
+          />
+          <CoberturaCard
+            label="Duplas sem ponto de estudo"
+            valor={coberturaDuplas.pontoEstudo?.sem}
+            detalhe="Duplas sem ponto de estudo: duplas que ainda nao possuem ponto de estudo cadastrado."
+            cor="#64748b"
+            icon={<GaugeIcon />}
+          />
+        </div>
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <PainelGrafico titulo="Com x sem estudo bíblico" subtitulo="Comparativo de duplas">
+            <EChart option={estudoCoberturaChartOption} className="h-64" />
+          </PainelGrafico>
+          <PainelGrafico titulo="Com x sem classe bíblica" subtitulo="Comparativo de duplas">
+            <EChart option={classeCoberturaChartOption} className="h-64" />
+          </PainelGrafico>
+          <PainelGrafico titulo="Com x sem ponto de estudo" subtitulo="Comparativo de duplas">
+            <EChart option={pontoCoberturaChartOption} className="h-64" />
+          </PainelGrafico>
+        </div>
+      </section>
+
+      <section className="mt-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Analise visual</p>
@@ -570,7 +688,7 @@ export default function DashboardAssociacao() {
               <EChart option={distritoChartOption} className="h-80" />
             </PainelGrafico>
           </div>
-          <div className="xl:col-span-2 bg-[#0f2347] rounded-xl border border-[#C9963A]/20 shadow-sm p-5 overflow-hidden">
+          <div className="xl:col-span-2 bg-[#0f2347] rounded-xl border border-[#C9963A]/20 shadow-sm p-5 overflow-visible">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-[#e5b05a]">Ranking combinado</p>
@@ -579,15 +697,21 @@ export default function DashboardAssociacao() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(dashboardDuplas.topPerformance || []).map((item, index) => (
-                <div key={`${item.nome}-${index}`} className="rounded-lg bg-white/10 border border-white/10 px-4 py-3">
+                <button
+                  key={`${item.nome}-${index}`}
+                  type="button"
+                  onClick={() => irParaDupla(item)}
+                  className="smart-tooltip smart-tooltip-up rounded-lg bg-white/10 border border-white/10 px-4 py-3 text-left transition-all hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#e5b05a]/40"
+                  data-tooltip={item.motivo || `${item.nome}: pontuacao combinada dos indicadores missionarios.`}
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-[#e5b05a]">#{index + 1}</p>
                       <p className="text-sm font-semibold text-white truncate">{item.nome}</p>
                     </div>
-                    <p className="text-2xl font-bold text-[#e5b05a]">{numero(item.valor)}</p>
+                    <p className="max-w-20 text-right text-2xl font-bold text-[#e5b05a] break-words">{numero(item.valor)}</p>
                   </div>
-                </div>
+                </button>
               ))}
               {(dashboardDuplas.topPerformance || []).length === 0 && (
                 <p className="text-sm text-white/60">Sem dados para exibir.</p>

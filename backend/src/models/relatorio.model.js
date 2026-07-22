@@ -77,6 +77,7 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
     visitas: dupla._count?.acompanhamentos || 0,
     batismos: dupla.batismos || 0,
     pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
+    tiposEstudo: new Set((dupla.estudosBiblicos || []).map((estudo) => estudo.tipoEstudo)),
   }));
 
   const ordenarPorValor = (lista = []) => [...lista].sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome));
@@ -136,9 +137,25 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
       { nome: 'Batismos', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.batismos, 0) },
       { nome: 'Pessoas', valor: duplasComIndicadores.reduce((acc, dupla) => acc + dupla.pessoasAlcancadas, 0) },
     ],
+    cobertura: {
+      estudoBiblico: {
+        com: duplasComIndicadores.filter((dupla) => dupla.tiposEstudo.has('UNICO')).length,
+        sem: duplasComIndicadores.filter((dupla) => !dupla.tiposEstudo.has('UNICO')).length,
+      },
+      classeBiblica: {
+        com: duplasComIndicadores.filter((dupla) => dupla.tiposEstudo.has('CLASSE')).length,
+        sem: duplasComIndicadores.filter((dupla) => !dupla.tiposEstudo.has('CLASSE')).length,
+      },
+      pontoEstudo: {
+        com: duplasComIndicadores.filter((dupla) => dupla.tiposEstudo.has('PONTO')).length,
+        sem: duplasComIndicadores.filter((dupla) => !dupla.tiposEstudo.has('PONTO')).length,
+      },
+    },
     topPerformance: ordenarPorValor(duplasComIndicadores.map((dupla) => ({
+      id: dupla.id,
       nome: dupla.nome,
       valor: dupla.estudos + dupla.visitas + dupla.batismos + dupla.pessoasAlcancadas,
+      motivo: `Pontuacao combinada: ${dupla.estudos} estudo(s) cadastrado(s), ${dupla.visitas} visita(s), ${dupla.batismos} batismo(s) e ${dupla.pessoasAlcancadas} pessoa(s) alcancada(s).`,
     }))).slice(0, 6),
   };
 };
@@ -529,6 +546,11 @@ const RelatorioModel = {
             select: {
               estudosBiblicos: true,
               acompanhamentos: true,
+            },
+          },
+          estudosBiblicos: {
+            select: {
+              tipoEstudo: true,
             },
           },
         },
