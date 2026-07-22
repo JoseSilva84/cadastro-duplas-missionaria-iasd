@@ -275,11 +275,25 @@ export default function ListagemDistritos() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
                   {distritoSelecionado.igrejas.map((igreja) => (
-                    <div key={igreja.id} className="bg-gray-50 rounded-lg p-3 text-center hover:bg-[#1A3A6B]/5 transition-colors cursor-default">
-                      <span className="text-2xl block mb-1">⛪</span>
-                      <p className="text-xs font-semibold text-[#1A3A6B] truncate" title={igreja.nome}>{igreja.nome}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">👨‍👩‍👧‍👦 {(igreja.membros || 0).toLocaleString('pt-BR')}</p>
-                    </div>
+                    <button
+                      key={igreja.id}
+                      type="button"
+                      onClick={() => navigate(`/distritos/${distritoSelecionado.id}/duplas?igrejaId=${igreja.id}`)}
+                      className="group bg-gray-50 rounded-lg p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:border-[#C9963A]/40 border border-transparent focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
+                      title={`Ver duplas de ${igreja.nome}`}
+                    >
+                      <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#16a34a] to-[#22c55e] text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
+                        <ChurchIcon />
+                      </span>
+                      <p className="text-xs font-semibold text-[#1A3A6B] truncate transition-colors duration-300 group-hover:text-[#C9963A]" title={igreja.nome}>{igreja.nome}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 transition-colors duration-300 group-hover:text-gray-500">{(igreja.membros || 0).toLocaleString('pt-BR')} membros</p>
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#1A3A6B]/8 px-2 py-0.5 text-[9px] font-bold text-[#1A3A6B] opacity-0 transition-all duration-300 group-hover:opacity-100">
+                        Ver duplas
+                        <svg className="w-2.5 h-2.5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </button>
                   ))}
                 </div>
               )}
