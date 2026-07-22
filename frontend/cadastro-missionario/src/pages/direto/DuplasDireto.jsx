@@ -5,29 +5,28 @@ import { FotoService } from '../../foto.service';
 import { ehAdmin, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 
-// ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
-function getMedalha(dupla) {
-  const estudoAtivo = dupla.statusEstudoBiblico === 'ATIVO'
-    || ((dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0) > 0);
-  const temBatismo  = (dupla.batismos || 0) > 0;
-  const temPessoas  = (dupla.pessoasAlcancadas || 0) > 0;
-  if (estudoAtivo && temBatismo && temPessoas) return 'ouro';
-  if (estudoAtivo && !temBatismo && temPessoas) return 'prata';
-  return 'bronze';
-}
-
 const medalhaConfig = {
   ouro:   { emoji: '🥇', label: 'Ouro',   cor: '#C9963A', bg: '#C9963A18' },
   prata:  { emoji: '🥈', label: 'Prata',  cor: '#6b7280', bg: '#6b728018' },
   bronze: { emoji: '🥉', label: 'Bronze', cor: '#92400e', bg: '#92400e15' },
+  semAtividade: { emoji: '', label: 'Dupla sem estudo/visita', cor: '#475569', bg: '#47556914' },
 };
 
-const medalhaOrder = { ouro: 0, prata: 1, bronze: 2 };
+const medalhaOrder = { ouro: 0, prata: 1, bronze: 2, semAtividade: 3 };
 const medalhaRegras = {
-  ouro: 'Ouro: estudo bíblico ativo, pelo menos 1 batismo e pessoas alcançadas acima de 0.',
-  prata: 'Prata: estudo bíblico ativo, pessoas alcançadas acima de 0 e ainda sem batismo registrado.',
-  bronze: 'Bronze: dupla que ainda não atingiu todos os critérios de Ouro ou Prata.',
+  ouro: 'Ouro: estudo bíblico ativo ou finalizado, pelo menos 1 batismo e visitação registrada.',
+  prata: 'Prata: estudo bíblico ativo com 1 ou mais estudos cadastrados, visitação registrada ou estudo cadastrado, e ainda sem batismo registrado.',
+  bronze: 'Bronze: dupla que não tem estudo bíblico ativo, mas tem visitação registrada.',
+  semAtividade: 'Dupla sem estudo bíblico cadastrado e sem visitação registrada.',
 };
+
+const UsersIcon = ({ className = 'w-5 h-5 text-white' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </svg>
+);
 
 // Link clicável do WhatsApp Web
 const WhatsAppLink = ({ numero }) => {
@@ -93,11 +92,33 @@ const atividadeConfig = {
 
 const indicadorConfig = {
   estudos: { label: 'Estudos', cor: '#0f766e', bg: '#ccfbf1', border: '#99f6e4' },
-  visitacoes: { label: 'Visitacoes', cor: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
+  visitacoes: { label: 'Visitações', cor: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
 };
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const normalizarStatus = (valor) => String(valor || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase();
+const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
+const temEstudoBiblicoAtivoOuFinalizado = (dupla) => (
+  ['ATIVO', 'FINALIZADO', 'CONCLUIDO'].includes(normalizarStatus(dupla?.statusEstudoBiblico))
+);
+// ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
+function getMedalha(dupla) {
+  const estudos = getEstudosCount(dupla);
+  const temEstudo = estudos > 0;
+  const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudo;
+  const estudoAtivoOuFinalizado = temEstudoBiblicoAtivoOuFinalizado(dupla) && temEstudo;
+  const temBatismo = (dupla.batismos || 0) > 0;
+  const temVisitacao = getVisitacoesCount(dupla) >= 1;
+  const temVisitacaoOuEstudo = temVisitacao || temEstudo;
+  if (estudoAtivoOuFinalizado && temBatismo && temVisitacao) return 'ouro';
+  if (estudoAtivo && !temBatismo && temVisitacaoOuEstudo) return 'prata';
+  if (!estudoAtivo && temVisitacao) return 'bronze';
+  return 'semAtividade';
+}
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
 const temEstudoNaoRegistrado = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
@@ -321,7 +342,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, navigate }) => 
   const totalBatismos = duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0);
 
   const cards = [
-    { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: '👥', gradient: 'from-[#1A3A6B] to-[#2a5298]' },
+    { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
     { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]' },
     { label: 'Classe Biblica', valor: totalClasses, cor: '#ea580c', icon: '📣', gradient: 'from-[#ea580c] to-[#f97316]' },
     { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]' },
@@ -505,7 +526,7 @@ export default function DuplasDireto() {
   }, [classeParam]);
 
   useEffect(() => {
-    setFiltro(['ATIVA', 'PENDENTE', 'INATIVA', 'ouro', 'prata', 'bronze'].includes(statusParam) ? statusParam : '');
+    setFiltro(['ATIVA', 'PENDENTE', 'INATIVA', 'ouro', 'prata', 'bronze', 'semAtividade'].includes(statusParam) ? statusParam : '');
   }, [statusParam]);
 
   useEffect(() => {
@@ -526,7 +547,7 @@ export default function DuplasDireto() {
 
   // Contagem por medalha para os chips de filtro
   const contagemMedalha = useMemo(() => {
-    const c = { ouro: 0, prata: 0, bronze: 0 };
+    const c = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
     duplasComMedalha.forEach(d => { c[d._medalha] = (c[d._medalha] || 0) + 1; });
     return c;
   }, [duplasComMedalha]);
@@ -534,7 +555,7 @@ export default function DuplasDireto() {
   // Filtra as duplas com base nos critérios de busca (memoizado)
   const duplasFiltradas = useMemo(() => {
     const termo = busca.toLowerCase().trim();
-    const isMedalha = ['ouro', 'prata', 'bronze'].includes(filtro);
+    const isMedalha = ['ouro', 'prata', 'bronze', 'semAtividade'].includes(filtro);
     return duplasComMedalha.filter((d) => {
       const matchFiltro = !filtro
         ? true
@@ -553,7 +574,7 @@ export default function DuplasDireto() {
       const matchRegiao = !regiaoIdParam || String(d.distrito?.regiao?.id || '') === regiaoIdParam;
       const matchTipoProjeto = !tipoProjetoParam || d.tipoProjeto === tipoProjetoParam;
       const matchBatismos = !minBatismosParam || (d.batismos || 0) >= minBatismosParam;
-      const matchPessoas = !minPessoasParam || (d.pessoasAlcancadas || 0) >= minPessoasParam;
+      const matchPessoas = !minPessoasParam || getVisitacoesCount(d) >= minPessoasParam;
       const matchEspecial = !filtroEspecial
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
         || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
@@ -671,7 +692,7 @@ export default function DuplasDireto() {
             </button>
 
             {/* Chips ouro / prata / bronze */}
-            {(['ouro', 'prata', 'bronze']).map((m) => {
+            {(['ouro', 'prata', 'bronze', 'semAtividade']).map((m) => {
               const cfg = medalhaConfig[m];
               const ativo = filtro === m;
               return (
@@ -685,7 +706,7 @@ export default function DuplasDireto() {
                     ? { backgroundColor: cfg.cor, borderColor: cfg.cor, color: 'white' }
                     : { backgroundColor: cfg.bg, borderColor: cfg.cor + '55', color: cfg.cor }}
                 >
-                  {cfg.emoji}
+                  {cfg.emoji && `${cfg.emoji} `}
                   {cfg.label}
                   <span
                     className="rounded-full px-1.5 py-px text-[9px] font-bold"
@@ -852,6 +873,7 @@ export default function DuplasDireto() {
                   <option value="ouro">Ouro</option>
                   <option value="prata">Prata</option>
                   <option value="bronze">Bronze</option>
+                  <option value="semAtividade">Dupla sem estudo/visita</option>
                 </optgroup>
               </select>
             </div>
@@ -913,7 +935,7 @@ export default function DuplasDireto() {
                       style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
                       title={medalhaRegras[dupla._medalha]}
                     >
-                      {mcfg.emoji} {mcfg.label}
+                      {mcfg.emoji && `${mcfg.emoji} `}{mcfg.label}
                     </span>
                   </div>
 
@@ -1165,12 +1187,12 @@ export default function DuplasDireto() {
                         <div><span className="text-gray-400 text-xs">Status:</span><p className="font-semibold" style={{ color: cor }}>{statusLabels[duplaSelecionada.status] || duplaSelecionada.status}</p></div>
                       );
                     })()}
-                    {duplaSelecionada.pessoasAlcancadas > 0 && (
+                    {getVisitacoesCount(duplaSelecionada) > 0 && (
                       <div className="flex items-center gap-2 bg-[#C9963A]/10 rounded-lg px-3 py-2 mt-2">
                         <span className="text-lg">🙏</span>
                         <div>
-                          <p className="text-[#C9963A] font-bold">{duplaSelecionada.pessoasAlcancadas}</p>
-                          <p className="text-gray-400 text-[10px]">Meta de Contatos</p>
+                          <p className="text-[#C9963A] font-bold">{getVisitacoesCount(duplaSelecionada)}</p>
+                          <p className="text-gray-400 text-[10px]">Visitação</p>
                         </div>
                       </div>
                     )}
@@ -1188,8 +1210,7 @@ export default function DuplasDireto() {
                     <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Status da classe bíblica:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudos bíblicos cadastrados:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
-                    <div><span className="text-gray-400 text-xs">Visitações registradas:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
-                    <div><span className="text-gray-400 text-xs">Pessoas alcançadas:</span><p className="text-gray-700 font-medium">{duplaSelecionada.pessoasAlcancadas ?? 0}</p></div>
+                    <div><span className="text-gray-400 text-xs">Visitações:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Batismos:</span><p className="text-gray-700 font-medium">{duplaSelecionada.batismos ?? 0}</p></div>
                     <div><span className="text-gray-400 text-xs">Último acompanhamento:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.ultimoAcompanhamento) || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Início da dupla:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.dataInicio) || '—'}</p></div>
