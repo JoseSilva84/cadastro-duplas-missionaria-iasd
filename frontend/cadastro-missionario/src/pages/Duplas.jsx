@@ -496,7 +496,7 @@ export default function Duplas() {
           },
           {
             key: 'comEstudo',
-            label: 'Estudo',
+            label: 'Com Estudo',
             total: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
             title: 'Duplas com estudo: duplas com 1 ou mais estudos biblicos cadastrados.',
             cor: '#0284c7',
