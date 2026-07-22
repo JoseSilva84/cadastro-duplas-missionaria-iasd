@@ -16,7 +16,7 @@ const medalhaOrder = { ouro: 0, prata: 1, bronze: 2, semAtividade: 3 };
 const medalhaRegras = {
   ouro: 'Ouro: estudo bíblico ativo ou finalizado, pelo menos 1 batismo e visitação registrada.',
   prata: 'Prata: estudo bíblico ativo com 1 ou mais estudos cadastrados, visitação registrada ou estudo cadastrado, e ainda sem batismo registrado.',
-  bronze: 'Bronze: dupla que não tem estudo bíblico ativo, mas tem visitação registrada.',
+  bronze: 'Bronze: dupla com estudo bíblico cadastrado ou visitação registrada, mas que ainda não atingiu todos os critérios de Ouro ou Prata.',
   semAtividade: 'Dupla sem estudo bíblico cadastrado e sem visitação registrada.',
 };
 
@@ -137,7 +137,7 @@ function getMedalha(dupla) {
   const temVisitacaoOuEstudo = temVisitacao || temEstudo;
   if (estudoAtivoOuFinalizado && temBatismo && temVisitacao) return 'ouro';
   if (estudoAtivo && !temBatismo && temVisitacaoOuEstudo) return 'prata';
-  if (!estudoAtivo && temVisitacao) return 'bronze';
+  if (temEstudo || temVisitacao) return 'bronze';
   return 'semAtividade';
 }
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
