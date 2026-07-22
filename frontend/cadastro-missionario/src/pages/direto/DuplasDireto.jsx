@@ -401,7 +401,7 @@ export default function DuplasDireto() {
     return ['ATIVA', 'INATIVA'].includes(atividadeParam) ? atividadeParam : '';
   });
   const [filtroEspecial, setFiltroEspecial] = useState(() => {
-    return ['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
+    return ['semEstudos', 'comVisitacoes', 'comEstudo', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '';
   });
   const [busca, setBusca] = useState('');
   const [buscaFocada, setBuscaFocada] = useState(false);
@@ -513,7 +513,7 @@ export default function DuplasDireto() {
   }, [atividadeParam]);
 
   useEffect(() => {
-    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
+    setFiltroEspecial(['semEstudos', 'comVisitacoes', 'comEstudo', 'estudoNaoRegistrado'].includes(filtroEspecialParam) ? filtroEspecialParam : '');
   }, [filtroEspecialParam]);
 
   // Duplas com medalha calculada e ordenadas por medalha (Ouro → Prata → Bronze)
@@ -557,7 +557,8 @@ export default function DuplasDireto() {
       const matchEspecial = !filtroEspecial
         || (filtroEspecial === 'semEstudos' && getEstudosCount(d) === 0)
         || (filtroEspecial === 'estudoNaoRegistrado' && temEstudoNaoRegistrado(d))
-        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1);
+        || (filtroEspecial === 'comVisitacoes' && getVisitacoesCount(d) >= 1)
+        || (filtroEspecial === 'comEstudo' && getEstudosCount(d) >= 1);
       return matchFiltro && matchClasse && matchAtividade && matchEstudoAtivo && matchDistrito && matchIgreja && matchRegiao && matchTipoProjeto && matchBatismos && matchPessoas && matchEspecial && matchBusca;
     });
   }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, distritoId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial, busca]);
@@ -752,6 +753,14 @@ export default function DuplasDireto() {
                 title: 'Duplas com visitação: duplas com Visitações 1 ou mais. Visitações 0 não entram.',
                 cor: '#7c3aed',
                 bg: '#ede9fe',
+              },
+              {
+                key: 'comEstudo',
+                label: 'Estudo',
+                total: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
+                title: 'Duplas com estudo: duplas com 1 ou mais estudos biblicos cadastrados.',
+                cor: '#0284c7',
+                bg: '#e0f2fe',
               },
             ].map((item) => {
               const ativo = filtroEspecial === item.key;
