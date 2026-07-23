@@ -87,10 +87,165 @@ const DropletIcon = () => (
   </IconBase>
 );
 
+const getResumoDistrito = (distrito) => {
+  const duplas = distrito?.duplas || [];
+  return {
+    duplas,
+    estudosAtivos: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length,
+    evangelismosAtivos: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length,
+    totalBatismos: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0),
+  };
+};
+
+function ModalParcialDistrito({ distrito, onClose, navigate }) {
+  if (!distrito) return null;
+
+  const { duplas, estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distrito);
+  const indicadores = [
+    { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), icon: <MembersIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
+    { label: 'Igrejas', valor: (distrito.igrejas || []).length, icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
+    { label: 'Duplas', valor: distrito._count?.duplas || duplas.length || 0, icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
+    { label: 'Est. Bíblicos', valor: estudosAtivos, icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7' },
+    { label: 'Classes Bíblicas', valor: evangelismosAtivos, icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
+    { label: 'Batismos', valor: totalBatismos, icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <button
+        type="button"
+        aria-label="Fechar parcial"
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full bg-[#0b1a36]/60 backdrop-blur-sm"
+      />
+      <div className="absolute inset-x-3 top-4 bottom-4 overflow-hidden rounded-2xl bg-white shadow-2xl animate-scale-in sm:inset-x-8 sm:top-8 sm:bottom-8">
+        <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-4">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Parcial do distrito</p>
+            <h2 className="mt-1 truncate text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              {distrito.nome}
+            </h2>
+            {distrito.regiao && (
+              <p className="mt-0.5 truncate text-xs text-gray-400">Pertence à {distrito.regiao.nome}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-400 transition hover:border-[#1A3A6B] hover:text-[#1A3A6B]"
+            aria-label="Fechar"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="h-[calc(100%-73px)] overflow-y-auto p-4">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {indicadores.map((item) => (
+              <div key={item.label} className="rounded-xl border border-gray-100 bg-white p-3 text-center shadow-sm">
+                <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-md`}>
+                  {item.icon}
+                </div>
+                <p className="text-xl font-bold leading-none" style={{ color: item.cor }}>{item.valor}</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-4 rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h3 className="text-sm font-bold text-[#1A3A6B]">Igrejas / Congregações</h3>
+              <span className="text-xs text-gray-400">{(distrito.igrejas || []).length} igrejas</span>
+            </div>
+            {(distrito.igrejas || []).length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-400">Nenhuma igreja neste distrito.</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3">
+                {distrito.igrejas.map((igreja) => (
+                  <button
+                    key={igreja.id}
+                    type="button"
+                    onClick={() => navigate(`/distritos/${distrito.id}/duplas?igrejaId=${igreja.id}`)}
+                    className="rounded-lg border border-transparent bg-gray-50 p-3 text-center transition-all active:scale-95 hover:border-[#C9963A]/40 hover:bg-white hover:shadow-md"
+                    title={`Ver duplas de ${igreja.nome}`}
+                  >
+                    <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#16a34a] to-[#22c55e] text-white shadow-md">
+                      <ChurchIcon />
+                    </span>
+                    <p className="truncate text-xs font-bold text-[#1A3A6B]">{igreja.nome}</p>
+                    <p className="mt-0.5 text-[10px] text-gray-400">{(igreja.membros || 0).toLocaleString('pt-BR')} membros</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h3 className="text-sm font-bold text-[#1A3A6B]">Duplas Missionárias</h3>
+              <span className="text-xs text-gray-400">{distrito._count?.duplas || duplas.length || 0} dupla(s)</span>
+            </div>
+            {duplas.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-gray-400">Nenhuma dupla registrada.</div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {duplas.map((dupla) => (
+                  <button
+                    key={dupla.id}
+                    type="button"
+                    onClick={() => navigate(`/duplas/${dupla.id}`)}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        <FotoDupla
+                          src={dupla.fotoLiderPreview}
+                          nome={dupla.liderNome}
+                          className="h-9 w-9 rounded-full shadow"
+                          fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-xs"
+                        />
+                        <FotoDupla
+                          src={dupla.fotoMembro2Preview}
+                          nome={dupla.membro2Nome}
+                          className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-white shadow-sm"
+                          fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-[9px]"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#1A3A6B]">{dupla.liderNome} + {dupla.membro2Nome}</p>
+                        <p className="mt-0.5 text-xs text-gray-400">{dupla.igreja?.nome || dupla.igrejaNome || distrito.nome}</p>
+                      </div>
+                    </div>
+                    <svg className="h-4 w-4 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="sticky bottom-0 mt-4 grid grid-cols-2 gap-2 bg-white/95 pt-2 backdrop-blur">
+            <button type="button" onClick={() => navigate(`/distritos/${distrito.id}/duplas`)} className="btn-primary px-3 py-2 text-xs">
+              Ver Duplas
+            </button>
+            <button type="button" onClick={() => navigate(`/duplas/nova?distritoId=${distrito.id}`)} className="btn-outline px-3 py-2 text-xs">
+              Nova Dupla
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ListagemDistritos() {
   const navigate = useNavigate();
   const [distritos, setDistritos] = useState([]);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
+  const [distritoModal, setDistritoModal] = useState(null);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
@@ -126,9 +281,14 @@ export default function ListagemDistritos() {
   }
 
   const duplasDist = distritoSelecionado?.duplas || [];
-  const estudosAtivos = duplasDist.filter(d => d.statusEstudoBiblico === 'ATIVO').length;
-  const evangelismosAtivos = duplasDist.filter(d => d.statusEvangelismo === 'ATIVO').length;
-  const totalBatismos = duplasDist.reduce((acc, d) => acc + (d.batismos || 0), 0);
+  const { estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distritoSelecionado);
+
+  const abrirParcial = (distrito) => {
+    setDistritoSelecionado(distrito);
+    if (window.matchMedia('(max-width: 1023.98px)').matches) {
+      setDistritoModal(distrito);
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in">
@@ -195,13 +355,13 @@ export default function ListagemDistritos() {
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          setDistritoSelecionado(distrito);
+                          abrirParcial(distrito);
                         }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
                             event.stopPropagation();
-                            setDistritoSelecionado(distrito);
+                            abrirParcial(distrito);
                           }
                         }}
                         className={`min-h-0 flex-shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-200 ${
@@ -404,6 +564,11 @@ export default function ListagemDistritos() {
           </div>
         )}
       </div>
+      <ModalParcialDistrito
+        distrito={distritoModal}
+        onClose={() => setDistritoModal(null)}
+        navigate={navigate}
+      />
     </div>
   );
 }
