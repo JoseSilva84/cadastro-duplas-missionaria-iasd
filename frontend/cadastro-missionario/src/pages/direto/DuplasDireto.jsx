@@ -526,15 +526,15 @@ export default function DuplasDireto() {
     }
   };
 
-  const excluirDupla = async () => {
-    if (!duplaSelecionada || excluindoId) return;
-    const confirmou = window.confirm(`Excluir a dupla ${duplaSelecionada.liderNome || ''} + ${duplaSelecionada.membro2Nome || ''}?`);
+  const excluirDupla = async (duplaAlvo = duplaSelecionada) => {
+    if (!duplaAlvo || excluindoId) return;
+    const confirmou = window.confirm(`Excluir a dupla ${duplaAlvo.liderNome || ''} + ${duplaAlvo.membro2Nome || ''}?`);
     if (!confirmou) return;
 
     try {
-      setExcluindoId(duplaSelecionada.id);
-      await api.delete(`/duplas/${duplaSelecionada.id}`);
-      setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaSelecionada.id));
+      setExcluindoId(duplaAlvo.id);
+      await api.delete(`/duplas/${duplaAlvo.id}`);
+      setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaAlvo.id));
       setMostraDetalhe(false);
     } catch (err) {
       alert(err.response?.data?.erro || 'Erro ao remover dupla.');
@@ -685,13 +685,11 @@ export default function DuplasDireto() {
         navigate={navigate}
       />
     )}
-    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)]' : 'h-[calc(100vh-21rem)] min-h-[680px] rounded-xl border border-gray-200 shadow-sm'} flex overflow-hidden animate-fade-in bg-white`}>
+    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto p-4' : 'animate-fade-in'} bg-transparent`}>
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
-      <div className={`${
-        mostraDetalhe ? 'hidden md:flex' : 'flex'
-      } w-full md:w-[300px] lg:w-[340px] xl:w-[360px] flex-shrink-0 border-r border-gray-200 bg-white flex-col h-full overflow-hidden`}>
+      <div className="flex w-full flex-col">
         {/* Cabeçalho + Filtros */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-100">
+        <div className="flex-shrink-0 pb-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -931,7 +929,7 @@ export default function DuplasDireto() {
         </div>
 
         {/* Lista de duplas */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="space-y-3">
           {duplasFiltradas.map((dupla) => {
             const selecionada = duplaSelecionada?.id === dupla.id;
             const mcfg = medalhaConfig[dupla._medalha];
@@ -939,18 +937,99 @@ export default function DuplasDireto() {
             const borderColor = classCfg?.cor || mcfg.cor;
 
             return (
-              <button
-                type="button"
+              <div
                 key={dupla.id}
-                onClick={() => { setDuplaSelecionadaId(dupla.id); setMostraDetalhe(true); }}
-                className={`w-full text-left transition-all duration-200 border-l-[3px] ${
-                  selecionada
-                    ? 'bg-[#1A3A6B]/5'
-                    : 'bg-white hover:bg-gray-50'
-                }`}
-                style={{ borderLeftColor: selecionada ? borderColor : borderColor + '60' }}
+                className="group w-full rounded-xl border border-gray-100 border-l-4 bg-white p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/30 hover:shadow-md"
+                style={{ borderLeftColor: borderColor }}
               >
-                <div className="px-4 py-3">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] lg:items-center">
+                  <button
+                    type="button"
+                    onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
+                    className="flex min-w-0 items-center gap-3 text-left"
+                  >
+                    <FotoPessoa
+                      src={dupla.fotoLiderPreview}
+                      nome={dupla.liderNome}
+                      className="h-12 w-12 rounded-full shadow-sm ring-2 ring-white transition-all group-hover:ring-[#1A3A6B]/20"
+                      fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
+                      onPreview={abrirFoto}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
+                        {dupla.liderNome || 'Sem nome'}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <ClassificacaoAtividadeBadge dupla={dupla} compact />
+                        <EstudoSituacaoBadge dupla={dupla} compact />
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="hidden text-lg font-bold text-gray-300 lg:block">+</div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
+                    className="flex min-w-0 items-center gap-3 text-left"
+                  >
+                    <FotoPessoa
+                      src={dupla.fotoMembro2Preview}
+                      nome={dupla.membro2Nome}
+                      className="h-12 w-12 rounded-full shadow-sm ring-2 ring-white transition-all group-hover:ring-[#C9963A]/30"
+                      fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-sm"
+                      onPreview={abrirFoto}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
+                        {dupla.membro2Nome || 'Sem nome'}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
+                        <span>{dupla.igreja?.nome || dupla.liderIgreja || dupla.membro2Igreja || dupla.distrito?.nome || 'Sem igreja'}</span>
+                        <IndicadorBadge tipo="visitacoes" valor={getVisitacoesCount(dupla)} compact />
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold"
+                      style={{ backgroundColor: mcfg.bg, color: mcfg.cor }}
+                      title={medalhaRegras[dupla._medalha]}
+                    >
+                      {mcfg.emoji && `${mcfg.emoji} `}{mcfg.label}
+                    </span>
+                    {podeExcluir && (
+                      <button
+                        type="button"
+                        onClick={() => excluirDupla(dupla)}
+                        disabled={excluindoId === dupla.id}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-60"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1h6a1 1 0 001 1m-8 0h8" />
+                        </svg>
+                        {excluindoId === dupla.id ? 'Excluindo...' : 'Excluir'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => navigate(caminho(`/duplas/${dupla.id}/editar`))}
+                      className="btn-outline inline-flex h-9 items-center justify-center gap-1.5 px-3 text-xs"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
+                      className="btn-primary inline-flex h-9 items-center justify-center gap-1.5 px-3 text-xs"
+                    >
+                      Ver completos
+                    </button>
+                  </div>
+                </div>
+
+                <div className="hidden">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {/* Fotos lado a lado, mesmo tamanho, sem sobreposição */}
@@ -996,7 +1075,7 @@ export default function DuplasDireto() {
                     <ClassificacaoAtividadeBadge dupla={dupla} compact />
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
 
@@ -1017,9 +1096,7 @@ export default function DuplasDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes da Dupla (Detail) ===== */}
-      <div className={`${
-        mostraDetalhe ? 'flex' : 'hidden md:flex'
-      } flex-1 min-w-0 flex-col h-full overflow-hidden bg-[#F4F5F7]`}>
+      <div className="hidden">
         {!duplaSelecionada ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
