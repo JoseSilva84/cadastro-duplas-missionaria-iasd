@@ -226,11 +226,15 @@ export default function Cadastro() {
     if (form.distritoId) {
       api.get(`/distritos/${form.distritoId}`).then((r) => {
         const nomeDistrito = r.data.nome || '';
-        setIgrejas(r.data.igrejas || []);
+        const igrejasDoDistrito = r.data.igrejas || [];
+        setIgrejas(igrejasDoDistrito);
         setForm((prev) => ({
           ...prev,
+          igrejaId: prev.igrejaId || (igrejasDoDistrito.length === 1 ? String(igrejasDoDistrito[0].id) : ''),
           regiaoNome: r.data.regiao?.nome || '',
+          liderIgreja: prev.liderIgreja || (igrejasDoDistrito.length === 1 ? igrejasDoDistrito[0].nome : ''),
           liderDistrito: prev.liderDistrito || nomeDistrito,
+          membro2Igreja: prev.membro2Igreja || (igrejasDoDistrito.length === 1 ? igrejasDoDistrito[0].nome : ''),
           membro2Distrito: prev.membro2Distrito || nomeDistrito,
         }));
       });

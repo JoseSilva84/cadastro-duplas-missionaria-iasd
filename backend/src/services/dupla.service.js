@@ -33,6 +33,16 @@ const calcularClassificacao = (data) => {
   };
 };
 
+async function resolverIgrejaPadrao(distritoId) {
+  const igrejas = await prisma.igreja.findMany({
+    where: { distritoId: Number(distritoId) },
+    select: { id: true, nome: true },
+    take: 2,
+    orderBy: { id: 'asc' },
+  });
+  return igrejas.length === 1 ? igrejas[0] : null;
+}
+
 const DuplaService = {
   // Lista duplas com filtros e restrições por perfil (Resource-Based Authorization)
   async listar(usuario, query) {
@@ -89,7 +99,8 @@ const DuplaService = {
       orderBy: { id: 'asc' },
     });
     const distritoId = data.distritoId ? Number(data.distritoId) : distritoPadrao?.id;
-    const igrejaId = data.igrejaId ? Number(data.igrejaId) : igrejaIdPadrao;
+    const igrejaPadraoDoDistrito = data.igrejaId || igrejaIdPadrao ? null : await resolverIgrejaPadrao(distritoId);
+    const igrejaId = data.igrejaId ? Number(data.igrejaId) : igrejaIdPadrao || igrejaPadraoDoDistrito?.id;
     if (!distritoId) throw { status: 400, mensagem: 'Nao ha distrito disponivel para vincular este cadastro.' };
     await validarDistrito(usuario, distritoId);
     if (igrejaId) await validarIgreja(usuario, igrejaId);
@@ -106,13 +117,13 @@ const DuplaService = {
       liderNome: data.liderNome,
       liderTelefone: data.liderTelefone,
       liderEmail: data.liderEmail,
-      liderIgreja: data.liderIgreja,
+      liderIgreja: data.liderIgreja || igrejaPadraoDoDistrito?.nome,
       liderDistrito: data.liderDistrito,
       membro2Tipo: 'MEMBRO_IASD',
       membro2Nome: data.membro2Nome || 'Nao informado',
       membro2Telefone: data.membro2Telefone,
       membro2Email: data.membro2Email,
-      membro2Igreja: data.membro2Igreja,
+      membro2Igreja: data.membro2Igreja || igrejaPadraoDoDistrito?.nome,
       membro2Distrito: data.membro2Distrito,
       status: data.status || 'ATIVA',
       pessoasAlcancadas: Number(data.pessoasAlcancadas) || 0,
