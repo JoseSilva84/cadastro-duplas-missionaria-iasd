@@ -200,9 +200,9 @@ const DuplaService = {
     return DuplaModel.update(id, dadosAtualizados);
   },
 
-  // Remove dupla (apenas admins — garantido na rota)
-  async remover(id) {
-    await this.buscarPorId(id);
+  // Remove dupla apos validar o escopo do perfil solicitante.
+  async remover(id, usuario) {
+    await this.buscarPorId(id, usuario);
     return DuplaModel.remove(id);
   },
 };

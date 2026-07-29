@@ -31,11 +31,18 @@ router.put(
   DuplaController.atualizar
 );
 
-// DELETE /api/duplas/:id — Remove dupla (apenas admins)
+// DELETE /api/duplas/:id — Remove dupla conforme escopo do perfil
 router.delete(
   '/:id',
   autenticar,
-  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  autorizar(
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.COORDENADOR_REGIONAL,
+    PERFIS.PASTOR_DISTRITAL,
+    PERFIS.DIRETOR_MISSIONARIO_IGREJA
+  ),
   DuplaController.remover
 );
 

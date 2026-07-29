@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
-import { ehAdmin, PERFIS, useAuth } from '../contexts/AuthContext';
+import { PERFIS, useAuth } from '../contexts/AuthContext';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -36,6 +36,8 @@ const InfoRow = ({ label, valor }) => valor ? (
   </div>
 ) : null;
 
+const podeExcluirDuplas = (usuario) => Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
+
 export default function DadosDupla() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ export default function DadosDupla() {
   const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
-  const podeExcluir = ehAdmin(usuario);
+  const podeExcluir = podeExcluirDuplas(usuario);
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [confirmandoDelete, setConfirmandoDelete] = useState(false);

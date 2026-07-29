@@ -70,10 +70,10 @@ const DuplaController = {
     }
   },
 
-  // DELETE /api/duplas/:id — apenas admins (garantido na rota)
+  // DELETE /api/duplas/:id — perfis de liderança, com escopo validado no service
   async remover(req, res) {
     try {
-      await DuplaService.remover(req.params.id);
+      await DuplaService.remover(req.params.id, req.usuario);
       res.json({ mensagem: 'Dupla removida com sucesso.' });
     } catch (err) {
       const status = err.status || 500;

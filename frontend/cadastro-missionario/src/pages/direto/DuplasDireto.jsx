@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
-import { ehAdmin, useAuth } from '../../contexts/AuthContext';
+import { PERFIS, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 
 const medalhaConfig = {
@@ -191,6 +191,7 @@ const tipoEstudoRelatorioPath = {
 };
 
 const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
+const podeExcluirDuplas = (usuario) => Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
 
 const progressoEstudo = (estudo) => {
   const total = totalLicoesSerie(estudo?.serie);
@@ -445,7 +446,7 @@ export default function DuplasDireto() {
   const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
   const filtroEspecialParam = searchParams.get('filtro');
   const { usuario } = useAuth();
-  const podeExcluir = ehAdmin(usuario);
+  const podeExcluir = podeExcluirDuplas(usuario);
   const [duplas, setDuplas] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
   const [carregando, setCarregando] = useState(true);
