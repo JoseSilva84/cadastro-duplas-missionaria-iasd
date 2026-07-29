@@ -85,8 +85,13 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
 
 function destinoInicial(usuario, layout = 'avancado') {
   const prefix = layout === 'direto' ? '/direto' : '';
+  if (ehAdmin(usuario)) return `${prefix}/dashboard`;
   if (ehDupla(usuario)) return `${prefix}/igrejas`;
-  return `${prefix}/dashboard`;
+  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) {
+    return `${prefix}/regioes`;
+  }
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return `${prefix}/distritos`;
+  return `${prefix}/igrejas`;
 }
 
 // ─── Redireciona para escolha de layout ou rota correta após login ────────────
@@ -167,7 +172,7 @@ function AppRoutes() {
           path="dashboard"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
               redirectTo="/igrejas"
             >
               <Dashboard />
@@ -286,7 +291,7 @@ function AppRoutes() {
             </RotaComPerfis>
           }
         />
-        <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
+        <Route path="relatorios/dashboard-associacao" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><DashboardAssociacao /></RotaComPerfis>} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
@@ -321,7 +326,7 @@ function AppRoutes() {
           path="dashboard"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
               redirectTo="/direto/igrejas"
             >
               <Dashboard />
@@ -398,7 +403,7 @@ function AppRoutes() {
           }
         />
         <Route path="relatorios" element={<RelatoriosDireto />} />
-        <Route path="relatorios/dashboard-associacao" element={<DashboardAssociacao />} />
+        <Route path="relatorios/dashboard-associacao" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><DashboardAssociacao /></RotaComPerfis>} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />

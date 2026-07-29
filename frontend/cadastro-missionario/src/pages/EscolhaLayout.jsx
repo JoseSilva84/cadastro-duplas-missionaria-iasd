@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const layouts = [
   {
@@ -31,6 +31,14 @@ const layouts = [
   },
 ];
 
+const destinoPorPerfil = (usuario, prefix = '') => {
+  if (ehAdmin(usuario)) return `${prefix}/dashboard`;
+  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return `${prefix}/igrejas`;
+  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) return `${prefix}/regioes`;
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return `${prefix}/distritos`;
+  return `${prefix}/igrejas`;
+};
+
 export default function EscolhaLayout() {
   const { setLayout, usuario } = useAuth();
   const navigate = useNavigate();
@@ -42,9 +50,9 @@ export default function EscolhaLayout() {
     setLayout(layoutId);
     setTimeout(() => {
       if (layoutId === 'avancado') {
-        navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/dashboard');
+        navigate(destinoPorPerfil(usuario));
       } else {
-        navigate(usuario?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/direto/igrejas' : '/direto/dashboard');
+        navigate(destinoPorPerfil(usuario, '/direto'));
       }
     }, 400);
   };

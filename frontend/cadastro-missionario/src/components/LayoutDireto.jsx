@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
 
 const icons = {
@@ -70,6 +70,14 @@ const formatarNomeUsuario = (nome) => (
   nome?.replace(/^Pastor Regional - REGIÃO/i, 'Pr. Dp. Regional - REGIÃO')
 );
 
+const destinoAvancado = (usuario) => {
+  if (ehAdmin(usuario)) return '/dashboard';
+  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return '/igrejas';
+  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) return '/regioes';
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
+  return '/igrejas';
+};
+
 export default function LayoutDireto() {
   const { usuario, logout, setLayout } = useAuth();
   const navigate = useNavigate();
@@ -83,14 +91,10 @@ export default function LayoutDireto() {
 
   const handleTrocarLayout = () => {
     setLayout('avancado');
-    if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      navigate('/igrejas');
-      return;
-    }
-    navigate('/dashboard');
+    navigate(destinoAvancado(usuario));
   };
 
-  const isAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuario?.perfil);
+  const isAdmin = ehAdmin(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
@@ -114,7 +118,7 @@ export default function LayoutDireto() {
   const relatorioItems = [
     { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
     { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
-    { to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' },
+    ...(isAdmin ? [{ to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' }] : []),
     ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
     { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
@@ -156,12 +160,11 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
   ] : isDiretorMissionario ? [
-    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
   ] : [
-    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
+    ...(isAdmin ? [{ to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard }] : []),
     ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', shortLabel: 'Reg.', icon: icons.regioes }] : []),
     { to: '/direto/distritos', label: 'Distritos', shortLabel: 'Dist.', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', shortLabel: 'Igrej.', icon: icons.igrejas },

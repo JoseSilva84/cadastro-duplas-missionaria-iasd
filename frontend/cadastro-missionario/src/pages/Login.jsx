@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
@@ -14,6 +14,14 @@ const Cruz = ({ size = 'w-25 h-25' }) => (
     <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-1" />
   </div>
 );
+
+const destinoPosLogin = (usuario) => {
+  if (ehAdmin(usuario)) return '/dashboard';
+  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return '/igrejas';
+  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) return '/regioes';
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
+  return '/igrejas';
+};
 
 export default function Login() {
   const { login } = useAuth();
@@ -58,7 +66,7 @@ export default function Login() {
     setCarregando(true);
     try {
       const usuarioLogado = await login(form.email, form.senha);
-      navigate(usuarioLogado?.perfil === PERFIS.DUPLA_MISSIONARIA ? '/igrejas' : '/dashboard');
+      navigate(destinoPosLogin(usuarioLogado));
     } catch (err) {
       console.error('Erro no login:', err);
       const mensagem = err.response?.data?.erro

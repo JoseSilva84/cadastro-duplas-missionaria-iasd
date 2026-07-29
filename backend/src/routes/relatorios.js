@@ -18,7 +18,7 @@ router.get('/por-igreja/:igrejaId', autenticar, RelatorioController.porIgreja);
 
 // GET /api/relatorios/estudos-biblicos — Relatório consolidado de estudos bíblicos
 router.get('/estudos-biblicos', autenticar, RelatorioController.estudosBiblicos);
-router.get('/dashboard-associacao', autenticar, RelatorioController.dashboardAssociacao);
+router.get('/dashboard-associacao', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.dashboardAssociacao);
 router.get('/coordenadores-regionais', autenticar, RelatorioController.coordenadoresRegionais);
 router.get('/personalizado', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.personalizado);
 router.patch('/escola-sabatina-resumo', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.atualizarEscolaSabatinaResumo);

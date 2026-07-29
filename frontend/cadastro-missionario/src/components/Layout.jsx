@@ -102,7 +102,6 @@ export default function Layout({ children }) {
 
   const navLinks = isDupla || isDiretorMissionario
     ? [
-        ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/dashboard' : '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -124,7 +123,7 @@ export default function Layout({ children }) {
       ]
     : isDireto
     ? [
-        { to: '/direto/dashboard', label: 'Dashboard', icon: icons.dashboard },
+        ...(isAdmin ? [{ to: '/direto/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
         ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
@@ -148,7 +147,7 @@ export default function Layout({ children }) {
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
           { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
-          { to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' },
+          ...(isAdmin ? [{ to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' }] : []),
           ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
@@ -157,7 +156,7 @@ export default function Layout({ children }) {
         ] }] : []),
       ]
     : [
-        { to: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
+        ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
         ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
@@ -181,7 +180,7 @@ export default function Layout({ children }) {
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
           { to: '/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
-          { to: '/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' },
+          ...(isAdmin ? [{ to: '/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' }] : []),
           ...(isAdmin ? [{ to: '/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
