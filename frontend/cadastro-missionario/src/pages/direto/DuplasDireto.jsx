@@ -4,6 +4,7 @@ import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import { PERFIS, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
+import { toast } from '../../lib/toast';
 
 const medalhaConfig = {
   ouro:   { emoji: '🥇', label: 'Ouro',   cor: '#C9963A', bg: '#C9963A18' },
@@ -427,6 +428,84 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navig
   );
 };
 
+function ModalConfirmarExclusaoDupla({ dupla, processando, onClose, onConfirmar }) {
+  if (!dupla) return null;
+
+  const liderNome = dupla.liderNome || 'Membro 1';
+  const membro2Nome = dupla.membro2Nome || 'Membro 2';
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
+        <div className="bg-gradient-to-br from-red-50 via-white to-amber-50 px-6 pb-5 pt-6 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
+            <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            Excluir dupla missionaria?
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Esta acao remove a dupla selecionada do sistema. Confira os membros antes de confirmar.
+          </p>
+        </div>
+
+        <div className="px-6 py-5">
+          <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <FotoPessoa
+                  src={dupla.fotoLiderPreview}
+                  nome={liderNome}
+                  className="h-11 w-11 flex-shrink-0 rounded-full ring-2 ring-white shadow-sm"
+                  fallbackClassName="bg-[#1A3A6B]"
+                />
+                <p className="min-w-0 truncate text-sm font-bold text-slate-800">{liderNome}</p>
+              </div>
+              <span className="text-lg font-bold text-slate-300">+</span>
+              <div className="flex min-w-0 items-center gap-3">
+                <FotoPessoa
+                  src={dupla.fotoMembro2Preview}
+                  nome={membro2Nome}
+                  className="h-11 w-11 flex-shrink-0 rounded-full ring-2 ring-white shadow-sm"
+                  fallbackClassName="bg-[#C9963A]"
+                />
+                <p className="min-w-0 truncate text-sm font-bold text-slate-800">{membro2Nome}</p>
+              </div>
+            </div>
+            <p className="mt-3 border-t border-slate-200 pt-3 text-xs font-medium text-slate-500">
+              {dupla.igreja?.nome || dupla.liderIgreja || dupla.membro2Igreja || dupla.distrito?.nome || 'Sem igreja informada'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={processando}
+            className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmar}
+            disabled={processando}
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {processando && (
+              <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            )}
+            {processando ? 'Excluindo...' : 'Excluir dupla'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DuplasDireto() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -466,11 +545,22 @@ export default function DuplasDireto() {
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [excluindoId, setExcluindoId] = useState(null);
+  const [duplaParaExcluir, setDuplaParaExcluir] = useState(null);
   const [estudoLicaoModal, setEstudoLicaoModal] = useState(null);
   const [licoesRapidas, setLicoesRapidas] = useState({});
   const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
+
+  const abrirConfirmacaoExcluir = (duplaAlvo) => {
+    if (!duplaAlvo || excluindoId) return;
+    setDuplaParaExcluir(duplaAlvo);
+  };
+
+  const fecharConfirmacaoExcluir = () => {
+    if (excluindoId) return;
+    setDuplaParaExcluir(null);
+  };
 
   const abrirModalLicao = (estudo) => {
     setEstudoLicaoModal(estudo);
@@ -526,18 +616,18 @@ export default function DuplasDireto() {
     }
   };
 
-  const excluirDupla = async (duplaAlvo = duplaSelecionada) => {
+  const excluirDupla = async (duplaAlvo = duplaParaExcluir) => {
     if (!duplaAlvo || excluindoId) return;
-    const confirmou = window.confirm(`Excluir a dupla ${duplaAlvo.liderNome || ''} + ${duplaAlvo.membro2Nome || ''}?`);
-    if (!confirmou) return;
 
     try {
       setExcluindoId(duplaAlvo.id);
       await api.delete(`/duplas/${duplaAlvo.id}`);
       setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaAlvo.id));
+      setDuplaParaExcluir(null);
       setMostraDetalhe(false);
+      toast.success('Dupla excluida com sucesso.');
     } catch (err) {
-      alert(err.response?.data?.erro || 'Erro ao remover dupla.');
+      toast.error(err.response?.data?.erro || 'Erro ao remover dupla.');
     } finally {
       setExcluindoId(null);
     }
@@ -1002,7 +1092,7 @@ export default function DuplasDireto() {
                     {podeExcluir && (
                       <button
                         type="button"
-                        onClick={() => excluirDupla(dupla)}
+                        onClick={() => abrirConfirmacaoExcluir(dupla)}
                         disabled={excluindoId === dupla.id}
                         className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-60"
                       >
@@ -1176,7 +1266,7 @@ export default function DuplasDireto() {
                   {podeExcluir && (
                     <button
                       type="button"
-                      onClick={excluirDupla}
+                      onClick={() => abrirConfirmacaoExcluir(duplaSelecionada)}
                       disabled={excluindoId === duplaSelecionada.id}
                       className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-60"
                     >
@@ -1455,6 +1545,12 @@ export default function DuplasDireto() {
         )}
       </div>
     </div>
+    <ModalConfirmarExclusaoDupla
+      dupla={duplaParaExcluir}
+      processando={Boolean(duplaParaExcluir && excluindoId === duplaParaExcluir.id)}
+      onClose={fecharConfirmacaoExcluir}
+      onConfirmar={() => excluirDupla()}
+    />
     {estudoLicaoModal && (() => {
       const edicaoLicao = licoesRapidas[estudoLicaoModal.id] || {};
       const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao.serie)?.licoes || [];
