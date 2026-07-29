@@ -115,12 +115,12 @@ const gerarPdf = (relatorio) => {
   janela.document.close();
 };
 
-const FotoBloco = ({ src, alt, tipo, onClick }) => (
+const FotoBloco = ({ src, alt, tipo, onClick, className = 'h-36 w-full' }) => (
   <button
     type="button"
     onClick={src ? onClick : undefined}
     disabled={!src}
-    className={`group relative h-36 w-full overflow-hidden rounded-lg bg-[#F4F5F7] border border-gray-100 flex items-center justify-center transition-all duration-200 ${src ? 'cursor-zoom-in hover:-translate-y-0.5 hover:border-[#C9963A] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/50' : 'cursor-default'}`}
+    className={`group relative overflow-hidden rounded-xl bg-[#F4F5F7] border border-gray-100 flex items-center justify-center transition-all duration-200 ${className} ${src ? 'cursor-zoom-in hover:-translate-y-0.5 hover:border-[#C9963A] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/50' : 'cursor-default'}`}
   >
     {src ? (
       <>
@@ -147,13 +147,13 @@ const InfoLinha = ({ label, valor }) => (
 );
 
 const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
-  <section className="group bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/45 hover:shadow-xl">
-    <div className="mb-3 min-h-20">
-      <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo}</p>
+  <section className="group grid gap-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-xl lg:grid-cols-[180px_minmax(0,1fr)] lg:items-stretch">
+    <div className="mb-0 border-b border-gray-100 pb-3 lg:col-start-2 lg:row-start-1">
+      <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo?.startsWith('Coluna') ? 'Informacoes principais' : cargo}</p>
       <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
     </div>
-    <FotoBloco src={foto} alt={pessoa.nome || titulo} onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
-    <div className="mt-3">
+    <FotoBloco src={foto} alt={pessoa.nome || titulo} className="h-44 w-full lg:h-full lg:min-h-44 lg:row-span-2 lg:row-start-1" onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
+    <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:col-start-2 lg:row-start-2">
       <InfoLinha label="Nome" valor={pessoa.nome} />
       <InfoLinha label="Endereço" valor={pessoa.endereco} />
       <InfoLinha label="WhatsApp" valor={pessoa.whatsapp || pessoa.telefone} />
@@ -825,23 +825,24 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+      <div className="flex flex-col gap-4">
         <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} onFotoClick={setFotoAmpliada} />
         <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onFotoClick={setFotoAmpliada} />
         <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
 
-        <section className="group bg-white rounded-lg border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/45 hover:shadow-xl">
-          <div className="mb-3 min-h-20">
-            <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Coluna 4</p>
+        <section className="group grid gap-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-xl lg:grid-cols-[180px_minmax(0,1fr)] lg:items-stretch">
+          <div className="mb-0 border-b border-gray-100 pb-3 lg:col-start-2 lg:row-start-1">
+            <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Resumo da igreja</p>
             <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
           </div>
           <FotoBloco
             src={fotos.igreja}
             alt={igrejaAtual.nome}
             tipo="templo"
+            className="h-44 w-full lg:h-full lg:min-h-44 lg:row-span-2 lg:row-start-1"
             onClick={() => setFotoAmpliada({ src: fotos.igreja, titulo: 'Dados da Igreja', nome: igrejaAtual.nome })}
           />
-          <div className="mt-3 grid grid-cols-1 gap-0">
+          <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2 xl:grid-cols-3 lg:col-start-2 lg:row-start-2">
             <InfoLinha label="Quantidade de membros" valor={formatarNumero(indicadores.quantidadeMembros)} />
             <InfoLinha label="Endereço da igreja" valor={igrejaAtual.endereco} />
             <InfoLinha label="Duplas missionárias" valor={formatarNumero(indicadores.quantidadeDuplasMissionarias)} />
