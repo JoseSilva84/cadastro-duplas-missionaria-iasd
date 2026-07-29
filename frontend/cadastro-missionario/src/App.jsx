@@ -30,6 +30,7 @@ import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
 import MinhaDupla from './pages/MinhaDupla';
 import GestaoUsuarios from './pages/GestaoUsuarios';
+import Alunos from './pages/Alunos';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -206,6 +207,7 @@ function AppRoutes() {
         {/* Global lists */}
         <Route path="distritos" element={<ListagemDistritos />} />
         <Route path="igrejas" element={<ListagemIgrejas />} />
+        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Alunos /></RotaComPerfis>} />
 
         {/* Distritos */}
         <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
@@ -348,6 +350,7 @@ function AppRoutes() {
         />
         <Route path="distritos" element={<ListagemDistritosDireto />} />
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />
+        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
         <Route path="igrejas/:igrejaId" element={<ListagemIgrejasDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
