@@ -685,9 +685,9 @@ export default function DuplasDireto() {
         navigate={navigate}
       />
     )}
-    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto p-4' : 'animate-fade-in'} bg-transparent`}>
+    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 xl:px-14 2xl:px-24' : 'animate-fade-in'} bg-transparent`}>
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
-      <div className="flex w-full flex-col">
+      <div className="mx-auto flex w-full max-w-6xl flex-col">
         {/* Cabeçalho + Filtros */}
         <div className="flex-shrink-0 pb-5">
           <div className="flex items-center justify-between mb-3">
