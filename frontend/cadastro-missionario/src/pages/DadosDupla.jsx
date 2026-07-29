@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 import { PERFIS, useAuth } from '../contexts/AuthContext';
+import LoadingState from '../components/LoadingState';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -66,16 +67,7 @@ export default function DadosDupla() {
     }
   };
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando dados..." />;
   if (!dupla) return <div className="p-6 text-red-500 animate-fade-in">Dupla não encontrada.</div>;
 
   return (

@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from '../lib/toast';
 import EChart from '../components/EChart';
+import LoadingState from '../components/LoadingState';
 
 const Icone = ({ children, cor = '#1A3A6B' }) => (
   <div
@@ -462,13 +463,7 @@ export default function DashboardAssociacao() {
     }
   };
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20 border-t-[#1A3A6B] animate-spin" />
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
 
   return (
     <div className={isDireto ? 'h-full overflow-y-auto bg-[#F4F5F7] p-4 sm:p-6 animate-fade-in' : 'animate-fade-in'}>

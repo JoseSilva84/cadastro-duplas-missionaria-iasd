@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import LoadingState from '../components/LoadingState';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -123,18 +124,7 @@ export default function DashboardCoordenadorRegional() {
     [...coordenadores].sort((a, b) => b.totalAssistencias - a.totalAssistencias || a.nome.localeCompare(b.nome))
   ), [coordenadores]);
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-64">
-        <div className="space-y-3 w-full max-w-4xl p-4">
-          <div className="skeleton h-10 w-2/5" />
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map((item) => <div key={item} className="skeleton h-28" />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
 
   return (
     <div className={isDireto ? 'h-full overflow-y-auto bg-[#F4F5F7] p-4 sm:p-6 animate-fade-in' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>

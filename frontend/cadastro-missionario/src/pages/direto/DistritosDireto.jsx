@@ -5,6 +5,7 @@ import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
 import { PERFIS, useAuth } from '../../contexts/AuthContext';
+import LoadingState from '../../components/LoadingState';
 
 const projetoLabel = {
   CASA_A_CASA: 'Casa a casa',
@@ -344,19 +345,7 @@ export default function DistritosDireto() {
     setDuplaSelecionada(todasDuplas.length > 0 ? todasDuplas[0] : null);
   };
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-          </div>
-          <p className="text-gray-400 text-sm animate-pulse">Carregando distrito...</p>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando distrito..." />;
 
   if (erro) {
     return (

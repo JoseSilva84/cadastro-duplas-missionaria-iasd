@@ -146,14 +146,14 @@ const InfoLinha = ({ label, valor }) => (
   </div>
 );
 
-const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
-  <section className="group grid gap-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-xl lg:grid-cols-[180px_minmax(0,1fr)] lg:items-stretch">
-    <div className="mb-0 border-b border-gray-100 pb-3 lg:col-start-2 lg:row-start-1">
+const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick, onOpen }) => (
+  <section role="button" tabIndex={0} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen?.(); } }} className="group grid cursor-pointer gap-3 bg-white rounded-xl border border-gray-100 shadow-sm p-3 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30 sm:grid-cols-[96px_minmax(0,1fr)] sm:items-center">
+    <div className="mb-0 sm:col-start-2 sm:row-start-1">
       <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{cargo?.startsWith('Coluna') ? 'Informacoes principais' : cargo}</p>
       <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
     </div>
-    <FotoBloco src={foto} alt={pessoa.nome || titulo} className="h-44 w-full lg:h-full lg:min-h-44 lg:row-span-2 lg:row-start-1" onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
-    <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:col-start-2 lg:row-start-2">
+    <FotoBloco src={foto} alt={pessoa.nome || titulo} className="h-24 w-full sm:h-24 sm:row-span-2 sm:row-start-1" onClick={() => onFotoClick?.({ src: foto, titulo, nome: pessoa.nome || titulo })} />
+    <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2 sm:col-start-2 sm:row-start-2">
       <InfoLinha label="Nome" valor={pessoa.nome} />
       <InfoLinha label="Endereço" valor={pessoa.endereco} />
       <InfoLinha label="WhatsApp" valor={pessoa.whatsapp || pessoa.telefone} />
@@ -161,6 +161,39 @@ const ColunaPessoa = ({ titulo, cargo, pessoa, foto, onFotoClick }) => (
     </div>
   </section>
 );
+
+const ModalDetalheCard = ({ detalhe, onClose }) => {
+  if (!detalhe) return null;
+
+  return (
+    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#0B1220]/55 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
+        <div className="grid gap-5 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF8EA] p-5 sm:grid-cols-[170px_minmax(0,1fr)]">
+          <FotoBloco
+            src={detalhe.foto}
+            alt={detalhe.titulo}
+            tipo={detalhe.tipoFoto}
+            className="h-40 w-full sm:h-full sm:min-h-40"
+          />
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">{detalhe.subtitulo}</p>
+            <h3 className="mt-1 text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{detalhe.titulo}</h3>
+            <div className="mt-4 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+              {detalhe.itens.map((item) => (
+                <InfoLinha key={item.label} label={item.label} valor={item.valor} />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end border-t border-gray-100 bg-white px-5 py-4">
+          <button type="button" onClick={onClose} className="btn-primary text-sm px-5 py-2">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Campo = ({ label, children }) => (
   <label className="block">
@@ -694,6 +727,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const [fotos, setFotos] = useState({});
   const [editando, setEditando] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
+  const [detalheCard, setDetalheCard] = useState(null);
 
   // ── Duplas da Igreja ──────────────────────────────────────────────────────
   const [duplasIgreja, setDuplasIgreja] = useState([]);
@@ -826,12 +860,12 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       </div>
 
       <div className="flex flex-col gap-4">
-        <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} onFotoClick={setFotoAmpliada} />
-        <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onFotoClick={setFotoAmpliada} />
-        <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onFotoClick={setFotoAmpliada} />
+        <ColunaPessoa titulo="Diretor de Ministério Pessoal" cargo="Coluna 1" pessoa={diretor} foto={fotos.diretor} onOpen={() => setDetalheCard({ titulo: 'Diretor de Ministério Pessoal', subtitulo: 'Ministério Pessoal', foto: fotos.diretor, itens: [{ label: 'Nome', valor: diretor.nome }, { label: 'Endereço', valor: diretor.endereco }, { label: 'WhatsApp', valor: diretor.whatsapp || diretor.telefone }, { label: 'Data de nascimento', valor: formatarData(diretor.dataNascimento) }] })} />
+        <ColunaPessoa titulo="Pastor" cargo={igrejaAtual.distrito?.cargoPastor || 'Coluna 2'} pessoa={pastor} foto={fotos.pastor} onOpen={() => setDetalheCard({ titulo: 'Pastor', subtitulo: igrejaAtual.distrito?.cargoPastor || 'Pastor Distrital', foto: fotos.pastor, itens: [{ label: 'Nome', valor: pastor.nome }, { label: 'Endereço', valor: pastor.endereco }, { label: 'WhatsApp', valor: pastor.whatsapp || pastor.telefone }, { label: 'Data de nascimento', valor: formatarData(pastor.dataNascimento) }] })} />
+        <ColunaPessoa titulo="Coordenador Regional" cargo={igrejaAtual.cargoCoordInteressados || 'Coluna 3'} pessoa={coordenador} foto={fotos.coordenador} onOpen={() => setDetalheCard({ titulo: 'Coordenador Regional', subtitulo: igrejaAtual.cargoCoordInteressados || 'Coordenador de Interessados', foto: fotos.coordenador, itens: [{ label: 'Nome', valor: coordenador.nome }, { label: 'Endereço', valor: coordenador.endereco }, { label: 'WhatsApp', valor: coordenador.whatsapp || coordenador.telefone }, { label: 'Data de nascimento', valor: formatarData(coordenador.dataNascimento) }] })} />
 
-        <section className="group grid gap-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-xl lg:grid-cols-[180px_minmax(0,1fr)] lg:items-stretch">
-          <div className="mb-0 border-b border-gray-100 pb-3 lg:col-start-2 lg:row-start-1">
+        <section role="button" tabIndex={0} onClick={() => setDetalheCard({ titulo: 'Dados da Igreja', subtitulo: 'Resumo da igreja', foto: fotos.igreja, tipoFoto: 'templo', itens: [{ label: 'Quantidade de membros', valor: formatarNumero(indicadores.quantidadeMembros) }, { label: 'Endereço da igreja', valor: igrejaAtual.endereco }, { label: 'Duplas missionárias', valor: formatarNumero(indicadores.quantidadeDuplasMissionarias) }, { label: 'Quantidade de estudos', valor: formatarNumero(indicadores.quantidadeEstudos) }, { label: 'Pontos de estudos', valor: formatarNumero(indicadores.quantidadePontosEstudos) }, { label: 'Classes bíblicas', valor: formatarNumero(indicadores.quantidadeClassesBiblicas) }, { label: 'Classificação classe bíblica', valor: (indicadores.classeBiblica || igrejaAtual.classeBiblica?.classe) ? `Classe ${indicadores.classeBiblica || igrejaAtual.classeBiblica?.classe}` : 'Sem classificação' }, { label: 'Estudantes em classe bíblica', valor: formatarNumero(indicadores.totalEstudantesClasseBiblica ?? igrejaAtual.classeBiblica?.totalEstudantes) }] })} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.currentTarget.click(); } }} className="group grid cursor-pointer gap-3 bg-white rounded-xl border border-gray-100 shadow-sm p-3 min-w-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/45 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30 sm:grid-cols-[96px_minmax(0,1fr)] sm:items-center">
+          <div className="mb-0 sm:col-start-2 sm:row-start-1">
             <p className="text-[10px] uppercase tracking-wider text-[#C9963A] font-bold">Resumo da igreja</p>
             <h3 className="text-base font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>Dados da Igreja</h3>
           </div>
@@ -839,18 +873,12 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
             src={fotos.igreja}
             alt={igrejaAtual.nome}
             tipo="templo"
-            className="h-44 w-full lg:h-full lg:min-h-44 lg:row-span-2 lg:row-start-1"
-            onClick={() => setFotoAmpliada({ src: fotos.igreja, titulo: 'Dados da Igreja', nome: igrejaAtual.nome })}
+            className="h-24 w-full sm:h-24 sm:row-span-2 sm:row-start-1"
           />
-          <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2 xl:grid-cols-3 lg:col-start-2 lg:row-start-2">
+          <div className="mt-0 grid grid-cols-1 gap-x-6 sm:grid-cols-3 sm:col-start-2 sm:row-start-2">
             <InfoLinha label="Quantidade de membros" valor={formatarNumero(indicadores.quantidadeMembros)} />
-            <InfoLinha label="Endereço da igreja" valor={igrejaAtual.endereco} />
             <InfoLinha label="Duplas missionárias" valor={formatarNumero(indicadores.quantidadeDuplasMissionarias)} />
             <InfoLinha label="Quantidade de estudos" valor={formatarNumero(indicadores.quantidadeEstudos)} />
-            <InfoLinha label="Pontos de estudos" valor={formatarNumero(indicadores.quantidadePontosEstudos)} />
-            <InfoLinha label="Classes bíblicas" valor={formatarNumero(indicadores.quantidadeClassesBiblicas)} />
-            <InfoLinha label="Classificação classe bíblica" valor={(indicadores.classeBiblica || igrejaAtual.classeBiblica?.classe) ? `Classe ${indicadores.classeBiblica || igrejaAtual.classeBiblica?.classe}` : 'Sem classificação'} />
-            <InfoLinha label="Estudantes em classe bíblica" valor={formatarNumero(indicadores.totalEstudantesClasseBiblica ?? igrejaAtual.classeBiblica?.totalEstudantes)} />
           </div>
         </section>
       </div>
@@ -989,6 +1017,10 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
 
       {duplaSelecionada && (
         <ModalDupla dupla={duplaSelecionada} onClose={() => setDuplaSelecionada(null)} onNavigate={navegarDoModal} prefix={prefix} />
+      )}
+
+      {detalheCard && (
+        <ModalDetalheCard detalhe={detalheCard} onClose={() => setDetalheCard(null)} />
       )}
 
       {fotoAmpliada && (

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import EChart from '../components/EChart';
+import LoadingState from '../components/LoadingState';
 
 const faixaIgrejaConfig = {
   A: { titulo: 'Classe A', regra: '150 ou mais estudantes', cor: '#047857', bg: '#d1fae5' },
@@ -240,16 +241,7 @@ export default function RelatorioClassesBiblicas() {
     }],
   };
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-64">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando relatório..." />;
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>

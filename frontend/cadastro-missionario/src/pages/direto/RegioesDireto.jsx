@@ -5,6 +5,7 @@ import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
 import { useAuth, PERFIS, ehAdmin } from '../../contexts/AuthContext';
+import LoadingState from '../../components/LoadingState';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -203,19 +204,7 @@ export default function RegioesDireto() {
     setEditandoPastor(false);
   }
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-          </div>
-          <p className="text-gray-400 text-sm animate-pulse">Carregando regiões...</p>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando regiões..." />;
 
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">

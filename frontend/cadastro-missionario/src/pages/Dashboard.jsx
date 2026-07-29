@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import LoadingState from '../components/LoadingState';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 const percentual = (valor, total) => (total > 0 ? Math.round((Number(valor || 0) / total) * 100) : 0);
@@ -236,13 +237,7 @@ export default function Dashboard() {
   const abrirDupla = (dupla) => dupla?.id && abrir(`/duplas/${dupla.id}`);
   const abrirMedalha = (medalha) => abrir(`/duplas?status=${medalha}`);
 
-  if (carregando) {
-    return (
-      <div className="flex min-h-64 items-center justify-center">
-        <div className="h-12 w-12 rounded-full border-[3px] border-[#1A3A6B]/20 border-t-[#1A3A6B] animate-spin" />
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
 
   return (
     <div className="animate-fade-in-up">

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
+import LoadingState from '../components/LoadingState';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 const progresso = (estudo) => {
@@ -224,9 +225,7 @@ export default function EstudanteDashboard() {
     }
   };
 
-  if (carregando) {
-    return <div className="p-8 text-gray-400">Carregando detalhes...</div>;
-  }
+  if (carregando) return <LoadingState mensagem="Carregando detalhes..." />;
 
   if (!estudo) {
     return <div className="p-8 text-gray-400">Registro não encontrado.</div>;

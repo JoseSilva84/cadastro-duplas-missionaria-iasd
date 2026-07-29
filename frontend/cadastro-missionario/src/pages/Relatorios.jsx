@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
+import LoadingState from '../components/LoadingState';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -32,16 +33,7 @@ export default function Relatorios() {
     }).finally(() => setCarregando(false));
   }, []);
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando relatórios..." />;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">

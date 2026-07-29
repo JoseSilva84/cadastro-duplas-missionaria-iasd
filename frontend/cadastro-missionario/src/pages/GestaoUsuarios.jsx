@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import api from '../lib/api';
+import LoadingState from '../components/LoadingState';
 
 const PERFIL_CONFIG = {
   SUPER_ADMIN: { label: 'Super Admin', cor: 'bg-purple-100 text-purple-800 border-purple-200', dot: 'bg-purple-500' },
@@ -548,19 +549,7 @@ export default function GestaoUsuarios() {
   const totalAtivos = usuarios.filter((usuario) => usuario.ativo).length;
   const filtrosAtivos = Boolean(filtroPerfil || filtroStatus || busca);
 
-  if (carregando) {
-    return (
-      <div className="space-y-5">
-        <div className="h-36 animate-pulse rounded-xl bg-white" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-28 animate-pulse rounded-xl bg-white" />
-          ))}
-        </div>
-        <div className="h-72 animate-pulse rounded-xl bg-white" />
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando usuários..." />;
 
   if (erro) {
     return (

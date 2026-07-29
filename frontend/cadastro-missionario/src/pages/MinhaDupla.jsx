@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import LoadingState from '../components/LoadingState';
 
 // Painel exclusivo para o perfil DUPLA_MISSIONARIA
 // A dupla só vê os dados da sua própria dupla e os atalhos para preencher relatórios
@@ -40,16 +41,7 @@ export default function MinhaDupla() {
   // Detecta o prefixo de rota baseado no layout atual
   const prefix = localStorage.getItem('layout') === 'direto' ? '/direto' : '';
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#1A3A6B] border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Carregando sua dupla...</p>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando sua dupla..." />;
 
   if (erro) {
     return (

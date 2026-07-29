@@ -5,6 +5,7 @@ import { FotoService } from '../../foto.service';
 import { PERFIS, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 import { toast } from '../../lib/toast';
+import LoadingState from '../../components/LoadingState';
 
 const medalhaConfig = {
   ouro:   { emoji: '🥇', label: 'Ouro',   cor: '#C9963A', bg: '#C9963A18' },
@@ -750,19 +751,7 @@ export default function DuplasDireto() {
     return classeConfig[classe]?.cor || medalhaConfig[duplaSelecionada._medalha]?.cor || '#1A3A6B';
   }, [duplaSelecionada]);
 
-  if (carregando) {
-    return (
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-          </div>
-          <p className="text-gray-400 text-sm animate-pulse">Carregando duplas...</p>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando duplas..." />;
 
   return (
     <>

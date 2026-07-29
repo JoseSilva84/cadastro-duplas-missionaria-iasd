@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../lib/api';
 import IgrejaCapa from '../../components/IgrejaCapa';
 import { ehAdmin, useAuth } from '../../contexts/AuthContext';
+import LoadingState from '../../components/LoadingState';
 
 export default function ListagemIgrejasDireto() {
   const navigate = useNavigate();
@@ -55,19 +56,7 @@ export default function ListagemIgrejasDireto() {
     }
   };
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-          </div>
-          <p className="text-gray-400 text-sm animate-pulse">Carregando igrejas...</p>
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando igrejas..." />;
 
   return (
     <div className="flex h-full overflow-hidden animate-fade-in">

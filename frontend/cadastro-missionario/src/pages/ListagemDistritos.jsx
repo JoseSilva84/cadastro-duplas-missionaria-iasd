@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
+import LoadingState from '../components/LoadingState';
 
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
@@ -269,16 +270,7 @@ export default function ListagemDistritos() {
     d.regiao?.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center min-h-64 h-full">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-t-[#1A3A6B] animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  if (carregando) return <LoadingState mensagem="Carregando distritos..." />;
 
   const duplasDist = distritoSelecionado?.duplas || [];
   const { estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distritoSelecionado);
