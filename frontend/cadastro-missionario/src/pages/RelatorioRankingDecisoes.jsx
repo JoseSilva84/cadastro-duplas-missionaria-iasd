@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import LoadingState from '../components/LoadingState';
+import BackButton from '../components/BackButton';
 
 const tipoLabel = {
   UNICO: 'Estudante Biblico',
@@ -29,6 +30,8 @@ const nomeDupla = (dupla) => {
   return `${dupla.liderNome || 'Lider'} + ${dupla.membro2Nome || 'Membro'}`;
 };
 
+const batismosDaDupla = (dupla) => Number(dupla?.batismos || 0);
+
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 
 const calcularProgresso = (estudo) => {
@@ -54,17 +57,23 @@ export default function RelatorioRankingDecisoes() {
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
   const [dados, setDados] = useState({ estudos: [] });
+  const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
   useEffect(() => {
     let ativo = true;
-    api.get('/relatorios/estudos-biblicos')
-      .then((res) => {
-        if (ativo) setDados(res.data || { estudos: [] });
+    Promise.all([
+      api.get('/relatorios/estudos-biblicos'),
+      api.get('/duplas'),
+    ])
+      .then(([relatorioRes, duplasRes]) => {
+        if (!ativo) return;
+        setDados(relatorioRes.data || { estudos: [] });
+        setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
       })
       .catch((err) => {
-        if (ativo) setErro(err.response?.data?.erro || 'Erro ao carregar ranking.');
+        if (ativo) setErro(err.response?.data?.erro || 'Erro ao carregar relatorio.');
       })
       .finally(() => {
         if (ativo) setCarregando(false);
@@ -72,18 +81,36 @@ export default function RelatorioRankingDecisoes() {
     return () => { ativo = false; };
   }, []);
 
+  const batismosPorDupla = useMemo(() => (
+    duplas
+      .filter((dupla) => batismosDaDupla(dupla) > 0)
+      .map((dupla) => ({
+        id: dupla.id,
+        nome: nomeDupla(dupla),
+        batismos: batismosDaDupla(dupla),
+        igreja: dupla.igreja?.nome || 'Sem igreja',
+        distrito: dupla.distrito?.nome || 'Sem distrito',
+        regiao: dupla.distrito?.regiao?.nome || dupla.regiaoNome || 'Sem regiao',
+      }))
+      .sort((a, b) => b.batismos - a.batismos || a.nome.localeCompare(b.nome))
+  ), [duplas]);
+
   const ranking = useMemo(() => {
+    const duplasPorId = new Map(duplas.map((dupla) => [String(dupla.id), dupla]));
     const estudos = dados.estudos || [];
     const estudantes = estudos.flatMap((estudo) => {
+      const duplaCompleta = duplasPorId.get(String(estudo.dupla?.id)) || estudo.dupla;
       const base = {
         estudoId: estudo.id,
         tipoEstudo: estudo.tipoEstudo || 'UNICO',
         serie: estudo.serie,
         licaoAtual: Number(estudo.licaoAtual || 0),
         progresso: calcularProgresso(estudo),
-        igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
-        distrito: estudo.dupla?.distrito?.nome || 'Sem distrito',
-        dupla: nomeDupla(estudo.dupla),
+        igreja: duplaCompleta?.igreja?.nome || estudo.dupla?.igreja?.nome || 'Sem igreja',
+        distrito: duplaCompleta?.distrito?.nome || estudo.dupla?.distrito?.nome || 'Sem distrito',
+        duplaId: duplaCompleta?.id || estudo.dupla?.id || null,
+        dupla: nomeDupla(duplaCompleta),
+        batismosDupla: batismosDaDupla(duplaCompleta),
       };
 
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
@@ -111,28 +138,33 @@ export default function RelatorioRankingDecisoes() {
         || b.licaoAtual - a.licaoAtual
         || a.nome.localeCompare(b.nome);
     });
-  }, [dados]);
+  }, [dados, duplas]);
 
   const resumo = useMemo(() => {
     const classificados = ranking.filter((item) => ['A', 'B', 'C'].includes(item.classificacao));
+    const decisoesClasseA = ranking.filter((item) => item.classificacao === 'A').length;
+    const batismosRegistrados = batismosPorDupla.reduce((acc, dupla) => acc + dupla.batismos, 0);
     const media = classificados.length
       ? Math.round(classificados.reduce((acc, item) => acc + item.progresso, 0) / classificados.length)
       : 0;
+
     return {
-      A: ranking.filter((item) => item.classificacao === 'A').length,
-      B: ranking.filter((item) => item.classificacao === 'B').length,
-      C: ranking.filter((item) => item.classificacao === 'C').length,
+      batismosRegistrados,
+      decisoesClasseA,
+      aguardandoConfirmacao: Math.max(decisoesClasseA - batismosRegistrados, 0),
       media,
     };
-  }, [ranking]);
+  }, [ranking, batismosPorDupla]);
 
-  const voltar = () => navigate(isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral');
+  const baseRelatorio = isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral';
+  const prefix = isDireto ? '/direto' : '';
 
-  if (carregando) return <LoadingState mensagem="Carregando relatório..." />;
+  if (carregando) return <LoadingState mensagem="Carregando relatorio..." />;
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8'}>
+        <BackButton fallbackTo={baseRelatorio} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatorio</p>
@@ -140,11 +172,13 @@ export default function RelatorioRankingDecisoes() {
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Ranking Decisões
+              Batismos e Decisoes
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Estudantes por classe e progressao nos estudos biblicos.</p>
+            <p className="text-gray-400 text-sm mt-1">
+              Batismos registrados pelas duplas e estudantes classificados por decisao nos estudos biblicos.
+            </p>
           </div>
-          <button type="button" className="btn-outline px-4 py-2" onClick={voltar}>Voltar</button>
+          <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(baseRelatorio)}>Voltar</button>
         </div>
       </div>
 
@@ -155,9 +189,9 @@ export default function RelatorioRankingDecisoes() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            ['Classe A', resumo.A, '#047857'],
-            ['Classe B', resumo.B, '#C9963A'],
-            ['Classe C', resumo.C, '#b91c1c'],
+            ['Batismos registrados', resumo.batismosRegistrados, '#0d9488'],
+            ['Decisoes Classe A', resumo.decisoesClasseA, '#047857'],
+            ['Aguardando confirmacao', resumo.aguardandoConfirmacao, '#C9963A'],
             ['Progresso medio', `${resumo.media}%`, '#1A3A6B'],
           ].map(([label, valor, cor]) => (
             <div key={label} className="card">
@@ -170,8 +204,62 @@ export default function RelatorioRankingDecisoes() {
         <section className="card overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisões</h2>
-              <p className="text-sm text-gray-400">Classe A primeiro; dentro de cada classe, maior progresso aparece acima.</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos registrados pelas duplas</h2>
+              <p className="text-sm text-gray-400">Lista baseada no campo de batismos informado no cadastro/acompanhamento da dupla.</p>
+            </div>
+            <span className="text-sm font-bold text-[#0d9488] bg-[#0d9488]/10 rounded-lg px-3 py-2">
+              {resumo.batismosRegistrados} batismos
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[780px] text-sm">
+              <thead>
+                <tr className="bg-[#F4F5F7] text-gray-500">
+                  <th className="px-4 py-3 text-left">Dupla</th>
+                  <th className="px-4 py-3 text-left">Batismos</th>
+                  <th className="px-4 py-3 text-left">Igreja</th>
+                  <th className="px-4 py-3 text-left">Distrito</th>
+                  <th className="px-4 py-3 text-left">Regiao</th>
+                  <th className="px-4 py-3 text-left">Acao</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batismosPorDupla.map((dupla) => (
+                  <tr key={dupla.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{dupla.nome}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-3 py-1 text-sm font-bold text-[#0d9488]">
+                        {dupla.batismos}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.igreja}</td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.distrito}</td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.regiao}</td>
+                    <td className="px-4 py-3">
+                      <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => navigate(`${prefix}/duplas/${dupla.id}`)}>
+                        Ver dupla
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {batismosPorDupla.length === 0 && (
+                  <tr>
+                    <td className="px-4 py-10 text-center text-gray-400" colSpan="6">
+                      Nenhuma dupla com batismo registrado.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="card overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisoes</h2>
+              <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo registrado, isso aparece como contexto da dupla.</p>
             </div>
             <span className="text-sm font-bold text-[#1A3A6B] bg-[#1A3A6B]/10 rounded-lg px-3 py-2">
               {ranking.length} estudantes
@@ -179,7 +267,7 @@ export default function RelatorioRankingDecisoes() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[1080px] text-sm">
               <thead>
                 <tr className="bg-[#F4F5F7] text-gray-500">
                   <th className="px-4 py-3 text-left">Pos.</th>
@@ -191,6 +279,7 @@ export default function RelatorioRankingDecisoes() {
                   <th className="px-4 py-3 text-left">Igreja</th>
                   <th className="px-4 py-3 text-left">Distrito</th>
                   <th className="px-4 py-3 text-left">Dupla</th>
+                  <th className="px-4 py-3 text-left">Batismo na dupla</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,11 +304,20 @@ export default function RelatorioRankingDecisoes() {
                     <td className="px-4 py-3 text-gray-600">{item.igreja}</td>
                     <td className="px-4 py-3 text-gray-600">{item.distrito}</td>
                     <td className="px-4 py-3 text-gray-600">{item.dupla}</td>
+                    <td className="px-4 py-3">
+                      {item.batismosDupla > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-2.5 py-1 text-xs font-bold text-[#0d9488]">
+                          {item.batismosDupla} registrado(s)
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-gray-400">Sem registro</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {ranking.length === 0 && (
                   <tr>
-                    <td className="px-4 py-10 text-center text-gray-400" colSpan="9">
+                    <td className="px-4 py-10 text-center text-gray-400" colSpan="10">
                       Nenhum estudante encontrado para montar o ranking.
                     </td>
                   </tr>

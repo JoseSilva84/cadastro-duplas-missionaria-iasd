@@ -271,7 +271,7 @@ export default function Dashboard() {
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Estudos bíblicos" value={valorIndicador('Estudos')} detail={`${numero(cobertura.estudoBiblico?.com)} duplas com estudo`} color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-biblicos')} />
           <MetricCard label="Visitação" value={comVisitacao} detail="Registros de assistência/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/registro-saida')} />
-          <MetricCard label="Batismos" value={valorIndicador('Batismos')} detail="Decisões registradas pelas duplas" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
+          <MetricCard label="Batismos" value={valorIndicador('Batismos')} detail="Batismos registrados pelas duplas" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
         </div>
       </Section>
 
