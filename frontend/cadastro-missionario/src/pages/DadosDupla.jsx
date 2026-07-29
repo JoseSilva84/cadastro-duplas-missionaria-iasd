@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 import { PERFIS, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
+import BackButton from '../components/BackButton';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -74,6 +75,8 @@ export default function DadosDupla() {
     <div className={isDireto ? "flex flex-col h-full animate-fade-in bg-[#F4F5F7]" : "p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in"}>
       {/* Header Fixo no modo direto */}
       <div className={isDireto ? "flex-shrink-0 px-6 py-4 bg-white border-b border-gray-200 z-10" : ""}>
+        <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className={isDireto ? 'mb-3' : 'mb-4'} />
+
         {/* Breadcrumb */}
         <div className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-400 ${isDireto ? 'mb-3' : 'mb-6'} flex-wrap animate-fade-in-down`}>
           <button

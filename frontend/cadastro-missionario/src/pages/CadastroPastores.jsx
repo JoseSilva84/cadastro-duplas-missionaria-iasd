@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import AvatarUpload from '../components/AvatarUpload';
+import BackButton from '../components/BackButton';
 import { FotoService } from '../foto.service';
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
@@ -228,6 +229,7 @@ export default function CadastroPastores() {
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in' : 'min-h-screen animate-fade-in'}>
       {/* Cabeçalho */}
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8 px-4 sm:px-6 pt-6'}>
+        <BackButton fallbackTo={isDireto ? '/direto/regioes' : '/regioes'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Cadastro</p>

@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
 import LoadingState from '../components/LoadingState';
+import BackButton from '../components/BackButton';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 const progresso = (estudo) => {
@@ -238,9 +239,7 @@ export default function EstudanteDashboard() {
   return (
     <div className={isDireto ? 'flex flex-col h-full bg-[#F4F5F7] animate-fade-in' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-6'}>
-        <button type="button" className="text-sm font-semibold text-[#1A3A6B] mb-3" onClick={() => navigate(baseRelatorio)}>
-          Voltar ao relatório
-        </button>
+        <BackButton fallbackTo={baseRelatorio} label="Voltar ao relatório" className="mb-3" />
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
             <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">{isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Bíblica' : 'Dashboard do Estudante'}</p>

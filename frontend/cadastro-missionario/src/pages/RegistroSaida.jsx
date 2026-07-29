@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
+import BackButton from '../components/BackButton';
 import { FotoService } from '../foto.service';
 
 const Campo = ({ label, children, obrigatorio }) => (
@@ -130,6 +131,7 @@ export default function RegistroSaida() {
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in' : 'min-h-screen animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8 p-4 sm:p-6'}>
+        <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Coordenador</p>

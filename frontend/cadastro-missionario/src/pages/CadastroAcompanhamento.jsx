@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import { DIAS_SEMANA, SERIES_ESTUDO, UFS_BRASIL, formatarWhatsApp } from '../lib/seriesEstudo';
+import BackButton from '../components/BackButton';
 
 const configs = {
   estudo: {
@@ -289,6 +290,7 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in' : 'min-h-screen animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8'}>
+        <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Cadastro</p>

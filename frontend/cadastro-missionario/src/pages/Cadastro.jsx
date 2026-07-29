@@ -4,6 +4,7 @@ import { toast } from '../lib/toast';
 import api from '../lib/api';
 import AvatarUpload from '../components/AvatarUpload';
 import LoadingState from '../components/LoadingState';
+import BackButton from '../components/BackButton';
 import { FotoService } from '../foto.service';
 
 const TIPOS_PROJETO = [
@@ -318,6 +319,7 @@ export default function Cadastro() {
      <div className={isDireto ? "flex flex-col h-full animate-fade-in" : "min-h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in"}>
       {/* Cabeçalho */}
       <div className={isDireto ? "flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 z-10" : "mb-8 animate-fade-in-down"}>
+        <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">

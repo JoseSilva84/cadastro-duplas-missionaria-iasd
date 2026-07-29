@@ -5,6 +5,7 @@ import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo'
 import { toast } from '../lib/toast';
 import { ehAdmin, useAuth } from '../contexts/AuthContext';
 import EChart from '../components/EChart';
+import BackButton from '../components/BackButton';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 const progresso = (estudo) => {
@@ -598,6 +599,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8'}>
+        <BackButton fallbackTo={isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatório</p>

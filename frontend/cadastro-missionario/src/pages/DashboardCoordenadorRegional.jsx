@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import BackButton from '../components/BackButton';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -129,6 +130,7 @@ export default function DashboardCoordenadorRegional() {
   return (
     <div className={isDireto ? 'h-full overflow-y-auto bg-[#F4F5F7] p-4 sm:p-6 animate-fade-in' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
       <div className="mb-6">
+        <BackButton fallbackTo={isDireto ? '/direto/relatorios' : '/relatorios'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
           <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Relatório</p>

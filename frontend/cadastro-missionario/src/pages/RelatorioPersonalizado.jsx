@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
+import BackButton from '../components/BackButton';
 
 const cards = [
   ['novaDupla', 'Nova Dupla'],
@@ -65,6 +66,7 @@ export default function RelatorioPersonalizado() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6">
+        <BackButton fallbackTo="/relatorios" className="mb-3" />
         <p className="text-[#C9963A] text-xs font-bold uppercase tracking-wider">Administração</p>
         <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Relatório Personalizado
