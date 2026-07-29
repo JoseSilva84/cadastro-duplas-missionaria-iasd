@@ -60,6 +60,7 @@ export default function RelatorioRankingDecisoes() {
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [duplaModal, setDuplaModal] = useState(null);
 
   useEffect(() => {
     let ativo = true;
@@ -158,6 +159,12 @@ export default function RelatorioRankingDecisoes() {
 
   const baseRelatorio = isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral';
   const prefix = isDireto ? '/direto' : '';
+  const estudantesClasseADaDupla = useMemo(() => {
+    if (!duplaModal) return [];
+    return ranking.filter((item) => (
+      String(item.duplaId) === String(duplaModal.id) && item.classificacao === 'A'
+    ));
+  }, [duplaModal, ranking]);
 
   if (carregando) return <LoadingState mensagem="Carregando relatorio..." />;
 
@@ -226,7 +233,11 @@ export default function RelatorioRankingDecisoes() {
               </thead>
               <tbody>
                 {batismosPorDupla.map((dupla) => (
-                  <tr key={dupla.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <tr
+                    key={dupla.id}
+                    className="cursor-pointer border-b border-gray-50 hover:bg-[#F4F5F7]"
+                    onClick={() => setDuplaModal(dupla)}
+                  >
                     <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{dupla.nome}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-3 py-1 text-sm font-bold text-[#0d9488]">
@@ -237,8 +248,15 @@ export default function RelatorioRankingDecisoes() {
                     <td className="px-4 py-3 text-gray-600">{dupla.distrito}</td>
                     <td className="px-4 py-3 text-gray-600">{dupla.regiao}</td>
                     <td className="px-4 py-3">
-                      <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => navigate(`${prefix}/duplas/${dupla.id}`)}>
-                        Ver dupla
+                      <button
+                        type="button"
+                        className="btn-outline px-3 py-2 text-xs"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDuplaModal(dupla);
+                        }}
+                      >
+                        Detalhes
                       </button>
                     </td>
                   </tr>
@@ -266,67 +284,169 @@ export default function RelatorioRankingDecisoes() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-sm">
-              <thead>
-                <tr className="bg-[#F4F5F7] text-gray-500">
-                  <th className="px-4 py-3 text-left">Pos.</th>
-                  <th className="px-4 py-3 text-left">Estudante</th>
-                  <th className="px-4 py-3 text-left">Classe</th>
-                  <th className="px-4 py-3 text-left">Progresso</th>
-                  <th className="px-4 py-3 text-left">Serie / licao</th>
-                  <th className="px-4 py-3 text-left">Origem</th>
-                  <th className="px-4 py-3 text-left">Igreja</th>
-                  <th className="px-4 py-3 text-left">Distrito</th>
-                  <th className="px-4 py-3 text-left">Dupla</th>
-                  <th className="px-4 py-3 text-left">Batismo na dupla</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranking.map((item, index) => (
-                  <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-bold text-[#C9963A]">#{index + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{item.nome}</td>
-                    <td className="px-4 py-3"><BadgeClasse classe={item.classificacao} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 min-w-36">
-                        <div className="h-2 flex-1 rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${item.progresso}%` }} />
-                        </div>
-                        <span className="w-10 text-xs font-bold text-gray-600 text-right">{item.progresso}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      <p className="font-medium text-gray-700">{getSerieNome(item.serie)}</p>
-                      <p className="text-xs text-gray-400">{getLicaoLabel(item.serie, item.licaoAtual)}</p>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{tipoLabel[item.tipoEstudo] || item.tipoEstudo}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.igreja}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.distrito}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.dupla}</td>
-                    <td className="px-4 py-3">
-                      {item.batismosDupla > 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-2.5 py-1 text-xs font-bold text-[#0d9488]">
-                          {item.batismosDupla} registrado(s)
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium text-gray-400">Sem registro</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {ranking.length === 0 && (
-                  <tr>
-                    <td className="px-4 py-10 text-center text-gray-400" colSpan="10">
-                      Nenhum estudante encontrado para montar o ranking.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 gap-3">
+            {ranking.map((item, index) => (
+              <article key={item.id} className="rounded-xl border border-gray-100 bg-white p-4 transition hover:border-[#C9963A]/40 hover:shadow-sm">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[4rem_minmax(12rem,1.2fr)_9rem_minmax(12rem,1fr)_minmax(12rem,1.2fr)_minmax(10rem,1fr)] lg:items-center">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Pos.</p>
+                    <p className="text-lg font-bold text-[#C9963A]">#{index + 1}</p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Estudante</p>
+                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{item.nome}</p>
+                    <p className="mt-1 text-xs text-gray-400">{tipoLabel[item.tipoEstudo] || item.tipoEstudo}</p>
+                  </div>
+
+                  <div>
+                    <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
+                    <BadgeClasse classe={item.classificacao} />
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
+                      <span className="text-xs font-bold text-gray-600">{item.progresso}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100">
+                      <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${item.progresso}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-gray-500">{getSerieNome(item.serie)} - {getLicaoLabel(item.serie, item.licaoAtual)}</p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local</p>
+                    <p className="break-words text-sm font-semibold text-gray-700">{item.igreja}</p>
+                    <p className="text-xs text-gray-400">{item.distrito}</p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Dupla</p>
+                    <p className="break-words text-sm font-semibold text-gray-700">{item.dupla}</p>
+                    {item.batismosDupla > 0 ? (
+                      <button
+                        type="button"
+                        className="mt-2 inline-flex rounded-full bg-[#0d9488]/10 px-2.5 py-1 text-xs font-bold text-[#0d9488]"
+                        onClick={() => setDuplaModal(batismosPorDupla.find((dupla) => String(dupla.id) === String(item.duplaId)) || {
+                          id: item.duplaId,
+                          nome: item.dupla,
+                          batismos: item.batismosDupla,
+                          igreja: item.igreja,
+                          distrito: item.distrito,
+                          regiao: 'Sem regiao',
+                        })}
+                      >
+                        {item.batismosDupla} batismo(s)
+                      </button>
+                    ) : (
+                      <p className="mt-2 text-xs font-medium text-gray-400">Sem batismo registrado</p>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+
+            {ranking.length === 0 && (
+              <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
+                Nenhum estudante encontrado para montar o ranking.
+              </div>
+            )}
           </div>
         </section>
       </div>
+
+      {duplaModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in"
+          onClick={() => setDuplaModal(null)}
+        >
+          <div
+            className="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 bg-[#F8FAFC] p-5">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos registrados</p>
+                <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  {duplaModal.nome}
+                </h3>
+                <p className="mt-1 text-sm text-gray-400">{duplaModal.igreja} - {duplaModal.distrito}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDuplaModal(null)}
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-[#1A3A6B] hover:text-[#1A3A6B]"
+                aria-label="Fechar"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg bg-[#0d9488]/10 p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos</p>
+                  <p className="mt-2 text-3xl font-bold text-[#0d9488]">{duplaModal.batismos}</p>
+                </div>
+                <div className="rounded-lg bg-[#1A3A6B]/10 p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">Decisoes Classe A</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">{estudantesClasseADaDupla.length}</p>
+                </div>
+                <div className="rounded-lg bg-[#C9963A]/10 p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Regiao</p>
+                  <p className="mt-2 text-sm font-bold text-[#1A3A6B]">{duplaModal.regiao}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                O sistema registra a quantidade de batismos na dupla. Quando existe nome abaixo, ele vem dos estudantes Classe A vinculados a esta dupla e deve ser usado como referencia pastoral.
+              </div>
+
+              <div className="mt-5">
+                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Possiveis nomes vinculados</h4>
+                {estudantesClasseADaDupla.length > 0 ? (
+                  <div className="mt-3 grid gap-3">
+                    {estudantesClasseADaDupla.map((estudante) => (
+                      <div key={estudante.id} className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-bold text-[#1A3A6B]">{estudante.nome}</p>
+                            <p className="mt-1 text-xs text-gray-400">{tipoLabel[estudante.tipoEstudo] || estudante.tipoEstudo} - {getSerieNome(estudante.serie)}</p>
+                          </div>
+                          <BadgeClasse classe={estudante.classificacao} />
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <div className="h-2 flex-1 rounded-full bg-gray-100">
+                            <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${estudante.progresso}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-gray-600">{estudante.progresso}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-lg bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
+                    Nao ha estudante Classe A vinculado a esta dupla nesta lista.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-gray-100 bg-[#F8FAFC] p-4 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setDuplaModal(null)}>
+                Fechar
+              </button>
+              <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/duplas/${duplaModal.id}`)}>
+                Abrir cadastro da dupla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
