@@ -371,7 +371,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navig
   ];
 
   return (
-    <div className="animate-fade-in-down mb-5">
+    <div className="mx-auto mb-8 w-full max-w-5xl animate-fade-in-down">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -662,7 +662,7 @@ export default function DuplasDireto() {
 
   if (carregando) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-[3px] border-[#1A3A6B]/20" />
@@ -685,9 +685,9 @@ export default function DuplasDireto() {
         navigate={navigate}
       />
     )}
-    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 xl:px-14 2xl:px-24' : 'animate-fade-in'} bg-transparent`}>
+    <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 sm:px-10 lg:px-16 xl:px-24 2xl:px-32' : 'animate-fade-in'} bg-transparent`}>
       {/* ===== PAINEL ESQUERDO: Filtros + Lista de Duplas (Master) ===== */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col">
+      <div className="mx-auto flex w-full max-w-5xl flex-col">
         {/* Cabeçalho + Filtros */}
         <div className="flex-shrink-0 pb-5">
           <div className="flex items-center justify-between mb-3">
