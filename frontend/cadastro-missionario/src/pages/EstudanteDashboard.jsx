@@ -43,9 +43,16 @@ const Info = ({ label, valor }) => (
   </div>
 );
 
-const KanbanCard = ({ titulo, children }) => (
+const KanbanCard = ({ titulo, children, onEdit }) => (
   <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm min-h-52">
-    <h3 className="text-sm font-bold text-[#1A3A6B] mb-3">{titulo}</h3>
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h3 className="text-sm font-bold text-[#1A3A6B]">{titulo}</h3>
+      {onEdit && (
+        <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={onEdit}>
+          Editar
+        </button>
+      )}
+    </div>
     <div className="space-y-3">{children}</div>
   </section>
 );
@@ -100,6 +107,7 @@ export default function EstudanteDashboard() {
   const [salvando, setSalvando] = useState(false);
   const [editando, setEditando] = useState(false);
   const [salvandoDados, setSalvandoDados] = useState(false);
+  const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
   const [form, setForm] = useState(montarForm(null));
 
   const isPonto = estudo?.tipoEstudo === 'PONTO';
@@ -152,6 +160,7 @@ export default function EstudanteDashboard() {
       const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, payload);
       setEstudo(data);
       setLicaoAtual(String(data.licaoAtual || ''));
+      setModalLicaoAberto(false);
       toast.success('Lição atualizada.');
     } catch (err) {
       const erros = err.response?.data?.erros;
@@ -240,10 +249,20 @@ export default function EstudanteDashboard() {
 
   const percentual = progresso(estudo);
   const alunoAtual = participanteSelecionado || (!isGrupo ? estudo : null);
-  const titulo = alunoAtual?.nome || estudo.nomeEstudante;
-  const subtitulo = participanteSelecionado
-    ? `${isPonto ? 'Ponto' : 'Classe'}: ${estudo.nomeEstudante} - ${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`
-    : `${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`;
+  const titulo = isGrupo ? estudo.nomeEstudante : alunoAtual?.nome || estudo.nomeEstudante;
+  const subtitulo = `${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`;
+  const abrirEdicao = () => {
+    setForm(montarForm(estudo));
+    setEditando(true);
+  };
+  const abrirModalLicao = () => {
+    setLicaoAtual(String(estudo.licaoAtual || ''));
+    setModalLicaoAberto(true);
+  };
+  const fecharModalLicao = () => {
+    setLicaoAtual(String(estudo.licaoAtual || ''));
+    setModalLicaoAberto(false);
+  };
   const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : isClasse ? 'classes-biblicas/registros' : 'estudos-biblicos'}`;
 
   return (
@@ -255,6 +274,12 @@ export default function EstudanteDashboard() {
             <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">{isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Bíblica' : 'Dashboard do Estudante'}</p>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h1>
             <p className="text-gray-400 text-sm mt-1">{subtitulo}</p>
+            {participanteSelecionado && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#C9963A]/30 bg-[#fff8ec] px-3 py-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Aluno</span>
+                <span className="text-sm font-bold text-[#1A3A6B]">{participanteSelecionado.nome}</span>
+              </div>
+            )}
           </div>
           <div className="w-full lg:w-72 space-y-3">
             <div className="flex items-center justify-between text-sm mb-1"><span>Progresso geral</span><strong>{percentual}%</strong></div>
@@ -263,8 +288,11 @@ export default function EstudanteDashboard() {
               type="button"
               className="w-full rounded-lg border border-[#1A3A6B] px-4 py-2 text-sm font-semibold text-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white transition-colors"
               onClick={() => {
-                setForm(montarForm(estudo));
-                setEditando((valor) => !valor);
+                if (editando) {
+                  setEditando(false);
+                } else {
+                  abrirEdicao();
+                }
               }}
             >
               {editando ? 'Fechar edicao' : 'Editar dados'}
@@ -291,19 +319,11 @@ export default function EstudanteDashboard() {
         <div id="atualizar-estudo" className="card scroll-mt-6">
           <div className="mb-4">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Atualizar estudo</h2>
-            <p className="text-sm text-gray-400">Atualize a licao atual do estudo selecionado.</p>
+            <p className="text-sm text-gray-400">Escolha a nova licao em uma janela dedicada.</p>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-end">
-            <label>
-              <span className="block text-sm font-medium text-gray-600 mb-1.5">Adicionar / atualizar lição semanal</span>
-              <select className="input-field" value={licaoAtual} onChange={(e) => setLicaoAtual(e.target.value)}>
-                {licoes.map((licao) => <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>)}
-              </select>
-            </label>
-            <button type="button" className="btn-primary h-12 px-6" onClick={salvarLicao} disabled={salvando}>
-              {salvando ? 'Salvando...' : 'Salvar lição'}
-            </button>
-          </div>
+          <button type="button" className="btn-primary px-5 py-2 text-sm" onClick={abrirModalLicao}>
+            Atualizar estudo
+          </button>
         </div>
 
         {editando && (
@@ -468,7 +488,7 @@ export default function EstudanteDashboard() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <KanbanCard titulo="Cadastro">
+          <KanbanCard titulo="Cadastro" onEdit={abrirEdicao}>
             {participanteSelecionado && <Info label="Aluno selecionado" valor={participanteSelecionado.nome} />}
             <Info label="WhatsApp" valor={participanteSelecionado?.whatsapp || estudo.whatsapp} />
             <Info label="Endereço" valor={participanteSelecionado?.endereco || estudo.endereco} />
@@ -476,13 +496,13 @@ export default function EstudanteDashboard() {
             {(!isGrupo || participanteSelecionado) && <Info label="Sexo" valor={participanteSelecionado?.sexo || estudo.sexo} />}
           </KanbanCard>
 
-          <KanbanCard titulo="Jornada do Estudo">
+          <KanbanCard titulo="Jornada do Estudo" onEdit={abrirEdicao}>
             <Info label="Série" valor={getSerieNome(estudo.serie)} />
             <Info label="Lição atual" valor={getLicaoLabel(estudo.serie, estudo.licaoAtual)} />
             <Info label="Dia / Horário" valor={`${estudo.diaEstudo || '—'} · ${estudo.horarioEstudo || '—'}`} />
           </KanbanCard>
 
-          <KanbanCard titulo="Acompanhamento Espiritual">
+          <KanbanCard titulo="Acompanhamento Espiritual" onEdit={abrirEdicao}>
             <Info label="Vai à igreja?" valor={formatarBooleano(estudo.vaIgreja)} />
             <Info label="Estuda a Bíblia?" valor={formatarBooleano(estudo.leBiblia)} />
             <Info label="Estuda a lição da Escola Sabatina?" valor={formatarBooleano(estudo.estudaLicao)} />
@@ -490,7 +510,7 @@ export default function EstudanteDashboard() {
             <Info label="Culto familiar?" valor={formatarBooleano(estudo.cultoFamiliar)} />
           </KanbanCard>
 
-          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'}>
+          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'} onEdit={abrirEdicao}>
             {isGrupo ? (
               estudo.participantes?.map((participante) => (
                 <div
@@ -520,7 +540,12 @@ export default function EstudanteDashboard() {
         </div>
 
         <div className="card">
-          <h2 className="font-bold text-[#1A3A6B] mb-3">Dupla responsável</h2>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-bold text-[#1A3A6B]">Dupla responsável</h2>
+            <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={abrirEdicao}>
+              Editar
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Info label="Dupla" valor={`${estudo.dupla?.liderNome || ''} + ${estudo.dupla?.membro2Nome || ''}`} />
             <Info label="Bairro" valor={estudo.dupla?.bairro} />
@@ -528,6 +553,71 @@ export default function EstudanteDashboard() {
           </div>
         </div>
       </div>
+
+      {modalLicaoAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Atualizar estudo</p>
+                  <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]">Selecionar nova licao</h2>
+                  <p className="mt-1 text-sm text-gray-400">{estudo.nomeEstudante}</p>
+                </div>
+                <button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100" onClick={fecharModalLicao}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
+              <label>
+                <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
+                <select className="input-field" value={estudo.id} disabled>
+                  <option value={estudo.id}>
+                    {isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Biblica' : 'Estudo individual'} - {estudo.nomeEstudante || 'Sem nome'} - {getSerieNome(estudo.serie)}
+                  </option>
+                </select>
+              </label>
+
+              <div className="mt-5">
+                <p className="mb-3 text-sm font-semibold text-gray-600">Licao</p>
+                {licoes.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {licoes.map((licao) => {
+                      const selecionada = String(licao.numero) === String(licaoAtual);
+                      return (
+                        <button
+                          key={licao.numero}
+                          type="button"
+                          className={`min-h-24 rounded-xl border p-3 text-left transition-all ${selecionada ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md' : 'border-gray-100 bg-[#F4F5F7] text-[#1A3A6B] hover:border-[#C9963A]/50 hover:bg-white'}`}
+                          onClick={() => setLicaoAtual(String(licao.numero))}
+                        >
+                          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${selecionada ? 'bg-white/15 text-white' : 'bg-white text-[#C9963A]'}`}>{licao.numero}</span>
+                          <span className="mt-3 block text-sm font-semibold leading-snug">{licao.titulo}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
+                    Nenhuma licao disponivel para a serie deste estudo.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={fecharModalLicao}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvando || !licaoAtual}>
+                {salvando ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

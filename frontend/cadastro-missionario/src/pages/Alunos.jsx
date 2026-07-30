@@ -4,6 +4,7 @@ import api from '../lib/api';
 import BackButton from '../components/BackButton';
 import LoadingState from '../components/LoadingState';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
+import { toast } from '../lib/toast';
 
 const tipoLabel = {
   UNICO: 'Estudo individual',
@@ -98,6 +99,10 @@ export default function Alunos() {
   const [busca, setBusca] = useState('');
   const [tipo, setTipo] = useState('');
   const [classe, setClasse] = useState('');
+  const [modalAtualizacao, setModalAtualizacao] = useState(null);
+  const [estudoSelecionadoId, setEstudoSelecionadoId] = useState('');
+  const [licaoSelecionada, setLicaoSelecionada] = useState('');
+  const [salvandoLicao, setSalvandoLicao] = useState(false);
 
   useEffect(() => {
     setCarregando(true);
@@ -149,6 +154,59 @@ export default function Alunos() {
   const caminhoDetalhes = (aluno, hash = '') => {
     const params = aluno.participanteId ? `?participante=${aluno.participanteId}` : '';
     return `${caminhoRelatorio(aluno.tipoEstudo)}/${aluno.estudoId}${params}${hash}`;
+  };
+
+  const estudos = dados.estudos || [];
+  const estudoSelecionado = estudos.find((estudo) => String(estudo.id) === String(estudoSelecionadoId));
+  const licoesModal = SERIES_ESTUDO.find((serie) => serie.id === estudoSelecionado?.serie)?.licoes || [];
+
+  const abrirAtualizacao = (aluno) => {
+    setModalAtualizacao(aluno);
+    setEstudoSelecionadoId(String(aluno.estudoId));
+    setLicaoSelecionada(String(aluno.licaoAtual || ''));
+  };
+
+  const mudarEstudoSelecionado = (id) => {
+    const proximoEstudo = estudos.find((estudo) => String(estudo.id) === String(id));
+    setEstudoSelecionadoId(id);
+    setLicaoSelecionada(String(proximoEstudo?.licaoAtual || ''));
+  };
+
+  const salvarLicao = async () => {
+    if (!estudoSelecionado || !licaoSelecionada) return;
+    setSalvandoLicao(true);
+    try {
+      const payload = {
+        nomeEstudante: estudoSelecionado.nomeEstudante,
+        endereco: estudoSelecionado.endereco,
+        cidade: estudoSelecionado.cidade,
+        estado: estudoSelecionado.estado,
+        whatsapp: estudoSelecionado.whatsapp,
+        diaEstudo: estudoSelecionado.diaEstudo,
+        horarioEstudo: estudoSelecionado.horarioEstudo || '',
+        duplaId: estudoSelecionado.duplaId,
+        serie: estudoSelecionado.serie,
+        licaoAtual: licaoSelecionada,
+        tipoEstudo: estudoSelecionado.tipoEstudo,
+        sexo: estudoSelecionado.sexo || '',
+        classificacaoInteressado: estudoSelecionado.classificacaoInteressado || '',
+        observacoes: estudoSelecionado.observacoes || '',
+        motivoImpedimento: estudoSelecionado.motivoImpedimento || '',
+        participantes: estudoSelecionado.participantes || undefined,
+      };
+      const { data } = await api.put(`/estudos-biblicos/${estudoSelecionado.id}`, payload);
+      setDados((atual) => ({
+        ...atual,
+        estudos: (atual.estudos || []).map((estudo) => (String(estudo.id) === String(data.id) ? data : estudo)),
+      }));
+      setModalAtualizacao(null);
+      toast.success('Licao atualizada.');
+    } catch (err) {
+      const erros = err.response?.data?.erros;
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao atualizar licao.');
+    } finally {
+      setSalvandoLicao(false);
+    }
   };
 
   if (carregando) return <LoadingState mensagem="Carregando alunos..." />;
@@ -228,51 +286,53 @@ export default function Alunos() {
           <div className="grid grid-cols-1 gap-3">
             {alunosFiltrados.map((aluno) => (
               <article key={aluno.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#C9963A]/50 hover:shadow-md">
-                <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(12rem,1.2fr)_9rem_minmax(11rem,1fr)_minmax(12rem,1.1fr)_minmax(12rem,1fr)_8.5rem] lg:items-center">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
-                    <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
-                    {aluno.whatsapp && <p className="mt-1 text-xs text-gray-400">{aluno.whatsapp}</p>}
-                  </div>
-
-                  <div>
-                    <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
-                    <BadgeClasse classe={aluno.classificacao} />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Origem</p>
-                    <p className="text-sm font-semibold text-gray-700">{aluno.origem}</p>
-                    <p className="text-xs text-gray-400">{getSerieNome(aluno.serie)}</p>
-                  </div>
-
-                  <div>
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
-                      <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
+                <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_9rem] xl:items-center">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)] xl:items-center">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
+                      <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                      {aluno.whatsapp && <p className="mt-1 text-xs text-gray-400">{aluno.whatsapp}</p>}
                     </div>
-                    <div className="h-2 rounded-full bg-gray-100">
-                      <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+
+                    <div>
+                      <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
+                      <BadgeClasse classe={aluno.classificacao} />
                     </div>
-                    <p className="mt-2 text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</p>
-                    <button
-                      type="button"
-                      className="mt-2 text-xs font-bold text-[#1A3A6B] underline-offset-4 hover:text-[#C9963A] hover:underline"
-                      onClick={() => navigate(caminhoDetalhes(aluno, '#atualizar-estudo'))}
-                    >
-                      Atualizar estudo
-                    </button>
+
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Origem</p>
+                      <p className="text-sm font-semibold text-gray-700">{aluno.origem}</p>
+                      <p className="text-xs text-gray-400">{getSerieNome(aluno.serie)}</p>
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
+                        <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+                      </div>
+                      <p className="mt-2 text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</p>
+                      <button
+                        type="button"
+                        className="mt-2 text-xs font-bold text-[#1A3A6B] underline-offset-4 hover:text-[#C9963A] hover:underline"
+                        onClick={() => abrirAtualizacao(aluno)}
+                      >
+                        Atualizar estudo
+                      </button>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local / dupla</p>
+                      <p className="break-words text-sm font-semibold text-gray-700">{aluno.igreja}</p>
+                      <p className="text-xs text-gray-400">{aluno.distrito} - {aluno.regiao}</p>
+                      <p className="mt-1 break-words text-xs text-gray-500">{aluno.dupla}</p>
+                    </div>
                   </div>
 
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local / dupla</p>
-                    <p className="break-words text-sm font-semibold text-gray-700">{aluno.igreja}</p>
-                    <p className="text-xs text-gray-400">{aluno.distrito} - {aluno.regiao}</p>
-                    <p className="mt-1 break-words text-xs text-gray-500">{aluno.dupla}</p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
+                  <div className="flex xl:justify-end">
+                    <button type="button" className="btn-outline w-full px-3 py-2 text-xs xl:w-32" onClick={() => navigate(caminhoDetalhes(aluno))}>
                       Detalhes
                     </button>
                   </div>
@@ -288,6 +348,73 @@ export default function Alunos() {
           </div>
         </section>
       </div>
+
+      {modalAtualizacao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Atualizar estudo</p>
+                  <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]">Selecionar nova licao</h2>
+                  <p className="mt-1 text-sm text-gray-400">{modalAtualizacao.nome}</p>
+                </div>
+                <button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100" onClick={() => setModalAtualizacao(null)}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
+              <label>
+                <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
+                <select className="input-field" value={estudoSelecionadoId} onChange={(event) => mudarEstudoSelecionado(event.target.value)}>
+                  {estudos.map((estudo) => (
+                    <option key={estudo.id} value={estudo.id}>
+                      {tipoLabel[estudo.tipoEstudo || 'UNICO'] || estudo.tipoEstudo} - {estudo.nomeEstudante || 'Sem nome'} - {getSerieNome(estudo.serie)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="mt-5">
+                <p className="mb-3 text-sm font-semibold text-gray-600">Licao</p>
+                {licoesModal.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {licoesModal.map((licao) => {
+                      const selecionada = String(licao.numero) === String(licaoSelecionada);
+                      return (
+                        <button
+                          key={licao.numero}
+                          type="button"
+                          className={`min-h-24 rounded-xl border p-3 text-left transition-all ${selecionada ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md' : 'border-gray-100 bg-[#F4F5F7] text-[#1A3A6B] hover:border-[#C9963A]/50 hover:bg-white'}`}
+                          onClick={() => setLicaoSelecionada(String(licao.numero))}
+                        >
+                          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${selecionada ? 'bg-white/15 text-white' : 'bg-white text-[#C9963A]'}`}>{licao.numero}</span>
+                          <span className="mt-3 block text-sm font-semibold leading-snug">{licao.titulo}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
+                    Nenhuma licao disponivel para a serie deste estudo.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={() => setModalAtualizacao(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvandoLicao || !licaoSelecionada || !estudoSelecionado}>
+                {salvandoLicao ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
