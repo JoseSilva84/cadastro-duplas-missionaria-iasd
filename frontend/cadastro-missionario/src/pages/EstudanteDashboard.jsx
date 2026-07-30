@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
@@ -92,7 +92,7 @@ const montarForm = (estudo) => ({
 export default function EstudanteDashboard() {
   const { id } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isDireto = location.pathname.startsWith('/direto');
   const [estudo, setEstudo] = useState(null);
   const [licaoAtual, setLicaoAtual] = useState('');
@@ -105,9 +105,9 @@ export default function EstudanteDashboard() {
   const isPonto = estudo?.tipoEstudo === 'PONTO';
   const isClasse = estudo?.tipoEstudo === 'CLASSE';
   const isGrupo = isPonto || isClasse;
-  const licoes = useMemo(() => (
-    SERIES_ESTUDO.find((serie) => serie.id === estudo?.serie)?.licoes || []
-  ), [estudo?.serie]);
+  const participanteId = searchParams.get('participante');
+  const licoes = SERIES_ESTUDO.find((serie) => serie.id === estudo?.serie)?.licoes || [];
+  const participanteSelecionado = (estudo?.participantes || []).find((participante) => String(participante.id) === String(participanteId));
 
   useEffect(() => {
     setCarregando(true);
@@ -120,6 +120,12 @@ export default function EstudanteDashboard() {
       .catch(() => toast.error('Erro ao carregar detalhes do estudo.'))
       .finally(() => setCarregando(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!carregando && location.hash) {
+      document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [carregando, location.hash]);
 
   const salvarLicao = async () => {
     if (!estudo || !licaoAtual) return;
@@ -233,7 +239,11 @@ export default function EstudanteDashboard() {
   }
 
   const percentual = progresso(estudo);
-  const titulo = isPonto ? estudo.nomeEstudante : estudo.nomeEstudante;
+  const alunoAtual = participanteSelecionado || (!isGrupo ? estudo : null);
+  const titulo = alunoAtual?.nome || estudo.nomeEstudante;
+  const subtitulo = participanteSelecionado
+    ? `${isPonto ? 'Ponto' : 'Classe'}: ${estudo.nomeEstudante} - ${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`
+    : `${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`;
   const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : isClasse ? 'classes-biblicas/registros' : 'estudos-biblicos'}`;
 
   return (
@@ -244,7 +254,7 @@ export default function EstudanteDashboard() {
           <div>
             <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">{isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Bíblica' : 'Dashboard do Estudante'}</p>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h1>
-            <p className="text-gray-400 text-sm mt-1">{getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)}</p>
+            <p className="text-gray-400 text-sm mt-1">{subtitulo}</p>
           </div>
           <div className="w-full lg:w-72 space-y-3">
             <div className="flex items-center justify-between text-sm mb-1"><span>Progresso geral</span><strong>{percentual}%</strong></div>
@@ -278,7 +288,11 @@ export default function EstudanteDashboard() {
           </div>
         </div>
 
-        <div className="card">
+        <div id="atualizar-estudo" className="card scroll-mt-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Atualizar estudo</h2>
+            <p className="text-sm text-gray-400">Atualize a licao atual do estudo selecionado.</p>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-end">
             <label>
               <span className="block text-sm font-medium text-gray-600 mb-1.5">Adicionar / atualizar lição semanal</span>
@@ -455,10 +469,11 @@ export default function EstudanteDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <KanbanCard titulo="Cadastro">
-            <Info label="WhatsApp" valor={estudo.whatsapp} />
-            <Info label="Endereço" valor={estudo.endereco} />
+            {participanteSelecionado && <Info label="Aluno selecionado" valor={participanteSelecionado.nome} />}
+            <Info label="WhatsApp" valor={participanteSelecionado?.whatsapp || estudo.whatsapp} />
+            <Info label="Endereço" valor={participanteSelecionado?.endereco || estudo.endereco} />
             <Info label="Cidade/Estado" valor={`${estudo.cidade}/${estudo.estado}`} />
-            {!isGrupo && <Info label="Sexo" valor={estudo.sexo} />}
+            {(!isGrupo || participanteSelecionado) && <Info label="Sexo" valor={participanteSelecionado?.sexo || estudo.sexo} />}
           </KanbanCard>
 
           <KanbanCard titulo="Jornada do Estudo">
@@ -478,7 +493,10 @@ export default function EstudanteDashboard() {
           <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'}>
             {isGrupo ? (
               estudo.participantes?.map((participante) => (
-                <div key={participante.id} className="rounded-lg bg-[#F4F5F7] px-4 py-3">
+                <div
+                  key={participante.id}
+                  className={`rounded-lg px-4 py-3 ${String(participante.id) === String(participanteId) ? 'border border-[#C9963A]/50 bg-[#fff8ec]' : 'bg-[#F4F5F7]'}`}
+                >
                   <p className="text-xs text-gray-400 mb-1">{participante.nome}</p>
                   <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} />
                   {participante.classificacaoInteressado === 'B' && participante.motivoImpedimento && (

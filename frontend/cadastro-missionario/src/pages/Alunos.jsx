@@ -42,17 +42,23 @@ const BadgeClasse = ({ classe }) => {
   );
 };
 
-const MetricCard = ({ label, valor, detalhe, cor }) => (
-  <div className="card">
+const MetricCard = ({ label, valor, detalhe, cor, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="group card relative overflow-hidden text-left transition-all duration-200 hover:-translate-y-1 hover:ring-1 hover:ring-[#C9963A]/35 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/45"
+  >
+    <span className="absolute inset-x-0 top-0 h-1 opacity-80 transition-all duration-200 group-hover:h-1.5" style={{ backgroundColor: cor }} />
     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
     <p className="mt-2 text-3xl font-bold leading-none" style={{ color: cor }}>{numero(valor)}</p>
     {detalhe && <p className="mt-3 text-sm font-medium text-gray-500">{detalhe}</p>}
-  </div>
+  </button>
 );
 
 const alunoDoEstudo = (estudo) => ({
   id: String(estudo.id),
   estudoId: estudo.id,
+  participanteId: null,
   nome: estudo.nomeEstudante || 'Sem nome',
   whatsapp: estudo.whatsapp || '',
   endereco: estudo.endereco || '',
@@ -73,6 +79,7 @@ const alunoDoEstudo = (estudo) => ({
 const alunoDoParticipante = (estudo, participante) => ({
   ...alunoDoEstudo(estudo),
   id: `${estudo.id}-${participante.id}`,
+  participanteId: participante.id,
   nome: participante.nome || 'Sem nome',
   whatsapp: participante.whatsapp || '',
   endereco: participante.endereco || estudo.endereco || '',
@@ -135,6 +142,15 @@ export default function Alunos() {
     classeA: alunos.filter((aluno) => aluno.classificacao === 'A').length,
   }), [alunos]);
 
+  const caminhoRelatorio = (tipoEstudo) => (
+    `${prefix}/relatorios/${tipoEstudo === 'PONTO' ? 'pontos-estudo' : tipoEstudo === 'CLASSE' ? 'classes-biblicas/registros' : 'estudos-biblicos'}`
+  );
+
+  const caminhoDetalhes = (aluno, hash = '') => {
+    const params = aluno.participanteId ? `?participante=${aluno.participanteId}` : '';
+    return `${caminhoRelatorio(aluno.tipoEstudo)}/${aluno.estudoId}${params}${hash}`;
+  };
+
   if (carregando) return <LoadingState mensagem="Carregando alunos..." />;
 
   return (
@@ -162,11 +178,11 @@ export default function Alunos() {
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <MetricCard label="Total de alunos" valor={resumo.total} detalhe="Todos os formatos" cor="#1A3A6B" />
-          <MetricCard label="Individuais" valor={resumo.individuais} detalhe="Estudos individuais" cor="#0284c7" />
-          <MetricCard label="Pontos" valor={resumo.pontos} detalhe="Alunos em pontos" cor="#0d9488" />
-          <MetricCard label="Classes" valor={resumo.classes} detalhe="Alunos em classes" cor="#7B2D8B" />
-          <MetricCard label="Classe A" valor={resumo.classeA} detalhe="Prontos para batismo" cor="#047857" />
+          <MetricCard label="Total de alunos" valor={resumo.total} detalhe="Todos os formatos" cor="#1A3A6B" onClick={() => navigate(`${prefix}/relatorios/estudos-cadastrados`)} />
+          <MetricCard label="Individuais" valor={resumo.individuais} detalhe="Estudos individuais" cor="#0284c7" onClick={() => navigate(caminhoRelatorio('UNICO'))} />
+          <MetricCard label="Pontos" valor={resumo.pontos} detalhe="Alunos em pontos" cor="#0d9488" onClick={() => navigate(caminhoRelatorio('PONTO'))} />
+          <MetricCard label="Classes" valor={resumo.classes} detalhe="Alunos em classes" cor="#7B2D8B" onClick={() => navigate(caminhoRelatorio('CLASSE'))} />
+          <MetricCard label="Classe A" valor={resumo.classeA} detalhe="Prontos para batismo" cor="#047857" onClick={() => { setClasse('A'); setTipo(''); setBusca(''); }} />
         </div>
 
         <section className="card">
@@ -211,8 +227,8 @@ export default function Alunos() {
 
           <div className="grid grid-cols-1 gap-3">
             {alunosFiltrados.map((aluno) => (
-              <article key={aluno.id} className="rounded-xl border border-gray-100 bg-white p-4 transition hover:border-[#C9963A]/40 hover:shadow-sm">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(12rem,1.2fr)_9rem_minmax(11rem,1fr)_minmax(12rem,1.1fr)_minmax(12rem,1fr)_auto] lg:items-center">
+              <article key={aluno.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#C9963A]/50 hover:shadow-md">
+                <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(12rem,1.2fr)_9rem_minmax(11rem,1fr)_minmax(12rem,1.1fr)_minmax(12rem,1fr)_8.5rem] lg:items-center">
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
                     <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
@@ -239,6 +255,13 @@ export default function Alunos() {
                       <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
                     </div>
                     <p className="mt-2 text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-bold text-[#1A3A6B] underline-offset-4 hover:text-[#C9963A] hover:underline"
+                      onClick={() => navigate(caminhoDetalhes(aluno, '#atualizar-estudo'))}
+                    >
+                      Atualizar estudo
+                    </button>
                   </div>
 
                   <div className="min-w-0">
@@ -248,9 +271,11 @@ export default function Alunos() {
                     <p className="mt-1 break-words text-xs text-gray-500">{aluno.dupla}</p>
                   </div>
 
-                  <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => navigate(`${prefix}/relatorios/${aluno.tipoEstudo === 'PONTO' ? 'pontos-estudo' : aluno.tipoEstudo === 'CLASSE' ? 'classes-biblicas/registros' : 'estudos-biblicos'}/${aluno.estudoId}`)}>
-                    Detalhes
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
+                      Detalhes
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
