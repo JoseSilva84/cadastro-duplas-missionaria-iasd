@@ -12,6 +12,8 @@ const progresso = (estudo) => {
   if (!total) return 0;
   return Math.min(100, Math.round((Number(estudo?.licaoAtual || 0) / total) * 100));
 };
+const licoesAte = (numero) => Array.from({ length: Number(numero || 0) }, (_, index) => String(index + 1));
+const maiorLicaoSelecionada = (selecionadas) => Math.max(...selecionadas.map((numero) => Number(numero)));
 
 const formatarBooleano = (valor) => {
   if (valor === true) return 'Sim';
@@ -109,6 +111,7 @@ export default function EstudanteDashboard() {
   const [salvandoDados, setSalvandoDados] = useState(false);
   const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
   const [serieSelecionada, setSerieSelecionada] = useState('');
+  const [licoesSelecionadas, setLicoesSelecionadas] = useState([]);
   const [form, setForm] = useState(montarForm(null));
 
   const isPonto = estudo?.tipoEstudo === 'PONTO';
@@ -125,6 +128,7 @@ export default function EstudanteDashboard() {
         setEstudo(res.data);
         setLicaoAtual(String(res.data.licaoAtual || ''));
         setSerieSelecionada(res.data.serie || '');
+        setLicoesSelecionadas(licoesAte(res.data.licaoAtual));
         setForm(montarForm(res.data));
       })
       .catch(() => toast.error('Erro ao carregar detalhes do estudo.'))
@@ -138,7 +142,7 @@ export default function EstudanteDashboard() {
   }, [carregando, location.hash]);
 
   const salvarLicao = async () => {
-    if (!estudo || !licaoAtual) return;
+    if (!estudo || !serieSelecionada || licoesSelecionadas.length === 0) return;
     setSalvando(true);
     try {
       const payload = {
@@ -151,7 +155,7 @@ export default function EstudanteDashboard() {
         horarioEstudo: estudo.horarioEstudo || '',
         duplaId: estudo.duplaId,
         serie: serieSelecionada || estudo.serie,
-        licaoAtual,
+        licaoAtual: maiorLicaoSelecionada(licoesSelecionadas),
         tipoEstudo: estudo.tipoEstudo,
         sexo: estudo.sexo || '',
         classificacaoInteressado: estudo.classificacaoInteressado || '',
@@ -163,6 +167,7 @@ export default function EstudanteDashboard() {
       setEstudo(data);
       setLicaoAtual(String(data.licaoAtual || ''));
       setSerieSelecionada(data.serie || '');
+      setLicoesSelecionadas(licoesAte(data.licaoAtual));
       setModalLicaoAberto(false);
       toast.success('Lição atualizada.');
     } catch (err) {
@@ -261,16 +266,25 @@ export default function EstudanteDashboard() {
   const abrirModalLicao = () => {
     setSerieSelecionada(estudo.serie || '');
     setLicaoAtual(String(estudo.licaoAtual || ''));
+    setLicoesSelecionadas(licoesAte(estudo.licaoAtual));
     setModalLicaoAberto(true);
   };
   const fecharModalLicao = () => {
     setSerieSelecionada(estudo.serie || '');
     setLicaoAtual(String(estudo.licaoAtual || ''));
+    setLicoesSelecionadas(licoesAte(estudo.licaoAtual));
     setModalLicaoAberto(false);
   };
   const mudarSerieSelecionada = (serieId) => {
     setSerieSelecionada(serieId);
     setLicaoAtual('');
+    setLicoesSelecionadas([]);
+  };
+  const alternarLicao = (numero) => {
+    const chave = String(numero);
+    setLicoesSelecionadas((atuais) => (
+      atuais.includes(chave) ? atuais.filter((item) => item !== chave) : [...atuais, chave]
+    ));
   };
   const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : isClasse ? 'classes-biblicas/registros' : 'estudos-biblicos'}`;
 
@@ -564,9 +578,9 @@ export default function EstudanteDashboard() {
       </div>
 
       {modalLicaoAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
-            <div className="border-b border-gray-100 px-5 py-4">
+        <div className="fixed inset-x-0 top-0 bottom-16 z-50 flex items-center justify-center bg-[#0f2347]/50 px-4 py-5 backdrop-blur-sm sm:inset-0 sm:p-4">
+          <div className="flex max-h-[calc(100dvh-7.5rem)] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl sm:max-h-[86vh] sm:max-w-3xl">
+            <div className="flex-shrink-0 border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Atualizar estudo</p>
@@ -579,7 +593,7 @@ export default function EstudanteDashboard() {
               </div>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
               <label>
                 <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
                 <select className="input-field" value={serieSelecionada} onChange={(event) => mudarSerieSelecionada(event.target.value)}>
@@ -595,15 +609,15 @@ export default function EstudanteDashboard() {
               <div className="mt-5">
                 <p className="mb-3 text-sm font-semibold text-gray-600">Licao</p>
                 {licoes.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
                     {licoes.map((licao) => {
-                      const selecionada = String(licao.numero) === String(licaoAtual);
+                      const selecionada = licoesSelecionadas.includes(String(licao.numero));
                       return (
                         <button
                           key={licao.numero}
                           type="button"
-                          className={`min-h-24 rounded-xl border p-3 text-left transition-all ${selecionada ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md' : 'border-gray-100 bg-[#F4F5F7] text-[#1A3A6B] hover:border-[#C9963A]/50 hover:bg-white'}`}
-                          onClick={() => setLicaoAtual(String(licao.numero))}
+                          className={`min-h-20 rounded-xl border p-3 text-left transition-all sm:min-h-24 ${selecionada ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md' : 'border-gray-100 bg-[#F4F5F7] text-[#1A3A6B] hover:border-[#C9963A]/50 hover:bg-white'}`}
+                          onClick={() => alternarLicao(licao.numero)}
                         >
                           <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${selecionada ? 'bg-white/15 text-white' : 'bg-white text-[#C9963A]'}`}>{licao.numero}</span>
                           <span className="mt-3 block text-sm font-semibold leading-snug">{licao.titulo}</span>
@@ -619,11 +633,11 @@ export default function EstudanteDashboard() {
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
+            <div className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-gray-100 px-4 py-3 sm:flex-row sm:justify-end sm:px-5 sm:py-4">
               <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={fecharModalLicao}>
                 Cancelar
               </button>
-              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvando || !serieSelecionada || !licaoAtual}>
+              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvando || !serieSelecionada || licoesSelecionadas.length === 0}>
                 {salvando ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
