@@ -101,6 +101,7 @@ export default function Alunos() {
   const [classe, setClasse] = useState('');
   const [modalAtualizacao, setModalAtualizacao] = useState(null);
   const [estudoSelecionadoId, setEstudoSelecionadoId] = useState('');
+  const [serieSelecionada, setSerieSelecionada] = useState('');
   const [licaoSelecionada, setLicaoSelecionada] = useState('');
   const [salvandoLicao, setSalvandoLicao] = useState(false);
 
@@ -158,22 +159,22 @@ export default function Alunos() {
 
   const estudos = dados.estudos || [];
   const estudoSelecionado = estudos.find((estudo) => String(estudo.id) === String(estudoSelecionadoId));
-  const licoesModal = SERIES_ESTUDO.find((serie) => serie.id === estudoSelecionado?.serie)?.licoes || [];
+  const licoesModal = SERIES_ESTUDO.find((serie) => serie.id === serieSelecionada)?.licoes || [];
 
   const abrirAtualizacao = (aluno) => {
     setModalAtualizacao(aluno);
     setEstudoSelecionadoId(String(aluno.estudoId));
+    setSerieSelecionada(aluno.serie || '');
     setLicaoSelecionada(String(aluno.licaoAtual || ''));
   };
 
-  const mudarEstudoSelecionado = (id) => {
-    const proximoEstudo = estudos.find((estudo) => String(estudo.id) === String(id));
-    setEstudoSelecionadoId(id);
-    setLicaoSelecionada(String(proximoEstudo?.licaoAtual || ''));
+  const mudarSerieSelecionada = (serieId) => {
+    setSerieSelecionada(serieId);
+    setLicaoSelecionada('');
   };
 
   const salvarLicao = async () => {
-    if (!estudoSelecionado || !licaoSelecionada) return;
+    if (!estudoSelecionado || !serieSelecionada || !licaoSelecionada) return;
     setSalvandoLicao(true);
     try {
       const payload = {
@@ -185,7 +186,7 @@ export default function Alunos() {
         diaEstudo: estudoSelecionado.diaEstudo,
         horarioEstudo: estudoSelecionado.horarioEstudo || '',
         duplaId: estudoSelecionado.duplaId,
-        serie: estudoSelecionado.serie,
+        serie: serieSelecionada,
         licaoAtual: licaoSelecionada,
         tipoEstudo: estudoSelecionado.tipoEstudo,
         sexo: estudoSelecionado.sexo || '',
@@ -368,10 +369,11 @@ export default function Alunos() {
             <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
               <label>
                 <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
-                <select className="input-field" value={estudoSelecionadoId} onChange={(event) => mudarEstudoSelecionado(event.target.value)}>
-                  {estudos.map((estudo) => (
-                    <option key={estudo.id} value={estudo.id}>
-                      {tipoLabel[estudo.tipoEstudo || 'UNICO'] || estudo.tipoEstudo} - {estudo.nomeEstudante || 'Sem nome'} - {getSerieNome(estudo.serie)}
+                <select className="input-field" value={serieSelecionada} onChange={(event) => mudarSerieSelecionada(event.target.value)}>
+                  <option value="">Selecione a serie</option>
+                  {SERIES_ESTUDO.map((serie) => (
+                    <option key={serie.id} value={serie.id}>
+                      {serie.nome}
                     </option>
                   ))}
                 </select>
@@ -408,7 +410,7 @@ export default function Alunos() {
               <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={() => setModalAtualizacao(null)}>
                 Cancelar
               </button>
-              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvandoLicao || !licaoSelecionada || !estudoSelecionado}>
+              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvandoLicao || !serieSelecionada || !licaoSelecionada || !estudoSelecionado}>
                 {salvandoLicao ? 'Salvando...' : 'Salvar'}
               </button>
             </div>

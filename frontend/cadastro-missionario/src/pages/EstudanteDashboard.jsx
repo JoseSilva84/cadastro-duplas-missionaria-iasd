@@ -108,13 +108,14 @@ export default function EstudanteDashboard() {
   const [editando, setEditando] = useState(false);
   const [salvandoDados, setSalvandoDados] = useState(false);
   const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
+  const [serieSelecionada, setSerieSelecionada] = useState('');
   const [form, setForm] = useState(montarForm(null));
 
   const isPonto = estudo?.tipoEstudo === 'PONTO';
   const isClasse = estudo?.tipoEstudo === 'CLASSE';
   const isGrupo = isPonto || isClasse;
   const participanteId = searchParams.get('participante');
-  const licoes = SERIES_ESTUDO.find((serie) => serie.id === estudo?.serie)?.licoes || [];
+  const licoes = SERIES_ESTUDO.find((serie) => serie.id === (modalLicaoAberto ? serieSelecionada : estudo?.serie))?.licoes || [];
   const participanteSelecionado = (estudo?.participantes || []).find((participante) => String(participante.id) === String(participanteId));
 
   useEffect(() => {
@@ -123,6 +124,7 @@ export default function EstudanteDashboard() {
       .then((res) => {
         setEstudo(res.data);
         setLicaoAtual(String(res.data.licaoAtual || ''));
+        setSerieSelecionada(res.data.serie || '');
         setForm(montarForm(res.data));
       })
       .catch(() => toast.error('Erro ao carregar detalhes do estudo.'))
@@ -148,7 +150,7 @@ export default function EstudanteDashboard() {
         diaEstudo: estudo.diaEstudo,
         horarioEstudo: estudo.horarioEstudo || '',
         duplaId: estudo.duplaId,
-        serie: estudo.serie,
+        serie: serieSelecionada || estudo.serie,
         licaoAtual,
         tipoEstudo: estudo.tipoEstudo,
         sexo: estudo.sexo || '',
@@ -160,6 +162,7 @@ export default function EstudanteDashboard() {
       const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, payload);
       setEstudo(data);
       setLicaoAtual(String(data.licaoAtual || ''));
+      setSerieSelecionada(data.serie || '');
       setModalLicaoAberto(false);
       toast.success('Lição atualizada.');
     } catch (err) {
@@ -256,12 +259,18 @@ export default function EstudanteDashboard() {
     setEditando(true);
   };
   const abrirModalLicao = () => {
+    setSerieSelecionada(estudo.serie || '');
     setLicaoAtual(String(estudo.licaoAtual || ''));
     setModalLicaoAberto(true);
   };
   const fecharModalLicao = () => {
+    setSerieSelecionada(estudo.serie || '');
     setLicaoAtual(String(estudo.licaoAtual || ''));
     setModalLicaoAberto(false);
+  };
+  const mudarSerieSelecionada = (serieId) => {
+    setSerieSelecionada(serieId);
+    setLicaoAtual('');
   };
   const baseRelatorio = `${isDireto ? '/direto' : ''}/relatorios/${isPonto ? 'pontos-estudo' : isClasse ? 'classes-biblicas/registros' : 'estudos-biblicos'}`;
 
@@ -573,10 +582,13 @@ export default function EstudanteDashboard() {
             <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
               <label>
                 <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
-                <select className="input-field" value={estudo.id} disabled>
-                  <option value={estudo.id}>
-                    {isPonto ? 'Ponto de Estudo' : isClasse ? 'Classe Biblica' : 'Estudo individual'} - {estudo.nomeEstudante || 'Sem nome'} - {getSerieNome(estudo.serie)}
-                  </option>
+                <select className="input-field" value={serieSelecionada} onChange={(event) => mudarSerieSelecionada(event.target.value)}>
+                  <option value="">Selecione a serie</option>
+                  {SERIES_ESTUDO.map((serie) => (
+                    <option key={serie.id} value={serie.id}>
+                      {serie.nome}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -611,7 +623,7 @@ export default function EstudanteDashboard() {
               <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={fecharModalLicao}>
                 Cancelar
               </button>
-              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvando || !licaoAtual}>
+              <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvando || !serieSelecionada || !licaoAtual}>
                 {salvando ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
