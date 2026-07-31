@@ -23,6 +23,8 @@ const validarEstudoBiblico = [
   body('devolveDizimos').optional({ checkFalsy: true }).isBoolean(),
   body('cultoFamiliar').optional({ checkFalsy: true }).isBoolean(),
   body('observacoes').optional({ checkFalsy: true }).isString(),
+  body('encerrado').optional({ checkFalsy: true }).isBoolean(),
+  body('motivoEncerramento').optional({ checkFalsy: true }).isString().isLength({ max: 255 }).withMessage('Motivo de encerramento invalido.'),
   body('participantes').optional().isArray().withMessage('Participantes deve ser um array.'),
   body('participantes').custom((participantes, { req }) => {
     if (!['PONTO', 'CLASSE'].includes(req.body.tipoEstudo)) return true;

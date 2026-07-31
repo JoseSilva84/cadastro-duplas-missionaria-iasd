@@ -19,6 +19,13 @@ const classeConfig = {
   SEM: { label: 'Sem classificacao', cor: '#64748b', bg: '#f8fafc' },
 };
 
+const motivosEncerramento = [
+  { valor: 'BATISMO', label: 'Batismo' },
+  { valor: 'DESISTIU', label: 'Desistiu do estudo' },
+  { valor: 'TERMINOU_LICOES', label: 'Apenas terminou as lições' },
+  { valor: 'OUTRO', label: 'Outro motivo' },
+];
+
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
@@ -107,6 +114,10 @@ export default function Alunos() {
   const [serieSelecionada, setSerieSelecionada] = useState('');
   const [licoesSelecionadas, setLicoesSelecionadas] = useState([]);
   const [salvandoLicao, setSalvandoLicao] = useState(false);
+  const [modalEncerramento, setModalEncerramento] = useState(null);
+  const [motivoEncerramento, setMotivoEncerramento] = useState('');
+  const [outroMotivoEncerramento, setOutroMotivoEncerramento] = useState('');
+  const [encerrando, setEncerrando] = useState(false);
 
   useEffect(() => {
     setCarregando(true);
@@ -117,7 +128,7 @@ export default function Alunos() {
   }, []);
 
   const alunos = useMemo(() => (
-    (dados.estudos || []).flatMap((estudo) => {
+    (dados.estudos || []).filter((estudo) => !estudo.encerrado).flatMap((estudo) => {
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
         return (estudo.participantes || []).map((participante) => alunoDoParticipante(estudo, participante));
       }
@@ -220,6 +231,53 @@ export default function Alunos() {
     }
   };
 
+  const abrirEncerramento = (aluno) => {
+    setModalEncerramento(aluno);
+    setMotivoEncerramento('');
+    setOutroMotivoEncerramento('');
+  };
+
+  const encerrarEstudo = async () => {
+    const estudo = estudos.find((item) => String(item.id) === String(modalEncerramento?.estudoId));
+    const motivoFinal = motivoEncerramento === 'OUTRO' ? outroMotivoEncerramento.trim() : motivoEncerramento;
+    if (!estudo || !motivoFinal) return;
+    setEncerrando(true);
+    try {
+      const payload = {
+        nomeEstudante: estudo.nomeEstudante,
+        endereco: estudo.endereco,
+        cidade: estudo.cidade,
+        estado: estudo.estado,
+        whatsapp: estudo.whatsapp,
+        diaEstudo: estudo.diaEstudo,
+        horarioEstudo: estudo.horarioEstudo || '',
+        duplaId: estudo.duplaId,
+        serie: estudo.serie,
+        licaoAtual: estudo.licaoAtual,
+        tipoEstudo: estudo.tipoEstudo,
+        sexo: estudo.sexo || '',
+        classificacaoInteressado: estudo.classificacaoInteressado || '',
+        observacoes: estudo.observacoes || '',
+        motivoImpedimento: estudo.motivoImpedimento || '',
+        participantes: estudo.participantes || undefined,
+        encerrado: true,
+        motivoEncerramento: motivoFinal,
+      };
+      const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, payload);
+      setDados((atual) => ({
+        ...atual,
+        estudos: (atual.estudos || []).map((item) => (String(item.id) === String(data.id) ? data : item)),
+      }));
+      setModalEncerramento(null);
+      toast.success('Estudo encerrado.');
+    } catch (err) {
+      const erros = err.response?.data?.erros;
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao encerrar estudo.');
+    } finally {
+      setEncerrando(false);
+    }
+  };
+
   if (carregando) return <LoadingState mensagem="Carregando alunos..." />;
 
   return (
@@ -295,8 +353,17 @@ export default function Alunos() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            {alunosFiltrados.map((aluno) => (
-              <article key={aluno.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#C9963A]/50 hover:shadow-md">
+            {alunosFiltrados.map((aluno) => {
+              const bordaClasse = aluno.classificacao && aluno.classificacao !== 'SEM' ? classeConfig[aluno.classificacao]?.cor : null;
+              return (
+              <article
+                key={aluno.id}
+                className="overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{
+                  borderColor: bordaClasse || '#f3f4f6',
+                  boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}22, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
+                }}
+              >
                 <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_9rem] xl:items-center">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)] xl:items-center">
                     <div className="min-w-0">
@@ -343,13 +410,23 @@ export default function Alunos() {
                   </div>
 
                   <div className="flex xl:justify-end">
-                    <button type="button" className="btn-outline w-full px-3 py-2 text-xs xl:w-32" onClick={() => navigate(caminhoDetalhes(aluno))}>
-                      Detalhes
-                    </button>
+                    <div className="w-full space-y-2 xl:w-40">
+                      <button type="button" className="btn-outline w-full px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
+                        Detalhes
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:border-red-700 hover:bg-red-700 hover:text-white"
+                        onClick={() => abrirEncerramento(aluno)}
+                      >
+                        Encerrar Estudo
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
-            ))}
+            );
+            })}
 
             {alunosFiltrados.length === 0 && (
               <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
@@ -422,6 +499,62 @@ export default function Alunos() {
               </button>
               <button type="button" className="btn-primary px-6 py-2 text-sm" onClick={salvarLicao} disabled={salvandoLicao || !serieSelecionada || licoesSelecionadas.length === 0 || !estudoSelecionado}>
                 {salvandoLicao ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalEncerramento && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-600">Encerrar estudo</p>
+                  <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]">Motivo do encerramento</h2>
+                  <p className="mt-1 text-sm text-gray-400">{modalEncerramento.nome}</p>
+                </div>
+                <button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100" onClick={() => setModalEncerramento(null)}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3 px-5 py-5">
+              {motivosEncerramento.map((motivo) => {
+                const selecionado = motivoEncerramento === motivo.valor;
+                return (
+                  <button
+                    key={motivo.valor}
+                    type="button"
+                    className={`w-full rounded-xl border px-4 py-4 text-left text-sm font-semibold transition ${selecionado ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md' : 'border-gray-100 bg-[#F4F5F7] text-[#1A3A6B] hover:border-red-200 hover:bg-white'}`}
+                    onClick={() => setMotivoEncerramento(motivo.valor)}
+                  >
+                    {motivo.label}
+                  </button>
+                );
+              })}
+              {motivoEncerramento === 'OUTRO' && (
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-semibold text-gray-600">Descreva o motivo</span>
+                  <textarea
+                    className="input-field min-h-24 resize-none"
+                    value={outroMotivoEncerramento}
+                    maxLength={255}
+                    onChange={(event) => setOutroMotivoEncerramento(event.target.value)}
+                    placeholder="Digite o motivo do encerramento..."
+                  />
+                </label>
+              )}
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={() => setModalEncerramento(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="rounded-lg bg-red-700 px-6 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60" onClick={encerrarEstudo} disabled={encerrando || !motivoEncerramento || (motivoEncerramento === 'OUTRO' && !outroMotivoEncerramento.trim())}>
+                {encerrando ? 'Encerrando...' : 'Encerrar estudo'}
               </button>
             </div>
           </div>

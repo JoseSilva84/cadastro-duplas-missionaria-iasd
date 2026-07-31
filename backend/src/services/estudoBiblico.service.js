@@ -19,6 +19,7 @@ const montarFiltro = async (query = {}, usuario = null) => {
     if (query.duplaId) where.duplaId = Number(query.duplaId);
   }
   if (query.serie) where.serie = query.serie;
+  if (query.encerrado !== undefined) where.encerrado = query.encerrado === 'true';
   if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
   if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
   if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;
@@ -75,6 +76,9 @@ const normalizarEstudo = (data, duplaIdPadrao = null) => ({
   devolveDizimos: data.devolveDizimos !== undefined ? Boolean(data.devolveDizimos) : null,
   cultoFamiliar: data.cultoFamiliar !== undefined ? Boolean(data.cultoFamiliar) : null,
   observacoes: data.observacoes || null,
+  encerrado: data.encerrado !== undefined ? Boolean(data.encerrado) : undefined,
+  motivoEncerramento: data.motivoEncerramento !== undefined ? data.motivoEncerramento || null : undefined,
+  encerradoEm: data.encerrado !== undefined ? (Boolean(data.encerrado) ? new Date() : null) : undefined,
 });
 
 const EstudoBiblicoService = {

@@ -280,6 +280,9 @@ model EstudoBiblico {
   devolveDizimos           Boolean?
   cultoFamiliar            Boolean?
   observacoes              String?
+  encerrado                Boolean  @default(false)
+  motivoEncerramento       String?
+  encerradoEm              DateTime?
   criadoEm       DateTime @default(now())
   atualizadoEm   DateTime @updatedAt
 
