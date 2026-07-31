@@ -67,15 +67,19 @@ app.get('/api/health', (req, res) => {
 // Rota pública de estatísticas
 app.get('/api/public/estatisticas', async (req, res) => {
   try {
+    const whereEstudoEmAndamento = {
+      encerrado: false,
+      statusEstudo: 'EM_ANDAMENTO',
+    };
     const [regioes, distritos, duplas, pontosEstudo, classesBiblicas, estudosIndividuais, estudantesPontos, estudantesClasses] = await Promise.all([
       prisma.regiao.count(),
       prisma.distrito.count(),
       prisma.dupla.count(),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'PONTO' } }),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'CLASSE' } }),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'UNICO' } }),
-      prisma.participante.count({ where: { estudo: { tipoEstudo: 'PONTO' } } }),
-      prisma.participante.count({ where: { estudo: { tipoEstudo: 'CLASSE' } } }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'PONTO' } }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'CLASSE' } }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'UNICO' } }),
+      prisma.participante.count({ where: { estudo: { ...whereEstudoEmAndamento, tipoEstudo: 'PONTO' } } }),
+      prisma.participante.count({ where: { estudo: { ...whereEstudoEmAndamento, tipoEstudo: 'CLASSE' } } }),
     ]);
     const classes = pontosEstudo + classesBiblicas;
     const estudantes = estudosIndividuais + estudantesPontos + estudantesClasses;

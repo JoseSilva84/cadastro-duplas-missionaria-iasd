@@ -32,6 +32,14 @@ const classeCor = {
   SEM: '#94a3b8',
 };
 
+const motivoEncerramentoLabel = {
+  BATISMO: 'Batismo',
+  DESISTIU: 'Desistiu do estudo',
+  TERMINOU_LICOES: 'Terminou as licoes',
+  OUTRO: 'Outro motivo',
+  'Nao informado': 'Nao informado',
+};
+
 const progresso = (estudo) => {
   const total = SERIES_ESTUDO.find((serie) => serie.id === estudo.serie)?.licoes.length || 0;
   if (!total) return 0;
@@ -148,6 +156,10 @@ export default function RelatorioEstudosGeral() {
       ? Math.round(estudantes.reduce((acc, item) => acc + item.progresso, 0) / estudantes.length)
       : 0;
     const estudosIndividuais = estudos.filter((item) => item.tipoEstudo === 'UNICO');
+    const encerradosPorMotivo = (dados.encerradosPorMotivo || []).map((item) => ({
+      ...item,
+      motivo: motivoEncerramentoLabel[item.motivo] || item.motivo,
+    }));
     const duplasComEstudoNaoRegistrado = Array.isArray(dados.duplas)
       ? dados.duplas.filter(temEstudoNaoRegistrado)
       : (dados.duplasComEstudoNaoRegistrado || []);
@@ -166,6 +178,8 @@ export default function RelatorioEstudosGeral() {
       totalDuplasComEstudoNaoRegistrado: duplasComEstudoNaoRegistrado.length,
       totalRegistros: estudos.length,
       totalEstudantes: estudantes.length,
+      totalEncerrados: dados.totalEncerrados || encerradosPorMotivo.reduce((acc, item) => acc + item.total, 0),
+      encerradosPorMotivo,
       mediaProgresso,
       concluidos: estudantes.filter((item) => item.progresso >= 100).length,
       espiritual: [
@@ -198,6 +212,25 @@ export default function RelatorioEstudosGeral() {
       data: ['UNICO', 'PONTO', 'CLASSE'].map((tipo) => ({
         name: tipoLabel[tipo],
         value: resumo.porTipo[tipo] || 0,
+      })),
+    }],
+  };
+
+  const encerradosOption = {
+    ...chartBase,
+    color: ['#b91c1c', '#C9963A', '#64748b', '#1A3A6B', '#0d9488'],
+    legend: { bottom: 0, icon: 'circle' },
+    series: [{
+      name: 'Motivo',
+      type: 'pie',
+      radius: ['44%', '70%'],
+      center: ['50%', '43%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 },
+      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      data: resumo.encerradosPorMotivo.map((item) => ({
+        name: item.motivo,
+        value: item.total,
       })),
     }],
   };
@@ -333,12 +366,13 @@ export default function RelatorioEstudosGeral() {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
             ['Pessoas envolvidas', resumo.totalEstudantes, '#0d9488'],
             ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
+            ['Estudos encerrados', resumo.totalEncerrados, '#b91c1c'],
           ].map(([label, valor, cor]) => (
             <div key={label} className="card">
               <p className="text-xs text-gray-400">{label}</p>
@@ -362,7 +396,18 @@ export default function RelatorioEstudosGeral() {
             <p className="text-sm text-gray-400 mb-3">Distribuicao por origem do estudo biblico.</p>
             <Chart option={tipoOption} className="h-80" />
           </section>
-          <section className="card xl:col-span-2">
+          <section className="card xl:col-span-1">
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
+            <p className="text-sm text-gray-400 mb-3">Distribuicao dos estudos ja encerrados.</p>
+            {resumo.totalEncerrados > 0 ? (
+              <Chart option={encerradosOption} className="h-80" />
+            ) : (
+              <div className="flex h-80 items-center justify-center rounded-lg bg-gray-50 text-sm font-semibold text-gray-400">
+                Nenhum estudo encerrado.
+              </div>
+            )}
+          </section>
+          <section className="card xl:col-span-1">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
             <p className="text-sm text-gray-400 mb-3">Volume de estudantes por prontidao para batismo.</p>
             <Chart option={classeOption} className="h-80" />

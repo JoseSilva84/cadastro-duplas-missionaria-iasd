@@ -20,6 +20,39 @@ const totalEstudantesDaClasse = (estudo) => {
   return totalParticipantes > 0 ? totalParticipantes : 1;
 };
 
+const whereEstudoEmAndamento = {
+  encerrado: false,
+  statusEstudo: 'EM_ANDAMENTO',
+};
+
+const whereEstudoEncerrado = {
+  OR: [
+    { encerrado: true },
+    { statusEstudo: 'ENCERRADO' },
+  ],
+};
+
+const montarWhereEstudo = (query = {}) => {
+  const where = {};
+  if (query.duplaId) where.duplaId = Number(query.duplaId);
+  if (query.serie) where.serie = query.serie;
+  if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
+  if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;
+  if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
+  if (query.nome) {
+    where.OR = [
+      { nomeEstudante: { contains: query.nome, mode: 'insensitive' } },
+      { participantes: { some: { nome: { contains: query.nome, mode: 'insensitive' } } } },
+    ];
+  }
+  if (query.dataInicio || query.dataFim) {
+    where.criadoEm = {};
+    if (query.dataInicio) where.criadoEm.gte = new Date(query.dataInicio);
+    if (query.dataFim) where.criadoEm.lte = new Date(`${query.dataFim}T23:59:59.999Z`);
+  }
+  return where;
+};
+
 const criarResumoClassesBiblicas = (estudos = []) => {
   const resumo = {
     A: { total: 0, igrejas: {} },
@@ -73,7 +106,7 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
     bairro: dupla.bairro,
     distrito: dupla.distrito?.nome || 'Sem distrito',
     regiao: dupla.distrito?.regiao?.nome || 'Sem regiao',
-    estudos: dupla._count?.estudosBiblicos || 0,
+    estudos: dupla.estudosBiblicos?.length ?? dupla._count?.estudosBiblicos ?? 0,
     visitas: dupla._count?.acompanhamentos || 0,
     batismos: dupla.batismos || 0,
     pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
@@ -214,7 +247,7 @@ const RelatorioModel = {
       prisma.dupla.count({ where: { status: 'INATIVA' } }),
       prisma.dupla.aggregate({ _sum: { pessoasAlcancadas: true, batismos: true } }),
       prisma.estudoBiblico.findMany({
-        where: { tipoEstudo: 'CLASSE' },
+        where: { ...whereEstudoEmAndamento, tipoEstudo: 'CLASSE' },
         include: {
           participantes: { select: { id: true } },
           dupla: {
@@ -340,9 +373,10 @@ const RelatorioModel = {
     if (!igreja) return null;
 
     const estudos = igreja.duplas.flatMap((dupla) => dupla.estudosBiblicos);
+    const estudosEmAndamento = estudos.filter((estudo) => !estudo.encerrado && estudo.statusEstudo !== 'ENCERRADO');
     const evangelismos = igreja.duplas.flatMap((dupla) => dupla.evangelismos);
     const ultimoCadastroEscola = igreja.escolasSabatina[0] || null;
-    const totalEstudantesClasseBiblica = estudos
+    const totalEstudantesClasseBiblica = estudosEmAndamento
       .filter((estudo) => estudo.tipoEstudo === 'CLASSE')
       .reduce((acc, estudo) => acc + totalEstudantesDaClasse(estudo), 0);
     const classeBiblica = classificarClasseBiblica(totalEstudantesClasseBiblica);
@@ -382,16 +416,16 @@ const RelatorioModel = {
       indicadores: {
         quantidadeMembros: igreja.membros,
         quantidadeDuplasMissionarias: igreja.duplas.length,
-        quantidadeEstudos: estudos.length,
-        quantidadePontosEstudos: estudos.filter((estudo) => estudo.tipoEstudo === 'PONTO').length,
-        quantidadeClassesBiblicas: estudos.filter((estudo) => estudo.tipoEstudo === 'CLASSE').length,
+        quantidadeEstudos: estudosEmAndamento.length,
+        quantidadePontosEstudos: estudosEmAndamento.filter((estudo) => estudo.tipoEstudo === 'PONTO').length,
+        quantidadeClassesBiblicas: estudosEmAndamento.filter((estudo) => estudo.tipoEstudo === 'CLASSE').length,
         classeBiblica,
         totalEstudantesClasseBiblica,
         estudosAtivos: igreja.duplas.filter((dupla) => dupla.statusEstudoBiblico === 'ATIVO').length,
         evangelismosAtivos: igreja.duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length,
         batismos: igreja.duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0),
         pessoasAlcancadas: igreja.duplas.reduce((acc, dupla) => acc + (dupla.pessoasAlcancadas || 0), 0),
-        participantesEmPontosEClasses: estudos.reduce((acc, estudo) => acc + (estudo.participantes?.length || 0), 0),
+        participantesEmPontosEClasses: estudosEmAndamento.reduce((acc, estudo) => acc + (estudo.participantes?.length || 0), 0),
         escolaSabatina: ultimoCadastroEscola ? {
           unidadesAcao: ultimoCadastroEscola.unidadesAcao,
           classeProfessores: ultimoCadastroEscola.classeProfessores,
@@ -409,7 +443,7 @@ const RelatorioModel = {
         statusEvangelismo: dupla.statusEvangelismo,
         batismos: dupla.batismos,
         pessoasAlcancadas: dupla.pessoasAlcancadas,
-        estudos: dupla.estudosBiblicos.length,
+        estudos: dupla.estudosBiblicos.filter((estudo) => !estudo.encerrado && estudo.statusEstudo !== 'ENCERRADO').length,
         evangelismos: dupla.evangelismos.length,
       })),
       estudos,
@@ -419,23 +453,9 @@ const RelatorioModel = {
   },
 
   async estudosBiblicos(query = {}) {
-    const where = {};
-    if (query.duplaId) where.duplaId = Number(query.duplaId);
-    if (query.serie) where.serie = query.serie;
-    if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
-    if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;
-    if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
-    if (query.nome) {
-      where.OR = [
-        { nomeEstudante: { contains: query.nome, mode: 'insensitive' } },
-        { participantes: { some: { nome: { contains: query.nome, mode: 'insensitive' } } } },
-      ];
-    }
-    if (query.dataInicio || query.dataFim) {
-      where.criadoEm = {};
-      if (query.dataInicio) where.criadoEm.gte = new Date(query.dataInicio);
-      if (query.dataFim) where.criadoEm.lte = new Date(`${query.dataFim}T23:59:59.999Z`);
-    }
+    const filtros = montarWhereEstudo(query);
+    const statusWhere = query.encerrado === 'true' ? whereEstudoEncerrado : whereEstudoEmAndamento;
+    const where = { AND: [filtros, statusWhere] };
 
     const estudos = await prisma.estudoBiblico.findMany({
       where,
@@ -462,7 +482,27 @@ const RelatorioModel = {
       _count: { serie: true },
     });
 
-    return { total: estudos.length, porSerie, estudos };
+    const encerradosPorMotivo = await prisma.estudoBiblico.groupBy({
+      by: ['motivoEncerramento'],
+      where: { AND: [filtros, whereEstudoEncerrado] },
+      _count: { _all: true },
+    });
+    const totalEncerrados = encerradosPorMotivo.reduce((acc, item) => acc + item._count._all, 0);
+    const totalEstudantes = estudos.reduce((acc, estudo) => acc + totalEstudantesDaClasse(estudo), 0);
+
+    return {
+      total: estudos.length,
+      totalEstudantes,
+      totalEncerrados,
+      encerradosPorMotivo: encerradosPorMotivo
+        .map((item) => ({
+          motivo: item.motivoEncerramento || 'Nao informado',
+          total: item._count._all,
+        }))
+        .sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo)),
+      porSerie,
+      estudos,
+    };
   },
 
   async dashboardAssociacao() {
@@ -482,13 +522,14 @@ const RelatorioModel = {
       classesBiblicasDashboard,
     ] = await Promise.all([
       prisma.ataDupla.count(),
-      prisma.estudoBiblico.count(),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'CLASSE' } }),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'PONTO' } }),
-      prisma.estudoBiblico.count({ where: { tipoEstudo: 'UNICO' } }),
+      prisma.estudoBiblico.count({ where: whereEstudoEmAndamento }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'CLASSE' } }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'PONTO' } }),
+      prisma.estudoBiblico.count({ where: { ...whereEstudoEmAndamento, tipoEstudo: 'UNICO' } }),
       prisma.participante.count({
         where: {
           estudo: {
+            ...whereEstudoEmAndamento,
             tipoEstudo: 'PONTO',
           },
         },
@@ -496,6 +537,7 @@ const RelatorioModel = {
       prisma.participante.count({
         where: {
           estudo: {
+            ...whereEstudoEmAndamento,
             tipoEstudo: 'CLASSE',
           },
         },
@@ -504,7 +546,10 @@ const RelatorioModel = {
         where: { classificacaoDupla: { not: null } },
         select: {
           classificacaoDupla: true,
-          _count: { select: { estudosBiblicos: true } },
+          estudosBiblicos: {
+            where: whereEstudoEmAndamento,
+            select: { id: true },
+          },
         },
       }),
       prisma.escolaSabatinaResumo.findUnique({ where: { id: 1 } }),
@@ -549,6 +594,7 @@ const RelatorioModel = {
             },
           },
           estudosBiblicos: {
+            where: whereEstudoEmAndamento,
             select: {
               tipoEstudo: true,
             },
@@ -557,6 +603,7 @@ const RelatorioModel = {
       }),
       prisma.estudoBiblico.findMany({
         where: {
+          ...whereEstudoEmAndamento,
           tipoEstudo: 'CLASSE',
           dupla: {
             is: {
@@ -592,7 +639,7 @@ const RelatorioModel = {
     const classes = { A: 0, B: 0, C: 0 };
     classesDuplas.forEach((item) => {
       if (item.classificacaoDupla) {
-        if (item.classificacaoDupla === 'A' && (item._count?.estudosBiblicos || 0) === 0) return;
+        if (item.classificacaoDupla === 'A' && (item.estudosBiblicos?.length || 0) === 0) return;
         classes[item.classificacaoDupla] += 1;
       }
     });
@@ -841,7 +888,7 @@ const RelatorioModel = {
         },
       }),
       prisma.estudoBiblico.findMany({
-        where: whereEstudo,
+        where: { ...whereEstudo, ...whereEstudoEmAndamento },
         include: { participantes: { select: { id: true } } },
       }),
       prisma.escolaSabatinaCadastro.findMany({
