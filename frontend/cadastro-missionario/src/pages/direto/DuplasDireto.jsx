@@ -1023,7 +1023,7 @@ export default function DuplasDireto() {
             return (
               <div
                 key={dupla.id}
-                className="group w-full rounded-xl border border-gray-100 border-l-4 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/30 hover:shadow-md"
+                className="group min-h-[126px] w-full rounded-xl border border-gray-100 border-l-4 bg-white px-5 py-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/30 hover:shadow-md"
                 style={{ borderLeftColor: borderColor }}
               >
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] lg:items-center">
@@ -1117,7 +1117,7 @@ export default function DuplasDireto() {
                       title="Ver completos"
                       aria-label="Ver completos"
                     >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -1297,7 +1297,7 @@ export default function DuplasDireto() {
                     title="Ver completos"
                     aria-label="Ver completos"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
