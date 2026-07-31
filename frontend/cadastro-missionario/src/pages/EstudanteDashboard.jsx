@@ -59,6 +59,17 @@ const KanbanCard = ({ titulo, children, onEdit }) => (
   </section>
 );
 
+const InlineActions = ({ onCancel, onSave, saving }) => (
+  <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+    <button type="button" className="btn-outline px-4 py-2 text-xs" onClick={onCancel}>
+      Cancelar
+    </button>
+    <button type="button" className="btn-primary px-4 py-2 text-xs" onClick={onSave} disabled={saving}>
+      {saving ? 'Salvando...' : 'Salvar'}
+    </button>
+  </div>
+);
+
 const valorBooleano = (valor) => {
   if (valor === 'true') return true;
   if (valor === 'false') return false;
@@ -107,7 +118,7 @@ export default function EstudanteDashboard() {
   const [licaoAtual, setLicaoAtual] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
-  const [editando, setEditando] = useState(false);
+  const [secaoEditando, setSecaoEditando] = useState('');
   const [salvandoDados, setSalvandoDados] = useState(false);
   const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
   const [serieSelecionada, setSerieSelecionada] = useState('');
@@ -239,7 +250,7 @@ export default function EstudanteDashboard() {
       setEstudo(data);
       setForm(montarForm(data));
       setLicaoAtual(String(data.licaoAtual || ''));
-      setEditando(false);
+      setSecaoEditando('');
       toast.success('Dados do estudante atualizados.');
     } catch (err) {
       const erros = err.response?.data?.erros;
@@ -257,11 +268,16 @@ export default function EstudanteDashboard() {
 
   const percentual = progresso(estudo);
   const alunoAtual = participanteSelecionado || (!isGrupo ? estudo : null);
+  const participanteSelecionadoIndex = (estudo.participantes || []).findIndex((participante) => String(participante.id) === String(participanteId));
   const titulo = isGrupo ? estudo.nomeEstudante : alunoAtual?.nome || estudo.nomeEstudante;
   const subtitulo = `${getSerieNome(estudo.serie)} - ${getLicaoLabel(estudo.serie, estudo.licaoAtual)}`;
-  const abrirEdicao = () => {
+  const abrirEdicao = (secao) => {
     setForm(montarForm(estudo));
-    setEditando(true);
+    setSecaoEditando(secao);
+  };
+  const cancelarEdicao = () => {
+    setForm(montarForm(estudo));
+    setSecaoEditando('');
   };
   const abrirModalLicao = () => {
     setSerieSelecionada(estudo.serie || '');
@@ -311,14 +327,14 @@ export default function EstudanteDashboard() {
               type="button"
               className="w-full rounded-lg border border-[#1A3A6B] px-4 py-2 text-sm font-semibold text-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white transition-colors"
               onClick={() => {
-                if (editando) {
-                  setEditando(false);
+                if (secaoEditando) {
+                  cancelarEdicao();
                 } else {
-                  abrirEdicao();
+                  abrirEdicao('cadastro');
                 }
               }}
             >
-              {editando ? 'Fechar edicao' : 'Editar dados'}
+              {secaoEditando ? 'Fechar edicao' : 'Editar dados'}
             </button>
           </div>
         </div>
@@ -349,7 +365,7 @@ export default function EstudanteDashboard() {
           </button>
         </div>
 
-        {editando && (
+        {secaoEditando === 'geral' && (
           <div className="card">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
               <div>
@@ -362,7 +378,7 @@ export default function EstudanteDashboard() {
                   className="rounded-lg border border-[#1A3A6B] px-4 py-2 text-sm font-semibold text-[#1A3A6B]"
                   onClick={() => {
                     setForm(montarForm(estudo));
-                    setEditando(false);
+                    setSecaoEditando('');
                   }}
                 >
                   Cancelar
@@ -511,30 +527,144 @@ export default function EstudanteDashboard() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <KanbanCard titulo="Cadastro" onEdit={abrirEdicao}>
-            {participanteSelecionado && <Info label="Aluno selecionado" valor={participanteSelecionado.nome} />}
-            <Info label="WhatsApp" valor={participanteSelecionado?.whatsapp || estudo.whatsapp} />
-            <Info label="Endereço" valor={participanteSelecionado?.endereco || estudo.endereco} />
-            <Info label="Cidade/Estado" valor={`${estudo.cidade}/${estudo.estado}`} />
-            {(!isGrupo || participanteSelecionado) && <Info label="Sexo" valor={participanteSelecionado?.sexo || estudo.sexo} />}
+          <KanbanCard titulo="Cadastro" onEdit={() => abrirEdicao('cadastro')}>
+            {secaoEditando === 'cadastro' ? (
+              <>
+                {isGrupo && participanteSelecionadoIndex >= 0 ? (
+                  <>
+                    <label><span className="block text-xs text-gray-400 mb-1">Nome</span><input className="input-field" value={form.participantes[participanteSelecionadoIndex]?.nome || ''} onChange={(e) => alterarParticipante(participanteSelecionadoIndex, 'nome', e.target.value)} /></label>
+                    <label><span className="block text-xs text-gray-400 mb-1">WhatsApp</span><input className="input-field" value={form.participantes[participanteSelecionadoIndex]?.whatsapp || ''} onChange={(e) => alterarParticipante(participanteSelecionadoIndex, 'whatsapp', e.target.value)} /></label>
+                    <label><span className="block text-xs text-gray-400 mb-1">Endereco</span><input className="input-field" value={form.participantes[participanteSelecionadoIndex]?.endereco || ''} onChange={(e) => alterarParticipante(participanteSelecionadoIndex, 'endereco', e.target.value)} /></label>
+                    <label>
+                      <span className="block text-xs text-gray-400 mb-1">Sexo</span>
+                      <select className="input-field" value={form.participantes[participanteSelecionadoIndex]?.sexo || ''} onChange={(e) => alterarParticipante(participanteSelecionadoIndex, 'sexo', e.target.value)}>
+                        <option value="">Selecione</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Masculino">Masculino</option>
+                      </select>
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label><span className="block text-xs text-gray-400 mb-1">WhatsApp</span><input className="input-field" value={form.whatsapp} onChange={(e) => alterarCampo('whatsapp', e.target.value)} /></label>
+                    <label><span className="block text-xs text-gray-400 mb-1">Endereco</span><input className="input-field" value={form.endereco} onChange={(e) => alterarCampo('endereco', e.target.value)} /></label>
+                    <label><span className="block text-xs text-gray-400 mb-1">Cidade</span><input className="input-field" value={form.cidade} onChange={(e) => alterarCampo('cidade', e.target.value)} /></label>
+                    <label><span className="block text-xs text-gray-400 mb-1">Estado</span><input className="input-field uppercase" maxLength={2} value={form.estado} onChange={(e) => alterarCampo('estado', e.target.value.toUpperCase())} /></label>
+                    {!isGrupo && (
+                      <label>
+                        <span className="block text-xs text-gray-400 mb-1">Sexo</span>
+                        <select className="input-field" value={form.sexo} onChange={(e) => alterarCampo('sexo', e.target.value)}>
+                          <option value="">Selecione</option>
+                          <option value="Feminino">Feminino</option>
+                          <option value="Masculino">Masculino</option>
+                        </select>
+                      </label>
+                    )}
+                  </>
+                )}
+                <InlineActions onCancel={cancelarEdicao} onSave={salvarDados} saving={salvandoDados} />
+              </>
+            ) : (
+              <>
+                {participanteSelecionado && <Info label="Aluno selecionado" valor={participanteSelecionado.nome} />}
+                <Info label="WhatsApp" valor={participanteSelecionado?.whatsapp || estudo.whatsapp} />
+                <Info label="Endereço" valor={participanteSelecionado?.endereco || estudo.endereco} />
+                <Info label="Cidade/Estado" valor={`${estudo.cidade}/${estudo.estado}`} />
+                {(!isGrupo || participanteSelecionado) && <Info label="Sexo" valor={participanteSelecionado?.sexo || estudo.sexo} />}
+              </>
+            )}
           </KanbanCard>
 
-          <KanbanCard titulo="Jornada do Estudo" onEdit={abrirEdicao}>
-            <Info label="Série" valor={getSerieNome(estudo.serie)} />
-            <Info label="Lição atual" valor={getLicaoLabel(estudo.serie, estudo.licaoAtual)} />
-            <Info label="Dia / Horário" valor={`${estudo.diaEstudo || '—'} · ${estudo.horarioEstudo || '—'}`} />
+          <KanbanCard titulo="Jornada do Estudo" onEdit={() => abrirEdicao('jornada')}>
+            {secaoEditando === 'jornada' ? (
+              <>
+                <label><span className="block text-xs text-gray-400 mb-1">Dia do estudo</span><input className="input-field" value={form.diaEstudo} onChange={(e) => alterarCampo('diaEstudo', e.target.value)} /></label>
+                <label><span className="block text-xs text-gray-400 mb-1">Horario</span><input className="input-field" value={form.horarioEstudo} onChange={(e) => alterarCampo('horarioEstudo', e.target.value)} /></label>
+                <InlineActions onCancel={cancelarEdicao} onSave={salvarDados} saving={salvandoDados} />
+              </>
+            ) : (
+              <>
+                <Info label="Série" valor={getSerieNome(estudo.serie)} />
+                <Info label="Lição atual" valor={getLicaoLabel(estudo.serie, estudo.licaoAtual)} />
+                <Info label="Dia / Horário" valor={`${estudo.diaEstudo || '—'} · ${estudo.horarioEstudo || '—'}`} />
+              </>
+            )}
           </KanbanCard>
 
-          <KanbanCard titulo="Acompanhamento Espiritual" onEdit={abrirEdicao}>
-            <Info label="Vai à igreja?" valor={formatarBooleano(estudo.vaIgreja)} />
-            <Info label="Estuda a Bíblia?" valor={formatarBooleano(estudo.leBiblia)} />
-            <Info label="Estuda a lição da Escola Sabatina?" valor={formatarBooleano(estudo.estudaLicao)} />
-            <Info label="Devolve dízimos?" valor={formatarBooleano(estudo.devolveDizimos)} />
-            <Info label="Culto familiar?" valor={formatarBooleano(estudo.cultoFamiliar)} />
+          <KanbanCard titulo="Acompanhamento Espiritual" onEdit={() => abrirEdicao('espiritual')}>
+            {secaoEditando === 'espiritual' ? (
+              <>
+                {[
+                  ['vaIgreja', 'Vai a igreja?'],
+                  ['leBiblia', 'Estuda a Biblia?'],
+                  ['estudaLicao', 'Estuda a licao da Escola Sabatina?'],
+                  ['devolveDizimos', 'Devolve dizimos?'],
+                  ['cultoFamiliar', 'Culto familiar?'],
+                ].map(([campo, label]) => (
+                  <label key={campo}>
+                    <span className="block text-xs text-gray-400 mb-1">{label}</span>
+                    <select className="input-field" value={booleanSelectValue(form[campo])} onChange={(e) => alterarCampo(campo, valorBooleano(e.target.value))}>
+                      <option value="">Nao informado</option>
+                      <option value="true">Sim</option>
+                      <option value="false">Nao</option>
+                    </select>
+                  </label>
+                ))}
+                <InlineActions onCancel={cancelarEdicao} onSave={salvarDados} saving={salvandoDados} />
+              </>
+            ) : (
+              <>
+                <Info label="Vai à igreja?" valor={formatarBooleano(estudo.vaIgreja)} />
+                <Info label="Estuda a Bíblia?" valor={formatarBooleano(estudo.leBiblia)} />
+                <Info label="Estuda a lição da Escola Sabatina?" valor={formatarBooleano(estudo.estudaLicao)} />
+                <Info label="Devolve dízimos?" valor={formatarBooleano(estudo.devolveDizimos)} />
+                <Info label="Culto familiar?" valor={formatarBooleano(estudo.cultoFamiliar)} />
+              </>
+            )}
           </KanbanCard>
 
-          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'} onEdit={abrirEdicao}>
-            {isGrupo ? (
+          <KanbanCard titulo={isPonto ? 'Estudantes do Ponto' : isClasse ? 'Estudantes da Classe' : 'Decisão'} onEdit={() => abrirEdicao('estudantes')}>
+            {secaoEditando === 'estudantes' ? (
+              <>
+                {isGrupo ? (
+                  form.participantes.map((participante, index) => (
+                    <div key={`${participante.nome}-${index}`} className="rounded-lg bg-[#F4F5F7] p-3">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-400">Estudante {index + 1}</p>
+                      <div className="space-y-2">
+                        <input className="input-field" value={participante.nome} onChange={(e) => alterarParticipante(index, 'nome', e.target.value)} placeholder="Nome" />
+                        <input className="input-field" value={participante.whatsapp} onChange={(e) => alterarParticipante(index, 'whatsapp', e.target.value)} placeholder="WhatsApp" />
+                        <select className="input-field" value={participante.classificacaoInteressado} onChange={(e) => alterarParticipante(index, 'classificacaoInteressado', e.target.value)}>
+                          <option value="">Sem classificacao</option>
+                          <option value="A">A - Pronto para o batismo</option>
+                          <option value="B">B - Quer, mas tem impedimento</option>
+                          <option value="C">C - Nao esta pronto</option>
+                        </select>
+                        {participante.classificacaoInteressado === 'B' && (
+                          <textarea className="input-field min-h-20" value={participante.motivoImpedimento} onChange={(e) => alterarParticipante(index, 'motivoImpedimento', e.target.value)} placeholder="Motivo do impedimento" />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <label>
+                      <span className="block text-xs text-gray-400 mb-1">Classificacao</span>
+                      <select className="input-field" value={form.classificacaoInteressado} onChange={(e) => alterarCampo('classificacaoInteressado', e.target.value)}>
+                        <option value="">Sem classificacao</option>
+                        <option value="A">A - Pronto para o batismo</option>
+                        <option value="B">B - Quer, mas tem impedimento</option>
+                        <option value="C">C - Nao esta pronto</option>
+                      </select>
+                    </label>
+                    {form.classificacaoInteressado === 'B' && (
+                      <textarea className="input-field min-h-20" value={form.motivoImpedimento} onChange={(e) => alterarCampo('motivoImpedimento', e.target.value)} placeholder="Motivo do impedimento" />
+                    )}
+                    <textarea className="input-field min-h-20" value={form.observacoes} onChange={(e) => alterarCampo('observacoes', e.target.value)} placeholder="Observacao" />
+                  </>
+                )}
+                <InlineActions onCancel={cancelarEdicao} onSave={salvarDados} saving={salvandoDados} />
+              </>
+            ) : isGrupo ? (
               estudo.participantes?.map((participante) => (
                 <div
                   key={participante.id}
@@ -565,7 +695,7 @@ export default function EstudanteDashboard() {
         <div className="card">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-bold text-[#1A3A6B]">Dupla responsável</h2>
-            <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={abrirEdicao}>
+            <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={() => abrirEdicao('jornada')}>
               Editar
             </button>
           </div>
