@@ -69,6 +69,11 @@ enum ClassificacaoInteressado {
   C // Não quer e não pode se batizar
 }
 
+enum StatusEstudoBiblico {
+  EM_ANDAMENTO
+  ENCERRADO
+}
+
 // Usuários do sistema
 model Usuario {
   id        Int      @id @default(autoincrement())
@@ -280,6 +285,7 @@ model EstudoBiblico {
   devolveDizimos           Boolean?
   cultoFamiliar            Boolean?
   observacoes              String?
+  statusEstudo             StatusEstudoBiblico @default(EM_ANDAMENTO)
   encerrado                Boolean  @default(false)
   motivoEncerramento       String?
   encerradoEm              DateTime?

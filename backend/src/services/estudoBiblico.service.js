@@ -54,8 +54,17 @@ const montarFiltro = async (query = {}, usuario = null) => {
   return where;
 };
 
+const normalizarBoolean = (valor) => {
+  if (valor === undefined) return undefined;
+  if (typeof valor === 'boolean') return valor;
+  return valor === 'true';
+};
+
 // Normaliza os dados do estudo bÃ­blico para persistÃªncia
-const normalizarEstudo = (data, duplaIdPadrao = null) => ({
+const normalizarEstudo = (data, duplaIdPadrao = null) => {
+  const encerrado = normalizarBoolean(data.encerrado);
+
+  return ({
   nomeEstudante: data.nomeEstudante,
   endereco: data.endereco || 'Nao informado',
   cidade: data.cidade || 'Nao informada',
@@ -76,10 +85,12 @@ const normalizarEstudo = (data, duplaIdPadrao = null) => ({
   devolveDizimos: data.devolveDizimos !== undefined ? Boolean(data.devolveDizimos) : null,
   cultoFamiliar: data.cultoFamiliar !== undefined ? Boolean(data.cultoFamiliar) : null,
   observacoes: data.observacoes || null,
-  encerrado: data.encerrado !== undefined ? Boolean(data.encerrado) : undefined,
+  statusEstudo: data.statusEstudo || (encerrado === true ? 'ENCERRADO' : encerrado === false ? 'EM_ANDAMENTO' : undefined),
+  encerrado,
   motivoEncerramento: data.motivoEncerramento !== undefined ? data.motivoEncerramento || null : undefined,
-  encerradoEm: data.encerrado !== undefined ? (Boolean(data.encerrado) ? new Date() : null) : undefined,
-});
+  encerradoEm: encerrado !== undefined ? (encerrado ? new Date() : null) : undefined,
+  });
+};
 
 const EstudoBiblicoService = {
   // Lista estudos bÃ­blicos filtrados por escopo de perfil

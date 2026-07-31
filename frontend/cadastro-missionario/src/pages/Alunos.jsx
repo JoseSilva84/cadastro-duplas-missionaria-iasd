@@ -78,6 +78,8 @@ const alunoDoEstudo = (estudo) => ({
   motivoImpedimento: estudo.motivoImpedimento || '',
   serie: estudo.serie,
   licaoAtual: estudo.licaoAtual,
+  encerrado: Boolean(estudo.encerrado),
+  statusEstudo: estudo.statusEstudo || (estudo.encerrado ? 'ENCERRADO' : 'EM_ANDAMENTO'),
   progresso: progresso(estudo.serie, estudo.licaoAtual),
   origem: tipoLabel[estudo.tipoEstudo || 'UNICO'] || estudo.tipoEstudo,
   duplaId: estudo.dupla?.id,
@@ -260,6 +262,7 @@ export default function Alunos() {
         observacoes: estudo.observacoes || '',
         motivoImpedimento: estudo.motivoImpedimento || '',
         participantes: estudo.participantes || undefined,
+        statusEstudo: 'ENCERRADO',
         encerrado: true,
         motivoEncerramento: motivoFinal,
       };
@@ -391,7 +394,14 @@ export default function Alunos() {
                       <div className="h-2 rounded-full bg-gray-100">
                         <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
                       </div>
-                      <p className="mt-2 text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</span>
+                        {!aluno.encerrado && aluno.statusEstudo === 'EM_ANDAMENTO' && (
+                          <span className="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                            Em andamento
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         className="mt-2 text-xs font-bold text-[#1A3A6B] underline-offset-4 hover:text-[#C9963A] hover:underline"
