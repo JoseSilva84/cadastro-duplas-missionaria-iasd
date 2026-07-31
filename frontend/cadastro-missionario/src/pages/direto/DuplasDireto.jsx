@@ -646,7 +646,7 @@ export default function DuplasDireto() {
       const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
       if (ativo) {
         setDuplas(listaComFotos);
-        setDistritoAtual(distritoRes.data || lista[0]?.distrito || null);
+        setDistritoAtual(distritoId ? (distritoRes.data || lista[0]?.distrito || null) : null);
       }
     }).catch(() => {
       if (ativo) {
@@ -738,6 +738,11 @@ export default function DuplasDireto() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duplasFiltradas, duplaSelecionadaId]);
+
+  const abrirDetalhesDupla = (dupla) => {
+    setDuplaSelecionadaId(dupla.id);
+    setMostraDetalhe(true);
+  };
 
   // Deriva o objeto completo da dupla selecionada (memoizado)
   const duplaSelecionada = useMemo(() => {
@@ -1018,13 +1023,13 @@ export default function DuplasDireto() {
             return (
               <div
                 key={dupla.id}
-                className="group w-full rounded-xl border border-gray-100 border-l-4 bg-white p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/30 hover:shadow-md"
+                className="group w-full rounded-xl border border-gray-100 border-l-4 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#C9963A]/30 hover:shadow-md"
                 style={{ borderLeftColor: borderColor }}
               >
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] lg:items-center">
                   <button
                     type="button"
-                    onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
+                    onClick={() => abrirDetalhesDupla(dupla)}
                     className="flex min-w-0 items-center gap-3 text-left"
                   >
                     <FotoPessoa
@@ -1045,11 +1050,18 @@ export default function DuplasDireto() {
                     </div>
                   </button>
 
-                  <div className="hidden text-lg font-bold text-gray-300 lg:block">+</div>
+                  <button
+                    type="button"
+                    onClick={() => abrirDetalhesDupla(dupla)}
+                    className="hidden text-lg font-bold text-gray-300 transition-colors hover:text-[#C9963A] lg:block"
+                    title="Ver detalhes da dupla"
+                  >
+                    +
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
+                    onClick={() => abrirDetalhesDupla(dupla)}
                     className="flex min-w-0 items-center gap-3 text-left"
                   >
                     <FotoPessoa
@@ -1175,16 +1187,15 @@ export default function DuplasDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes da Dupla (Detail) ===== */}
-      <div className="hidden">
-        {!duplaSelecionada ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <div className="text-5xl mb-4 animate-float">👈</div>
-              <p className="font-medium text-lg">Selecione uma dupla</p>
-              <p className="text-sm mt-1">Clique em uma dupla à esquerda para ver os detalhes.</p>
-            </div>
-          </div>
-        ) : (
+      {mostraDetalhe && duplaSelecionada && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setMostraDetalhe(false)}
+        >
+          <div
+            className="h-[min(90vh,920px)] w-full max-w-6xl overflow-hidden rounded-xl bg-[#F8FAFC] shadow-2xl ring-1 ring-black/5"
+            onClick={(event) => event.stopPropagation()}
+          >
           <div
             key={duplaSelecionada.id}
             className="flex flex-col h-full animate-slide-in-right"
@@ -1195,12 +1206,12 @@ export default function DuplasDireto() {
               <button
                 type="button"
                 onClick={() => setMostraDetalhe(false)}
-                className="sm:hidden flex items-center gap-1.5 text-xs text-[#1A3A6B] font-semibold mb-3 hover:text-[#C9963A] transition-colors"
+                className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-[#1A3A6B] transition-colors hover:text-[#C9963A]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Voltar à lista
+                Fechar
               </button>
               {/* Mobile: empilhado | sm+: lado a lado */}
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-5">
@@ -1466,6 +1477,22 @@ export default function DuplasDireto() {
                                   <span className="text-[10px] text-gray-400">Atualizado em {formatarData(estudo.atualizadoEm) || '—'}</span>
                                 </div>
                                 <h5 className="font-bold text-[#1A3A6B] break-words">{estudo.nomeEstudante || 'Sem nome'}</h5>
+                                <div className="mt-2 rounded-lg border border-gray-100 bg-white p-3">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Estudantes</span>
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                    <span className="rounded-full bg-[#1A3A6B]/10 px-2 py-1 text-[11px] font-semibold text-[#1A3A6B]">
+                                      {estudo.nomeEstudante || 'Sem nome'}
+                                    </span>
+                                    {(estudo.participantes || []).map((participante) => (
+                                      <span
+                                        key={participante.id || participante.nome}
+                                        className="rounded-full bg-[#0d9488]/10 px-2 py-1 text-[11px] font-semibold text-[#0d9488]"
+                                      >
+                                        {participante.nome || 'Sem nome'}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-3 text-xs">
                                   <div><span className="text-gray-400">Série:</span><p className="font-semibold text-gray-700">{getSerieNome(estudo.serie)}</p></div>
                                   <div><span className="text-gray-400">Lição atual:</span><p className="font-semibold text-gray-700">{getLicaoLabel(estudo.serie, estudo.licaoAtual)}</p></div>
@@ -1531,8 +1558,9 @@ export default function DuplasDireto() {
               </div>
             </div>
           </div>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
     <ModalConfirmarExclusaoDupla
       dupla={duplaParaExcluir}
