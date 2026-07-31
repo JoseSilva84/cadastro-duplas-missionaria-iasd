@@ -1117,9 +1117,7 @@ export default function DuplasDireto() {
                       title="Ver completos"
                       aria-label="Ver completos"
                     >
-                      <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <span className="text-2xl font-bold leading-none text-white" aria-hidden="true">›</span>
                     </button>
                   </div>
                 </div>
@@ -1297,9 +1295,7 @@ export default function DuplasDireto() {
                     title="Ver completos"
                     aria-label="Ver completos"
                   >
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <span className="text-2xl font-bold leading-none text-white" aria-hidden="true">›</span>
                   </button>
                 </div>
               </div>
