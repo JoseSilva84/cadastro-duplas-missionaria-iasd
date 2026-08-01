@@ -317,8 +317,8 @@ function BottomNavigation({ navLinks, onMenuClick }) {
   );
 }
 
-function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, layout }) {
-  const isDireto = layout === 'direto';
+function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
+  const isDireto = false;
   const [submenuAberto, setSubmenuAberto] = useState(null);
 
   return (
@@ -335,9 +335,9 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, lay
       </div>
 
       {/* Indicador do modelo atual */}
-      <div className="px-3 pt-3">
-        <div className={`rounded-lg px-3 py-2 flex items-center gap-2.5 ${isDireto ? 'bg-[#C9963A]/15 border border-[#C9963A]/20' : 'bg-white/5 border border-white/10'}`}>
-          <div className={`w-2 h-2 rounded-full ${isDireto ? 'bg-[#C9963A]' : 'bg-blue-400'}`} />
+      <div className="hidden">
+        <div>
+          <div />
           <span className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">
             {isDireto ? 'Modelo Direto' : 'Modelo Avançado'}
           </span>
@@ -345,8 +345,8 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, lay
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 pr-2 space-y-1 sidebar-scroll">
-        <p className="px-4 pt-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 pr-2 space-y-1 sidebar-scroll">
+        <p className="px-4 pt-0 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
         {navLinks.map((link) => {
           if (link.type === 'dropdown') {
             const aberto = submenuAberto === link.key;
