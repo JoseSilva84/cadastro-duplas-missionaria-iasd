@@ -246,7 +246,6 @@ export default function RelatorioRankingDecisoes() {
               Batismos confirmados pelo encerramento dos estudos e experiencia passada informada pelas duplas.
             </p>
           </div>
-          <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(baseRelatorio)}>Voltar</button>
         </div>
       </div>
 
