@@ -309,6 +309,23 @@
     border-radius: 0 3px 3px 0;
   }
 
+  @media (min-width: 1024px) and (max-width: 1279.98px) {
+    .sidebar-link {
+      gap: 0.55rem;
+      min-height: 38px;
+      border-radius: 0.65rem;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.72rem;
+      line-height: 1.15;
+    }
+
+    .sidebar-link svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+  }
+
   .sidebar-scroll {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.28) transparent;

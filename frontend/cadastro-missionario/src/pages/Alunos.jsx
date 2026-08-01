@@ -367,7 +367,7 @@ export default function Alunos() {
                   boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}22, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
                 }}
               >
-                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[minmax(0,1fr)_8rem] md:items-center xl:grid-cols-[minmax(0,1fr)_9rem]">
+                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[minmax(0,1fr)_8rem] md:items-end xl:grid-cols-[minmax(0,1fr)_9rem] xl:items-center">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(8rem,1fr)_7rem_minmax(8rem,0.85fr)_minmax(12rem,1fr)] lg:items-center xl:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)]">
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
@@ -425,7 +425,7 @@ export default function Alunos() {
                     </div>
                   </div>
 
-                  <div className="flex md:justify-end">
+                  <div className="flex md:justify-end md:self-end md:pt-8 lg:pt-10 xl:pt-0">
                     <div className="w-full space-y-2 md:w-32 xl:w-40">
                       <button type="button" className="btn-outline w-full px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
                         Detalhes

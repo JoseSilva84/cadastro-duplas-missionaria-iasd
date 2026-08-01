@@ -219,7 +219,7 @@ export default function Layout({ children }) {
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar desktop */}
       <aside
-        className="hidden lg:flex flex-col w-64 flex-shrink-0"
+        className="hidden lg:flex flex-col w-52 flex-shrink-0 xl:w-64"
         style={{ background: 'linear-gradient(180deg, #0b1a36 0%, #1A3A6B 40%, #162d54 100%)' }}
       >
         <SidebarContent
@@ -318,13 +318,12 @@ function BottomNavigation({ navLinks, onMenuClick }) {
 }
 
 function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
-  const isDireto = false;
   const [submenuAberto, setSubmenuAberto] = useState(null);
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Logo */}
-      <div className="flex items-start gap-3 px-5 py-6 border-b border-white/10">
+      <div className="flex items-start gap-2.5 border-b border-white/10 px-4 py-4 xl:gap-3 xl:px-5 xl:py-6">
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
@@ -339,14 +338,14 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         <div>
           <div />
           <span className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">
-            {isDireto ? 'Modelo Direto' : 'Modelo Avançado'}
+            {null}
           </span>
         </div>
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-2 pr-2 space-y-1 sidebar-scroll">
-        <p className="px-4 pt-0 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">Menu</p>
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
+        <p className="px-3 pt-0 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30 xl:px-4 xl:pb-2">Menu</p>
         {navLinks.map((link) => {
           if (link.type === 'dropdown') {
             const aberto = submenuAberto === link.key;
@@ -403,9 +402,9 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
       </nav>
 
       {/* Usuário */}
-      <div className="flex-shrink-0 px-3 py-4 border-t border-white/10 bg-[#162d54]/40 backdrop-blur-sm">
+      <div className="flex-shrink-0 border-t border-white/10 bg-[#162d54]/40 px-2 py-2 backdrop-blur-sm xl:px-3 xl:py-4">
         {/* Usuário logado */}
-        <div className="bg-white/8 rounded-xl p-3 mb-3 backdrop-blur-sm border border-white/5">
+        <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:mb-3 xl:p-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
               {usuario?.nome?.charAt(0)}
