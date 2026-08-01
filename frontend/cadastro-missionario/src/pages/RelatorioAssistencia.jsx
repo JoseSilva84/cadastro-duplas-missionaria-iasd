@@ -195,14 +195,14 @@ export default function RelatorioAssistencia() {
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <section className="card xl:col-span-2">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
+            <div className="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+              <div className="min-w-0">
                 <h2 className="text-lg font-bold text-[#1A3A6B]">Historico de assistencias</h2>
-                <p className="text-sm text-gray-400">Clique em uma saida para ver as duplas acompanhadas e o relato.</p>
+                <p className="max-w-xl text-sm text-gray-400">Clique em uma saida para ver as duplas acompanhadas e o relato.</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 <span className="rounded-lg bg-[#1A3A6B]/10 px-3 py-2 text-sm font-bold text-[#1A3A6B]">{numero(saidas.length)} registros</span>
-                <button type="button" className="btn-outline px-3 py-2 text-sm" onClick={() => setModalRegistrosAberto(true)}>
+                <button type="button" className="btn-outline whitespace-nowrap px-3 py-2 text-sm" onClick={() => setModalRegistrosAberto(true)}>
                   Ver todos os registros
                 </button>
               </div>
@@ -214,24 +214,24 @@ export default function RelatorioAssistencia() {
                   key={saida.id}
                   type="button"
                   onClick={() => setRegistroSelecionado(saida)}
-                  className="rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
+                  className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
                 >
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-[9rem_minmax(12rem,1fr)_8rem_minmax(14rem,1.2fr)] lg:items-center">
-                    <div>
+                  <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[8.5rem_minmax(12rem,1.15fr)_6.5rem_minmax(0,1.45fr)] lg:items-start">
+                    <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
                       <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 overflow-hidden">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</p>
-                      <p className="break-words font-semibold text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
+                      <p className="break-words font-semibold leading-snug text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
                       <p className="text-2xl font-bold text-[#0d9488]">{numero(saida.duplas?.length || 0)}</p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 overflow-hidden">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
-                      <p className="line-clamp-2 break-words text-sm text-gray-500">{saida.observacoes || 'Sem relato informado.'}</p>
+                      <p className="line-clamp-2 max-w-full break-words text-sm leading-snug text-gray-500 [overflow-wrap:anywhere]">{saida.observacoes || 'Sem relato informado.'}</p>
                     </div>
                   </div>
                 </button>
@@ -322,28 +322,28 @@ export default function RelatorioAssistencia() {
                       setModalRegistrosAberto(false);
                       setRegistroSelecionado(saida);
                     }}
-                    className="rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40 hover:shadow-md"
+                    className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40 hover:shadow-md"
                   >
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[8rem_minmax(12rem,1fr)_7rem_minmax(10rem,1fr)_minmax(14rem,1.2fr)] lg:items-center">
-                      <div>
+                    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[8rem_minmax(12rem,1fr)_6rem_minmax(8rem,.85fr)_minmax(0,1.35fr)] lg:items-start">
+                      <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
                         <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 overflow-hidden">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</p>
-                        <p className="break-words font-semibold text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
+                        <p className="break-words font-semibold leading-snug text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
                         <p className="text-2xl font-bold text-[#0d9488]">{numero(saida.duplas?.length || 0)}</p>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 overflow-hidden">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Semana</p>
                         <p className="font-semibold text-gray-600">{formatarData(saida.semanaInicio)}</p>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 overflow-hidden">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
-                        <p className="line-clamp-2 break-words text-sm text-gray-500">{saida.observacoes || 'Sem relato informado.'}</p>
+                        <p className="line-clamp-2 max-w-full break-words text-sm leading-snug text-gray-500 [overflow-wrap:anywhere]">{saida.observacoes || 'Sem relato informado.'}</p>
                       </div>
                     </div>
                   </button>
