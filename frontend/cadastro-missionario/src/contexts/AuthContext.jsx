@@ -99,9 +99,9 @@ export function AuthProvider({ children }) {
   };
 
   // Define o layout e persiste
-  const setLayout = (novoLayout) => {
-    localStorage.setItem('layout', novoLayout);
-    setLayoutState(novoLayout);
+  const setLayout = () => {
+    localStorage.setItem('layout', 'avancado');
+    setLayoutState('avancado');
   };
 
   return (

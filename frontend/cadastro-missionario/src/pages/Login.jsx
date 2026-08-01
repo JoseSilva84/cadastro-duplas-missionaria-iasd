@@ -66,7 +66,7 @@ export default function Login() {
     setCarregando(true);
     try {
       const usuarioLogado = await login(form.email, form.senha);
-      navigate(destinoPosLogin(usuarioLogado));
+      navigate(destinoPosLogin(usuarioLogado), { replace: true });
     } catch (err) {
       console.error('Erro no login:', err);
       const mensagem = err.response?.data?.erro

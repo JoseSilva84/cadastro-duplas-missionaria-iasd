@@ -85,28 +85,27 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
   return children;
 }
 
-function destinoInicial(usuario, layout = 'avancado') {
-  const prefix = layout === 'direto' ? '/direto' : '';
-  if (ehAdmin(usuario)) return `${prefix}/dashboard`;
-  if (ehDupla(usuario)) return `${prefix}/igrejas`;
+function destinoInicial(usuario) {
+  if (ehAdmin(usuario)) return '/dashboard';
+  if (ehDupla(usuario)) return '/igrejas';
   if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) {
-    return `${prefix}/regioes`;
+    return '/regioes';
   }
-  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return `${prefix}/distritos`;
-  return `${prefix}/igrejas`;
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
+  return '/igrejas';
 }
 
 // ─── Redireciona para escolha de layout ou rota correta após login ────────────
 function RotaComLayout({ children, modelo }) {
   const { usuario, layout, carregando } = useAuth();
   if (carregando) return null;
-  if (!layout) return <Navigate to={destinoInicial(usuario, 'avancado')} replace />;
+  if (!layout) return <Navigate to={destinoInicial(usuario)} replace />;
 
-  if (modelo === 'avancado' && layout !== 'avancado') {
-    return <Navigate to={destinoInicial(usuario, 'direto')} replace />;
+  if (modelo === 'direto') {
+    return <Navigate to={destinoInicial(usuario)} replace />;
   }
-  if (modelo === 'direto' && layout !== 'direto') {
-    return <Navigate to={destinoInicial(usuario, 'avancado')} replace />;
+  if (modelo === 'avancado' && layout !== 'avancado') {
+    return <Navigate to={destinoInicial(usuario)} replace />;
   }
 
   return children;
