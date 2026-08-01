@@ -892,11 +892,21 @@ const RelatorioModel = {
         where: whereDupla,
         select: {
           id: true,
+          liderNome: true,
+          membro2Nome: true,
           status: true,
           batismos: true,
           pessoasAlcancadas: true,
           tipoProjeto: true,
+          classificacaoDupla: true,
+          estudoAtualEmAndamento: true,
+          statusEstudoBiblico: true,
           igrejaId: true,
+          estudosBiblicos: {
+            where: whereEstudoEmAndamento,
+            select: { id: true, tipoEstudo: true },
+          },
+          _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
         },
       }),
       prisma.estudoBiblico.findMany({
@@ -944,6 +954,68 @@ const RelatorioModel = {
       quantidadePequenosGrupos: 0,
     });
 
+    const duplasAnaliticas = duplas.map((dupla) => {
+      const estudosDaDupla = dupla.estudosBiblicos || [];
+      const tiposEstudo = new Set(estudosDaDupla.map((estudo) => estudo.tipoEstudo));
+      return {
+        id: dupla.id,
+        nome: nomeDupla(dupla),
+        status: dupla.status,
+        classificacao: dupla.classificacaoDupla || null,
+        estudos: estudosDaDupla.length,
+        estudosBiblicos: estudosDaDupla.filter((estudo) => estudo.tipoEstudo === 'UNICO').length,
+        pontosEstudo: estudosDaDupla.filter((estudo) => estudo.tipoEstudo === 'PONTO').length,
+        classesBiblicas: estudosDaDupla.filter((estudo) => estudo.tipoEstudo === 'CLASSE').length,
+        visitas: dupla._count?.acompanhamentos || 0,
+        batismos: dupla.batismos || 0,
+        pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
+        temEstudo: tiposEstudo.has('UNICO'),
+        temPonto: tiposEstudo.has('PONTO'),
+        temClasse: tiposEstudo.has('CLASSE'),
+        temVisita: (dupla._count?.acompanhamentos || 0) > 0,
+        informouEstudoSemCadastro: (
+          (dupla.estudoAtualEmAndamento === true || dupla.statusEstudoBiblico === 'ATIVO')
+          && estudosDaDupla.length === 0
+        ),
+      };
+    });
+
+    const cobertura = {
+      estudoBiblico: {
+        com: duplasAnaliticas.filter((dupla) => dupla.temEstudo).length,
+        sem: duplasAnaliticas.filter((dupla) => !dupla.temEstudo).length,
+        totalEstudos: duplasAnaliticas.reduce((acc, dupla) => acc + dupla.estudosBiblicos, 0),
+      },
+      pontoEstudo: {
+        com: duplasAnaliticas.filter((dupla) => dupla.temPonto).length,
+        sem: duplasAnaliticas.filter((dupla) => !dupla.temPonto).length,
+        totalPontos: duplasAnaliticas.reduce((acc, dupla) => acc + dupla.pontosEstudo, 0),
+      },
+      classeBiblica: {
+        com: duplasAnaliticas.filter((dupla) => dupla.temClasse).length,
+        sem: duplasAnaliticas.filter((dupla) => !dupla.temClasse).length,
+        totalClasses: duplasAnaliticas.reduce((acc, dupla) => acc + dupla.classesBiblicas, 0),
+      },
+      visitacao: {
+        com: duplasAnaliticas.filter((dupla) => dupla.temVisita).length,
+        sem: duplasAnaliticas.filter((dupla) => !dupla.temVisita).length,
+        totalVisitas: duplasAnaliticas.reduce((acc, dupla) => acc + dupla.visitas, 0),
+      },
+    };
+
+    const classificacoesDuplas = duplasAnaliticas.reduce((acc, dupla) => {
+      if (dupla.classificacao === 'A' && dupla.estudos === 0) return acc;
+      if (['A', 'B', 'C'].includes(dupla.classificacao)) acc[dupla.classificacao] += 1;
+      else acc.semClassificacao += 1;
+      return acc;
+    }, { A: 0, B: 0, C: 0, semClassificacao: 0 });
+
+    const top = (campo) => [...duplasAnaliticas]
+      .filter((dupla) => dupla[campo] > 0)
+      .sort((a, b) => b[campo] - a[campo] || a.nome.localeCompare(b.nome))
+      .slice(0, 8)
+      .map((dupla) => ({ id: dupla.id, nome: dupla.nome, valor: dupla[campo] }));
+
     return {
       escopo: { nivel, id: escopo },
       totalIgrejas,
@@ -961,6 +1033,15 @@ const RelatorioModel = {
         ativas: duplas.filter((dupla) => dupla.status === 'ATIVA').length,
         pendentes: duplas.filter((dupla) => dupla.status === 'PENDENTE').length,
         inativas: duplas.filter((dupla) => dupla.status === 'INATIVA').length,
+      },
+      cobertura,
+      classificacoesDuplas,
+      duplasComEstudoSemCadastro: duplasAnaliticas.filter((dupla) => dupla.informouEstudoSemCadastro).length,
+      rankings: {
+        estudos: top('estudos'),
+        visitas: top('visitas'),
+        batismos: top('batismos'),
+        pessoasAlcancadas: top('pessoasAlcancadas'),
       },
     };
   },

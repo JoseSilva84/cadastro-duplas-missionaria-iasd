@@ -41,7 +41,23 @@ const montarMetricas = (dados) => cards.map(([key, label]) => ({
   cor: corIndicador[key] || '#1A3A6B',
 }));
 
-const abrirPdfPersonalizado = ({ dados, nivel, escopoNome }) => {
+const dadosOuVazio = (lista = [], label = 'Sem dados') => {
+  const filtrada = lista.filter((item) => Number(item.value || 0) > 0);
+  return filtrada.length ? filtrada : [{ name: label, value: 1, itemStyle: { color: '#cbd5e1' } }];
+};
+
+const coletarImagensGraficos = () => Array.from(document.querySelectorAll('[data-report-chart]'))
+  .map((elemento) => {
+    const canvas = elemento.querySelector('canvas');
+    if (!canvas) return null;
+    return {
+      titulo: elemento.getAttribute('data-report-title') || 'Gráfico',
+      imagem: canvas.toDataURL('image/png'),
+    };
+  })
+  .filter(Boolean);
+
+const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] }) => {
   const metricas = montarMetricas(dados);
   const maior = Math.max(...metricas.map((item) => item.valor), 1);
   const linhas = metricas.map((item) => `
@@ -54,6 +70,26 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome }) => {
     </tr>
   `).join('');
   const totalAtividades = metricas.reduce((acc, item) => acc + item.valor, 0);
+  const cobertura = dados?.cobertura || {};
+  const classificacoes = dados?.classificacoesDuplas || {};
+  const linhasCobertura = [
+    ['Duplas com estudo bíblico', cobertura.estudoBiblico?.com || 0],
+    ['Duplas sem estudo bíblico', cobertura.estudoBiblico?.sem || 0],
+    ['Estudos bíblicos cadastrados', cobertura.estudoBiblico?.totalEstudos || 0],
+    ['Duplas com visitação', cobertura.visitacao?.com || 0],
+    ['Duplas sem visitação', cobertura.visitacao?.sem || 0],
+    ['Visitações registradas', cobertura.visitacao?.totalVisitas || 0],
+    ['Classe A', classificacoes.A || 0],
+    ['Classe B', classificacoes.B || 0],
+    ['Classe C', classificacoes.C || 0],
+    ['Sem classificação', classificacoes.semClassificacao || 0],
+  ].map(([label, valor]) => `<tr><td>${escapeHtml(label)}</td><td><strong>${numero(valor)}</strong></td></tr>`).join('');
+  const blocosGraficos = imagensGraficos.map((grafico) => `
+    <div class="grafico">
+      <h2>${escapeHtml(grafico.titulo)}</h2>
+      <img src="${grafico.imagem}" alt="${escapeHtml(grafico.titulo)}" />
+    </div>
+  `).join('');
   const janela = window.open('', '_blank');
   if (!janela) return false;
 
@@ -77,6 +113,8 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome }) => {
           td { border-bottom: 1px solid #e5e7eb; padding: 9px; vertical-align: middle; }
           .bar { height: 10px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
           .bar span { display: block; height: 100%; border-radius: 999px; }
+          .grafico { break-inside: avoid; page-break-inside: avoid; margin-top: 18px; }
+          .grafico img { width: 100%; max-height: 310px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 10px; }
           .rodape { color: #6b7280; font-size: 11px; margin-top: 24px; }
         </style>
       </head>
@@ -95,6 +133,12 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome }) => {
           <thead><tr><th>Indicador</th><th>Total</th><th>Proporção visual</th></tr></thead>
           <tbody>${linhas}</tbody>
         </table>
+        <h2>Cobertura e classificações</h2>
+        <table>
+          <thead><tr><th>Indicador detalhado</th><th>Total</th></tr></thead>
+          <tbody>${linhasCobertura}</tbody>
+        </table>
+        ${blocosGraficos}
         <p class="rodape">Sistema de Duplas Missionárias - PCM Associação Paulistana.</p>
       </body>
     </html>
@@ -230,6 +274,133 @@ export default function RelatorioPersonalizado() {
     };
   }, [grupoMinisterio, grupoImpacto]);
 
+  const coberturaOption = useMemo(() => {
+    const cobertura = dados?.cobertura || {};
+    const categorias = ['Estudo bíblico', 'Ponto de estudo', 'Classe bíblica', 'Visitação'];
+    return {
+      color: ['#0d9488', '#94a3b8'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0, textStyle: { color: '#64748b' } },
+      grid: { left: 28, right: 18, top: 24, bottom: 46, containLabel: true },
+      xAxis: { type: 'category', data: categorias, axisLabel: { color: '#64748b' } },
+      yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      series: [
+        {
+          name: 'Com',
+          type: 'bar',
+          barWidth: 22,
+          data: [
+            cobertura.estudoBiblico?.com || 0,
+            cobertura.pontoEstudo?.com || 0,
+            cobertura.classeBiblica?.com || 0,
+            cobertura.visitacao?.com || 0,
+          ],
+        },
+        {
+          name: 'Sem',
+          type: 'bar',
+          barWidth: 22,
+          data: [
+            cobertura.estudoBiblico?.sem || 0,
+            cobertura.pontoEstudo?.sem || 0,
+            cobertura.classeBiblica?.sem || 0,
+            cobertura.visitacao?.sem || 0,
+          ],
+        },
+      ],
+    };
+  }, [dados]);
+
+  const volumeEstudosOption = useMemo(() => {
+    const cobertura = dados?.cobertura || {};
+    return {
+      color: ['#0284c7', '#0d9488', '#7B2D8B', '#C9963A'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 28, right: 18, top: 24, bottom: 36, containLabel: true },
+      xAxis: { type: 'category', data: ['Estudos bíblicos', 'Pontos', 'Classes', 'Estudo sem cadastro'], axisLabel: { color: '#64748b', interval: 0 } },
+      yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      series: [{
+        type: 'bar',
+        barWidth: 30,
+        data: [
+          { value: cobertura.estudoBiblico?.totalEstudos || 0, itemStyle: { color: '#0284c7', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.pontoEstudo?.totalPontos || 0, itemStyle: { color: '#0d9488', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.classeBiblica?.totalClasses || 0, itemStyle: { color: '#7B2D8B', borderRadius: [6, 6, 0, 0] } },
+          { value: dados?.duplasComEstudoSemCadastro || 0, itemStyle: { color: '#C9963A', borderRadius: [6, 6, 0, 0] } },
+        ],
+      }],
+    };
+  }, [dados]);
+
+  const classificacaoOption = useMemo(() => {
+    const classes = dados?.classificacoesDuplas || {};
+    return {
+      color: ['#16a34a', '#d97706', '#dc2626', '#94a3b8'],
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, textStyle: { color: '#64748b' } },
+      series: [{
+        name: 'Classificação',
+        type: 'pie',
+        radius: '68%',
+        center: ['50%', '43%'],
+        label: { formatter: '{b}\n{c}', color: '#334155', fontSize: 11 },
+        data: dadosOuVazio([
+          { name: 'Classe A', value: classes.A || 0 },
+          { name: 'Classe B', value: classes.B || 0 },
+          { name: 'Classe C', value: classes.C || 0 },
+          { name: 'Sem classificação', value: classes.semClassificacao || 0 },
+        ]),
+      }],
+    };
+  }, [dados]);
+
+  const statusOption = useMemo(() => {
+    const status = dados?.duplasPorStatus || {};
+    return {
+      color: ['#0d9488', '#C9963A', '#64748b'],
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, textStyle: { color: '#64748b' } },
+      series: [{
+        name: 'Status das duplas',
+        type: 'pie',
+        radius: ['40%', '68%'],
+        center: ['50%', '43%'],
+        label: { formatter: '{b}\n{c}', color: '#334155', fontSize: 11 },
+        data: dadosOuVazio([
+          { name: 'Ativas', value: status.ativas || 0 },
+          { name: 'Pendentes', value: status.pendentes || 0 },
+          { name: 'Inativas', value: status.inativas || 0 },
+        ]),
+      }],
+    };
+  }, [dados]);
+
+  const criarRankingOption = (titulo, lista = [], cor = '#1A3A6B') => ({
+    color: [cor],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 120, right: 18, top: 20, bottom: 24, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category',
+      data: lista.map((item) => item.nome),
+      axisLabel: { color: '#64748b', width: 120, overflow: 'truncate' },
+    },
+    series: [{
+      name: titulo,
+      type: 'bar',
+      barWidth: 18,
+      data: lista.map((item) => ({ value: item.valor, itemStyle: { borderRadius: [0, 6, 6, 0] } })),
+    }],
+  });
+
+  const rankingEstudosOption = useMemo(() => (
+    criarRankingOption('Estudos', dados?.rankings?.estudos || [], '#0284c7')
+  ), [dados]);
+
+  const rankingVisitasOption = useMemo(() => (
+    criarRankingOption('Visitações', dados?.rankings?.visitas || [], '#7c3aed')
+  ), [dados]);
+
   const gerar = async () => {
     if (!selecionado) return;
     setCarregando(true);
@@ -254,6 +425,7 @@ export default function RelatorioPersonalizado() {
       dados,
       nivel: nivel === 'regiao' ? 'Região' : nivel === 'distrito' ? 'Distrito' : 'Igreja',
       escopoNome: escopoSelecionado?.nome || 'Escopo selecionado',
+      imagensGraficos: coletarImagensGraficos(),
     });
     if (!ok) setErro('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
   };
@@ -324,22 +496,58 @@ export default function RelatorioPersonalizado() {
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <section className="card">
+            <section className="card" data-report-chart data-report-title="Colunas por indicador">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Colunas por indicador</h2>
               <p className="mt-1 text-sm text-gray-400">Comparação direta dos totais no escopo selecionado.</p>
               <EChart option={colunaOption} className="h-80" />
             </section>
 
-            <section className="card">
+            <section className="card" data-report-chart data-report-title="Distribuição por área">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Distribuição por área</h2>
               <p className="mt-1 text-sm text-gray-400">Peso proporcional de cada indicador no relatório.</p>
               <EChart option={pizzaOption} className="h-80" />
             </section>
 
-            <section className="card xl:col-span-2">
+            <section className="card xl:col-span-2" data-report-chart data-report-title="Linha comparativa">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Linha comparativa</h2>
               <p className="mt-1 text-sm text-gray-400">Leitura sequencial entre frentes missionárias e liderança.</p>
               <EChart option={linhaOption} className="h-80" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Cobertura das duplas">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Cobertura das duplas</h2>
+              <p className="mt-1 text-sm text-gray-400">Duplas com e sem estudo, ponto, classe e visitação.</p>
+              <EChart option={coberturaOption} className="h-80" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Volume de estudos e visitação">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Volume de estudos e visitação</h2>
+              <p className="mt-1 text-sm text-gray-400">Quantidade de estudos cadastrados e estudos informados sem cadastro.</p>
+              <EChart option={volumeEstudosOption} className="h-80" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Classificação das duplas">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação das duplas</h2>
+              <p className="mt-1 text-sm text-gray-400">Distribuição das duplas por Classe A, B, C e sem classificação.</p>
+              <EChart option={classificacaoOption} className="h-80" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Status das duplas">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Status das duplas</h2>
+              <p className="mt-1 text-sm text-gray-400">Ativas, pendentes e inativas dentro da seleção.</p>
+              <EChart option={statusOption} className="h-80" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Duplas com mais estudos">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas com mais estudos</h2>
+              <p className="mt-1 text-sm text-gray-400">Ranking das duplas com maior volume de estudos cadastrados.</p>
+              <EChart option={rankingEstudosOption} className="h-96" />
+            </section>
+
+            <section className="card" data-report-chart data-report-title="Duplas com mais visitações">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas com mais visitações</h2>
+              <p className="mt-1 text-sm text-gray-400">Ranking das duplas mais acompanhadas na seleção.</p>
+              <EChart option={rankingVisitasOption} className="h-96" />
             </section>
           </div>
         </div>
