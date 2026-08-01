@@ -1,0 +1,7 @@
+Assistências registradas
+repetições
+Informações
+Relatórios preenchidos
+Relatórios
+Últimos
+Histórico

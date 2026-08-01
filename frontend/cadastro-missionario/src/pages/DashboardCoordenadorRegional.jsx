@@ -126,11 +126,11 @@ export default function DashboardCoordenadorRegional() {
     [...coordenadores].sort((a, b) => b.totalAssistencias - a.totalAssistencias || a.nome.localeCompare(b.nome))
   ), [coordenadores]);
 
-  const abrirDetalhesCoordenador = (coordenador, indicador) => {
+  const montarModalCoordenador = (coordenador, indicador, assistencias = [], extras = {}) => {
     const coordenadoresDaRegiao = coordenadores.filter((item) => (
       coordenador.regiaoId ? item.regiaoId === coordenador.regiaoId : item.regiao === coordenador.regiao
     ));
-    const assistencias = coordenadoresDaRegiao
+    const assistenciasBase = assistencias.length ? assistencias : coordenadoresDaRegiao
       .flatMap((item) => (item.assistencias || []).map((assistencia) => ({
         ...assistencia,
         coordenadorNome: item.nome,
@@ -138,26 +138,62 @@ export default function DashboardCoordenadorRegional() {
       })))
       .sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida));
     const duplaIds = new Set();
-    assistencias.forEach((assistencia) => {
+    assistenciasBase.forEach((assistencia) => {
       (assistencia.duplas || []).forEach((dupla) => {
         if (dupla.id) duplaIds.add(dupla.id);
       });
     });
 
-    setModalCoordenador({
+    return {
       coordenador: {
         ...coordenador,
         nome: coordenador.regiao,
         email: `${coordenadoresDaRegiao.length} coordenador${coordenadoresDaRegiao.length === 1 ? '' : 'es'} regional${coordenadoresDaRegiao.length === 1 ? '' : 'is'}`,
-        totalAssistencias: assistencias.length,
-        totalDuplasAcompanhadas: assistencias.reduce((acc, item) => acc + Number(item.totalDuplas || 0), 0),
-        duplasUnicas: duplaIds.size,
-        relatoriosPreenchidos: assistencias.filter((item) => String(item.observacoes || '').trim()).length,
-        ultimoAcompanhamento: assistencias[0]?.dataSaida || null,
-        assistencias,
+        totalAssistencias: assistenciasBase.length || coordenador.totalAssistencias,
+        totalDuplasAcompanhadas: assistenciasBase.length ? assistenciasBase.reduce((acc, item) => acc + Number(item.totalDuplas || 0), 0) : coordenador.totalDuplasAcompanhadas,
+        duplasUnicas: assistenciasBase.length ? duplaIds.size : coordenador.duplasUnicas,
+        relatoriosPreenchidos: assistenciasBase.length ? assistenciasBase.filter((item) => String(item.observacoes || '').trim()).length : coordenador.relatoriosPreenchidos,
+        ultimoAcompanhamento: assistenciasBase[0]?.dataSaida || coordenador.ultimoAcompanhamento,
+        assistencias: assistenciasBase,
       },
       indicador,
-    });
+      ...extras,
+    };
+  };
+
+  const normalizarAssistencias = (dadosRelatorio, coordenador) => (
+    (dadosRelatorio?.porSemana || [])
+      .flatMap((semana) => (semana.saidas || []).map((saida) => ({
+        id: saida.id,
+        dataSaida: saida.dataSaida,
+        observacoes: saida.observacoes || null,
+        totalDuplas: saida.duplas?.length || 0,
+        coordenadorNome: saida.coordenador?.nome || coordenador.nome,
+        coordenadorEmail: coordenador.email,
+        duplas: (saida.duplas || []).map((item) => ({
+          id: item.dupla?.id,
+          nome: item.dupla ? `${item.dupla.liderNome || 'Lider'} + ${item.dupla.membro2Nome || 'Membro'}` : 'Dupla nao encontrada',
+          bairro: item.dupla?.bairro || '',
+          distrito: item.dupla?.distrito?.nome || '',
+        })),
+      })))
+      .sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida))
+  );
+
+  const abrirDetalhesCoordenador = async (coordenador, indicador) => {
+    setModalCoordenador(montarModalCoordenador(coordenador, indicador, [], { carregandoAssistencias: true, erroAssistencias: '' }));
+
+    try {
+      const res = await api.get('/relatorios/acompanhamento', { params: { coordenadorId: coordenador.id } });
+      const assistencias = normalizarAssistencias(res.data, coordenador);
+      setModalCoordenador(montarModalCoordenador(coordenador, indicador, assistencias, { carregandoAssistencias: false, erroAssistencias: '' }));
+    } catch (err) {
+      setModalCoordenador((atual) => atual ? {
+        ...atual,
+        carregandoAssistencias: false,
+        erroAssistencias: err.response?.data?.erro || 'Nao foi possivel carregar as assistencias detalhadas.',
+      } : atual);
+    }
   };
 
   if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
@@ -168,32 +204,32 @@ export default function DashboardCoordenadorRegional() {
         <BackButton fallbackTo={isDireto ? '/direto/relatorios' : '/relatorios'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">RelatÃ³rio</p>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Relatório</p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Coordenador Regional
         </h1>
-        <p className="text-gray-400 text-sm mt-1">InformaÃ§Ãµes e desempenho dos acompanhamentos realizados pelos coordenadores regionais.</p>
+        <p className="text-gray-400 text-sm mt-1">Informações e desempenho dos acompanhamentos realizados pelos coordenadores regionais.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
         <Indicador label="Coordenadores ativos" valor={resumo.totalCoordenadores} tooltip="Coordenadores ativos: total de usuarios ativos com perfil de coordenador regional." cor="#1A3A6B" icon={<UsersIcon />} />
-        <Indicador label="AssistÃªncias registradas" valor={resumo.totalAssistencias} tooltip="Assistencias registradas: total de saidas/acompanhamentos cadastrados pelos coordenadores." cor="#C9963A" icon={<VisitIcon />} />
-        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetiÃ§Ãµes" tooltip="Duplas acompanhadas: soma de todas as duplas visitadas nas assistencias, incluindo repeticoes quando a mesma dupla aparece em mais de uma saida." cor="#0d9488" icon={<ChartIcon />} />
-        <Indicador label="RelatÃ³rios preenchidos" valor={resumo.totalRelatorios} tooltip="Relatorios preenchidos: quantidade de assistencias que possuem observacoes ou relato registrado." cor="#7B2D8B" icon={<ClipboardIcon />} />
+        <Indicador label="Assistências registradas" valor={resumo.totalAssistencias} tooltip="Assistencias registradas: total de saidas/acompanhamentos cadastrados pelos coordenadores." cor="#C9963A" icon={<VisitIcon />} />
+        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetições" tooltip="Duplas acompanhadas: soma de todas as duplas visitadas nas assistencias, incluindo repeticoes quando a mesma dupla aparece em mais de uma saida." cor="#0d9488" icon={<ChartIcon />} />
+        <Indicador label="Relatórios preenchidos" valor={resumo.totalRelatorios} tooltip="Relatorios preenchidos: quantidade de assistencias que possuem observacoes ou relato registrado." cor="#7B2D8B" icon={<ClipboardIcon />} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <Painel titulo="Dashboard de Acompanhamentos" subtitulo="Rankings" cor="#1A3A6B">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Ranking titulo="Mais assistÃªncias" itens={rankings.porAssistencias} campo="totalAssistencias" label="assist." cor="#1A3A6B" />
+            <Ranking titulo="Mais assistências" itens={rankings.porAssistencias} campo="totalAssistencias" label="assist." cor="#1A3A6B" />
             <Ranking titulo="Mais duplas acompanhadas" itens={rankings.porDuplasAcompanhadas} campo="totalDuplasAcompanhadas" label="duplas" cor="#0d9488" />
-            <Ranking titulo="Mais duplas Ãºnicas" itens={rankings.porDuplasUnicas} campo="duplasUnicas" label="Ãºnicas" cor="#C9963A" />
-            <Ranking titulo="Mais relatÃ³rios preenchidos" itens={rankings.porRelatorios} campo="relatoriosPreenchidos" label="relat." cor="#7B2D8B" />
+            <Ranking titulo="Mais duplas únicas" itens={rankings.porDuplasUnicas} campo="duplasUnicas" label="únicas" cor="#C9963A" />
+            <Ranking titulo="Mais relatórios preenchidos" itens={rankings.porRelatorios} campo="relatoriosPreenchidos" label="relat." cor="#7B2D8B" />
           </div>
         </Painel>
 
-        <Painel titulo="InformaÃ§Ãµes dos Coordenadores" subtitulo="CoordenaÃ§Ã£o regional" cor="#C9963A">
+        <Painel titulo="Informações dos Coordenadores" subtitulo="Coordenação regional" cor="#C9963A">
           <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
             {coordenadoresOrdenados.length ? coordenadoresOrdenados.map((coordenador) => (
               <div key={coordenador.id} className="bg-[#F4F5F7] rounded-lg border border-gray-100 p-4">
@@ -204,19 +240,19 @@ export default function DashboardCoordenadorRegional() {
                     <p className="text-xs font-semibold text-[#C9963A] mt-1">{coordenador.regiao}</p>
                   </div>
                   <button type="button" onClick={() => navigate(isDireto ? '/direto/registro-saida' : '/registro-saida')} className="btn-outline text-xs px-3 py-2">
-                    Registrar assistÃªncia
+                    Registrar assistência
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Assistencias da ${coordenador.regiao}`)} className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25" data-tooltip="Assistencias: clique para ver todas as saidas desta regiao."><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></button>
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas acompanhadas - ${coordenador.regiao}`)} className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25" data-tooltip="Duplas: clique para ver os detalhes desta regiao."><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></button>
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas unicas - ${coordenador.regiao}`)} className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25" data-tooltip="Unicas: clique para ver os detalhes desta regiao."><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></button>
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Relatorios preenchidos - ${coordenador.regiao}`)} className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25" data-tooltip="Relatorios: clique para ver os detalhes desta regiao."><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Assistencias da ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas acompanhadas - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas unicas - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Relatorios preenchidos - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></button>
                 </div>
                 <div className="mt-3 text-xs text-gray-400">
-                  Ãšltimo acompanhamento: <span className="font-semibold text-gray-600">{formatarData(coordenador.ultimoAcompanhamento)}</span>
+                  Último acompanhamento: <span className="font-semibold text-gray-600">{formatarData(coordenador.ultimoAcompanhamento)}</span>
                   {coordenador.distritoMaisVisitado && (
-                    <span> Â· Distrito mais visitado: <span className="font-semibold text-gray-600">{coordenador.distritoMaisVisitado.nome}</span></span>
+                    <span> · Distrito mais visitado: <span className="font-semibold text-gray-600">{coordenador.distritoMaisVisitado.nome}</span></span>
                   )}
                 </div>
               </div>
@@ -226,14 +262,14 @@ export default function DashboardCoordenadorRegional() {
       </div>
 
       <div className="mt-5">
-        <Painel titulo="Ãšltimos Acompanhamentos" subtitulo="HistÃ³rico recente" cor="#0d9488">
+        <Painel titulo="Últimos Acompanhamentos" subtitulo="Histórico recente" cor="#0d9488">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {recentes.length ? recentes.map((item) => (
               <div key={item.id} className="bg-[#F4F5F7] rounded-lg border border-gray-100 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="font-bold text-[#1A3A6B] truncate">{item.coordenador}</p>
-                    <p className="text-xs text-gray-400">{item.regiao} Â· {formatarData(item.dataSaida)}</p>
+                    <p className="text-xs text-gray-400">{item.regiao} · {formatarData(item.dataSaida)}</p>
                   </div>
                   <span className="smart-tooltip px-2.5 py-1 rounded-full bg-white text-[#0d9488] text-xs font-bold" data-tooltip="Total de duplas vinculadas a este acompanhamento recente." tabIndex={0}>{numero(item.totalDuplas)} duplas</span>
                 </div>
@@ -286,6 +322,18 @@ export default function DashboardCoordenadorRegional() {
                 )}
               </div>
 
+              {modalCoordenador.carregandoAssistencias && (
+                <div className="mt-5 rounded-xl bg-[#F4F5F7] px-4 py-8 text-center text-sm font-semibold text-gray-500">
+                  Carregando assistencias registradas...
+                </div>
+              )}
+
+              {modalCoordenador.erroAssistencias && (
+                <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-4 text-sm font-semibold text-red-600">
+                  {modalCoordenador.erroAssistencias}
+                </div>
+              )}
+
               <div className="mt-5 space-y-3">
                 {(modalCoordenador.coordenador.assistencias || []).map((assistencia) => (
                   <div key={assistencia.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -327,7 +375,7 @@ export default function DashboardCoordenadorRegional() {
                   </div>
                 ))}
 
-                {(modalCoordenador.coordenador.assistencias || []).length === 0 && (
+                {!modalCoordenador.carregandoAssistencias && !modalCoordenador.erroAssistencias && (modalCoordenador.coordenador.assistencias || []).length === 0 && (
                   <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
                     Nenhuma assistencia registrada para este coordenador.
                   </div>
