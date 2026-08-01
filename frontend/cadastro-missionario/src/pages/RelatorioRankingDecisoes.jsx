@@ -219,8 +219,39 @@ export default function RelatorioRankingDecisoes() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-sm">
+          <div className="grid grid-cols-1 gap-3 xl:hidden">
+            {batismosPorDupla.map((dupla) => (
+              <button
+                key={dupla.id}
+                type="button"
+                onClick={() => setDuplaModal(dupla)}
+                className="rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
+              >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Dupla</p>
+                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{dupla.nome}</p>
+                    <p className="mt-2 text-xs text-gray-500">{dupla.igreja}</p>
+                    <p className="text-xs text-gray-400">{dupla.distrito} - {dupla.regiao}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
+                    <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-3 py-1 text-sm font-bold text-[#0d9488]">
+                      {dupla.batismos} batismo{dupla.batismos === 1 ? '' : 's'}
+                    </span>
+                    <span className="btn-outline px-3 py-2 text-xs">Detalhes</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {batismosPorDupla.length === 0 && (
+              <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
+                Nenhuma dupla com batismo registrado.
+              </div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto xl:block">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="bg-[#F4F5F7] text-gray-500">
                   <th className="px-4 py-3 text-left">Dupla</th>
@@ -287,8 +318,8 @@ export default function RelatorioRankingDecisoes() {
           <div className="grid grid-cols-1 gap-3">
             {ranking.map((item, index) => (
               <article key={item.id} className="rounded-xl border border-gray-100 bg-white p-4 transition hover:border-[#C9963A]/40 hover:shadow-sm">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[4rem_minmax(12rem,1.2fr)_9rem_minmax(12rem,1fr)_minmax(12rem,1.2fr)_minmax(10rem,1fr)] lg:items-center">
-                  <div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-[4rem_minmax(0,1fr)_8rem] xl:grid-cols-[4rem_minmax(12rem,1.2fr)_9rem_minmax(12rem,1fr)_minmax(12rem,1.2fr)_minmax(10rem,1fr)] xl:items-center">
+                  <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Pos.</p>
                     <p className="text-lg font-bold text-[#C9963A]">#{index + 1}</p>
                   </div>
@@ -299,7 +330,7 @@ export default function RelatorioRankingDecisoes() {
                     <p className="mt-1 text-xs text-gray-400">{tipoLabel[item.tipoEstudo] || item.tipoEstudo}</p>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
                     <BadgeClasse classe={item.classificacao} />
                   </div>
@@ -315,7 +346,7 @@ export default function RelatorioRankingDecisoes() {
                     <p className="mt-2 text-xs font-medium text-gray-500">{getSerieNome(item.serie)} - {getLicaoLabel(item.serie, item.licaoAtual)}</p>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 md:col-span-2 xl:col-span-1">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local</p>
                     <p className="break-words text-sm font-semibold text-gray-700">{item.igreja}</p>
                     <p className="text-xs text-gray-400">{item.distrito}</p>
@@ -358,14 +389,14 @@ export default function RelatorioRankingDecisoes() {
 
       {duplaModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in"
+          className="app-modal-overlay"
           onClick={() => setDuplaModal(null)}
         >
           <div
-            className="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl"
+            className="app-modal-panel max-w-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 bg-[#F8FAFC] p-5">
+            <div className="app-modal-header">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos registrados</p>
                 <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -386,7 +417,7 @@ export default function RelatorioRankingDecisoes() {
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto p-5">
+            <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-lg bg-[#0d9488]/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos</p>
@@ -436,7 +467,7 @@ export default function RelatorioRankingDecisoes() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-gray-100 bg-[#F8FAFC] p-4 sm:flex-row sm:justify-end">
+            <div className="app-modal-footer flex-col sm:flex-row">
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setDuplaModal(null)}>
                 Fechar
               </button>

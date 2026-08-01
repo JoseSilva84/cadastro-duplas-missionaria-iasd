@@ -107,6 +107,53 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
   }
 
+  .app-modal-overlay {
+    @apply fixed inset-0 z-[90] flex items-center justify-center bg-black/55;
+    animation: fadeIn 0.4s ease both;
+    padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .app-modal-panel {
+    @apply flex w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl;
+    max-height: calc(100dvh - 1.5rem);
+  }
+
+  .app-modal-header {
+    @apply flex flex-shrink-0 items-start justify-between gap-4 border-b border-gray-100 bg-[#F8FAFC] p-4 sm:p-5;
+  }
+
+  .app-modal-body {
+    @apply min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5;
+  }
+
+  .app-modal-footer {
+    @apply flex flex-shrink-0 justify-end gap-2 border-t border-gray-100 bg-[#F8FAFC] p-3 sm:p-4;
+  }
+
+  @media (max-width: 639.98px) {
+    .app-modal-overlay {
+      align-items: flex-end;
+      padding: 0.5rem 0.5rem max(5.25rem, calc(4.75rem + env(safe-area-inset-bottom)));
+    }
+
+    .app-modal-panel {
+      border-radius: 0.875rem;
+      max-height: calc(100dvh - 6rem);
+    }
+
+    .app-modal-header {
+      padding: 0.875rem 1rem;
+    }
+
+    .app-modal-body {
+      padding: 1rem;
+    }
+
+    .app-modal-footer {
+      padding: 0.75rem 1rem;
+    }
+  }
+
   .smart-tooltip {
     position: relative;
     z-index: 1;

@@ -288,9 +288,9 @@ export default function DashboardCoordenadorRegional() {
       </div>
 
       {modalCoordenador && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setModalCoordenador(null)}>
-          <div className="w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex flex-col gap-3 border-b border-gray-100 bg-[#F8FAFC] p-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="app-modal-overlay" onClick={() => setModalCoordenador(null)}>
+          <div className="app-modal-panel max-w-5xl" onClick={(event) => event.stopPropagation()}>
+            <div className="app-modal-header flex-col sm:flex-row">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">{modalCoordenador.indicador}</p>
                 <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -307,8 +307,8 @@ export default function DashboardCoordenadorRegional() {
               </button>
             </div>
 
-            <div className="max-h-[72vh] overflow-y-auto p-4 sm:p-5">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="app-modal-body">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#1A3A6B]">{numero(modalCoordenador.coordenador.totalAssistencias)}</p><p className="text-[10px] uppercase text-gray-400">assistencias</p></div>
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#0d9488]">{numero(modalCoordenador.coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] uppercase text-gray-400">duplas</p></div>
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#C9963A]">{numero(modalCoordenador.coordenador.duplasUnicas)}</p><p className="text-[10px] uppercase text-gray-400">unicas</p></div>
@@ -383,7 +383,7 @@ export default function DashboardCoordenadorRegional() {
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-gray-100 bg-[#F8FAFC] p-4">
+            <div className="app-modal-footer">
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalCoordenador(null)}>Fechar</button>
             </div>
           </div>

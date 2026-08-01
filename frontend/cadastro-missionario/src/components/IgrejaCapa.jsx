@@ -166,9 +166,9 @@ const ModalDetalheCard = ({ detalhe, onClose }) => {
   if (!detalhe) return null;
 
   return (
-    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#0B1220]/55 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
-        <div className="grid gap-5 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF8EA] p-5 sm:grid-cols-[170px_minmax(0,1fr)]">
+    <div className="app-modal-overlay z-[65]" onClick={onClose}>
+      <div className="app-modal-panel max-w-2xl sm:max-h-[min(680px,calc(100dvh-3rem))]" onClick={(event) => event.stopPropagation()}>
+        <div className="grid min-h-0 flex-1 overflow-y-auto overscroll-contain gap-5 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF8EA] p-5 sm:grid-cols-[170px_minmax(0,1fr)]">
           <FotoBloco
             src={detalhe.foto}
             alt={detalhe.titulo}
@@ -279,9 +279,9 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-lg shadow-xl border border-gray-100">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+    <div className="app-modal-overlay z-50 bg-black/40">
+      <div className="app-modal-panel max-w-5xl sm:max-h-[min(780px,calc(100dvh-3rem))]">
+        <div className="app-modal-header">
           <div>
             <p className="text-[#C9963A] text-xs font-bold uppercase tracking-wider">Editar capa</p>
             <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{igreja.nome}</h3>
@@ -289,8 +289,8 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
           <button type="button" className="btn-outline text-sm" onClick={onClose}>Fechar</button>
         </div>
 
-        <form onSubmit={salvar} className="flex flex-col max-h-[calc(92vh-76px)]">
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#F4F5F7]">
+        <form onSubmit={salvar} className="flex min-h-0 flex-1 flex-col">
+          <div className="app-modal-body space-y-6 bg-[#F4F5F7]">
             <section className="bg-white rounded-lg border border-gray-100 p-4">
               <h4 className="font-bold text-[#1A3A6B] mb-4">Diretor de Ministério Pessoal</h4>
               <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-5">
@@ -342,7 +342,7 @@ const ModalEdicao = ({ igreja, fotos, onClose, onSaved }) => {
             </section>
           </div>
 
-          <div className="px-5 py-4 border-t border-gray-100 bg-white flex justify-end gap-2">
+          <div className="app-modal-footer">
             <button type="button" className="btn-outline" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar alterações'}</button>
           </div>
@@ -586,8 +586,8 @@ const ModalDupla = ({ dupla, onClose, onNavigate, prefix = '' }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0B1220]/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div className="app-modal-overlay z-[60] bg-[#0B1220]/75 backdrop-blur-sm" onClick={onClose}>
+      <div className="app-modal-panel max-w-3xl sm:max-h-[min(720px,calc(100dvh-3rem))]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -642,7 +642,7 @@ const ModalDupla = ({ dupla, onClose, onNavigate, prefix = '' }) => {
         </div>
 
         {/* Corpo */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white">
+        <div className="app-modal-body space-y-4 bg-white">
           {/* Info da dupla */}
           <div className="grid grid-cols-2 gap-3">
             <InfoDupla label="Classificação da dupla" valor={dupla.classificacaoDupla ? `Classe ${dupla.classificacaoDupla}` : 'Sem classificação'} onClick={classe ? abrirClassificacao : undefined} />
@@ -1025,10 +1025,10 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
 
       {fotoAmpliada && (
         <div
-          className="fixed inset-0 z-[60] bg-[#0B1220]/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="app-modal-overlay z-[60] bg-[#0B1220]/85 backdrop-blur-sm"
           onClick={() => setFotoAmpliada(null)}
         >
-          <div className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-4xl sm:max-w-[min(86vw,960px)]" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between gap-3 text-white">
               <div>
                 <p className="text-xs uppercase tracking-wider text-[#D8A23A] font-bold">{fotoAmpliada.titulo}</p>
@@ -1042,11 +1042,11 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
                 Fechar
               </button>
             </div>
-            <div className="max-h-[78vh] overflow-hidden rounded-xl bg-white/5 shadow-2xl ring-1 ring-white/15">
+            <div className="max-h-[min(72vh,620px)] overflow-hidden rounded-xl bg-white/5 shadow-2xl ring-1 ring-white/15">
               <img
                 src={fotoAmpliada.src}
                 alt={fotoAmpliada.nome || 'Imagem ampliada'}
-                className="mx-auto max-h-[78vh] w-full object-contain"
+                className="mx-auto max-h-[min(72vh,620px)] w-full object-contain"
               />
             </div>
           </div>

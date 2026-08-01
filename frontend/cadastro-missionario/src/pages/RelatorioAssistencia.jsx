@@ -131,8 +131,8 @@ export default function RelatorioAssistencia() {
   if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistencia..." />;
 
   return (
-    <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
-      <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8'}>
+    <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
+      <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-4 py-4 sm:px-6' : 'mb-6 sm:mb-8'}>
         <BackButton fallbackTo={isDireto ? '/direto/dashboard' : '/dashboard'} className="mb-3" />
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -145,7 +145,7 @@ export default function RelatorioAssistencia() {
             </h1>
             <p className="text-gray-400 text-sm mt-1">Indicadores, historico e detalhes dos acompanhamentos realizados pelos coordenadores regionais.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
               Relatorio regional
             </button>
@@ -156,10 +156,10 @@ export default function RelatorioAssistencia() {
         </div>
       </div>
 
-      <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
+      <div className={isDireto ? 'flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5' : 'space-y-4 sm:space-y-5'}>
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
-        <section className="card">
+        <section className="card p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_1.2fr_auto_auto_auto] xl:items-end">
             <label>
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">De</span>
@@ -294,10 +294,10 @@ export default function RelatorioAssistencia() {
       </div>
 
       {modalRegistrosAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setModalRegistrosAberto(false)}>
-          <div className="w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex flex-col gap-3 border-b border-gray-100 bg-[#F8FAFC] p-5 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+        <div className="app-modal-overlay" onClick={() => setModalRegistrosAberto(false)}>
+          <div className="app-modal-panel max-w-6xl" onClick={(event) => event.stopPropagation()}>
+            <div className="app-modal-header flex-col sm:flex-row">
+              <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Registros de assistencia</p>
                 <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   Todos os acompanhamentos
@@ -312,7 +312,7 @@ export default function RelatorioAssistencia() {
               </button>
             </div>
 
-            <div className="max-h-[72vh] overflow-y-auto p-4 sm:p-5">
+            <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3">
                 {saidas.map((saida) => (
                   <button
@@ -357,7 +357,7 @@ export default function RelatorioAssistencia() {
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 bg-[#F8FAFC] p-4">
+            <div className="app-modal-footer flex-wrap">
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
                 Relatorio regional
               </button>
@@ -368,10 +368,10 @@ export default function RelatorioAssistencia() {
       )}
 
       {registroSelecionado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setRegistroSelecionado(null)}>
-          <div className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 bg-[#F8FAFC] p-5">
-              <div>
+        <div className="app-modal-overlay" onClick={() => setRegistroSelecionado(null)}>
+          <div className="app-modal-panel max-w-3xl" onClick={(event) => event.stopPropagation()}>
+            <div className="app-modal-header">
+              <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistencia</p>
                 <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {formatarData(registroSelecionado.dataSaida)}
@@ -386,7 +386,7 @@ export default function RelatorioAssistencia() {
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto p-5">
+            <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Info label="Data" valor={formatarData(registroSelecionado.dataSaida)} />
                 <Info label="Duplas" valor={registroSelecionado.duplas?.length || 0} />
@@ -418,7 +418,7 @@ export default function RelatorioAssistencia() {
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-gray-100 bg-[#F8FAFC] p-4">
+            <div className="app-modal-footer">
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setRegistroSelecionado(null)}>Fechar</button>
             </div>
           </div>

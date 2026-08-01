@@ -148,16 +148,16 @@ export default function ListagemIgrejas() {
 
       {igrejaModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-[#0f2347]/45 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#0f2347]/45 px-2 pb-[max(5rem,calc(4.5rem+env(safe-area-inset-bottom)))] pt-2 backdrop-blur-sm sm:items-center sm:p-5 md:p-6 xl:hidden"
           role="dialog"
           aria-modal="true"
           onClick={() => setIgrejaModal(null)}
         >
           <div
-            className="max-h-[88vh] w-full overflow-hidden rounded-t-2xl bg-[#F4F5F7] shadow-2xl"
+            className="flex max-h-[calc(100dvh-6rem)] w-full flex-col overflow-hidden rounded-t-2xl bg-[#F4F5F7] shadow-2xl sm:max-h-[min(760px,calc(100dvh-3rem))] sm:w-[min(92vw,980px)] sm:rounded-xl md:w-[min(88vw,980px)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-5">
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#C9963A]">Capa da igreja</p>
                 <h2 className="truncate text-base font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -173,7 +173,7 @@ export default function ListagemIgrejas() {
                 ×
               </button>
             </div>
-            <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-3 pb-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-6 sm:p-4 md:p-5">
               <IgrejaCapa
                 igreja={igrejaModal}
                 onNovaDupla={() => navigate(`/duplas/nova?igrejaId=${igrejaModal.id}&distritoId=${igrejaModal.distritoId}`)}
