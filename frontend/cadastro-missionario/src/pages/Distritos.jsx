@@ -149,7 +149,7 @@ export default function Distritos() {
         {[
           { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: <BuildingIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Distritos: total de distritos vinculados a esta regiao.' },
           { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Igrejas: soma das igrejas cadastradas nos distritos desta regiao.' },
-          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: <UsersIcon />, gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas: soma das duplas missionarias vinculadas aos distritos desta regiao.' },
+          { label: 'Duplas', valor: regiao.distritos.reduce((acc, d) => acc + d._count.duplas, 0), cor: '#C9963A', icon: <UsersIcon />, gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Duplas: soma das duplas missionárias vinculadas aos distritos desta região.' },
           { label: 'Membros', valor: regiao.distritos.reduce((acc, d) => acc + (d.membros || 0), 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: <MembersIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', tooltip: 'Membros: soma de membros informados nos distritos desta regiao.' },
         ].map((item) => (
           <div

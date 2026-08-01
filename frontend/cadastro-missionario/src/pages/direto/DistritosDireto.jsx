@@ -9,10 +9,10 @@ import LoadingState from '../../components/LoadingState';
 
 const projetoLabel = {
   CASA_A_CASA: 'Casa a casa',
-  ESTUDO_BIBLICO: 'Estudo Biblico',
+  ESTUDO_BIBLICO: 'Estudo Bíblico',
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
-  ACAO_SOCIAL: 'Acao Social',
-  EVANGELISMO_PUBLICO: 'Classe Biblica',
+  ACAO_SOCIAL: 'Ação Social',
+  EVANGELISMO_PUBLICO: 'Classe Bíblica',
 };
 
 const statusAcompanhamentoLabels = {
@@ -800,7 +800,7 @@ export default function DistritosDireto() {
                   <div className="space-y-3 text-sm">
                     <div><span className="text-gray-400 text-xs">Tipo:</span><p className="text-gray-700 font-medium">{duplaSelecionada.tipoProjeto?.replace(/_/g, ' ') || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Classe da dupla:</span><p className="text-gray-700 font-semibold">{getClassificacaoAtividadeDisplayText(duplaSelecionada)}</p></div>
-                    <div><span className="text-gray-400 text-xs">Estudos biblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudos bíblicos:</span><p className="text-gray-700 font-medium">{getEstudosCount(duplaSelecionada)}</p></div>
                     <div><span className="text-gray-400 text-xs">Visitacoes:</span><p className="text-gray-700 font-medium">{getVisitacoesCount(duplaSelecionada)}</p></div>
                     {(() => {
                       const cor = statusColors[duplaSelecionada.status] || '#9ca3af';
@@ -840,11 +840,11 @@ export default function DistritosDireto() {
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Acompanhamento</h4>
                   </div>
                   <div className="space-y-3 text-sm">
-                    <div><span className="text-gray-400 text-xs">Estudo biblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
+                    <div><span className="text-gray-400 text-xs">Estudo bíblico:</span><p className="text-gray-700 font-medium">{duplaSelecionada.estudoBiblico || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Status do estudo:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEstudoBiblico] || duplaSelecionada.statusEstudoBiblico || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Status da classe bíblica:</span><p className="text-gray-700 font-medium">{statusAcompanhamentoLabels[duplaSelecionada.statusEvangelismo] || duplaSelecionada.statusEvangelismo || '—'}</p></div>
                     <div><span className="text-gray-400 text-xs">Levou pessoa ao batismo?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.levouPessoaBatismo)}</p></div>
-                    <div><span className="text-gray-400 text-xs">Ja deu estudo biblico?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.jaDeuEstudoBiblico)}</p></div>
+                    <div><span className="text-gray-400 text-xs">Já deu estudo bíblico?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.jaDeuEstudoBiblico)}</p></div>
                     <div><span className="text-gray-400 text-xs">Estudo em andamento?</span><p className="text-gray-700 font-medium">{boolLabel(duplaSelecionada.estudoAtualEmAndamento)}</p></div>
                     <div><span className="text-gray-400 text-xs">Batismos:</span><p className="text-gray-700 font-medium">{duplaSelecionada.batismos ?? 0}</p></div>
                     <div><span className="text-gray-400 text-xs">Ultimo acompanhamento:</span><p className="text-gray-700 font-medium">{formatarData(duplaSelecionada.ultimoAcompanhamento) || '—'}</p></div>

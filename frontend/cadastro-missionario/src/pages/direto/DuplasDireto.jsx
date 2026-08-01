@@ -298,7 +298,7 @@ const EstudoSituacaoBadge = ({ dupla, compact = false }) => {
   if (estudos > 0) {
     return (
       <Chip config={indicadorConfig.estudos} compact={compact}>
-        {compact ? `${estudos} estudo${estudos === 1 ? '' : 's'}` : `${estudos} estudo${estudos === 1 ? '' : 's'} biblico${estudos === 1 ? '' : 's'}`}
+        {compact ? `${estudos} estudo${estudos === 1 ? '' : 's'}` : `${estudos} estudo${estudos === 1 ? '' : 's'} bíblico${estudos === 1 ? '' : 's'}`}
       </Chip>
     );
   }
@@ -308,9 +308,9 @@ const EstudoSituacaoBadge = ({ dupla, compact = false }) => {
       <Chip
         config={{ cor: '#b45309', bg: '#fef3c7', border: '#fcd34d' }}
         compact={compact}
-        title="A dupla informou estudo em andamento, mas ainda nao cadastrou o estudo biblico."
+        title="A dupla informou estudo em andamento, mas ainda não cadastrou o estudo bíblico."
       >
-        Tem estudo, mas nao cadastrado
+        Tem estudo, mas não cadastrado
       </Chip>
     );
   }
@@ -319,9 +319,9 @@ const EstudoSituacaoBadge = ({ dupla, compact = false }) => {
     <Chip
       config={{ cor: '#dc2626', bg: '#fee2e2', border: '#fecaca' }}
       compact={compact}
-      title="Nenhum estudo biblico cadastrado para esta dupla."
+      title="Nenhum estudo bíblico cadastrado para esta dupla."
     >
-      Sem estudo biblico
+      Sem estudo bíblico
     </Chip>
   );
 };
@@ -378,7 +378,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navig
   const cards = [
     { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
     { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
-    { label: 'Classe Biblica', valor: totalClasses, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
+    { label: 'Classe Bíblica', valor: totalClasses, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
     { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
   ];
 
@@ -902,7 +902,7 @@ export default function DuplasDireto() {
                 key: 'estudoNaoRegistrado',
                 label: 'Dupla com estudo sem cadastro',
                 total: duplas.filter(temEstudoNaoRegistrado).length,
-                title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram o estudo biblico.',
+                title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda não cadastraram o estudo bíblico.',
                 cor: '#b45309',
                 bg: '#fef3c7',
               },
@@ -910,7 +910,7 @@ export default function DuplasDireto() {
                 key: 'semEstudos',
                 label: 'Sem atividade',
                 total: duplas.filter((dupla) => dupla.estudoAtualEmAndamento !== true && getEstudosCount(dupla) === 0).length,
-                title: 'Duplas que responderam Nao em Estudo em andamento e nao possuem estudo biblico cadastrado.',
+                title: 'Duplas que responderam Não em Estudo em andamento e não possuem estudo bíblico cadastrado.',
                 cor: '#64748b',
                 bg: '#f1f5f9',
               },
@@ -926,7 +926,7 @@ export default function DuplasDireto() {
                 key: 'comEstudo',
                 label: 'Com Estudo',
                 total: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
-                title: 'Duplas com estudo: duplas com 1 ou mais estudos biblicos cadastrados.',
+                title: 'Duplas com estudo: duplas com 1 ou mais estudos bíblicos cadastrados.',
                 cor: '#0284c7',
                 bg: '#e0f2fe',
               },

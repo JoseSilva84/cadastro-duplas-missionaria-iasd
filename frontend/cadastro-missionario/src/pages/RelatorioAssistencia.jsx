@@ -22,8 +22,8 @@ const formatarData = (valor) => {
 };
 
 const nomeDupla = (dupla) => {
-  if (!dupla) return 'Dupla nao encontrada';
-  return `${dupla.liderNome || 'Lider'} + ${dupla.membro2Nome || 'Membro'}`;
+  if (!dupla) return 'Dupla não encontrada';
+  return `${dupla.liderNome || 'Líder'} + ${dupla.membro2Nome || 'Membro'}`;
 };
 
 const MetricCard = ({ label, valor, detalhe, cor }) => (
@@ -37,7 +37,7 @@ const MetricCard = ({ label, valor, detalhe, cor }) => (
 const Info = ({ label, valor }) => (
   <div className="rounded-lg bg-[#F4F5F7] px-4 py-3">
     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="mt-1 break-words text-sm font-semibold text-[#1A3A6B]">{valor || 'Nao informado'}</p>
+    <p className="mt-1 break-words text-sm font-semibold text-[#1A3A6B]">{valor || 'Não informado'}</p>
   </div>
 );
 
@@ -74,7 +74,7 @@ export default function RelatorioAssistencia() {
     setErro('');
     api.get('/relatorios/acompanhamento', { params })
       .then((res) => setDados(res.data || null))
-      .catch((err) => setErro(err.response?.data?.erro || 'Erro ao carregar resumo de assistencia.'))
+      .catch((err) => setErro(err.response?.data?.erro || 'Erro ao carregar resumo de assistência.'))
       .finally(() => setCarregando(false));
   }, [filtros]);
 
@@ -128,7 +128,7 @@ export default function RelatorioAssistencia() {
   const limparFiltros = () => setFiltros({ de: '', ate: '', coordenadorId: '' });
   const filtrarMesAtual = () => setFiltros({ de: primeiroDiaDoMes(), ate: hojeISO(), coordenadorId: filtros.coordenadorId });
 
-  if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistencia..." />;
+  if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistência..." />;
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -138,19 +138,19 @@ export default function RelatorioAssistencia() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Assistencia</p>
+              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Assistência</p>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Resumo de Visitas de Assistencia
+              Resumo de Visitas de Assistência
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Indicadores, historico e detalhes dos acompanhamentos realizados pelos coordenadores regionais.</p>
+            <p className="text-gray-400 text-sm mt-1">Indicadores, histórico e detalhes dos acompanhamentos realizados pelos coordenadores regionais.</p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
-              Relatorio regional
+              Relatório regional
             </button>
             <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/registro-saida`)}>
-              Registrar nova assistencia
+              Registrar nova assistência
             </button>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function RelatorioAssistencia() {
               <input type="date" className="input-field" value={filtros.de} onChange={(event) => setFiltros((atual) => ({ ...atual, de: event.target.value }))} />
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Ate</span>
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Até</span>
               <input type="date" className="input-field" value={filtros.ate} onChange={(event) => setFiltros((atual) => ({ ...atual, ate: event.target.value }))} />
             </label>
             <label>
@@ -181,24 +181,24 @@ export default function RelatorioAssistencia() {
               </select>
             </label>
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={limparFiltros}>Limpar</button>
-            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={filtrarMesAtual}>Mes atual</button>
+            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={filtrarMesAtual}>Mês atual</button>
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setFiltros((atual) => ({ ...atual }))}>Atualizar</button>
           </div>
         </section>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Assistencias" valor={resumo.totalSaidas} detalhe="Saidas registradas no periodo" cor="#7c3aed" />
-          <MetricCard label="Duplas acompanhadas" valor={resumo.totalDuplasVisitadas} detalhe="Contagem total, incluindo repeticoes" cor="#0d9488" />
-          <MetricCard label="Duplas unicas" valor={resumo.duplasUnicas} detalhe="Duplas distintas acompanhadas" cor="#1A3A6B" />
-          <MetricCard label="Relatorios preenchidos" valor={resumo.relatoriosPreenchidos} detalhe={resumo.coordenadorMaisAtivo ? `Mais ativo: ${resumo.coordenadorMaisAtivo.nome}` : 'Com observacoes registradas'} cor="#C9963A" />
+          <MetricCard label="Assistências" valor={resumo.totalSaidas} detalhe="Saídas registradas no período" cor="#7c3aed" />
+          <MetricCard label="Duplas acompanhadas" valor={resumo.totalDuplasVisitadas} detalhe="Contagem total, incluindo repetições" cor="#0d9488" />
+          <MetricCard label="Duplas únicas" valor={resumo.duplasUnicas} detalhe="Duplas distintas acompanhadas" cor="#1A3A6B" />
+          <MetricCard label="Relatórios preenchidos" valor={resumo.relatoriosPreenchidos} detalhe={resumo.coordenadorMaisAtivo ? `Mais ativo: ${resumo.coordenadorMaisAtivo.nome}` : 'Com observações registradas'} cor="#C9963A" />
         </div>
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <section className="card xl:col-span-2">
             <div className="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-[#1A3A6B]">Historico de assistencias</h2>
-                <p className="max-w-xl text-sm text-gray-400">Clique em uma saida para ver as duplas acompanhadas e o relato.</p>
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Histórico de assistências</h2>
+                <p className="max-w-xl text-sm text-gray-400">Clique em uma saída para ver as duplas acompanhadas e o relato.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 <span className="rounded-lg bg-[#1A3A6B]/10 px-3 py-2 text-sm font-bold text-[#1A3A6B]">{numero(saidas.length)} registros</span>
@@ -253,7 +253,7 @@ export default function RelatorioAssistencia() {
 
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas mais acompanhadas</h2>
-            <p className="text-sm text-gray-400 mb-4">Ranking por repeticao de visitas no periodo.</p>
+            <p className="text-sm text-gray-400 mb-4">Ranking por repetição de visitas no período.</p>
             <div className="space-y-3">
               {resumo.duplasMaisVisitadas.map((dupla, index) => (
                 <button
@@ -288,7 +288,7 @@ export default function RelatorioAssistencia() {
                 </div>
               </div>
             ))}
-            {(dados?.porSemana || []).length === 0 && <p className="text-sm text-gray-400">Sem semanas no periodo.</p>}
+            {(dados?.porSemana || []).length === 0 && <p className="text-sm text-gray-400">Sem semanas no período.</p>}
           </div>
         </section>
       </div>
@@ -302,7 +302,7 @@ export default function RelatorioAssistencia() {
                 <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   Todos os acompanhamentos
                 </h3>
-                <p className="mt-1 text-sm text-gray-400">{numero(saidas.length)} registro{saidas.length === 1 ? '' : 's'} no periodo selecionado.</p>
+                <p className="mt-1 text-sm text-gray-400">{numero(saidas.length)} registro{saidas.length === 1 ? '' : 's'} no período selecionado.</p>
               </div>
               <button type="button" onClick={() => setModalRegistrosAberto(false)} className="flex h-11 w-11 items-center justify-center self-end rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-[#1A3A6B] sm:self-auto" aria-label="Fechar">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -351,7 +351,7 @@ export default function RelatorioAssistencia() {
 
                 {saidas.length === 0 && (
                   <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
-                    Nenhuma assistencia encontrada para os filtros selecionados.
+                    Nenhuma assistência encontrada para os filtros selecionados.
                   </div>
                 )}
               </div>
@@ -359,7 +359,7 @@ export default function RelatorioAssistencia() {
 
             <div className="app-modal-footer flex-wrap">
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
-                Relatorio regional
+                Relatório regional
               </button>
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalRegistrosAberto(false)}>Fechar</button>
             </div>
@@ -372,7 +372,7 @@ export default function RelatorioAssistencia() {
           <div className="app-modal-panel max-w-3xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistencia</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistência</p>
                 <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {formatarData(registroSelecionado.dataSaida)}
                 </h3>
@@ -394,7 +394,7 @@ export default function RelatorioAssistencia() {
               </div>
 
               <div className="mt-5">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Relato / observacoes</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Relato / observações</h4>
                 <p className="mt-2 rounded-lg bg-[#F4F5F7] p-4 text-sm leading-relaxed text-gray-600">
                   {registroSelecionado.observacoes || 'Nenhum relato foi preenchido neste acompanhamento.'}
                 </p>

@@ -7,9 +7,9 @@ import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
 
 const tipoLabel = {
-  UNICO: 'Estudantes Biblicos',
+  UNICO: 'Estudantes Bíblicos',
   PONTO: 'Pontos de Estudo',
-  CLASSE: 'Classes Biblicas',
+  CLASSE: 'Classes Bíblicas',
 };
 
 const tipoCor = {
@@ -21,7 +21,7 @@ const tipoCor = {
 const classeLabel = {
   A: 'A - Pronto para batismo',
   B: 'B - Com impedimento',
-  C: 'C - Nao pronto',
+  C: 'C - Não pronto',
   SEM: 'Sem classificacao',
 };
 
@@ -37,7 +37,7 @@ const motivoEncerramentoLabel = {
   DESISTIU: 'Desistiu do estudo',
   TERMINOU_LICOES: 'Terminou as licoes',
   OUTRO: 'Outro motivo',
-  'Nao informado': 'Nao informado',
+  'Nao informado': 'Não informado',
 };
 
 const progresso = (estudo) => {
@@ -71,7 +71,7 @@ function Chart({ option, className = 'h-80' }) {
 }
 
 const agruparSoma = (itens, chaveFn) => itens.reduce((acc, item) => {
-  const chave = chaveFn(item) || 'Nao informado';
+  const chave = chaveFn(item) || 'Não informado';
   acc[chave] = (acc[chave] || 0) + 1;
   return acc;
 }, {});
@@ -113,7 +113,7 @@ export default function RelatorioEstudosGeral() {
           classificacao: participante.classificacaoInteressado || 'SEM',
           igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
           distrito: estudo.dupla?.distrito?.nome || 'Sem distrito',
-          serie: estudo.serie || 'Nao informado',
+          serie: estudo.serie || 'Não informado',
           progresso: progresso(estudo),
           criadoEm: estudo.criadoEm,
         }));
@@ -126,7 +126,7 @@ export default function RelatorioEstudosGeral() {
         classificacao: estudo.classificacaoInteressado || 'SEM',
         igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
         distrito: estudo.dupla?.distrito?.nome || 'Sem distrito',
-        serie: estudo.serie || 'Nao informado',
+        serie: estudo.serie || 'Não informado',
         progresso: progresso(estudo),
         criadoEm: estudo.criadoEm,
         vaIgreja: estudo.vaIgreja,
@@ -347,14 +347,14 @@ export default function RelatorioEstudosGeral() {
         <BackButton fallbackTo={isDireto ? '/direto/relatorios' : '/relatorios'} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatorio</p>
+          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatório</p>
         </div>
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
               Estudos no Geral
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Visao consolidada de estudantes biblicos, pontos de estudo e classes biblicas.</p>
+            <p className="text-gray-400 text-sm mt-1">Visão consolidada de estudantes bíblicos, pontos de estudo e classes bíblicas.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/ranking-decisoes'))}>Ranking Decisões</button>
@@ -383,7 +383,7 @@ export default function RelatorioEstudosGeral() {
             type="button"
             className="card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"
             onClick={abrirDuplasComEstudoNaoRegistrado}
-            title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda nao cadastraram estudo biblico."
+            title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda não cadastraram estudo bíblico."
           >
             <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
             <p className="text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
@@ -393,12 +393,12 @@ export default function RelatorioEstudosGeral() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
           <section className="card xl:col-span-1">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Meios de estudo</h2>
-            <p className="text-sm text-gray-400 mb-3">Distribuicao por origem do estudo biblico.</p>
+            <p className="text-sm text-gray-400 mb-3">Distribuição por origem do estudo bíblico.</p>
             <Chart option={tipoOption} className="h-80" />
           </section>
           <section className="card xl:col-span-1">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
-            <p className="text-sm text-gray-400 mb-3">Distribuicao dos estudos ja encerrados.</p>
+            <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos já encerrados.</p>
             {resumo.totalEncerrados > 0 ? (
               <Chart option={encerradosOption} className="h-80" />
             ) : (
@@ -409,7 +409,7 @@ export default function RelatorioEstudosGeral() {
           </section>
           <section className="card xl:col-span-1">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
-            <p className="text-sm text-gray-400 mb-3">Volume de estudantes por prontidao para batismo.</p>
+            <p className="text-sm text-gray-400 mb-3">Volume de estudantes por prontidão para batismo.</p>
             <Chart option={classeOption} className="h-80" />
           </section>
         </div>
@@ -421,15 +421,15 @@ export default function RelatorioEstudosGeral() {
             <Chart option={igrejaOption} className="h-96" />
           </section>
           <section className="card">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Series mais utilizadas</h2>
-            <p className="text-sm text-gray-400 mb-3">Distribuicao dos estudos por serie biblica.</p>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Séries mais utilizadas</h2>
+            <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos por série bíblica.</p>
             <Chart option={serieOption} className="h-96" />
           </section>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <section className="card">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Evolucao de cadastros</h2>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">Evolução de cadastros</h2>
             <p className="text-sm text-gray-400 mb-3">Registros criados ao longo dos meses.</p>
             <Chart option={evolucaoOption} className="h-80" />
           </section>
@@ -443,8 +443,8 @@ export default function RelatorioEstudosGeral() {
         <section className="card overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Ultimos estudos cadastrados</h2>
-              <p className="text-sm text-gray-400">Amostra consolidada dos meios de estudo biblico.</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Últimos estudos cadastrados</h2>
+              <p className="text-sm text-gray-400">Amostra consolidada dos meios de estudo bíblico.</p>
             </div>
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/estudos-cadastrados'))}>
               Ver todos
@@ -458,7 +458,7 @@ export default function RelatorioEstudosGeral() {
                   <th className="px-4 py-3 text-left">Meio</th>
                   <th className="px-4 py-3 text-left">Pessoas</th>
                   <th className="px-4 py-3 text-left">Igreja</th>
-                  <th className="px-4 py-3 text-left">Serie</th>
+                  <th className="px-4 py-3 text-left">Série</th>
                   <th className="px-4 py-3 text-left">Progresso</th>
                 </tr>
               </thead>

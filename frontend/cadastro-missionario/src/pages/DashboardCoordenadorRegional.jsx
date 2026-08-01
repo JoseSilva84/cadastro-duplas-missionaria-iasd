@@ -172,7 +172,7 @@ export default function DashboardCoordenadorRegional() {
         coordenadorEmail: coordenador.email,
         duplas: (saida.duplas || []).map((item) => ({
           id: item.dupla?.id,
-          nome: item.dupla ? `${item.dupla.liderNome || 'Lider'} + ${item.dupla.membro2Nome || 'Membro'}` : 'Dupla nao encontrada',
+          nome: item.dupla ? `${item.dupla.liderNome || 'Líder'} + ${item.dupla.membro2Nome || 'Membro'}` : 'Dupla não encontrada',
           bairro: item.dupla?.bairro || '',
           distrito: item.dupla?.distrito?.nome || '',
         })),
@@ -215,8 +215,8 @@ export default function DashboardCoordenadorRegional() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
         <Indicador label="Coordenadores ativos" valor={resumo.totalCoordenadores} tooltip="Coordenadores ativos: total de usuarios ativos com perfil de coordenador regional." cor="#1A3A6B" icon={<UsersIcon />} />
         <Indicador label="Assistências registradas" valor={resumo.totalAssistencias} tooltip="Assistencias registradas: total de saidas/acompanhamentos cadastrados pelos coordenadores." cor="#C9963A" icon={<VisitIcon />} />
-        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetições" tooltip="Duplas acompanhadas: soma de todas as duplas visitadas nas assistencias, incluindo repeticoes quando a mesma dupla aparece em mais de uma saida." cor="#0d9488" icon={<ChartIcon />} />
-        <Indicador label="Relatórios preenchidos" valor={resumo.totalRelatorios} tooltip="Relatorios preenchidos: quantidade de assistencias que possuem observacoes ou relato registrado." cor="#7B2D8B" icon={<ClipboardIcon />} />
+        <Indicador label="Duplas acompanhadas" valor={resumo.totalDuplasAcompanhadas} detalhe="contagem total, incluindo repetições" tooltip="Duplas acompanhadas: soma de todas as duplas visitadas nas assistências, incluindo repetições quando a mesma dupla aparece em mais de uma saída." cor="#0d9488" icon={<ChartIcon />} />
+        <Indicador label="Relatórios preenchidos" valor={resumo.totalRelatorios} tooltip="Relatórios preenchidos: quantidade de assistências que possuem observações ou relato registrado." cor="#7B2D8B" icon={<ClipboardIcon />} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -244,10 +244,10 @@ export default function DashboardCoordenadorRegional() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Assistencias da ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Assistências da ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></button>
                   <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas acompanhadas - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></button>
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas unicas - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></button>
-                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Relatorios preenchidos - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Duplas únicas - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></button>
+                  <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Relatórios preenchidos - ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></button>
                 </div>
                 <div className="mt-3 text-xs text-gray-400">
                   Último acompanhamento: <span className="font-semibold text-gray-600">{formatarData(coordenador.ultimoAcompanhamento)}</span>
@@ -312,7 +312,7 @@ export default function DashboardCoordenadorRegional() {
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#1A3A6B]">{numero(modalCoordenador.coordenador.totalAssistencias)}</p><p className="text-[10px] uppercase text-gray-400">assistencias</p></div>
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#0d9488]">{numero(modalCoordenador.coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] uppercase text-gray-400">duplas</p></div>
                 <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#C9963A]">{numero(modalCoordenador.coordenador.duplasUnicas)}</p><p className="text-[10px] uppercase text-gray-400">unicas</p></div>
-                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#7B2D8B]">{numero(modalCoordenador.coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] uppercase text-gray-400">relatorios</p></div>
+                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#7B2D8B]">{numero(modalCoordenador.coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] uppercase text-gray-400">relatórios</p></div>
               </div>
 
               <div className="mt-4 rounded-lg bg-[#F4F5F7] p-4 text-sm text-gray-500">
@@ -324,7 +324,7 @@ export default function DashboardCoordenadorRegional() {
 
               {modalCoordenador.carregandoAssistencias && (
                 <div className="mt-5 rounded-xl bg-[#F4F5F7] px-4 py-8 text-center text-sm font-semibold text-gray-500">
-                  Carregando assistencias registradas...
+                  Carregando assistências registradas...
                 </div>
               )}
 

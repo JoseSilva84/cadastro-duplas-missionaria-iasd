@@ -51,8 +51,8 @@ const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
 const classeMotivos = {
   A: 'Motivo da Classe A: duplas que informaram que ja levaram pelo menos uma pessoa ao batismo.',
-  B: 'Motivo da Classe B: duplas que ja deram estudo biblico, mas ainda nao informaram batismo.',
-  C: 'Motivo da Classe C: duplas que ainda nao informaram estudo biblico realizado.',
+  B: 'Motivo da Classe B: duplas que já deram estudo bíblico, mas ainda não informaram batismo.',
+  C: 'Motivo da Classe C: duplas que ainda não informaram estudo bíblico realizado.',
 };
 
 function Indicador({ label, valor, detalhe, tooltip, cor, icon, onClick }) {
@@ -420,11 +420,11 @@ export default function DashboardAssociacao() {
     }],
   });
   const estudoCoberturaChartOption = useMemo(
-    () => criarCoberturaChartOption('Estudo biblico', coberturaDuplas.estudoBiblico, '#0284c7'),
+    () => criarCoberturaChartOption('Estudo bíblico', coberturaDuplas.estudoBiblico, '#0284c7'),
     [coberturaDuplas.estudoBiblico],
   );
   const classeCoberturaChartOption = useMemo(
-    () => criarCoberturaChartOption('Classe biblica', coberturaDuplas.classeBiblica, '#7B2D8B'),
+    () => criarCoberturaChartOption('Classe bíblica', coberturaDuplas.classeBiblica, '#7B2D8B'),
     [coberturaDuplas.classeBiblica],
   );
   const pontoCoberturaChartOption = useMemo(
@@ -479,13 +479,13 @@ export default function DashboardAssociacao() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <Painel titulo="Ministério Pessoal" subtitulo="Painel esquerdo" cor="#1A3A6B">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Indicador label="Atas duplas" valor={ministerio.atasDuplas} tooltip="Atas duplas: total de atas de acompanhamento registradas pelas duplas missionarias. Toque para abrir o resumo de Assistencia." cor="#1A3A6B" icon={<ClipboardIcon />} onClick={() => navigate(caminho('/relatorios/assistencia'))} />
-            <Indicador label="Registros cadastrados" valor={ministerio.quantidadeEstudos} tooltip="Registros cadastrados: estudos individuais + pontos de estudo + classes biblicas. Toque para abrir todos os registros que formam este total." cor="#0284c7" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-cadastrados'))} />
-            <Indicador label="Estudos individuais" valor={ministerio.quantidadeEstudosIndividuais} tooltip="Estudos individuais: total de estudantes cadastrados como estudo biblico individual. Toque para abrir Estudantes Biblicos." cor="#1A3A6B" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-biblicos'))} />
-            <Indicador label="Pontos estudos bíblicos" valor={ministerio.quantidadePontosEstudos} tooltip="Pontos de estudo biblico: quantidade de pontos cadastrados. Toque para abrir Pontos de Estudo." cor="#0d9488" icon={<GaugeIcon />} onClick={() => navigate(caminho('/relatorios/pontos-estudo'))} />
+            <Indicador label="Atas duplas" valor={ministerio.atasDuplas} tooltip="Atas duplas: total de atas de acompanhamento registradas pelas duplas missionárias. Toque para abrir o resumo de Assistência." cor="#1A3A6B" icon={<ClipboardIcon />} onClick={() => navigate(caminho('/relatorios/assistencia'))} />
+            <Indicador label="Registros cadastrados" valor={ministerio.quantidadeEstudos} tooltip="Registros cadastrados: estudos individuais + pontos de estudo + classes bíblicas. Toque para abrir todos os registros que formam este total." cor="#0284c7" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-cadastrados'))} />
+            <Indicador label="Estudos individuais" valor={ministerio.quantidadeEstudosIndividuais} tooltip="Estudos individuais: total de estudantes cadastrados como estudo bíblico individual. Toque para abrir Estudantes Bíblicos." cor="#1A3A6B" icon={<BookIcon />} onClick={() => navigate(caminho('/relatorios/estudos-biblicos'))} />
+            <Indicador label="Pontos estudos bíblicos" valor={ministerio.quantidadePontosEstudos} tooltip="Pontos de estudo bíblico: quantidade de pontos cadastrados. Toque para abrir Pontos de Estudo." cor="#0d9488" icon={<GaugeIcon />} onClick={() => navigate(caminho('/relatorios/pontos-estudo'))} />
             <Indicador label="Estudantes nos pontos" valor={ministerio.quantidadeEstudantesPontos} tooltip="Estudantes nos pontos: soma dos participantes cadastrados dentro dos pontos. Toque para abrir Pontos de Estudo." cor="#0d9488" icon={<UsersIcon />} onClick={() => navigate(caminho('/relatorios/pontos-estudo'))} />
-            <Indicador label="Classes bíblicas" valor={ministerio.quantidadeClasses} tooltip="Classes biblicas: total de classes cadastradas no sistema. Toque para abrir os registros de classes biblicas." cor="#7B2D8B" icon={<UsersIcon />} onClick={irParaClassesBiblicas} />
-            <Indicador label="Estudantes em classes" valor={ministerio.quantidadeEstudantesClasses} tooltip="Estudantes em classes: soma dos participantes cadastrados dentro das classes. Toque para abrir os registros de classes biblicas." cor="#7B2D8B" icon={<ClipboardIcon />} onClick={irParaClassesBiblicas} />
+            <Indicador label="Classes bíblicas" valor={ministerio.quantidadeClasses} tooltip="Classes bíblicas: total de classes cadastradas no sistema. Toque para abrir os registros de classes bíblicas." cor="#7B2D8B" icon={<UsersIcon />} onClick={irParaClassesBiblicas} />
+            <Indicador label="Estudantes em classes" valor={ministerio.quantidadeEstudantesClasses} tooltip="Estudantes em classes: soma dos participantes cadastrados dentro das classes. Toque para abrir os registros de classes bíblicas." cor="#7B2D8B" icon={<ClipboardIcon />} onClick={irParaClassesBiblicas} />
             <div className="sm:col-span-2">
               <Indicador
                 label="Qtidade de pessoas estudando"
@@ -558,7 +558,7 @@ export default function DashboardAssociacao() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Indicador label="Unidades de ação" valor={escola.unidadesAcao} tooltip="Unidades de acao: total informado para as unidades ativas da Escola Sabatina." cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Unidades de ação" valor={escola.unidadesAcao} tooltip="Unidades de ação: total informado para as unidades ativas da Escola Sabatina." cor="#1A3A6B" icon={<UsersIcon />} />
             <Indicador label="Classe dos professores" valor={escola.classeProfessores} tooltip="Classe dos professores: quantidade registrada para classes de professores da Escola Sabatina." cor="#7B2D8B" icon={<BookIcon />} />
             <Indicador label="Classe de interessados" valor={escola.classeInteressados} tooltip="Classe de interessados: quantidade registrada para classes de interessados da Escola Sabatina." cor="#0d9488" icon={<UsersIcon />} />
             <Indicador label="Pequenos Grupos" valor={escola.quantidadePequenosGrupos} tooltip="Pequenos Grupos: total de pequenos grupos informado no resumo da Escola Sabatina." cor="#C9963A" icon={<GaugeIcon />} />
@@ -610,14 +610,14 @@ export default function DashboardAssociacao() {
           <CoberturaCard
             label="Duplas com estudo bíblico"
             valor={coberturaDuplas.estudoBiblico?.com}
-            detalhe="Duplas com estudo biblico: considera duplas com pelo menos 1 estudo individual cadastrado. Duplas com 0 estudo individual cadastrado ficam no grupo sem estudo."
+            detalhe="Duplas com estudo bíblico: considera duplas com pelo menos 1 estudo individual cadastrado. Duplas com 0 estudo individual cadastrado ficam no grupo sem estudo."
             cor="#0284c7"
             icon={<BookIcon />}
           />
           <CoberturaCard
             label="Duplas com classe bíblica"
             valor={coberturaDuplas.classeBiblica?.com}
-            detalhe="Duplas com classe biblica: considera duplas com pelo menos 1 classe biblica cadastrada."
+            detalhe="Duplas com classe bíblica: considera duplas com pelo menos 1 classe bíblica cadastrada."
             cor="#7B2D8B"
             icon={<UsersIcon />}
           />
@@ -631,21 +631,21 @@ export default function DashboardAssociacao() {
           <CoberturaCard
             label="Duplas sem estudo bíblico"
             valor={coberturaDuplas.estudoBiblico?.sem}
-            detalhe="Duplas sem estudo biblico: duplas que ainda nao possuem estudo individual cadastrado."
+            detalhe="Duplas sem estudo bíblico: duplas que ainda não possuem estudo individual cadastrado."
             cor="#64748b"
             icon={<BookIcon />}
           />
           <CoberturaCard
             label="Duplas sem classe bíblica"
             valor={coberturaDuplas.classeBiblica?.sem}
-            detalhe="Duplas sem classe biblica: duplas que ainda nao possuem classe biblica cadastrada."
+            detalhe="Duplas sem classe bíblica: duplas que ainda não possuem classe bíblica cadastrada."
             cor="#64748b"
             icon={<UsersIcon />}
           />
           <CoberturaCard
             label="Duplas sem ponto de estudo"
             valor={coberturaDuplas.pontoEstudo?.sem}
-            detalhe="Duplas sem ponto de estudo: duplas que ainda nao possuem ponto de estudo cadastrado."
+            detalhe="Duplas sem ponto de estudo: duplas que ainda não possuem ponto de estudo cadastrado."
             cor="#64748b"
             icon={<GaugeIcon />}
           />
@@ -673,11 +673,11 @@ export default function DashboardAssociacao() {
           </div>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
-          <PainelGrafico titulo="Classes das duplas" subtitulo="Distribuicao A/B/C">
+          <PainelGrafico titulo="Classes das duplas" subtitulo="Distribuição A/B/C">
             <EChart option={classeChartOption} className="h-72" />
           </PainelGrafico>
           <div className="xl:col-span-2">
-            <PainelGrafico titulo="Forca missionaria por regiao" subtitulo="Duplas, estudos e batismos">
+            <PainelGrafico titulo="Força missionária por região" subtitulo="Duplas, estudos e batismos">
               <EChart option={regiaoChartOption} className="h-72" />
             </PainelGrafico>
           </div>
@@ -725,7 +725,7 @@ export default function DashboardAssociacao() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-5">
         <Painel titulo="Duplas" subtitulo="Dashboard de desempenho" cor="#1A3A6B">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} tooltip="Total de duplas missionarias cadastradas no escopo do dashboard." cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Total de duplas" valor={dashboardDuplas.totalDuplas} tooltip="Total de duplas missionárias cadastradas no escopo do dashboard." cor="#1A3A6B" icon={<UsersIcon />} />
             <DestaqueRanking
               label="Região com mais duplas"
               item={dashboardDuplas.regiaoMaisDuplas}
@@ -784,9 +784,9 @@ export default function DashboardAssociacao() {
 
         <Painel titulo="Classes Bíblicas" subtitulo="Dashboard detalhado" cor="#7B2D8B">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <Indicador label="Classes bíblicas" valor={dashboardClasses.totalClasses} tooltip="Classes biblicas: total de classes cadastradas para acompanhamento." cor="#7B2D8B" icon={<BookIcon />} />
-            <Indicador label="Duplas com classe" valor={dashboardClasses.totalDuplasComClasse} tooltip="Duplas com classe: quantidade de duplas que possuem ao menos uma classe biblica vinculada." cor="#1A3A6B" icon={<UsersIcon />} />
-            <Indicador label="Estudantes em classes" valor={dashboardClasses.totalEstudantes} tooltip="Estudantes em classes: soma dos participantes cadastrados nas classes biblicas." cor="#C9963A" icon={<ClipboardIcon />} />
+            <Indicador label="Classes bíblicas" valor={dashboardClasses.totalClasses} tooltip="Classes bíblicas: total de classes cadastradas para acompanhamento." cor="#7B2D8B" icon={<BookIcon />} />
+            <Indicador label="Duplas com classe" valor={dashboardClasses.totalDuplasComClasse} tooltip="Duplas com classe: quantidade de duplas que possuem ao menos uma classe bíblica vinculada." cor="#1A3A6B" icon={<UsersIcon />} />
+            <Indicador label="Estudantes em classes" valor={dashboardClasses.totalEstudantes} tooltip="Estudantes em classes: soma dos participantes cadastrados nas classes bíblicas." cor="#C9963A" icon={<ClipboardIcon />} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">

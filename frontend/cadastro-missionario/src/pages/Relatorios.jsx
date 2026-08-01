@@ -53,7 +53,7 @@ export default function Relatorios() {
       {resumo && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8 stagger-children">
           {[
-            { label: 'Total Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionarias cadastradas no sistema.' },
+            { label: 'Total Duplas', valor: resumo.totalDuplas, cor: '#1A3A6B', icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Total de duplas missionárias cadastradas no sistema.' },
             { label: 'Ativas', valor: resumo.totalAtivas, cor: '#16a34a', icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Ativas: duplas com status ATIVA.' },
             { label: 'Pendentes', valor: resumo.totalPendentes, cor: '#C9963A', icon: '⏳', gradient: 'from-[#C9963A] to-[#e5b05a]', tooltip: 'Pendentes: duplas que ainda aguardam validacao ou regularizacao.' },
             { label: 'Inativas', valor: resumo.totalInativas, cor: '#9ca3af', icon: '⏸️', gradient: 'from-gray-400 to-gray-500', tooltip: 'Inativas: duplas com status INATIVA.' },

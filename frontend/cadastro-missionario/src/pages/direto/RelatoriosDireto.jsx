@@ -29,7 +29,7 @@ export default function RelatoriosDireto() {
   const [porRegiao, setPorRegiao] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
-  // 'GERAL' ou o id da regiao
+  // 'GERAL' ou o id da região
   const [selecionado, setSelecionado] = useState('GERAL');
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
@@ -223,7 +223,7 @@ export default function RelatoriosDireto() {
                   {[
                     { label: 'Total de Duplas', valor: resumo.totalDuplas, icon: '✝️', gradient: 'from-[#1A3A6B] to-[#2a5298]', cor: '#1A3A6B' },
                     { label: 'Duplas Ativas', valor: resumo.totalAtivas, icon: '✅', gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
-                    { label: 'Duplas com Estudo Ativo', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7', detalhe: 'Duplas cujo status do estudo biblico esta ATIVO.' },
+                    { label: 'Duplas com Estudo Ativo', valor: resumo.estudosAtivos, icon: '📖', gradient: 'from-[#0284c7] to-[#0ea5e9]', cor: '#0284c7', detalhe: 'Duplas cujo status do estudo bíblico está ATIVO.' },
                     { label: 'Classes Bíblicas Ativas', valor: resumo.evangelismosAtivos, icon: '📢', gradient: 'from-[#ea580c] to-[#f97316]', cor: '#ea580c' },
                     { label: 'Batismos Realizados', valor: resumo.totalBatismos, icon: '💧', gradient: 'from-[#0d9488] to-[#14b8a6]', cor: '#0d9488' },
                     { label: 'Metas de contatos', valor: resumo.totalPessoasAlcancadas, icon: '🙏', gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
@@ -231,7 +231,7 @@ export default function RelatoriosDireto() {
                     <div
                       key={item.label}
                       className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
-                      data-tooltip={item.detalhe || `${item.label}: total consolidado no relatorio global.`}
+                      data-tooltip={item.detalhe || `${item.label}: total consolidado no relatório global.`}
                       tabIndex={0}
                       style={{ borderLeft: `3px solid ${item.cor}` }}
                       role="button"
@@ -409,7 +409,7 @@ export default function RelatoriosDireto() {
                   {[
                     { label: 'Total de Duplas', valor: regiaoSelecionada.totalDuplas, icon: '✝️' },
                     { label: 'Duplas Ativas', valor: regiaoSelecionada.ativas, icon: '✅' },
-                    { label: 'Duplas com Estudo Ativo', valor: regiaoSelecionada.estudosAtivos, icon: '📖', detalhe: 'Duplas desta regiao cujo status do estudo biblico esta ATIVO.' },
+                    { label: 'Duplas com Estudo Ativo', valor: regiaoSelecionada.estudosAtivos, icon: '📖', detalhe: 'Duplas desta região cujo status do estudo bíblico está ATIVO.' },
                     { label: 'Classes Bíblicas Ativas', valor: regiaoSelecionada.evangelismosAtivos, icon: '📢' },
                     { label: 'Batismos Realizados', valor: regiaoSelecionada.totalBatismos, icon: '💧' },
                     { label: 'metas de contatos', valor: regiaoSelecionada.totalPessoas, icon: '🙏' },
@@ -417,7 +417,7 @@ export default function RelatoriosDireto() {
                     <div
                       key={item.label}
                       className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
-                      data-tooltip={item.detalhe || `${item.label}: total consolidado nesta regiao.`}
+                      data-tooltip={item.detalhe || `${item.label}: total consolidado nesta região.`}
                       tabIndex={0}
                       role="button"
                       onClick={() => {
@@ -450,7 +450,7 @@ export default function RelatoriosDireto() {
                   ))}
                   <div
                     className="smart-tooltip bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
-                    data-tooltip="Duplas Inativas desta regiao. Toque para abrir a lista filtrada."
+                    data-tooltip="Duplas Inativas desta região. Toque para abrir a lista filtrada."
                     tabIndex={0}
                     role="button"
                     onClick={() => irParaDuplas({ regiaoId: regiaoSelecionada.id, status: 'INATIVA' })}
@@ -477,7 +477,7 @@ export default function RelatoriosDireto() {
                       <div
                         key={distrito.id}
                         className="smart-tooltip bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all duration-300 relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30"
-                        data-tooltip={`${distrito.nome}: ${distrito.totalDuplas} dupla(s), ${pct}% das duplas da regiao.`}
+                        data-tooltip={`${distrito.nome}: ${distrito.totalDuplas} dupla(s), ${pct}% das duplas da região.`}
                         tabIndex={0}
                         role="button"
                         onClick={() => navigate(`/direto/distritos/${distrito.id}`)}
@@ -508,7 +508,7 @@ export default function RelatoriosDireto() {
 
                 {graficoStatusRegiao && (
                   <div className="w-[360px] flex-shrink-0 space-y-3">
-                    <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Status na Regiao</h2>
+                    <h2 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-widest px-1">Status na Região</h2>
                     <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                       <EChart option={graficoStatusRegiao} className="h-64" />
                     </div>

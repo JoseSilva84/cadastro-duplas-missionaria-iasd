@@ -9,7 +9,7 @@ import { toast } from '../lib/toast';
 const tipoLabel = {
   UNICO: 'Estudo individual',
   PONTO: 'Ponto de Estudo',
-  CLASSE: 'Classe Biblica',
+  CLASSE: 'Classe Bíblica',
 };
 
 const classeConfig = {
@@ -86,7 +86,7 @@ const alunoDoEstudo = (estudo) => ({
   dupla: nomeDupla(estudo.dupla),
   igreja: estudo.dupla?.igreja?.nome || 'Sem igreja',
   distrito: estudo.dupla?.distrito?.nome || 'Sem distrito',
-  regiao: estudo.dupla?.distrito?.regiao?.nome || 'Sem regiao',
+  regiao: estudo.dupla?.distrito?.regiao?.nome || 'Sem região',
 });
 
 const alunoDoParticipante = (estudo, participante) => ({
@@ -296,7 +296,7 @@ export default function Alunos() {
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
               Todos os Alunos
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Alunos de estudos individuais, pontos de estudo e classes biblicas dentro do seu escopo de acesso.</p>
+            <p className="text-gray-400 text-sm mt-1">Alunos de estudos individuais, pontos de estudo e classes bíblicas dentro do seu escopo de acesso.</p>
           </div>
           <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/cadastro/estudos-biblicos`)}>
             Novo aluno
@@ -327,7 +327,7 @@ export default function Alunos() {
                 <option value="">Todos</option>
                 <option value="UNICO">Estudo individual</option>
                 <option value="PONTO">Ponto de Estudo</option>
-                <option value="CLASSE">Classe Biblica</option>
+                <option value="CLASSE">Classe Bíblica</option>
               </select>
             </label>
             <label>
@@ -467,7 +467,7 @@ export default function Alunos() {
               <label>
                 <span className="mb-1.5 block text-sm font-semibold text-gray-600">Estudo</span>
                 <select className="input-field" value={serieSelecionada} onChange={(event) => mudarSerieSelecionada(event.target.value)}>
-                  <option value="">Selecione a serie</option>
+                  <option value="">Selecione a série</option>
                   {SERIES_ESTUDO.map((serie) => (
                     <option key={serie.id} value={serie.id}>
                       {serie.nome}
@@ -497,7 +497,7 @@ export default function Alunos() {
                   </div>
                 ) : (
                   <div className="rounded-xl bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
-                    Nenhuma licao disponivel para a serie deste estudo.
+                    Nenhuma lição disponível para a série deste estudo.
                   </div>
                 )}
               </div>

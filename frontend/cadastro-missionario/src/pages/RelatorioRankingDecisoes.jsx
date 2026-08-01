@@ -6,9 +6,9 @@ import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
 
 const tipoLabel = {
-  UNICO: 'Estudante Biblico',
+  UNICO: 'Estudante Bíblico',
   PONTO: 'Ponto de Estudo',
-  CLASSE: 'Classe Biblica',
+  CLASSE: 'Classe Bíblica',
 };
 
 const classeOrdem = {
@@ -78,7 +78,7 @@ export default function RelatorioRankingDecisoes() {
         setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
       })
       .catch((err) => {
-        if (ativo) setErro(err.response?.data?.erro || 'Erro ao carregar relatorio.');
+        if (ativo) setErro(err.response?.data?.erro || 'Erro ao carregar relatório.');
       })
       .finally(() => {
         if (ativo) setCarregando(false);
@@ -227,7 +227,7 @@ export default function RelatorioRankingDecisoes() {
     batismosReaisPorDupla.map((dupla) => [String(dupla.id), dupla])
   ), [batismosReaisPorDupla]);
 
-  if (carregando) return <LoadingState mensagem="Carregando relatorio..." />;
+  if (carregando) return <LoadingState mensagem="Carregando relatório..." />;
 
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
@@ -235,12 +235,12 @@ export default function RelatorioRankingDecisoes() {
         <BackButton fallbackTo={baseRelatorio} className="mb-3" />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatorio</p>
+          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatório</p>
         </div>
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Batismos e Decisoes
+              Batismos e Decisões
             </h1>
             <p className="text-gray-400 text-sm mt-1">
               Batismos confirmados pelo encerramento dos estudos e experiencia passada informada pelas duplas.
@@ -260,9 +260,9 @@ export default function RelatorioRankingDecisoes() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             ['Batismo da dupla', resumo.batismosReais, '#0d9488'],
-            ['Decisoes Classe A', resumo.decisoesClasseA, '#047857'],
-            ['Aguardando confirmacao', resumo.aguardandoConfirmacao, '#C9963A'],
-            ['Progresso medio', `${resumo.media}%`, '#1A3A6B'],
+            ['Decisões Classe A', resumo.decisoesClasseA, '#047857'],
+            ['Aguardando confirmação', resumo.aguardandoConfirmacao, '#C9963A'],
+            ['Progresso médio', `${resumo.media}%`, '#1A3A6B'],
           ].map(([label, valor, cor]) => (
             <div key={label} className="card">
               <p className="text-xs text-gray-400">{label}</p>
@@ -321,8 +321,8 @@ export default function RelatorioRankingDecisoes() {
                   <th className="px-4 py-3 text-left">Batismos</th>
                   <th className="px-4 py-3 text-left">Igreja</th>
                   <th className="px-4 py-3 text-left">Distrito</th>
-                  <th className="px-4 py-3 text-left">Regiao</th>
-                  <th className="px-4 py-3 text-left">Acao</th>
+                  <th className="px-4 py-3 text-left">Região</th>
+                  <th className="px-4 py-3 text-left">Ação</th>
                 </tr>
               </thead>
               <tbody>
@@ -417,8 +417,8 @@ export default function RelatorioRankingDecisoes() {
                   <th className="px-4 py-3 text-left">Batismos</th>
                   <th className="px-4 py-3 text-left">Igreja</th>
                   <th className="px-4 py-3 text-left">Distrito</th>
-                  <th className="px-4 py-3 text-left">Regiao</th>
-                  <th className="px-4 py-3 text-left">Acao</th>
+                  <th className="px-4 py-3 text-left">Região</th>
+                  <th className="px-4 py-3 text-left">Ação</th>
                 </tr>
               </thead>
               <tbody>
@@ -466,7 +466,7 @@ export default function RelatorioRankingDecisoes() {
         <section className="card overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisoes</h2>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisões</h2>
               <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo confirmado pelo encerramento do estudo, isso aparece como contexto da dupla.</p>
             </div>
             <span className="text-sm font-bold text-[#1A3A6B] bg-[#1A3A6B]/10 rounded-lg px-3 py-2">
@@ -585,25 +585,25 @@ export default function RelatorioRankingDecisoes() {
                 </div>
                 <div className="rounded-lg bg-[#1A3A6B]/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">
-                    {duplaModal.tipo === 'real' ? 'Alunos listados' : 'Decisoes Classe A'}
+                    {duplaModal.tipo === 'real' ? 'Alunos listados' : 'Decisões Classe A'}
                   </p>
                   <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">
                     {duplaModal.tipo === 'real' ? alunosBatizadosDaDupla.length : estudantesClasseADaDupla.length}
                   </p>
                 </div>
                 <div className="rounded-lg bg-[#C9963A]/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Regiao</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Região</p>
                   <p className="mt-2 text-sm font-bold text-[#1A3A6B]">{duplaModal.regiao}</p>
                 </div>
               </div>
 
               {duplaModal.tipo === 'real' ? (
                 <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-800">
-                  Origem do numero: estudos encerrados com o motivo Batismo. Os nomes abaixo sao os alunos vinculados aos estudos encerrados dessa forma.
+                  Origem do número: estudos encerrados com o motivo Batismo. Os nomes abaixo são os alunos vinculados aos estudos encerrados dessa forma.
                 </div>
               ) : (
                 <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
-                  Origem do numero: campo Batismos Alcançados no passado no cadastro da dupla. Este registro e historico e nao identifica nominalmente quais alunos foram batizados.
+                  Origem do número: campo Batismos Alcançados no passado no cadastro da dupla. Este registro é histórico e não identifica nominalmente quais alunos foram batizados.
                 </div>
               )}
 
@@ -658,7 +658,7 @@ export default function RelatorioRankingDecisoes() {
                   </div>
                 ) : (
                   <div className="mt-3 rounded-lg bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
-                    Nao ha estudante Classe A vinculado a esta dupla nesta lista. O numero historico foi informado sem nomes individuais.
+                    Não há estudante Classe A vinculado a esta dupla nesta lista. O número histórico foi informado sem nomes individuais.
                   </div>
                 )}
               </div>
