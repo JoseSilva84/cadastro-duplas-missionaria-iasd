@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
+import EChart from '../components/EChart';
 import BackButton from '../components/BackButton';
 
 const cards = [
@@ -12,6 +13,97 @@ const cards = [
   ['batismos', 'Batismos'],
   ['pessoasAlcancadas', 'Pessoas Alcançadas'],
 ];
+
+const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
+
+const escapeHtml = (valor = '') => String(valor ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+const corIndicador = {
+  novaDupla: '#1A3A6B',
+  estudosBiblicos: '#0284c7',
+  pontosEstudo: '#0d9488',
+  classesBiblicas: '#7B2D8B',
+  diretorMinisterioPessoal: '#C9963A',
+  diretoresMissionarios: '#2563eb',
+  batismos: '#14b8a6',
+  pessoasAlcancadas: '#ea580c',
+};
+
+const montarMetricas = (dados) => cards.map(([key, label]) => ({
+  key,
+  label,
+  valor: Number(dados?.[key] || 0),
+  cor: corIndicador[key] || '#1A3A6B',
+}));
+
+const abrirPdfPersonalizado = ({ dados, nivel, escopoNome }) => {
+  const metricas = montarMetricas(dados);
+  const maior = Math.max(...metricas.map((item) => item.valor), 1);
+  const linhas = metricas.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.label)}</td>
+      <td><strong>${numero(item.valor)}</strong></td>
+      <td>
+        <div class="bar"><span style="width:${Math.max(4, (item.valor / maior) * 100)}%; background:${item.cor};"></span></div>
+      </td>
+    </tr>
+  `).join('');
+  const totalAtividades = metricas.reduce((acc, item) => acc + item.valor, 0);
+  const janela = window.open('', '_blank');
+  if (!janela) return false;
+
+  janela.document.write(`
+    <html>
+      <head>
+        <title>Relatório Personalizado</title>
+        <style>
+          @page { margin: 16mm; }
+          body { font-family: Arial, sans-serif; color: #1f2937; line-height: 1.45; }
+          h1 { color: #1A3A6B; margin: 0 0 6px; font-size: 26px; }
+          h2 { color: #1A3A6B; font-size: 17px; margin: 24px 0 10px; }
+          .sub { color: #6b7280; margin: 0 0 20px; }
+          .meta { border-left: 4px solid #C9963A; background: #f8fafc; padding: 12px 14px; margin-bottom: 18px; }
+          .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+          .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fff; }
+          .card span { color: #6b7280; display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+          .card strong { color: #1A3A6B; display: block; font-size: 24px; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { background: #1A3A6B; color: white; padding: 9px; text-align: left; }
+          td { border-bottom: 1px solid #e5e7eb; padding: 9px; vertical-align: middle; }
+          .bar { height: 10px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
+          .bar span { display: block; height: 100%; border-radius: 999px; }
+          .rodape { color: #6b7280; font-size: 11px; margin-top: 24px; }
+        </style>
+      </head>
+      <body>
+        <h1>Relatório Personalizado</h1>
+        <p class="sub">Análise consolidada por ${escapeHtml(nivel)}: <strong>${escapeHtml(escopoNome)}</strong></p>
+        <div class="meta">
+          Total consolidado dos indicadores exibidos: <strong>${numero(totalAtividades)}</strong><br>
+          Gerado em ${new Date().toLocaleString('pt-BR')}
+        </div>
+        <div class="cards">
+          ${metricas.map((item) => `<div class="card"><span>${escapeHtml(item.label)}</span><strong>${numero(item.valor)}</strong></div>`).join('')}
+        </div>
+        <h2>Comparativo por indicador</h2>
+        <table>
+          <thead><tr><th>Indicador</th><th>Total</th><th>Proporção visual</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+        <p class="rodape">Sistema de Duplas Missionárias - PCM Associação Paulistana.</p>
+      </body>
+    </html>
+  `);
+  janela.document.close();
+  janela.focus();
+  setTimeout(() => janela.print(), 250);
+  return true;
+};
 
 export default function RelatorioPersonalizado() {
   const [nivel, setNivel] = useState('regiao');
@@ -45,6 +137,99 @@ export default function RelatorioPersonalizado() {
     return igrejas;
   }, [nivel, regioes, distritos, igrejas]);
 
+  const escopoSelecionado = useMemo(() => (
+    opcoes.find((item) => String(item.id) === String(selecionado))
+  ), [opcoes, selecionado]);
+
+  const metricas = useMemo(() => montarMetricas(dados), [dados]);
+
+  const grupoMinisterio = useMemo(() => (
+    metricas.filter((item) => ['novaDupla', 'estudosBiblicos', 'pontosEstudo', 'classesBiblicas'].includes(item.key))
+  ), [metricas]);
+
+  const grupoImpacto = useMemo(() => (
+    metricas.filter((item) => ['diretorMinisterioPessoal', 'diretoresMissionarios', 'batismos', 'pessoasAlcancadas'].includes(item.key))
+  ), [metricas]);
+
+  const colunaOption = useMemo(() => ({
+    color: metricas.map((item) => item.cor),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 28, right: 16, bottom: 70, top: 24, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: metricas.map((item) => item.label),
+      axisLabel: { interval: 0, rotate: 28, color: '#64748b', fontSize: 11 },
+    },
+    yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [{
+      type: 'bar',
+      barWidth: 28,
+      data: metricas.map((item) => ({ value: item.valor, itemStyle: { color: item.cor, borderRadius: [6, 6, 0, 0] } })),
+    }],
+  }), [metricas]);
+
+  const linhaOption = useMemo(() => ({
+    color: ['#1A3A6B', '#C9963A'],
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { color: '#64748b' } },
+    grid: { left: 28, right: 20, bottom: 48, top: 24, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: ['Duplas', 'Estudos', 'Pontos', 'Classes', 'Batismos', 'Pessoas'],
+      axisLabel: { color: '#64748b' },
+    },
+    yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [
+      {
+        name: 'Frentes missionárias',
+        type: 'line',
+        smooth: true,
+        symbolSize: 8,
+        data: [
+          dados?.novaDupla || 0,
+          dados?.estudosBiblicos || 0,
+          dados?.pontosEstudo || 0,
+          dados?.classesBiblicas || 0,
+          dados?.batismos || 0,
+          dados?.pessoasAlcancadas || 0,
+        ],
+      },
+      {
+        name: 'Liderança',
+        type: 'line',
+        smooth: true,
+        symbolSize: 8,
+        data: [
+          0,
+          dados?.diretorMinisterioPessoal || 0,
+          0,
+          dados?.diretoresMissionarios || 0,
+          0,
+          0,
+        ],
+      },
+    ],
+  }), [dados]);
+
+  const pizzaOption = useMemo(() => {
+    const base = [...grupoMinisterio, ...grupoImpacto].filter((item) => item.valor > 0);
+    const data = base.length ? base : [{ label: 'Sem dados', valor: 1, cor: '#cbd5e1' }];
+    return {
+      color: data.map((item) => item.cor),
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, type: 'scroll', textStyle: { color: '#64748b' } },
+      series: [{
+        name: 'Distribuição',
+        type: 'pie',
+        radius: ['42%', '70%'],
+        center: ['50%', '43%'],
+        avoidLabelOverlap: true,
+        label: { formatter: '{b}\n{d}%', color: '#334155', fontSize: 11 },
+        data: data.map((item) => ({ name: item.label, value: item.valor })),
+      }],
+    };
+  }, [grupoMinisterio, grupoImpacto]);
+
   const gerar = async () => {
     if (!selecionado) return;
     setCarregando(true);
@@ -61,6 +246,16 @@ export default function RelatorioPersonalizado() {
     } finally {
       setCarregando(false);
     }
+  };
+
+  const gerarPdf = () => {
+    if (!dados) return;
+    const ok = abrirPdfPersonalizado({
+      dados,
+      nivel: nivel === 'regiao' ? 'Região' : nivel === 'distrito' ? 'Distrito' : 'Igreja',
+      escopoNome: escopoSelecionado?.nome || 'Escopo selecionado',
+    });
+    if (!ok) setErro('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
   };
 
   return (
@@ -101,37 +296,53 @@ export default function RelatorioPersonalizado() {
       </div>
 
       {dados && (
-        <>
+        <div id="relatorio-personalizado-exportavel">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Resultado consolidado</p>
+              <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                {escopoSelecionado?.nome || 'Escopo selecionado'}
+              </h2>
+            </div>
+            <button type="button" className="btn-outline self-start px-4 py-2 text-sm sm:self-auto" onClick={gerarPdf}>
+              Gerar PDF
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {cards.map(([key, label]) => (
+            {metricas.map(({ key, label, valor, cor }) => (
               <div
                 key={key}
                 className="smart-tooltip card p-4"
-                data-tooltip={`${label}: total consolidado para o escopo selecionado nos filtros do relatorio personalizado.`}
+                data-tooltip={`${label}: total consolidado para o escopo selecionado nos filtros do relatório personalizado.`}
                 tabIndex={0}
               >
                 <p className="text-xs font-semibold text-gray-500">{label}</p>
-                <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">{Number(dados[key] || 0).toLocaleString('pt-BR')}</p>
+                <p className="mt-2 text-3xl font-bold" style={{ color: cor }}>{numero(valor)}</p>
               </div>
             ))}
           </div>
-          <div className="card mt-4">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">Escola Sabatina</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {Object.entries(dados.escolaSabatina || {}).map(([key, valor]) => (
-                <div
-                  key={key}
-                  className="smart-tooltip rounded-lg border border-gray-100 bg-gray-50 p-3"
-                  data-tooltip={`${key}: total da Escola Sabatina no escopo selecionado.`}
-                  tabIndex={0}
-                >
-                  <p className="text-xs font-semibold text-gray-500">{key}</p>
-                  <p className="mt-1 text-xl font-bold text-[#C9963A]">{Number(valor || 0).toLocaleString('pt-BR')}</p>
-                </div>
-              ))}
-            </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <section className="card">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Colunas por indicador</h2>
+              <p className="mt-1 text-sm text-gray-400">Comparação direta dos totais no escopo selecionado.</p>
+              <EChart option={colunaOption} className="h-80" />
+            </section>
+
+            <section className="card">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Distribuição por área</h2>
+              <p className="mt-1 text-sm text-gray-400">Peso proporcional de cada indicador no relatório.</p>
+              <EChart option={pizzaOption} className="h-80" />
+            </section>
+
+            <section className="card xl:col-span-2">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Linha comparativa</h2>
+              <p className="mt-1 text-sm text-gray-400">Leitura sequencial entre frentes missionárias e liderança.</p>
+              <EChart option={linhaOption} className="h-80" />
+            </section>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
