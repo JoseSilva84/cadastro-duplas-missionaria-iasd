@@ -800,6 +800,18 @@ const RelatorioModel = {
         relatoriosPreenchidos: assistencias.filter((item) => String(item.observacoes || '').trim()).length,
         ultimoAcompanhamento: ultimoAcompanhamento?.dataSaida || null,
         distritoMaisVisitado: ordenarPorTotal(Object.values(distritos))[0] || null,
+        assistencias: assistencias.map((assistencia) => ({
+          id: assistencia.id,
+          dataSaida: assistencia.dataSaida,
+          observacoes: assistencia.observacoes || null,
+          totalDuplas: assistencia.duplas.length,
+          duplas: assistencia.duplas.map((item) => ({
+            id: item.dupla?.id,
+            nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla nÃ£o encontrada',
+            bairro: item.dupla?.bairro || '',
+            distrito: item.dupla?.distrito?.nome || '',
+          })),
+        })),
       };
     });
 

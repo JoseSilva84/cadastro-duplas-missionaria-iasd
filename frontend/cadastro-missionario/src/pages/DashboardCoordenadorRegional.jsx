@@ -109,6 +109,7 @@ export default function DashboardCoordenadorRegional() {
   const isDireto = location.pathname.startsWith('/direto');
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [modalCoordenador, setModalCoordenador] = useState(null);
 
   useEffect(() => {
     api.get('/relatorios/coordenadores-regionais')
@@ -124,6 +125,17 @@ export default function DashboardCoordenadorRegional() {
   const coordenadoresOrdenados = useMemo(() => (
     [...coordenadores].sort((a, b) => b.totalAssistencias - a.totalAssistencias || a.nome.localeCompare(b.nome))
   ), [coordenadores]);
+
+  const abrirDetalhesCoordenador = (coordenador, indicador) => {
+    setModalCoordenador({ coordenador, indicador });
+  };
+
+  const abrirDetalhesCardCoordenador = (event, coordenador) => {
+    const card = event.target.closest('[data-indicador-index]');
+    if (!card) return;
+    const indicadores = ['Assistencias', 'Duplas acompanhadas', 'Duplas unicas', 'Relatorios preenchidos'];
+    abrirDetalhesCoordenador(coordenador, indicadores[Number(card.dataset.indicadorIndex)] || 'Assistencias');
+  };
 
   if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
 
@@ -172,11 +184,11 @@ export default function DashboardCoordenadorRegional() {
                     Registrar assistência
                   </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Assistencias: total de saidas registradas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></div>
-                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Duplas: soma de duplas acompanhadas por este coordenador, incluindo repeticoes." tabIndex={0}><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></div>
-                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Unicas: quantidade de duplas distintas acompanhadas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></div>
-                  <div className="smart-tooltip bg-white rounded-lg p-3" data-tooltip="Relatorios: quantidade de acompanhamentos com relato preenchido." tabIndex={0}><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4" onClick={(event) => abrirDetalhesCardCoordenador(event, coordenador)}>
+                  <div className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 transition hover:-translate-y-0.5 hover:shadow-sm" data-indicador-index="0" data-tooltip="Assistencias: total de saidas registradas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></div>
+                  <div className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 transition hover:-translate-y-0.5 hover:shadow-sm" data-indicador-index="1" data-tooltip="Duplas: soma de duplas acompanhadas por este coordenador, incluindo repeticoes." tabIndex={0}><p className="text-lg font-bold text-[#0d9488]">{numero(coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] text-gray-400 uppercase">duplas</p></div>
+                  <div className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 transition hover:-translate-y-0.5 hover:shadow-sm" data-indicador-index="2" data-tooltip="Unicas: quantidade de duplas distintas acompanhadas por este coordenador." tabIndex={0}><p className="text-lg font-bold text-[#C9963A]">{numero(coordenador.duplasUnicas)}</p><p className="text-[10px] text-gray-400 uppercase">únicas</p></div>
+                  <div className="smart-tooltip cursor-pointer bg-white rounded-lg p-3 transition hover:-translate-y-0.5 hover:shadow-sm" data-indicador-index="3" data-tooltip="Relatorios: quantidade de acompanhamentos com relato preenchido." tabIndex={0}><p className="text-lg font-bold text-[#7B2D8B]">{numero(coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] text-gray-400 uppercase">relatórios</p></div>
                 </div>
                 <div className="mt-3 text-xs text-gray-400">
                   Último acompanhamento: <span className="font-semibold text-gray-600">{formatarData(coordenador.ultimoAcompanhamento)}</span>
@@ -215,6 +227,93 @@ export default function DashboardCoordenadorRegional() {
           </div>
         </Painel>
       </div>
+
+      {modalCoordenador && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setModalCoordenador(null)}>
+          <div className="w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex flex-col gap-3 border-b border-gray-100 bg-[#F8FAFC] p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">{modalCoordenador.indicador}</p>
+                <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  {modalCoordenador.coordenador.nome}
+                </h3>
+                <p className="mt-1 break-words text-sm text-gray-400">{modalCoordenador.coordenador.email}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-[#C9963A]">{modalCoordenador.coordenador.regiao}</p>
+              </div>
+              <button type="button" onClick={() => setModalCoordenador(null)} className="flex h-11 w-11 items-center justify-center self-end rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-[#1A3A6B] sm:self-auto" aria-label="Fechar">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-[72vh] overflow-y-auto p-4 sm:p-5">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#1A3A6B]">{numero(modalCoordenador.coordenador.totalAssistencias)}</p><p className="text-[10px] uppercase text-gray-400">assistencias</p></div>
+                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#0d9488]">{numero(modalCoordenador.coordenador.totalDuplasAcompanhadas)}</p><p className="text-[10px] uppercase text-gray-400">duplas</p></div>
+                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#C9963A]">{numero(modalCoordenador.coordenador.duplasUnicas)}</p><p className="text-[10px] uppercase text-gray-400">unicas</p></div>
+                <div className="rounded-lg bg-[#F4F5F7] p-3"><p className="text-lg font-bold text-[#7B2D8B]">{numero(modalCoordenador.coordenador.relatoriosPreenchidos)}</p><p className="text-[10px] uppercase text-gray-400">relatorios</p></div>
+              </div>
+
+              <div className="mt-4 rounded-lg bg-[#F4F5F7] p-4 text-sm text-gray-500">
+                Ultimo acompanhamento: <span className="font-semibold text-gray-700">{formatarData(modalCoordenador.coordenador.ultimoAcompanhamento)}</span>
+                {modalCoordenador.coordenador.distritoMaisVisitado && (
+                  <span> - Distrito mais visitado: <span className="font-semibold text-gray-700">{modalCoordenador.coordenador.distritoMaisVisitado.nome}</span></span>
+                )}
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {(modalCoordenador.coordenador.assistencias || []).map((assistencia) => (
+                  <div key={assistencia.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[8rem_7rem_minmax(0,1fr)] lg:items-start">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
+                        <p className="font-bold text-[#1A3A6B]">{formatarData(assistencia.dataSaida)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
+                        <p className="text-2xl font-bold text-[#0d9488]">{numero(assistencia.totalDuplas)}</p>
+                      </div>
+                      <div className="min-w-0 overflow-hidden">
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
+                        <p className="mt-1 break-words text-sm leading-relaxed text-gray-600 [overflow-wrap:anywhere]">{assistencia.observacoes || 'Sem relato informado.'}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas acompanhadas</p>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {(assistencia.duplas || []).map((dupla) => (
+                          <button
+                            key={`${assistencia.id}-${dupla.id || dupla.nome}`}
+                            type="button"
+                            onClick={() => dupla.id && navigate(isDireto ? `/direto/duplas/${dupla.id}` : `/duplas/${dupla.id}`)}
+                            className="rounded-lg bg-[#F8FAFC] px-3 py-2 text-left transition hover:bg-[#F4F5F7]"
+                          >
+                            <p className="break-words text-sm font-bold text-[#1A3A6B]">{dupla.nome}</p>
+                            <p className="text-xs text-gray-400">{dupla.distrito || dupla.bairro || 'Sem local informado'}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {(modalCoordenador.coordenador.assistencias || []).length === 0 && (
+                  <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
+                    Nenhuma assistencia registrada para este coordenador.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-gray-100 bg-[#F8FAFC] p-4">
+              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalCoordenador(null)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
