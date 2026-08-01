@@ -182,7 +182,7 @@ export default function RelatorioRankingDecisoes() {
               Batismos e Decisoes
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Batismos registrados pelas duplas e estudantes classificados por decisao nos estudos biblicos.
+              Batismos informados no cadastro da dupla e estudantes classificados por decisao nos estudos biblicos.
             </p>
           </div>
           <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(baseRelatorio)}>Voltar</button>
@@ -196,7 +196,7 @@ export default function RelatorioRankingDecisoes() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            ['Batismos registrados', resumo.batismosRegistrados, '#0d9488'],
+            ['Batismos informados', resumo.batismosRegistrados, '#0d9488'],
             ['Decisoes Classe A', resumo.decisoesClasseA, '#047857'],
             ['Aguardando confirmacao', resumo.aguardandoConfirmacao, '#C9963A'],
             ['Progresso medio', `${resumo.media}%`, '#1A3A6B'],
@@ -211,8 +211,8 @@ export default function RelatorioRankingDecisoes() {
         <section className="card overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos registrados pelas duplas</h2>
-              <p className="text-sm text-gray-400">Lista baseada no campo de batismos informado no cadastro/acompanhamento da dupla.</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos informados pelas duplas</h2>
+              <p className="text-sm text-gray-400">Este numero vem do campo Batismos do cadastro da dupla. Ele ainda nao identifica nominalmente quais alunos foram batizados.</p>
             </div>
             <span className="text-sm font-bold text-[#0d9488] bg-[#0d9488]/10 rounded-lg px-3 py-2">
               {resumo.batismosRegistrados} batismos
@@ -245,7 +245,7 @@ export default function RelatorioRankingDecisoes() {
             ))}
             {batismosPorDupla.length === 0 && (
               <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
-                Nenhuma dupla com batismo registrado.
+                Nenhuma dupla com batismo informado.
               </div>
             )}
           </div>
@@ -295,7 +295,7 @@ export default function RelatorioRankingDecisoes() {
                 {batismosPorDupla.length === 0 && (
                   <tr>
                     <td className="px-4 py-10 text-center text-gray-400" colSpan="6">
-                      Nenhuma dupla com batismo registrado.
+                      Nenhuma dupla com batismo informado.
                     </td>
                   </tr>
                 )}
@@ -308,7 +308,7 @@ export default function RelatorioRankingDecisoes() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisoes</h2>
-              <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo registrado, isso aparece como contexto da dupla.</p>
+              <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo informado, isso aparece como contexto da dupla.</p>
             </div>
             <span className="text-sm font-bold text-[#1A3A6B] bg-[#1A3A6B]/10 rounded-lg px-3 py-2">
               {ranking.length} estudantes
@@ -371,7 +371,7 @@ export default function RelatorioRankingDecisoes() {
                         {item.batismosDupla} batismo(s)
                       </button>
                     ) : (
-                      <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 xl:text-xs">Sem batismo registrado</p>
+                      <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 xl:text-xs">Sem batismo informado</p>
                     )}
                   </div>
                 </div>
@@ -398,7 +398,7 @@ export default function RelatorioRankingDecisoes() {
           >
             <div className="app-modal-header">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos registrados</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos informados</p>
                 <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {duplaModal.nome}
                 </h3>
@@ -420,7 +420,7 @@ export default function RelatorioRankingDecisoes() {
             <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-lg bg-[#0d9488]/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos informados</p>
                   <p className="mt-2 text-3xl font-bold text-[#0d9488]">{duplaModal.batismos}</p>
                 </div>
                 <div className="rounded-lg bg-[#1A3A6B]/10 p-4">
@@ -433,12 +433,12 @@ export default function RelatorioRankingDecisoes() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                O sistema registra a quantidade de batismos na dupla. Quando existe nome abaixo, ele vem dos estudantes Classe A vinculados a esta dupla e deve ser usado como referencia pastoral.
+              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+                Origem do numero: campo Batismos no cadastro/acompanhamento da dupla. O sistema ainda nao registra qual aluno foi batizado; os nomes abaixo sao apenas estudantes Classe A vinculados a esta dupla e servem como referencia pastoral.
               </div>
 
               <div className="mt-5">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Possiveis nomes vinculados</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Estudantes Classe A vinculados</h4>
                 {estudantesClasseADaDupla.length > 0 ? (
                   <div className="mt-3 grid gap-3">
                     {estudantesClasseADaDupla.map((estudante) => (
@@ -461,7 +461,7 @@ export default function RelatorioRankingDecisoes() {
                   </div>
                 ) : (
                   <div className="mt-3 rounded-lg bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
-                    Nao ha estudante Classe A vinculado a esta dupla nesta lista.
+                    Nao ha estudante Classe A vinculado a esta dupla nesta lista. O numero de batismos foi informado sem nomes individuais.
                   </div>
                 )}
               </div>
