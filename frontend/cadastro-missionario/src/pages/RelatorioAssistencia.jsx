@@ -51,11 +51,12 @@ export default function RelatorioAssistencia() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [filtros, setFiltros] = useState({
-    de: primeiroDiaDoMes(),
-    ate: hojeISO(),
+    de: '',
+    ate: '',
     coordenadorId: '',
   });
   const [registroSelecionado, setRegistroSelecionado] = useState(null);
+  const [modalRegistrosAberto, setModalRegistrosAberto] = useState(false);
 
   useEffect(() => {
     api.get('/acompanhamentos/coordenadores')
@@ -125,6 +126,7 @@ export default function RelatorioAssistencia() {
   }, [dados, saidas]);
 
   const limparFiltros = () => setFiltros({ de: '', ate: '', coordenadorId: '' });
+  const filtrarMesAtual = () => setFiltros({ de: primeiroDiaDoMes(), ate: hojeISO(), coordenadorId: filtros.coordenadorId });
 
   if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistencia..." />;
 
@@ -143,9 +145,14 @@ export default function RelatorioAssistencia() {
             </h1>
             <p className="text-gray-400 text-sm mt-1">Indicadores, historico e detalhes dos acompanhamentos realizados pelos coordenadores regionais.</p>
           </div>
-          <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/registro-saida`)}>
-            Registrar nova assistencia
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
+              Relatorio regional
+            </button>
+            <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/registro-saida`)}>
+              Registrar nova assistencia
+            </button>
+          </div>
         </div>
       </div>
 
@@ -153,7 +160,7 @@ export default function RelatorioAssistencia() {
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
         <section className="card">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_1.2fr_auto_auto] lg:items-end">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_1.2fr_auto_auto_auto] xl:items-end">
             <label>
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">De</span>
               <input type="date" className="input-field" value={filtros.de} onChange={(event) => setFiltros((atual) => ({ ...atual, de: event.target.value }))} />
@@ -174,6 +181,7 @@ export default function RelatorioAssistencia() {
               </select>
             </label>
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={limparFiltros}>Limpar</button>
+            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={filtrarMesAtual}>Mes atual</button>
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setFiltros((atual) => ({ ...atual }))}>Atualizar</button>
           </div>
         </section>
@@ -192,11 +200,16 @@ export default function RelatorioAssistencia() {
                 <h2 className="text-lg font-bold text-[#1A3A6B]">Historico de assistencias</h2>
                 <p className="text-sm text-gray-400">Clique em uma saida para ver as duplas acompanhadas e o relato.</p>
               </div>
-              <span className="rounded-lg bg-[#1A3A6B]/10 px-3 py-2 text-sm font-bold text-[#1A3A6B]">{numero(saidas.length)} registros</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-[#1A3A6B]/10 px-3 py-2 text-sm font-bold text-[#1A3A6B]">{numero(saidas.length)} registros</span>
+                <button type="button" className="btn-outline px-3 py-2 text-sm" onClick={() => setModalRegistrosAberto(true)}>
+                  Ver todos os registros
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              {saidas.map((saida) => (
+              {saidas.slice(0, 6).map((saida) => (
                 <button
                   key={saida.id}
                   type="button"
@@ -223,6 +236,12 @@ export default function RelatorioAssistencia() {
                   </div>
                 </button>
               ))}
+
+              {saidas.length > 6 && (
+                <button type="button" onClick={() => setModalRegistrosAberto(true)} className="rounded-xl border border-dashed border-[#1A3A6B]/25 bg-[#F8FAFC] px-4 py-4 text-center text-sm font-bold text-[#1A3A6B] transition hover:border-[#C9963A]/50 hover:bg-white">
+                  Abrir lista completa com {numero(saidas.length)} registros
+                </button>
+              )}
 
               {saidas.length === 0 && (
                 <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
@@ -273,6 +292,80 @@ export default function RelatorioAssistencia() {
           </div>
         </section>
       </div>
+
+      {modalRegistrosAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setModalRegistrosAberto(false)}>
+          <div className="w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex flex-col gap-3 border-b border-gray-100 bg-[#F8FAFC] p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Registros de assistencia</p>
+                <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+                  Todos os acompanhamentos
+                </h3>
+                <p className="mt-1 text-sm text-gray-400">{numero(saidas.length)} registro{saidas.length === 1 ? '' : 's'} no periodo selecionado.</p>
+              </div>
+              <button type="button" onClick={() => setModalRegistrosAberto(false)} className="flex h-11 w-11 items-center justify-center self-end rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-[#1A3A6B] sm:self-auto" aria-label="Fechar">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-[72vh] overflow-y-auto p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3">
+                {saidas.map((saida) => (
+                  <button
+                    key={`modal-${saida.id}`}
+                    type="button"
+                    onClick={() => {
+                      setModalRegistrosAberto(false);
+                      setRegistroSelecionado(saida);
+                    }}
+                    className="rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40 hover:shadow-md"
+                  >
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[8rem_minmax(12rem,1fr)_7rem_minmax(10rem,1fr)_minmax(14rem,1.2fr)] lg:items-center">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
+                        <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</p>
+                        <p className="break-words font-semibold text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
+                        <p className="text-2xl font-bold text-[#0d9488]">{numero(saida.duplas?.length || 0)}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Semana</p>
+                        <p className="font-semibold text-gray-600">{formatarData(saida.semanaInicio)}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
+                        <p className="line-clamp-2 break-words text-sm text-gray-500">{saida.observacoes || 'Sem relato informado.'}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+
+                {saidas.length === 0 && (
+                  <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
+                    Nenhuma assistencia encontrada para os filtros selecionados.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 bg-[#F8FAFC] p-4">
+              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
+                Relatorio regional
+              </button>
+              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalRegistrosAberto(false)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {registroSelecionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setRegistroSelecionado(null)}>

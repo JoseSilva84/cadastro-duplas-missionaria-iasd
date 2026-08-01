@@ -1,6 +1,7 @@
 // Controller de Acompanhamento do Coordenador Regional
 const prisma = require('../lib/prisma');
 const { body, validationResult } = require('express-validator');
+const { ehAdmin } = require('../middlewares/auth');
 
 const validarAcompanhamento = [
   body('dataSaida').notEmpty().withMessage('Data da saída obrigatória.'),
@@ -18,7 +19,7 @@ const AcompanhamentoController = {
       const { dataSaida, observacoes, duplaIds } = req.body;
       const coordenadorId = Number(req.body.coordenadorId);
 
-      if (req.usuario.perfil !== 'ADMINISTRADOR' && coordenadorId !== req.usuario.id) {
+      if (!ehAdmin(req.usuario.perfil) && coordenadorId !== req.usuario.id) {
         return res.status(403).json({ erro: 'Você só pode registrar acompanhamento para seu próprio usuário.' });
       }
 
@@ -76,7 +77,7 @@ const AcompanhamentoController = {
         ativo: true,
       };
 
-      if (req.usuario.perfil !== 'ADMINISTRADOR') {
+      if (!ehAdmin(req.usuario.perfil)) {
         where.id = req.usuario.id;
       }
 
@@ -105,7 +106,7 @@ const AcompanhamentoController = {
       const where = {};
 
       // Coordenadores só veem os próprios; admins veem todos
-      if (req.usuario.perfil !== 'ADMINISTRADOR') {
+      if (!ehAdmin(req.usuario.perfil)) {
         where.coordenadorId = req.usuario.id;
       } else if (coordenadorId) {
         where.coordenadorId = Number(coordenadorId);
@@ -164,7 +165,7 @@ const AcompanhamentoController = {
       const { coordenadorId, de, ate } = req.query;
       const where = {};
 
-      if (req.usuario.perfil !== 'ADMINISTRADOR') {
+      if (!ehAdmin(req.usuario.perfil)) {
         where.coordenadorId = req.usuario.id;
       } else if (coordenadorId) {
         where.coordenadorId = Number(coordenadorId);
