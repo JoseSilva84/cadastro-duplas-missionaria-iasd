@@ -404,7 +404,7 @@ export default function Alunos() {
                       </div>
                       <button
                         type="button"
-                        className="mt-2 text-xs font-bold text-[#1A3A6B] underline-offset-4 hover:text-[#C9963A] hover:underline"
+                        className="mt-3 inline-flex items-center justify-center rounded-lg border border-[#1A3A6B]/25 bg-white px-3 py-2 text-xs font-bold text-[#1A3A6B] shadow-sm transition hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#C9963A]/35"
                         onClick={() => abrirAtualizacao(aluno)}
                       >
                         Atualizar estudo
