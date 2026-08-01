@@ -393,12 +393,14 @@ export default function Alunos() {
                     </div>
 
                     <div className="min-w-0">
-                      <div className="mb-1 flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
-                        <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+                      <div className="md:max-w-28 lg:max-w-32 xl:max-w-none">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
+                          <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-100">
+                          <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+                        </div>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <span className="text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</span>
