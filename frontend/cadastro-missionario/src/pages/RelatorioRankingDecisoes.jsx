@@ -317,48 +317,48 @@ export default function RelatorioRankingDecisoes() {
 
           <div className="grid grid-cols-1 gap-3">
             {ranking.map((item, index) => (
-              <article key={item.id} className="rounded-xl border border-gray-100 bg-white p-4 transition hover:border-[#C9963A]/40 hover:shadow-sm">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-[4rem_minmax(0,1fr)_8rem] xl:grid-cols-[4rem_minmax(12rem,1.2fr)_9rem_minmax(12rem,1fr)_minmax(12rem,1.2fr)_minmax(10rem,1fr)] xl:items-center">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Pos.</p>
-                    <p className="text-lg font-bold text-[#C9963A]">#{index + 1}</p>
+              <article key={item.id} className="rounded-xl border border-gray-100 bg-white p-3 transition hover:border-[#C9963A]/40 hover:shadow-sm sm:p-3.5">
+                <div className="grid grid-cols-1 gap-3 md:flex md:items-center md:gap-3">
+                  <div className="min-w-0 md:w-10 md:flex-none">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Pos.</p>
+                    <p className="text-base font-bold leading-tight text-[#C9963A] md:text-sm">#{index + 1}</p>
                   </div>
 
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Estudante</p>
-                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{item.nome}</p>
-                    <p className="mt-1 text-xs text-gray-400">{tipoLabel[item.tipoEstudo] || item.tipoEstudo}</p>
+                  <div className="min-w-0 md:flex-[1.2]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Estudante</p>
+                    <p className="break-words text-sm font-bold leading-snug text-[#1A3A6B] md:text-[11px] xl:text-sm">{item.nome}</p>
+                    <p className="mt-0.5 text-xs leading-tight text-gray-400 md:text-[10px] xl:text-xs">{tipoLabel[item.tipoEstudo] || item.tipoEstudo}</p>
                   </div>
 
-                  <div className="min-w-0">
-                    <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
+                  <div className="min-w-0 md:w-20 md:flex-none">
+                    <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-gray-400">Classe</p>
                     <BadgeClasse classe={item.classificacao} />
                   </div>
 
-                  <div>
+                  <div className="min-w-0 md:flex-[1.05]">
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
-                      <span className="text-xs font-bold text-gray-600">{item.progresso}%</span>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Progresso</p>
+                      <span className="text-[10px] font-bold text-gray-600">{item.progresso}%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-gray-100">
+                    <div className="h-1.5 rounded-full bg-gray-100">
                       <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${item.progresso}%` }} />
                     </div>
-                    <p className="mt-2 text-xs font-medium text-gray-500">{getSerieNome(item.serie)} - {getLicaoLabel(item.serie, item.licaoAtual)}</p>
+                    <p className="mt-1 text-xs font-medium leading-tight text-gray-500 md:text-[10px] xl:text-xs">{getSerieNome(item.serie)} - {getLicaoLabel(item.serie, item.licaoAtual)}</p>
                   </div>
 
-                  <div className="min-w-0 md:col-span-2 xl:col-span-1">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local</p>
-                    <p className="break-words text-sm font-semibold text-gray-700">{item.igreja}</p>
-                    <p className="text-xs text-gray-400">{item.distrito}</p>
+                  <div className="min-w-0 md:flex-[0.95]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Local</p>
+                    <p className="break-words text-sm font-semibold leading-snug text-gray-700 md:text-[11px] xl:text-sm">{item.igreja}</p>
+                    <p className="text-xs leading-tight text-gray-400 md:text-[10px] xl:text-xs">{item.distrito}</p>
                   </div>
 
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Dupla</p>
-                    <p className="break-words text-sm font-semibold text-gray-700">{item.dupla}</p>
+                  <div className="min-w-0 md:flex-[1.15]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Dupla</p>
+                    <p className="break-words text-sm font-semibold leading-snug text-gray-700 md:text-[10px] xl:text-sm">{item.dupla}</p>
                     {item.batismosDupla > 0 ? (
                       <button
                         type="button"
-                        className="mt-2 inline-flex rounded-full bg-[#0d9488]/10 px-2.5 py-1 text-xs font-bold text-[#0d9488]"
+                        className="mt-1.5 inline-flex rounded-full bg-[#0d9488]/10 px-2 py-0.5 text-[10px] font-bold text-[#0d9488] xl:text-xs"
                         onClick={() => setDuplaModal(batismosPorDupla.find((dupla) => String(dupla.id) === String(item.duplaId)) || {
                           id: item.duplaId,
                           nome: item.dupla,
@@ -371,7 +371,7 @@ export default function RelatorioRankingDecisoes() {
                         {item.batismosDupla} batismo(s)
                       </button>
                     ) : (
-                      <p className="mt-2 text-xs font-medium text-gray-400">Sem batismo registrado</p>
+                      <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 xl:text-xs">Sem batismo registrado</p>
                     )}
                   </div>
                 </div>
