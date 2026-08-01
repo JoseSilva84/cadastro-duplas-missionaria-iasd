@@ -425,7 +425,7 @@ export default function Alunos() {
                     </div>
                   </div>
 
-                  <div className="flex md:justify-end md:self-end md:pt-8 lg:pt-10 xl:pt-0">
+                  <div className="flex md:justify-end md:self-end md:pt-16 lg:pt-20 xl:pt-0">
                     <div className="w-full space-y-2 md:w-32 xl:w-40">
                       <button type="button" className="btn-outline w-full px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
                         Detalhes

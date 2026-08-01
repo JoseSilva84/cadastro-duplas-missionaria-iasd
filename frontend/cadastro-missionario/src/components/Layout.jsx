@@ -399,10 +399,34 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             </NavLink>
           );
         })}
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
+                {usuario?.nome?.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
+                <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
+              </div>
+            </div>
+            {usuario?.regiao && (
+              <p className="text-[#C9963A] text-xs mt-2 pl-10">{usuario.regiao.nome}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="sidebar-link w-full text-red-300/80 hover:text-red-200 hover:bg-red-500/15"
+          >
+            {icons.logout}
+            Sair do sistema
+          </button>
+        </div>
       </nav>
 
       {/* Usuário */}
-      <div className="flex-shrink-0 border-t border-white/10 bg-[#162d54]/40 px-2 py-2 backdrop-blur-sm xl:px-3 xl:py-4">
+      <div className="hidden">
         {/* Usuário logado */}
         <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:mb-3 xl:p-3">
           <div className="flex items-center gap-2.5">
