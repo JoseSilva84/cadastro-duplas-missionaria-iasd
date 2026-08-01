@@ -8,6 +8,15 @@ const percentual = (valor, total) => (total > 0 ? Math.round((Number(valor || 0)
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const totalBatismosEncerrados = (estudos = []) => estudos
+  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+  .reduce((acc, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
+      return acc + estudo.participantes.length;
+    }
+    return acc + 1;
+  }, 0);
 const normalizarStatus = (valor) => String(valor || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -200,15 +209,18 @@ export default function Dashboard() {
   const prefix = isDireto ? '/direto' : '';
   const [dados, setDados] = useState(null);
   const [duplas, setDuplas] = useState([]);
+  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get('/relatorios/dashboard-associacao'),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       api.get('/duplas'),
     ])
-      .then(([dashboardRes, duplasRes]) => {
+      .then(([dashboardRes, encerradosRes, duplasRes]) => {
         setDados(dashboardRes.data);
+        setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
         setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
       })
       .finally(() => setCarregando(false));
@@ -220,6 +232,7 @@ export default function Dashboard() {
   const indicadores = dashboardDuplas.indicadoresGerais || [];
   const totalDuplas = dashboardDuplas.totalDuplas || duplas.length;
   const valorIndicador = (nome) => indicadores.find((item) => item.nome === nome)?.valor || 0;
+  const batismosConfirmados = useMemo(() => totalBatismosEncerrados(estudosEncerrados), [estudosEncerrados]);
 
   const medalhas = useMemo(() => {
     const base = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
@@ -271,7 +284,7 @@ export default function Dashboard() {
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Registros de estudos" value={valorIndicador('Estudos')} detail="Individuais, pontos e classes" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
           <MetricCard label="Visitação" value={comVisitacao} detail="Resumo das assistências/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
-          <MetricCard label="Batismos" value={valorIndicador('Batismos')} detail="Batismos registrados pelas duplas" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
+          <MetricCard label="Batismos" value={batismosConfirmados} detail="Encerramentos marcados como batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
         </div>
       </Section>
 

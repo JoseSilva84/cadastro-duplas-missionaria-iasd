@@ -120,6 +120,15 @@ const indicadorConfig = {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const totalBatismosEncerrados = (estudos = []) => estudos
+  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+  .reduce((acc, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
+      return acc + estudo.participantes.length;
+    }
+    return acc + 1;
+  }, 0);
 const normalizarStatus = (valor) => String(valor || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -360,10 +369,11 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
   );
 };
 
-const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navigate }) => {
+const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navigate, estudosEncerrados }) => {
   const totalEstudos = duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
   const totalClasses = duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
-  const totalBatismos = duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0);
+  const duplasVisiveis = new Set(duplas.map((dupla) => String(dupla.id)));
+  const totalBatismos = totalBatismosEncerrados(estudosEncerrados.filter((estudo) => duplasVisiveis.has(String(estudo.dupla?.id || estudo.duplaId))));
 
   const cards = [
     { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
@@ -528,6 +538,7 @@ export default function DuplasDireto() {
   const { usuario } = useAuth();
   const podeExcluir = podeExcluirDuplas(usuario);
   const [duplas, setDuplas] = useState([]);
+  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
@@ -639,18 +650,21 @@ export default function DuplasDireto() {
     setCarregando(true);
     Promise.all([
       api.get('/duplas', { params: { distritoId } }),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       distritoId ? api.get(`/distritos/${distritoId}`).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
-    ]).then(async ([d, distritoRes]) => {
+    ]).then(async ([d, encerradosRes, distritoRes]) => {
       if (!ativo) return;
       const lista = Array.isArray(d.data) ? d.data : [];
       const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
       if (ativo) {
         setDuplas(listaComFotos);
+        setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
         setDistritoAtual(distritoId ? (distritoRes.data || lista[0]?.distrito || null) : null);
       }
     }).catch(() => {
       if (ativo) {
         setDuplas([]);
+        setEstudosEncerrados([]);
         setDistritoAtual(null);
       }
     }).finally(() => {
@@ -767,6 +781,7 @@ export default function DuplasDireto() {
         distritoId={distritoId}
         distrito={distritoAtual}
         navigate={navigate}
+        estudosEncerrados={estudosEncerrados}
       />
     )}
     <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 sm:px-10 lg:px-16 xl:px-24 2xl:px-32' : 'animate-fade-in'} bg-transparent`}>

@@ -584,7 +584,7 @@ export default function Cadastro() {
                   <input type="number" className="input-field" min="0" value={form.metaEstudosBiblicos} onChange={(e) => set('metaEstudosBiblicos', e.target.value)} />
                 </Campo>
 
-                <Campo label="Batismos Alcançados" icone="💧">
+                <Campo label="Batismos Alcançados no passado" icone="💧">
                   <input type="number" className="input-field" min="0" placeholder="0" value={form.batismos} onChange={(e) => set('batismos', e.target.value)} />
                 </Campo>
               </div>

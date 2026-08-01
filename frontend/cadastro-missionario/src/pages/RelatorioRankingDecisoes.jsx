@@ -31,6 +31,7 @@ const nomeDupla = (dupla) => {
 };
 
 const batismosDaDupla = (dupla) => Number(dupla?.batismos || 0);
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 
@@ -57,6 +58,7 @@ export default function RelatorioRankingDecisoes() {
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
   const [dados, setDados] = useState({ estudos: [] });
+  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [duplas, setDuplas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -66,11 +68,13 @@ export default function RelatorioRankingDecisoes() {
     let ativo = true;
     Promise.all([
       api.get('/relatorios/estudos-biblicos'),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       api.get('/duplas'),
     ])
-      .then(([relatorioRes, duplasRes]) => {
+      .then(([relatorioRes, encerradosRes, duplasRes]) => {
         if (!ativo) return;
         setDados(relatorioRes.data || { estudos: [] });
+        setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
         setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
       })
       .catch((err) => {
@@ -95,6 +99,57 @@ export default function RelatorioRankingDecisoes() {
       }))
       .sort((a, b) => b.batismos - a.batismos || a.nome.localeCompare(b.nome))
   ), [duplas]);
+
+  const batismosReaisPorDupla = useMemo(() => {
+    const duplasPorId = new Map(duplas.map((dupla) => [String(dupla.id), dupla]));
+    const mapa = new Map();
+
+    estudosEncerrados
+      .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+      .forEach((estudo) => {
+        const duplaCompleta = duplasPorId.get(String(estudo.dupla?.id || estudo.duplaId)) || estudo.dupla;
+        const duplaId = duplaCompleta?.id || estudo.dupla?.id || estudo.duplaId;
+        if (!duplaId) return;
+
+        const alunos = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0
+          ? estudo.participantes.map((participante) => ({
+            id: `${estudo.id}-${participante.id}`,
+            nome: participante.nome || 'Sem nome',
+            classificacao: participante.classificacaoInteressado || 'SEM',
+            tipoEstudo: estudo.tipoEstudo || 'UNICO',
+            serie: estudo.serie,
+            encerradoEm: estudo.encerradoEm,
+            estudoId: estudo.id,
+          }))
+          : [{
+            id: String(estudo.id),
+            nome: estudo.nomeEstudante || 'Sem nome',
+            classificacao: estudo.classificacaoInteressado || 'SEM',
+            tipoEstudo: estudo.tipoEstudo || 'UNICO',
+            serie: estudo.serie,
+            encerradoEm: estudo.encerradoEm,
+            estudoId: estudo.id,
+          }];
+
+        if (!mapa.has(String(duplaId))) {
+          mapa.set(String(duplaId), {
+            id: duplaId,
+            nome: nomeDupla(duplaCompleta),
+            batismos: 0,
+            igreja: duplaCompleta?.igreja?.nome || estudo.dupla?.igreja?.nome || 'Sem igreja',
+            distrito: duplaCompleta?.distrito?.nome || estudo.dupla?.distrito?.nome || 'Sem distrito',
+            regiao: duplaCompleta?.distrito?.regiao?.nome || estudo.dupla?.distrito?.regiao?.nome || duplaCompleta?.regiaoNome || 'Sem regiao',
+            alunos: [],
+          });
+        }
+
+        const item = mapa.get(String(duplaId));
+        item.batismos += alunos.length;
+        item.alunos.push(...alunos);
+      });
+
+    return [...mapa.values()].sort((a, b) => b.batismos - a.batismos || a.nome.localeCompare(b.nome));
+  }, [duplas, estudosEncerrados]);
 
   const ranking = useMemo(() => {
     const duplasPorId = new Map(duplas.map((dupla) => [String(dupla.id), dupla]));
@@ -144,18 +199,20 @@ export default function RelatorioRankingDecisoes() {
   const resumo = useMemo(() => {
     const classificados = ranking.filter((item) => ['A', 'B', 'C'].includes(item.classificacao));
     const decisoesClasseA = ranking.filter((item) => item.classificacao === 'A').length;
-    const batismosRegistrados = batismosPorDupla.reduce((acc, dupla) => acc + dupla.batismos, 0);
+    const batismosReais = batismosReaisPorDupla.reduce((acc, dupla) => acc + dupla.batismos, 0);
+    const batismosPassados = batismosPorDupla.reduce((acc, dupla) => acc + dupla.batismos, 0);
     const media = classificados.length
       ? Math.round(classificados.reduce((acc, item) => acc + item.progresso, 0) / classificados.length)
       : 0;
 
     return {
-      batismosRegistrados,
+      batismosReais,
+      batismosPassados,
       decisoesClasseA,
-      aguardandoConfirmacao: Math.max(decisoesClasseA - batismosRegistrados, 0),
+      aguardandoConfirmacao: Math.max(decisoesClasseA - batismosReais, 0),
       media,
     };
-  }, [ranking, batismosPorDupla]);
+  }, [ranking, batismosPorDupla, batismosReaisPorDupla]);
 
   const baseRelatorio = isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral';
   const prefix = isDireto ? '/direto' : '';
@@ -165,6 +222,10 @@ export default function RelatorioRankingDecisoes() {
       String(item.duplaId) === String(duplaModal.id) && item.classificacao === 'A'
     ));
   }, [duplaModal, ranking]);
+  const alunosBatizadosDaDupla = duplaModal?.tipo === 'real' && Array.isArray(duplaModal.alunos) ? duplaModal.alunos : [];
+  const batismosReaisPorDuplaId = useMemo(() => new Map(
+    batismosReaisPorDupla.map((dupla) => [String(dupla.id), dupla])
+  ), [batismosReaisPorDupla]);
 
   if (carregando) return <LoadingState mensagem="Carregando relatorio..." />;
 
@@ -182,7 +243,7 @@ export default function RelatorioRankingDecisoes() {
               Batismos e Decisoes
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Batismos informados no cadastro da dupla e estudantes classificados por decisao nos estudos biblicos.
+              Batismos confirmados pelo encerramento dos estudos e experiencia passada informada pelas duplas.
             </p>
           </div>
           <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(baseRelatorio)}>Voltar</button>
@@ -196,7 +257,7 @@ export default function RelatorioRankingDecisoes() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            ['Batismos informados', resumo.batismosRegistrados, '#0d9488'],
+            ['Batismo da dupla', resumo.batismosReais, '#0d9488'],
             ['Decisoes Classe A', resumo.decisoesClasseA, '#047857'],
             ['Aguardando confirmacao', resumo.aguardandoConfirmacao, '#C9963A'],
             ['Progresso medio', `${resumo.media}%`, '#1A3A6B'],
@@ -211,11 +272,107 @@ export default function RelatorioRankingDecisoes() {
         <section className="card overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos informados pelas duplas</h2>
-              <p className="text-sm text-gray-400">Este numero vem do campo Batismos do cadastro da dupla. Ele ainda nao identifica nominalmente quais alunos foram batizados.</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos das duplas</h2>
+              <p className="text-sm text-gray-400">Contagem baseada nos estudos encerrados com motivo Batismo.</p>
             </div>
             <span className="text-sm font-bold text-[#0d9488] bg-[#0d9488]/10 rounded-lg px-3 py-2">
-              {resumo.batismosRegistrados} batismos
+              {resumo.batismosReais} batismos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 xl:hidden">
+            {batismosReaisPorDupla.map((dupla) => (
+              <button
+                key={dupla.id}
+                type="button"
+                onClick={() => setDuplaModal({ ...dupla, tipo: 'real' })}
+                className="rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
+              >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Dupla</p>
+                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{dupla.nome}</p>
+                    <p className="mt-2 text-xs text-gray-500">{dupla.igreja}</p>
+                    <p className="text-xs text-gray-400">{dupla.distrito} - {dupla.regiao}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
+                    <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-3 py-1 text-sm font-bold text-[#0d9488]">
+                      {dupla.batismos} batismo{dupla.batismos === 1 ? '' : 's'}
+                    </span>
+                    <span className="btn-outline px-3 py-2 text-xs">Detalhes</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {batismosReaisPorDupla.length === 0 && (
+              <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
+                Nenhuma dupla com batismo confirmado pelo encerramento de estudo.
+              </div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto xl:block">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className="bg-[#F4F5F7] text-gray-500">
+                  <th className="px-4 py-3 text-left">Dupla</th>
+                  <th className="px-4 py-3 text-left">Batismos</th>
+                  <th className="px-4 py-3 text-left">Igreja</th>
+                  <th className="px-4 py-3 text-left">Distrito</th>
+                  <th className="px-4 py-3 text-left">Regiao</th>
+                  <th className="px-4 py-3 text-left">Acao</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batismosReaisPorDupla.map((dupla) => (
+                  <tr
+                    key={dupla.id}
+                    className="cursor-pointer border-b border-gray-50 hover:bg-[#F4F5F7]"
+                    onClick={() => setDuplaModal({ ...dupla, tipo: 'real' })}
+                  >
+                    <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{dupla.nome}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-[#0d9488]/10 px-3 py-1 text-sm font-bold text-[#0d9488]">
+                        {dupla.batismos}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.igreja}</td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.distrito}</td>
+                    <td className="px-4 py-3 text-gray-600">{dupla.regiao}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        className="btn-outline px-3 py-2 text-xs"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDuplaModal({ ...dupla, tipo: 'real' });
+                        }}
+                      >
+                        Detalhes
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {batismosReaisPorDupla.length === 0 && (
+                  <tr>
+                    <td className="px-4 py-10 text-center text-gray-400" colSpan="6">
+                      Nenhuma dupla com batismo confirmado pelo encerramento de estudo.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="card overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Experiência de Batismos pelas duplas no passado</h2>
+              <p className="text-sm text-gray-400">Lista baseada no campo Batismos Alcançados no passado, preenchido no cadastro da dupla.</p>
+            </div>
+            <span className="text-sm font-bold text-[#0d9488] bg-[#0d9488]/10 rounded-lg px-3 py-2">
+              {resumo.batismosPassados} batismos
             </span>
           </div>
 
@@ -224,7 +381,7 @@ export default function RelatorioRankingDecisoes() {
               <button
                 key={dupla.id}
                 type="button"
-                onClick={() => setDuplaModal(dupla)}
+                onClick={() => setDuplaModal({ ...dupla, tipo: 'historico' })}
                 className="rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
               >
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start">
@@ -245,7 +402,7 @@ export default function RelatorioRankingDecisoes() {
             ))}
             {batismosPorDupla.length === 0 && (
               <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
-                Nenhuma dupla com batismo informado.
+                Nenhuma dupla com experiência de batismo no passado.
               </div>
             )}
           </div>
@@ -267,7 +424,7 @@ export default function RelatorioRankingDecisoes() {
                   <tr
                     key={dupla.id}
                     className="cursor-pointer border-b border-gray-50 hover:bg-[#F4F5F7]"
-                    onClick={() => setDuplaModal(dupla)}
+                    onClick={() => setDuplaModal({ ...dupla, tipo: 'historico' })}
                   >
                     <td className="px-4 py-3 font-semibold text-[#1A3A6B]">{dupla.nome}</td>
                     <td className="px-4 py-3">
@@ -284,7 +441,7 @@ export default function RelatorioRankingDecisoes() {
                         className="btn-outline px-3 py-2 text-xs"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setDuplaModal(dupla);
+                          setDuplaModal({ ...dupla, tipo: 'historico' });
                         }}
                       >
                         Detalhes
@@ -295,7 +452,7 @@ export default function RelatorioRankingDecisoes() {
                 {batismosPorDupla.length === 0 && (
                   <tr>
                     <td className="px-4 py-10 text-center text-gray-400" colSpan="6">
-                      Nenhuma dupla com batismo informado.
+                      Nenhuma dupla com experiência de batismo no passado.
                     </td>
                   </tr>
                 )}
@@ -308,7 +465,7 @@ export default function RelatorioRankingDecisoes() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-bold text-[#1A3A6B]">Ordem de decisoes</h2>
-              <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo informado, isso aparece como contexto da dupla.</p>
+              <p className="text-sm text-gray-400">Classe A primeiro. Quando a dupla possui batismo confirmado pelo encerramento do estudo, isso aparece como contexto da dupla.</p>
             </div>
             <span className="text-sm font-bold text-[#1A3A6B] bg-[#1A3A6B]/10 rounded-lg px-3 py-2">
               {ranking.length} estudantes
@@ -316,7 +473,10 @@ export default function RelatorioRankingDecisoes() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            {ranking.map((item, index) => (
+            {ranking.map((item, index) => {
+              const batismoRealDaDupla = batismosReaisPorDuplaId.get(String(item.duplaId));
+              const totalBatismosReaisDaDupla = batismoRealDaDupla?.batismos || 0;
+              return (
               <article key={item.id} className="rounded-xl border border-gray-100 bg-white p-3 transition hover:border-[#C9963A]/40 hover:shadow-sm sm:p-3.5">
                 <div className="grid grid-cols-1 gap-3 md:flex md:items-center md:gap-3">
                   <div className="min-w-0 md:w-10 md:flex-none">
@@ -355,28 +515,22 @@ export default function RelatorioRankingDecisoes() {
                   <div className="min-w-0 md:flex-[1.15]">
                     <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Dupla</p>
                     <p className="break-words text-sm font-semibold leading-snug text-gray-700 md:text-[10px] xl:text-sm">{item.dupla}</p>
-                    {item.batismosDupla > 0 ? (
+                    {totalBatismosReaisDaDupla > 0 ? (
                       <button
                         type="button"
                         className="mt-1.5 inline-flex rounded-full bg-[#0d9488]/10 px-2 py-0.5 text-[10px] font-bold text-[#0d9488] xl:text-xs"
-                        onClick={() => setDuplaModal(batismosPorDupla.find((dupla) => String(dupla.id) === String(item.duplaId)) || {
-                          id: item.duplaId,
-                          nome: item.dupla,
-                          batismos: item.batismosDupla,
-                          igreja: item.igreja,
-                          distrito: item.distrito,
-                          regiao: 'Sem regiao',
-                        })}
+                        onClick={() => setDuplaModal({ ...batismoRealDaDupla, tipo: 'real' })}
                       >
-                        {item.batismosDupla} batismo(s)
+                        {totalBatismosReaisDaDupla} batismo(s)
                       </button>
                     ) : (
-                      <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 xl:text-xs">Sem batismo informado</p>
+                      <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 xl:text-xs">Sem batismo confirmado</p>
                     )}
                   </div>
                 </div>
               </article>
-            ))}
+            );
+            })}
 
             {ranking.length === 0 && (
               <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
@@ -398,7 +552,9 @@ export default function RelatorioRankingDecisoes() {
           >
             <div className="app-modal-header">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos informados</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">
+                  {duplaModal.tipo === 'real' ? 'Batismos confirmados' : 'Experiencia passada'}
+                </p>
                 <h3 className="mt-1 break-words text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {duplaModal.nome}
                 </h3>
@@ -420,12 +576,18 @@ export default function RelatorioRankingDecisoes() {
             <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-lg bg-[#0d9488]/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">Batismos informados</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#0d9488]">
+                    {duplaModal.tipo === 'real' ? 'Batismos da dupla' : 'Batismos no passado'}
+                  </p>
                   <p className="mt-2 text-3xl font-bold text-[#0d9488]">{duplaModal.batismos}</p>
                 </div>
                 <div className="rounded-lg bg-[#1A3A6B]/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">Decisoes Classe A</p>
-                  <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">{estudantesClasseADaDupla.length}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">
+                    {duplaModal.tipo === 'real' ? 'Alunos listados' : 'Decisoes Classe A'}
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-[#1A3A6B]">
+                    {duplaModal.tipo === 'real' ? alunosBatizadosDaDupla.length : estudantesClasseADaDupla.length}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-[#C9963A]/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Regiao</p>
@@ -433,13 +595,46 @@ export default function RelatorioRankingDecisoes() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
-                Origem do numero: campo Batismos no cadastro/acompanhamento da dupla. O sistema ainda nao registra qual aluno foi batizado; os nomes abaixo sao apenas estudantes Classe A vinculados a esta dupla e servem como referencia pastoral.
-              </div>
+              {duplaModal.tipo === 'real' ? (
+                <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-800">
+                  Origem do numero: estudos encerrados com o motivo Batismo. Os nomes abaixo sao os alunos vinculados aos estudos encerrados dessa forma.
+                </div>
+              ) : (
+                <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+                  Origem do numero: campo Batismos Alcançados no passado no cadastro da dupla. Este registro e historico e nao identifica nominalmente quais alunos foram batizados.
+                </div>
+              )}
 
               <div className="mt-5">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Estudantes Classe A vinculados</h4>
-                {estudantesClasseADaDupla.length > 0 ? (
+                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                  {duplaModal.tipo === 'real' ? 'Alunos batizados' : 'Estudantes Classe A vinculados'}
+                </h4>
+                {duplaModal.tipo === 'real' ? (
+                  alunosBatizadosDaDupla.length > 0 ? (
+                    <div className="mt-3 grid gap-3">
+                      {alunosBatizadosDaDupla.map((aluno) => (
+                        <div key={aluno.id} className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="break-words text-sm font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                              <p className="mt-1 text-xs text-gray-400">{tipoLabel[aluno.tipoEstudo] || aluno.tipoEstudo} - {getSerieNome(aluno.serie)}</p>
+                              {aluno.encerradoEm && (
+                                <p className="mt-1 text-xs font-semibold text-emerald-700">
+                                  Encerrado em {new Date(aluno.encerradoEm).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                </p>
+                              )}
+                            </div>
+                            <BadgeClasse classe={aluno.classificacao} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-lg bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
+                      Nenhum aluno batizado encontrado para esta dupla.
+                    </div>
+                  )
+                ) : estudantesClasseADaDupla.length > 0 ? (
                   <div className="mt-3 grid gap-3">
                     {estudantesClasseADaDupla.map((estudante) => (
                       <div key={estudante.id} className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
@@ -461,7 +656,7 @@ export default function RelatorioRankingDecisoes() {
                   </div>
                 ) : (
                   <div className="mt-3 rounded-lg bg-[#F4F5F7] px-4 py-8 text-center text-sm text-gray-400">
-                    Nao ha estudante Classe A vinculado a esta dupla nesta lista. O numero de batismos foi informado sem nomes individuais.
+                    Nao ha estudante Classe A vinculado a esta dupla nesta lista. O numero historico foi informado sem nomes individuais.
                   </div>
                 )}
               </div>

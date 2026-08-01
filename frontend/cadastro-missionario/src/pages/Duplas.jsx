@@ -51,6 +51,15 @@ const medalhaConfig = {
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2, semAtividade: 3 };
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const totalBatismosEncerrados = (estudos = []) => estudos
+  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+  .reduce((acc, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
+      return acc + estudo.participantes.length;
+    }
+    return acc + 1;
+  }, 0);
 const normalizarStatus = (valor) => String(valor || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -211,6 +220,7 @@ export default function Duplas() {
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
   const [duplas, setDuplas] = useState([]);
+  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distrito, setDistrito] = useState(null);
   const [fotoPastorPreview, setFotoPastorPreview] = useState('');
   const [filtro, setFiltro] = useState('');
@@ -230,13 +240,15 @@ export default function Duplas() {
     let ativo = true;
     Promise.all([
       api.get('/duplas', { params: { distritoId } }),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       distritoId ? api.get(`/distritos/${distritoId}`) : Promise.resolve({ data: null }),
-    ]).then(async ([d, dist]) => {
+    ]).then(async ([d, encerradosRes, dist]) => {
       if (!ativo) return;
       const lista = Array.isArray(d.data) ? d.data : [];
       const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
       const fotoPastor = await FotoService.resolverFotoParaPreview(dist.data?.fotoPastor).catch(() => '');
       setDuplas(listaComFotos);
+      setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
       setDistrito(dist.data);
       if (ativo) setFotoPastorPreview(fotoPastor);
     }).finally(() => { setCarregando(false); });
@@ -311,6 +323,10 @@ export default function Duplas() {
     });
     return contagem;
   }, [duplas]);
+  const totalBatismosConfirmados = useMemo(() => {
+    const duplasVisiveis = new Set(duplas.map((dupla) => String(dupla.id)));
+    return totalBatismosEncerrados(estudosEncerrados.filter((estudo) => duplasVisiveis.has(String(estudo.dupla?.id || estudo.duplaId))));
+  }, [duplas, estudosEncerrados]);
 
   if (carregando) return <LoadingState mensagem="Carregando duplas..." />;
 
@@ -432,7 +448,7 @@ export default function Duplas() {
           ] : []),
           { label: 'Estudos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
           { label: 'Classe Bíblica', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
-          { label: 'Batismos', valor: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0), cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
+          { label: 'Batismos', valor: totalBatismosConfirmados, cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
         ].map((item, idx) => (
           <div key={idx} className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-all duration-300">
             <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl shadow-md mb-2 group-hover:scale-110 transition-transform`}>
