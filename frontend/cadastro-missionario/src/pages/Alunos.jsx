@@ -361,7 +361,7 @@ export default function Alunos() {
               return (
               <article
                 key={aluno.id}
-                className="overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                className="overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md focus-within:bg-[#F8FAFC] active:bg-[#EEF4FB]"
                 style={{
                   borderColor: bordaClasse || '#f3f4f6',
                   boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}22, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
