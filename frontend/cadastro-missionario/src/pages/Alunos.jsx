@@ -367,8 +367,8 @@ export default function Alunos() {
                   boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}22, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
                 }}
               >
-                <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_9rem] xl:items-center">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)] xl:items-center">
+                <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_9rem] lg:items-center">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)] lg:items-center">
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
                       <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
@@ -419,8 +419,8 @@ export default function Alunos() {
                     </div>
                   </div>
 
-                  <div className="flex xl:justify-end">
-                    <div className="w-full space-y-2 xl:w-40">
+                  <div className="flex lg:justify-end">
+                    <div className="w-full space-y-2 lg:w-40">
                       <button type="button" className="btn-outline w-full px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
                         Detalhes
                       </button>
