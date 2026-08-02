@@ -16,7 +16,11 @@ const DuplaModel = {
         },
         _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
       },
-      orderBy: { criadoEm: 'desc' },
+      orderBy: [
+        { liderNome: 'asc' },
+        { membro2Nome: 'asc' },
+        { criadoEm: 'desc' },
+      ],
     });
   },
 

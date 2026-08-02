@@ -49,6 +49,13 @@ const medalhaConfig = {
 };
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2, semAtividade: 3 };
+const compararDuplasPorPrimeiroMembro = (a, b) => {
+  const liderA = a?.liderNome || '';
+  const liderB = b?.liderNome || '';
+  const porLider = liderA.localeCompare(liderB, 'pt-BR', { sensitivity: 'base' });
+  if (porLider !== 0) return porLider;
+  return (a?.membro2Nome || '').localeCompare(b?.membro2Nome || '', 'pt-BR', { sensitivity: 'base' });
+};
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
@@ -74,11 +81,11 @@ function getMedalha(dupla) {
   const temEstudo = estudos > 0;
   const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudo;
   const estudoAtivoOuFinalizado = temEstudoBiblicoAtivoOuFinalizado(dupla) && temEstudo;
-  const temBatismo = (dupla.batismos || 0) > 0;
+  const temBatismoEncerrado = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
   const temVisitacao = getVisitacoesCount(dupla) >= 1;
   const temVisitacaoOuEstudo = temVisitacao || temEstudo;
-  if (estudoAtivoOuFinalizado && temBatismo && temVisitacao) return 'ouro';
-  if (estudoAtivo && !temBatismo && temVisitacaoOuEstudo) return 'prata';
+  if (estudoAtivoOuFinalizado && temBatismoEncerrado && temVisitacao) return 'ouro';
+  if (estudoAtivo && !temBatismoEncerrado && temVisitacaoOuEstudo) return 'prata';
   if (temEstudo || temVisitacao) return 'bronze';
   return 'semAtividade';
 }
@@ -87,8 +94,8 @@ const temEstudoNaoRegistrado = (dupla) => (
   && getEstudosCount(dupla) === 0
 );
 const medalhaRegras = {
-  ouro: 'Ouro: estudo bíblico ativo ou finalizado, pelo menos 1 batismo e visitação registrada.',
-  prata: 'Prata: estudo bíblico ativo com 1 ou mais estudos cadastrados, visitação registrada ou estudo cadastrado, e ainda sem batismo registrado.',
+  ouro: 'Ouro: estudo bíblico ativo ou finalizado, pelo menos 1 estudo encerrado com batismo e visitação registrada.',
+  prata: 'Prata: estudo bíblico ativo com 1 ou mais estudos cadastrados, visitação registrada ou estudo cadastrado, e ainda sem um estudo encerrado com batismo registrado.',
   bronze: 'Bronze: dupla com estudo bíblico cadastrado ou visitação registrada, mas que ainda não atingiu todos os critérios de Ouro ou Prata.',
   semAtividade: 'Dupla sem estudo bíblico cadastrado e sem visitação registrada.',
 };
@@ -274,7 +281,11 @@ export default function Duplas() {
   const duplasComMedalha = useMemo(() =>
     [...duplas]
       .map(d => ({ ...d, _medalha: getMedalha(d) }))
-      .sort((a, b) => medalhaOrder[a._medalha] - medalhaOrder[b._medalha]),
+      .sort((a, b) => {
+        const porMedalha = medalhaOrder[a._medalha] - medalhaOrder[b._medalha];
+        if (porMedalha !== 0) return porMedalha;
+        return compararDuplasPorPrimeiroMembro(a, b);
+      }),
     [duplas]
   );
 
