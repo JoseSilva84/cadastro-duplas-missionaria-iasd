@@ -22,22 +22,47 @@ const normalizarStatus = (valor) => String(valor || '')
   .replace(/[\u0300-\u036f]/g, '')
   .toUpperCase();
 const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
-const temEstudoBiblicoAtivoOuFinalizado = (dupla) => (
-  ['ATIVO', 'FINALIZADO', 'CONCLUIDO'].includes(normalizarStatus(dupla?.statusEstudoBiblico))
+const estudoEncerrado = (estudo) => (
+  estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
+);
+const temEstudoEmAndamento = (dupla) => (
+  (dupla?.estudosBiblicos || []).some((estudo) => !estudoEncerrado(estudo))
+  || (temEstudoBiblicoAtivo(dupla) && getEstudosCount(dupla) > 0)
 );
 
 function getMedalha(dupla) {
-  const estudos = getEstudosCount(dupla);
-  const temEstudo = estudos > 0;
-  const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudo;
-  const estudoAtivoOuFinalizado = temEstudoBiblicoAtivoOuFinalizado(dupla) && temEstudo;
-  const temBatismo = (dupla.batismos || dupla._count?.batismos || 0) > 0;
+  const temBatismo = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
   const temVisitacao = getVisitacoesCount(dupla) >= 1;
-  if (estudoAtivoOuFinalizado && temBatismo && temVisitacao) return 'ouro';
-  if (estudoAtivo && !temBatismo && (temVisitacao || temEstudo)) return 'prata';
-  if (temEstudo || temVisitacao) return 'bronze';
+  if (temBatismo) return 'ouro';
+  if (temEstudoEmAndamento(dupla)) return 'prata';
+  if (temVisitacao) return 'bronze';
   return 'semAtividade';
 }
+
+const estudoDuplaId = (estudo) => String(estudo?.dupla?.id || estudo?.duplaId || '');
+const juntarEstudosEncerradosNasDuplas = (duplas = [], estudosEncerrados = []) => {
+  const porDupla = estudosEncerrados.reduce((mapa, estudo) => {
+    const duplaId = estudoDuplaId(estudo);
+    if (!duplaId) return mapa;
+    if (!mapa.has(duplaId)) mapa.set(duplaId, []);
+    mapa.get(duplaId).push(estudo);
+    return mapa;
+  }, new Map());
+
+  return duplas.map((dupla) => {
+    const encerradosDaDupla = porDupla.get(String(dupla.id)) || [];
+    if (encerradosDaDupla.length === 0) return dupla;
+    const estudosAtuais = dupla.estudosBiblicos || [];
+    const idsAtuais = new Set(estudosAtuais.map((estudo) => String(estudo.id)));
+    return {
+      ...dupla,
+      estudosBiblicos: [
+        ...estudosAtuais,
+        ...encerradosDaDupla.filter((estudo) => !idsAtuais.has(String(estudo.id))),
+      ],
+    };
+  });
+};
 
 const DashboardIcon = ({ className = 'w-5 h-5' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -155,17 +180,18 @@ function MedalhaCard({ label, value, total, color, bg, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="smart-tooltip rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
-      style={{ backgroundColor: bg, borderColor: `${color}33` }}
+      className="smart-tooltip relative overflow-hidden rounded-xl border p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
+      style={{ background: `linear-gradient(145deg, ${bg}, #ffffff 78%)`, borderColor: `${color}40` }}
       data-tooltip={`${label}: ${numero(value)} dupla(s), ${pct}% do total.`}
     >
+      <span className="pointer-events-none absolute right-3 top-3 h-14 w-14 rounded-full opacity-10" style={{ backgroundColor: color }} />
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-bold" style={{ color }}>{label}</span>
-        <span className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-bold" style={{ color }}>{pct}%</span>
+        <span className="rounded-full border bg-white/80 px-2.5 py-1 text-xs font-bold shadow-sm" style={{ color, borderColor: `${color}22` }}>{pct}%</span>
       </div>
       <p className="mt-3 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
-      <div className="mt-4 h-1.5 rounded-full bg-white/65">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="mt-4 h-2 rounded-full bg-white/75 shadow-inner">
+        <div className="h-full rounded-full shadow-sm" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </button>
   );
@@ -236,11 +262,11 @@ export default function Dashboard() {
 
   const medalhas = useMemo(() => {
     const base = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
-    duplas.forEach((dupla) => {
+    juntarEstudosEncerradosNasDuplas(duplas, estudosEncerrados).forEach((dupla) => {
       base[getMedalha(dupla)] += 1;
     });
     return base;
-  }, [duplas]);
+  }, [duplas, estudosEncerrados]);
 
   const ativas = useMemo(() => duplas.filter((dupla) => normalizarStatus(dupla.status) === 'ATIVA').length, [duplas]);
   const semAtividade = medalhas.semAtividade;
@@ -289,13 +315,13 @@ export default function Dashboard() {
       </Section>
 
       <div className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm xl:col-span-2">
+        <section className="rounded-xl border border-[#C9963A]/20 bg-gradient-to-br from-white via-[#fffaf0] to-[#f8fafc] p-5 shadow-sm shadow-[#1A3A6B]/5 xl:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Medalhas</p>
               <h2 className="text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Classificação das duplas</h2>
             </div>
-            <div className="hidden h-11 w-11 items-center justify-center rounded-xl bg-[#1A3A6B] text-white sm:flex">
+            <div className="hidden h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#315a96] text-white shadow-lg shadow-[#1A3A6B]/20 sm:flex">
               <MedalIcon />
             </div>
           </div>
