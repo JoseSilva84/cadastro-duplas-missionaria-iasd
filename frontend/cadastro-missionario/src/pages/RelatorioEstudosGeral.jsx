@@ -83,6 +83,9 @@ const temEstudoNaoRegistrado = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
   && getEstudosCount(dupla) === 0
 );
+const estudoEmAndamento = (estudo) => (
+  estudo?.encerrado !== true && String(estudo?.statusEstudo || '').toUpperCase() !== 'ENCERRADO'
+);
 
 export default function RelatorioEstudosGeral() {
   const location = useLocation();
@@ -111,7 +114,7 @@ export default function RelatorioEstudosGeral() {
   }, []);
 
   const resumo = useMemo(() => {
-    const estudos = dados.estudos || [];
+    const estudos = (dados.estudos || []).filter(estudoEmAndamento);
     const estudantes = estudos.flatMap((estudo) => {
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
         return (estudo.participantes || []).map((participante) => ({
@@ -383,7 +386,7 @@ export default function RelatorioEstudosGeral() {
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
-            ['Pessoas envolvidas', resumo.totalEstudantes, '#0d9488'],
+            ['Pessoas estudando', resumo.totalEstudantes, '#0d9488'],
             ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
           ].map(([label, valor, cor]) => (
