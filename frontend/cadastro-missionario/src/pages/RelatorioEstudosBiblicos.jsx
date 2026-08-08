@@ -555,6 +555,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     }],
   };
   const ranking = isPonto || isClasse ? analisesGraficos.porIgreja : analisesGraficos.porDupla;
+  const tituloRanking = isEncerrados
+    ? 'Duplas com mais estudantes batizados'
+    : (isPonto || isClasse ? 'Igrejas com mais estudantes' : 'Duplas com mais estudantes');
   const rankingOption = {
     ...chartBase,
     color: ['#0d9488'],
@@ -615,7 +618,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className={`grid grid-cols-1 ${isGrupo || isTodos || isEncerrados ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
           {isGrupo && (
             <div
               className="smart-tooltip card"
@@ -652,6 +655,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           </div>
           <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
           <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
+          {!isEncerrados && (
           <button
             type="button"
             className="smart-tooltip card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -661,8 +665,10 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
             <p className="text-2xl font-bold text-amber-700">{totalDuplasComEstudoNaoRegistrado}</p>
           </button>
+          )}
         </div>
 
+        {!isEncerrados && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {['A', 'B', 'C'].map((classe) => {
             const info = classeInfo[classe];
@@ -688,13 +694,16 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             );
           })}
         </div>
+        )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className={`grid grid-cols-1 ${isEncerrados ? '' : 'xl:grid-cols-2'} gap-5`}>
+          {!isEncerrados && (
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação dos estudantes</h2>
             <p className="text-sm text-gray-400 mb-3">Distribuicao A/B/C no recorte atual.</p>
             <EChart option={classificacaoOption} className="h-80" />
           </section>
+          )}
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Faixas de progresso</h2>
             <p className="text-sm text-gray-400 mb-3">Quantidade de estudantes por etapa da série.</p>
@@ -709,7 +718,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             <EChart option={serieOption} className="h-80" />
           </section>
           <section className="card">
-            <h2 className="text-lg font-bold text-[#1A3A6B]">{isPonto || isClasse ? 'Igrejas com mais estudantes' : 'Duplas com mais estudantes'}</h2>
+            <h2 className="text-lg font-bold text-[#1A3A6B]">{tituloRanking}</h2>
             <p className="text-sm text-gray-400 mb-3">Ranking do recorte filtrado.</p>
             <EChart option={rankingOption} className="h-80" />
           </section>
@@ -775,7 +784,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                 </div>
               </div>
             </div>
-            {['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && selecionado.participantes?.length > 0 && (
+            {!isEncerrados && ['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && selecionado.participantes?.length > 0 && (
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {selecionado.participantes.map((participante) => (
                   <div key={participante.id} className="rounded-xl border border-gray-100 bg-[#1A3A6B]/5 px-3 py-2">
@@ -792,7 +801,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                 ))}
               </div>
             )}
-            {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
+            {!isEncerrados && !['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <ClassificacaoBadge classe={selecionado.classificacaoInteressado} motivo={selecionado.motivoImpedimento} />
                 <BotoesBatismo estudo={selecionado} compacto />
@@ -818,7 +827,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     <th className="w-40 text-left px-4 py-3">Cidade/Estado</th>
                     <th className="w-32 text-left px-4 py-3">Série</th>
                     <th className="w-72 text-left px-4 py-3">Lição Atual</th>
-                    <th className="w-40 text-left px-4 py-3">Classificação</th>
+                    {!isEncerrados && <th className="w-40 text-left px-4 py-3">Classificação</th>}
                     <th className="w-44 text-left px-4 py-3">Progresso</th>
                     <th className="w-40 text-left px-4 py-3">Dupla</th>
                     <th className="sticky right-0 z-20 w-36 bg-[#F4F5F7] text-left px-4 py-3 shadow-[-8px_0_16px_rgba(15,35,71,0.06)]">Ação</th>
@@ -837,7 +846,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                             {licoesDaSerie.map((licao) => <option key={licao.numero} value={licao.numero}>{licao.numero} - {licao.titulo}</option>)}
                           </select>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        {!isEncerrados && <td className="px-4 py-3 text-gray-600">
                           {['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (
                             <div className="flex flex-wrap gap-1">
                               {(estudo.participantes || []).map((participante) => (
@@ -856,7 +865,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                               <BotoesBatismo estudo={estudo} compacto />
                             </div>
                           )}
-                        </td>
+                        </td>}
                         <td className="px-4 py-3 text-gray-600">
                           <div className="min-w-28"><div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(estudo)}%` }} /></div><span className="text-xs">{progresso(estudo)}%</span></div>
                         </td>
@@ -864,7 +873,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                         <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_16px_rgba(15,35,71,0.06)]" onClick={(e) => e.stopPropagation()}>
                           <div className="flex w-32 flex-col gap-2">
                             <button type="button" className="btn-outline w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo))}>Detalhes</button>
-                            <button type="button" className="btn-primary w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                            {!isEncerrados && (
+                              <button type="button" className="btn-primary w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                            )}
                             {podeExcluir && (
                               <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>
                             )}
@@ -874,7 +885,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     );
                   })}
                   {resultado.estudos.length === 0 && (
-                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan="8">Nenhum registro encontrado.</td></tr>
+                    <tr><td className="px-4 py-8 text-center text-gray-400" colSpan={isEncerrados ? 7 : 8}>Nenhum registro encontrado.</td></tr>
                   )}
                 </tbody>
               </table>
