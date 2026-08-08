@@ -333,9 +333,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#1A3A6B]/10 bg-[#0f2347] p-5 text-white shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#e5b05a]">Pulso missionário</p>
-          <h2 className="mt-1 text-2xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Cobertura ativa</h2>
+        <section className="rounded-xl border border-[#9db7d8]/45 bg-gradient-to-br from-[#edf5ff] via-[#dcecff] to-[#c9ddf5] p-5 text-[#173760] shadow-sm shadow-[#1A3A6B]/10">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#a97822]">Pulso missionário</p>
+          <h2 className="mt-1 text-2xl font-bold text-[#173760]" style={{ fontFamily: 'Georgia, serif' }}>Cobertura ativa</h2>
           <div className="mt-5 space-y-4">
             {[
               ['Com estudo bíblico', cobertura.estudoBiblico?.com || 0, '#38bdf8'],
@@ -344,16 +344,16 @@ export default function Dashboard() {
             ].map(([label, value, color]) => (
               <div key={label}>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="font-semibold text-white/85">{label}</span>
+                  <span className="font-semibold text-[#173760]/85">{label}</span>
                   <span className="font-bold" style={{ color }}>{percentual(value, totalDuplas)}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-white/10">
+                <div className="h-2 rounded-full bg-white/70 shadow-inner">
                   <div className="h-full rounded-full" style={{ width: `${percentual(value, totalDuplas)}%`, backgroundColor: color }} />
                 </div>
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => abrir('/relatorios/dashboard-associacao')} className="mt-6 w-full rounded-lg border border-white/15 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-white/10">
+          <button type="button" onClick={() => abrir('/relatorios/dashboard-associacao')} className="mt-6 w-full rounded-lg border border-[#173760]/15 bg-white/45 px-4 py-3 text-sm font-bold text-[#173760] transition-all hover:bg-white/70">
             Abrir relatório completo
           </button>
         </section>
