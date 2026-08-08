@@ -29,6 +29,12 @@ const medalhaRegras = {
   semAtividade: 'Dupla sem estudo bíblico cadastrado e sem visitação registrada.',
 };
 
+Object.assign(medalhaRegras, {
+  ouro: 'Ouro: estudo bíblico, ponto de estudo ou classe bíblica encerrado com motivo Batismo.',
+  prata: 'Prata: estudo bíblico em andamento.',
+  bronze: 'Bronze: visitação registrada, sem estudo em andamento e sem estudo encerrado com batismo.',
+});
+
 const UsersIcon = ({ className = 'w-5 h-5 text-white' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -128,6 +134,13 @@ const indicadorConfig = {
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const motivoEncerramentoLabels = {
+  BATISMO: 'Batismo',
+  DESISTIU: 'Desistiu do estudo',
+  TERMINOU_LICOES: 'Terminou as lições',
+  OUTRO: 'Outro motivo',
+};
+const motivoEncerramentoTexto = (valor) => motivoEncerramentoLabels[String(valor || '').toUpperCase()] || valor || 'Não informado';
 const totalBatismosEncerrados = (estudos = []) => estudos
   .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
   .reduce((acc, estudo) => {
@@ -141,21 +154,20 @@ const normalizarStatus = (valor) => String(valor || '')
   .replace(/[\u0300-\u036f]/g, '')
   .toUpperCase();
 const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
-const temEstudoBiblicoAtivoOuFinalizado = (dupla) => (
-  ['ATIVO', 'FINALIZADO', 'CONCLUIDO'].includes(normalizarStatus(dupla?.statusEstudoBiblico))
+const estudoEncerrado = (estudo) => (
+  estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
+);
+const temEstudoEmAndamento = (dupla) => (
+  (dupla?.estudosBiblicos || []).some((estudo) => !estudoEncerrado(estudo))
+  || (temEstudoBiblicoAtivo(dupla) && getEstudosCount(dupla) > 0)
 );
 // ── Lógica de Gamificação (gameDuplas.md) ──────────────────────────────
 function getMedalha(dupla) {
-  const estudos = getEstudosCount(dupla);
-  const temEstudo = estudos > 0;
-  const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudo;
-  const estudoAtivoOuFinalizado = temEstudoBiblicoAtivoOuFinalizado(dupla) && temEstudo;
   const temBatismoEncerrado = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
   const temVisitacao = getVisitacoesCount(dupla) >= 1;
-  const temVisitacaoOuEstudo = temVisitacao || temEstudo;
-  if (estudoAtivoOuFinalizado && temBatismoEncerrado && temVisitacao) return 'ouro';
-  if (estudoAtivo && !temBatismoEncerrado && temVisitacaoOuEstudo) return 'prata';
-  if (temEstudo || temVisitacao) return 'bronze';
+  if (temBatismoEncerrado) return 'ouro';
+  if (temEstudoEmAndamento(dupla)) return 'prata';
+  if (temVisitacao) return 'bronze';
   return 'semAtividade';
 }
 const temEstudoCadastrado = (dupla) => getEstudosCount(dupla) > 0;
@@ -216,6 +228,31 @@ const progressoEstudo = (estudo) => {
   const atual = Number(estudo?.licaoAtual || 0);
   if (!total || !atual) return 0;
   return Math.min(100, Math.round((atual / total) * 100));
+};
+
+const estudoDuplaId = (estudo) => String(estudo?.dupla?.id || estudo?.duplaId || '');
+const juntarEstudosEncerradosNasDuplas = (duplas = [], estudosEncerrados = []) => {
+  const porDupla = estudosEncerrados.reduce((mapa, estudo) => {
+    const duplaId = estudoDuplaId(estudo);
+    if (!duplaId) return mapa;
+    if (!mapa.has(duplaId)) mapa.set(duplaId, []);
+    mapa.get(duplaId).push(estudo);
+    return mapa;
+  }, new Map());
+
+  return duplas.map((dupla) => {
+    const encerradosDaDupla = porDupla.get(String(dupla.id)) || [];
+    if (encerradosDaDupla.length === 0) return dupla;
+    const estudosAtuais = dupla.estudosBiblicos || [];
+    const idsAtuais = new Set(estudosAtuais.map((estudo) => String(estudo.id)));
+    return {
+      ...dupla,
+      estudosBiblicos: [
+        ...estudosAtuais,
+        ...encerradosDaDupla.filter((estudo) => !idsAtuais.has(String(estudo.id))),
+      ],
+    };
+  });
 };
 
 const editarEstudoPath = (estudo, prefix = '') => {
@@ -698,14 +735,14 @@ export default function DuplasDireto() {
 
   // Duplas com medalha calculada e ordenadas por medalha; dentro de cada medalha, por primeiro membro.
   const duplasComMedalha = useMemo(() =>
-    [...duplas]
+    juntarEstudosEncerradosNasDuplas(duplas, estudosEncerrados)
       .map(d => ({ ...d, _medalha: getMedalha(d) }))
       .sort((a, b) => {
         const porMedalha = medalhaOrder[a._medalha] - medalhaOrder[b._medalha];
         if (porMedalha !== 0) return porMedalha;
         return compararDuplasPorPrimeiroMembro(a, b);
       }),
-    [duplas]
+    [duplas, estudosEncerrados]
   );
 
   // Contagem por medalha para os chips de filtro
@@ -1492,6 +1529,7 @@ export default function DuplasDireto() {
                       {duplaSelecionada.estudosBiblicos.map((estudo) => {
                         const percentual = progressoEstudo(estudo);
                         const total = totalLicoesSerie(estudo.serie);
+                        const encerrado = estudoEncerrado(estudo);
                         return (
                           <div key={estudo.id} className="rounded-lg border border-gray-100 bg-[#F8FAFC] p-4">
                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
@@ -1500,6 +1538,19 @@ export default function DuplasDireto() {
                                   <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#1A3A6B]/10 text-[#1A3A6B]">
                                     {tipoEstudoLabels[estudo.tipoEstudo] || 'Estudo'}
                                   </span>
+                                  {encerrado && (
+                                    <>
+                                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#b91c1c]/10 text-[#b91c1c]">
+                                        Encerrado
+                                      </span>
+                                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#0d9488]/10 text-[#0d9488]">
+                                        Motivo: {motivoEncerramentoTexto(estudo.motivoEncerramento)}
+                                      </span>
+                                      {estudo.encerradoEm && (
+                                        <span className="text-[10px] text-gray-400">Encerrado em {formatarData(estudo.encerradoEm)}</span>
+                                      )}
+                                    </>
+                                  )}
                                   <span className="text-[10px] text-gray-400">Atualizado em {formatarData(estudo.atualizadoEm) || '—'}</span>
                                 </div>
                                 <h5 className="font-bold text-[#1A3A6B] break-words">{estudo.nomeEstudante || 'Sem nome'}</h5>
