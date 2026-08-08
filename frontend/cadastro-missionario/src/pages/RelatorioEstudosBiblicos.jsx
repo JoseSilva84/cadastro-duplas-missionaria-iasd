@@ -30,6 +30,22 @@ const agruparSoma = (itens = [], chaveFn, valorFn = () => 1) => itens.reduce((ac
   return acc;
 }, {});
 
+const motivoEncerramentoLabel = {
+  BATISMO: 'Batismo',
+  DESISTIU: 'Desistiu do estudo',
+  TERMINOU_LICOES: 'Terminou as licoes',
+  OUTRO: 'Outro motivo',
+  'Nao informado': 'Nao informado',
+};
+
+const motivoEncerramentoKey = (valor) => String(valor || 'Nao informado').toUpperCase();
+
+const mesAno = (valor) => {
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return 'Sem data';
+  return `${String(data.getUTCMonth() + 1).padStart(2, '0')}/${data.getUTCFullYear()}`;
+};
+
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const temEstudoNaoRegistrado = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
@@ -435,7 +451,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
   const analisesGraficos = useMemo(() => {
     const estudos = resultado.estudos || [];
-    const estudantes = estudos.flatMap((estudo) => {
+    const estudantesDoEstudo = (estudo) => {
       if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)) {
         return (estudo.participantes || []).map((participante) => ({
           nome: participante.nome,
@@ -460,7 +476,11 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         devolveDizimos: estudo.devolveDizimos,
         cultoFamiliar: estudo.cultoFamiliar,
       }];
-    });
+    };
+    const estudantes = estudos.flatMap(estudantesDoEstudo);
+    const estudantesBatizados = estudos
+      .filter((estudo) => motivoEncerramentoKey(estudo.motivoEncerramento) === 'BATISMO')
+      .flatMap(estudantesDoEstudo);
 
     const porSerie = Object.entries(agruparSoma(estudantes, (item) => getSerieNome(item.serie)))
       .map(([nome, total]) => ({ nome, total }))
@@ -474,6 +494,25 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       .map(([nome, total]) => ({ nome, total }))
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
       .slice(0, 8);
+    const porDuplaBatizados = Object.entries(agruparSoma(estudantesBatizados, (item) => item.dupla))
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+      .slice(0, 8);
+    const porMotivoEncerramento = Object.entries(agruparSoma(estudos, (item) => motivoEncerramentoKey(item.motivoEncerramento)))
+      .map(([motivo, total]) => ({
+        nome: motivoEncerramentoLabel[motivo] || motivo,
+        total,
+      }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+    const porMesEncerramento = Object.entries(agruparSoma(estudos, (item) => mesAno(item.encerradoEm || item.atualizadoEm || item.criadoEm)))
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => {
+        if (a.nome === 'Sem data') return 1;
+        if (b.nome === 'Sem data') return -1;
+        const [ma, aa] = a.nome.split('/').map(Number);
+        const [mb, ab] = b.nome.split('/').map(Number);
+        return (aa || 0) - (ab || 0) || (ma || 0) - (mb || 0);
+      });
     const faixasProgresso = estudantes.reduce((acc, item) => {
       if (item.progresso >= 100) acc['100%'] += 1;
       else if (item.progresso >= 76) acc['76-99%'] += 1;
@@ -491,6 +530,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       porSerie,
       porIgreja,
       porDupla,
+      porDuplaBatizados,
+      porMotivoEncerramento,
+      porMesEncerramento,
       faixasProgresso,
       espiritual: [
         Math.round((sim('vaIgreja') / baseEspiritual) * 100),
@@ -554,10 +596,22 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       data: analisesGraficos.porSerie.map((item) => item.total),
     }],
   };
-  const ranking = isPonto || isClasse ? analisesGraficos.porIgreja : analisesGraficos.porDupla;
+  const ranking = isEncerrados ? analisesGraficos.porDuplaBatizados : (isPonto || isClasse ? analisesGraficos.porIgreja : analisesGraficos.porDupla);
   const tituloRanking = isEncerrados
     ? 'Duplas com mais estudantes batizados'
     : (isPonto || isClasse ? 'Igrejas com mais estudantes' : 'Duplas com mais estudantes');
+  const subtituloProgresso = isEncerrados
+    ? 'Quantidade de estudantes por etapa da série de Estudos Encerrados.'
+    : 'Quantidade de estudantes por etapa da série.';
+  const subtituloSeries = isEncerrados
+    ? 'Séries com maior volume de estudantes de estudos encerrados.'
+    : 'Séries com maior volume de estudantes.';
+  const subtituloEspiritual = isEncerrados
+    ? 'Percentual positivo nas cinco perguntas dos estudos individuais dos estudos encerrados.'
+    : 'Percentual positivo nas cinco perguntas dos estudos individuais.';
+  const subtituloRanking = isEncerrados
+    ? 'Ranking das duplas pelo total de estudantes vinculados a estudos encerrados por batismo.'
+    : 'Ranking do recorte filtrado.';
   const rankingOption = {
     ...chartBase,
     color: ['#0d9488'],
@@ -600,6 +654,40 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         lineStyle: { color: '#1A3A6B', width: 3 },
         itemStyle: { color: '#1A3A6B' },
       }],
+    }],
+  };
+  const motivosEncerramentoOption = {
+    ...chartBase,
+    color: ['#0d9488', '#b91c1c', '#C9963A', '#64748b', '#1A3A6B'],
+    legend: { bottom: 0, icon: 'circle' },
+    series: [{
+      name: 'Motivo',
+      type: 'pie',
+      radius: ['46%', '72%'],
+      center: ['50%', '43%'],
+      itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 3 },
+      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      data: analisesGraficos.porMotivoEncerramento.map((item) => ({
+        name: item.nome,
+        value: item.total,
+      })),
+    }],
+  };
+  const evolucaoEncerramentosOption = {
+    ...chartBase,
+    color: ['#1A3A6B'],
+    tooltip: { trigger: 'axis' },
+    grid: { left: 44, right: 24, top: 28, bottom: 42 },
+    xAxis: { type: 'category', boundaryGap: false, data: analisesGraficos.porMesEncerramento.map((item) => item.nome) },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [{
+      name: 'Encerramentos',
+      type: 'line',
+      smooth: true,
+      symbolSize: 8,
+      areaStyle: { color: 'rgba(26,58,107,0.14)' },
+      lineStyle: { width: 4 },
+      data: analisesGraficos.porMesEncerramento.map((item) => item.total),
     }],
   };
 
@@ -696,6 +784,21 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         </div>
         )}
 
+        {isEncerrados && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <section className="card">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
+              <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos encerrados por motivo registrado.</p>
+              <EChart option={motivosEncerramentoOption} className="h-80" />
+            </section>
+            <section className="card">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Evolução dos encerramentos</h2>
+              <p className="text-sm text-gray-400 mb-3">Quantidade de estudos encerrados por mês.</p>
+              <EChart option={evolucaoEncerramentosOption} className="h-80" />
+            </section>
+          </div>
+        )}
+
         <div className={`grid grid-cols-1 ${isEncerrados ? '' : 'xl:grid-cols-2'} gap-5`}>
           {!isEncerrados && (
           <section className="card">
@@ -706,7 +809,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           )}
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Faixas de progresso</h2>
-            <p className="text-sm text-gray-400 mb-3">Quantidade de estudantes por etapa da série.</p>
+            <p className="text-sm text-gray-400 mb-3">{subtituloProgresso}</p>
             <EChart option={progressoOption} className="h-80" />
           </section>
         </div>
@@ -714,17 +817,17 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Séries mais usadas</h2>
-            <p className="text-sm text-gray-400 mb-3">Séries com maior volume de estudantes.</p>
+            <p className="text-sm text-gray-400 mb-3">{subtituloSeries}</p>
             <EChart option={serieOption} className="h-80" />
           </section>
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">{tituloRanking}</h2>
-            <p className="text-sm text-gray-400 mb-3">Ranking do recorte filtrado.</p>
+            <p className="text-sm text-gray-400 mb-3">{subtituloRanking}</p>
             <EChart option={rankingOption} className="h-80" />
           </section>
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Acompanhamento espiritual</h2>
-            <p className="text-sm text-gray-400 mb-3">Percentual positivo nas cinco perguntas dos estudos individuais.</p>
+            <p className="text-sm text-gray-400 mb-3">{subtituloEspiritual}</p>
             <EChart option={espiritualOption} className="h-80" />
           </section>
         </div>
