@@ -246,6 +246,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const isPonto = tipoRelatorio === 'PONTO';
   const isClasse = tipoRelatorio === 'CLASSE';
   const isTodos = tipoRelatorio === 'TODOS';
+  const isEncerrados = tipoRelatorio === 'ENCERRADOS';
   const isGrupo = isPonto || isClasse;
   const parametrosUrl = new URLSearchParams(location.search);
   const titulo = isPonto
@@ -255,6 +256,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       : isTodos
         ? 'Registros de Estudos Bíblicos'
         : 'Estudantes Bíblicos';
+  const tituloTela = isEncerrados ? 'Estudos encerrados' : titulo;
   const [resultado, setResultado] = useState({ total: 0, totalEstudantes: 0, estudos: [], porSerie: [], totalDuplasComEstudoNaoRegistrado: 0, duplasComEstudoNaoRegistrado: [] });
   const [totaisPorClassificacao, setTotaisPorClassificacao] = useState({ A: 0, B: 0, C: 0 });
   const [duplas, setDuplas] = useState([]);
@@ -280,7 +282,8 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     setCarregando(true);
     const params = {
       ...Object.fromEntries(Object.entries(filtrosAtuais).filter(([, valor]) => valor)),
-      ...(isTodos ? {} : { tipoEstudo: tipoRelatorio }),
+      ...(isTodos || isEncerrados ? {} : { tipoEstudo: tipoRelatorio }),
+      ...(isEncerrados ? { encerrado: 'true' } : {}),
     };
     const paramsTotaisClassificacao = { ...params };
     delete paramsTotaisClassificacao.classificacaoInteressado;
@@ -405,6 +408,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     setSelecionado(estudo);
   };
   const BotoesBatismo = ({ estudo, participante = null, compacto = false }) => {
+    if (isEncerrados) return null;
     const classificacao = participante?.classificacaoInteressado || estudo.classificacaoInteressado;
     if (!classificacao) return null;
     const baseClasses = compacto ? 'text-[10px] px-2 py-1' : 'text-xs px-3 py-1.5';
@@ -605,13 +609,13 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Relatório</p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          {titulo}
+          {tituloTela}
         </h1>
         <p className="text-gray-400 text-sm mt-1">{resultado.total} registro(s) encontrado(s)</p>
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-1 ${isGrupo || isTodos || isEncerrados ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
           {isGrupo && (
             <div
               className="smart-tooltip card"
@@ -632,9 +636,19 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               <p className="text-2xl font-bold text-[#1A3A6B]">{resultado.total}</p>
             </div>
           )}
+          {isEncerrados && (
+            <div
+              className="smart-tooltip card"
+              data-tooltip="Registros encerrados: estudos marcados como encerrados no sistema."
+              tabIndex={0}
+            >
+              <p className="text-xs text-gray-400">Registros encerrados</p>
+              <p className="text-2xl font-bold text-[#b91c1c]">{resultado.total}</p>
+            </div>
+          )}
           <div className="smart-tooltip card" data-tooltip={tooltipTotalEstudantes} tabIndex={0}>
-            <p className="text-xs text-gray-400">{isPonto ? 'Estudos nos pontos' : isClasse ? 'Estudantes em classes' : isTodos ? 'Pessoas envolvidas' : 'Estudantes'}</p>
-            <p className="text-2xl font-bold text-[#1A3A6B]">{isGrupo || isTodos ? totalEstudantes : resultado.total}</p>
+            <p className="text-xs text-gray-400">{isPonto ? 'Estudos nos pontos' : isClasse ? 'Estudantes em classes' : isTodos || isEncerrados ? 'Pessoas envolvidas' : 'Estudantes'}</p>
+            <p className="text-2xl font-bold text-[#1A3A6B]">{isGrupo || isTodos || isEncerrados ? totalEstudantes : resultado.total}</p>
           </div>
           <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
           <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
@@ -735,7 +749,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button type="button" className="btn-outline" onClick={limpar}>Limpar</button>
-            <button type="button" className="btn-outline" onClick={() => abrirPdf({ titulo, estudos: resultado.estudos, tipoRelatorio })}>Exportar PDF</button>
+            <button type="button" className="btn-outline" onClick={() => abrirPdf({ titulo: tituloTela, estudos: resultado.estudos, tipoRelatorio })}>Exportar PDF</button>
             <button type="button" className="btn-primary" onClick={() => carregar()}>Filtrar</button>
           </div>
         </div>

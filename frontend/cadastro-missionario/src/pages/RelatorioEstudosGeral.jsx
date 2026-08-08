@@ -40,6 +40,8 @@ const motivoEncerramentoLabel = {
   'Nao informado': 'Não informado',
 };
 
+const motivoEncerramentoKey = (valor) => String(valor || 'Nao informado').toUpperCase();
+
 const progresso = (estudo) => {
   const total = SERIES_ESTUDO.find((serie) => serie.id === estudo.serie)?.licoes.length || 0;
   if (!total) return 0;
@@ -86,18 +88,24 @@ export default function RelatorioEstudosGeral() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
-  const [dados, setDados] = useState({ estudos: [], duplas: [] });
+  const [dados, setDados] = useState({ estudos: [], estudosEncerrados: [], duplas: [] });
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     Promise.allSettled([
       api.get('/relatorios/estudos-biblicos'),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       api.get('/duplas'),
     ])
-      .then(([relatorioRes, duplasRes]) => {
+      .then(([relatorioRes, encerradosRes, duplasRes]) => {
         const relatorio = relatorioRes.status === 'fulfilled' ? (relatorioRes.value.data || { estudos: [] }) : { estudos: [] };
+        const encerrados = encerradosRes.status === 'fulfilled' ? (encerradosRes.value.data || { estudos: [] }) : { estudos: [] };
         const duplas = duplasRes.status === 'fulfilled' && Array.isArray(duplasRes.value.data) ? duplasRes.value.data : [];
-        setDados({ ...relatorio, duplas });
+        setDados({
+          ...relatorio,
+          estudosEncerrados: Array.isArray(encerrados.estudos) ? encerrados.estudos : [],
+          duplas,
+        });
       })
       .finally(() => setCarregando(false));
   }, []);
@@ -156,10 +164,13 @@ export default function RelatorioEstudosGeral() {
       ? Math.round(estudantes.reduce((acc, item) => acc + item.progresso, 0) / estudantes.length)
       : 0;
     const estudosIndividuais = estudos.filter((item) => item.tipoEstudo === 'UNICO');
-    const encerradosPorMotivo = (dados.encerradosPorMotivo || []).map((item) => ({
-      ...item,
-      motivo: motivoEncerramentoLabel[item.motivo] || item.motivo,
-    }));
+    const estudosEncerrados = dados.estudosEncerrados || [];
+    const encerradosPorMotivo = Object.entries(agruparSoma(estudosEncerrados, (item) => motivoEncerramentoKey(item.motivoEncerramento)))
+      .map(([motivo, total]) => ({
+        motivo: motivoEncerramentoLabel[motivo] || motivo,
+        total,
+      }))
+      .sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
     const duplasComEstudoNaoRegistrado = Array.isArray(dados.duplas)
       ? dados.duplas.filter(temEstudoNaoRegistrado)
       : (dados.duplasComEstudoNaoRegistrado || []);
@@ -178,7 +189,7 @@ export default function RelatorioEstudosGeral() {
       totalDuplasComEstudoNaoRegistrado: duplasComEstudoNaoRegistrado.length,
       totalRegistros: estudos.length,
       totalEstudantes: estudantes.length,
-      totalEncerrados: dados.totalEncerrados || encerradosPorMotivo.reduce((acc, item) => acc + item.total, 0),
+      totalEncerrados: estudosEncerrados.length,
       encerradosPorMotivo,
       mediaProgresso,
       concluidos: estudantes.filter((item) => item.progresso >= 100).length,
@@ -338,6 +349,7 @@ export default function RelatorioEstudosGeral() {
 
   const caminho = (rota) => `${isDireto ? '/direto' : ''}${rota}`;
   const abrirDuplasComEstudoNaoRegistrado = () => navigate(caminho('/duplas?filtro=estudoNaoRegistrado'));
+  const abrirEstudosEncerrados = () => navigate(caminho('/relatorios/estudos-encerrados'));
 
   if (carregando) return <LoadingState mensagem="Carregando relatório..." />;
 
@@ -358,6 +370,7 @@ export default function RelatorioEstudosGeral() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/ranking-decisoes'))}>Ranking Decisões</button>
+            <button type="button" className="btn-outline px-4 py-2" onClick={abrirEstudosEncerrados}>Estudos encerrados</button>
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/estudos-biblicos'))}>Estudantes</button>
             <button type="button" className="btn-outline px-4 py-2" onClick={() => navigate(caminho('/relatorios/pontos-estudo'))}>Pontos</button>
             <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(caminho('/relatorios/classes-biblicas'))}>Classes</button>
@@ -372,13 +385,21 @@ export default function RelatorioEstudosGeral() {
             ['Pessoas envolvidas', resumo.totalEstudantes, '#0d9488'],
             ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
-            ['Estudos encerrados', resumo.totalEncerrados, '#b91c1c'],
           ].map(([label, valor, cor]) => (
             <div key={label} className="card">
               <p className="text-xs text-gray-400">{label}</p>
               <p className="text-3xl font-bold mt-1" style={{ color: cor }}>{valor}</p>
             </div>
           ))}
+          <button
+            type="button"
+            className="card text-left transition hover:-translate-y-0.5 hover:shadow-md"
+            onClick={abrirEstudosEncerrados}
+            title="Ver todos os estudos encerrados e seus detalhes."
+          >
+            <p className="text-xs text-gray-400">Estudos encerrados</p>
+            <p className="text-3xl font-bold mt-1 text-[#b91c1c]">{resumo.totalEncerrados}</p>
+          </button>
           <button
             type="button"
             className="card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"

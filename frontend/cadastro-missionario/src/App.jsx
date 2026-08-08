@@ -298,6 +298,7 @@ function AppRoutes() {
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
         <Route path="relatorios/assistencia" element={<RelatorioAssistencia />} />
+        <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
@@ -412,6 +413,7 @@ function AppRoutes() {
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
         <Route path="relatorios/assistencia" element={<RelatorioAssistencia />} />
+        <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
         <Route path="relatorios/estudos-biblicos/:id" element={<EstudanteDashboard />} />
