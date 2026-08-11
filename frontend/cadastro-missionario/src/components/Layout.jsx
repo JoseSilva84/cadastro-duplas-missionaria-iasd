@@ -43,6 +43,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
+  mapaIgreja: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3zm0 0V3m6 18V6" />
+    </svg>
+  ),
   logout: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -113,6 +118,7 @@ export default function Layout({ children }) {
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
+          ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/cadastro/mapa-igreja' : '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' }] : []),
           { to: isDireto ? '/direto/cadastro/estudos-biblicos' : '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
           { to: isDireto ? '/direto/cadastro/ponto-estudo' : '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: isDireto ? '/direto/cadastro/classe-biblica' : '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
@@ -134,6 +140,7 @@ export default function Layout({ children }) {
         ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
+        ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', icon: icons.alunos }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -142,6 +149,7 @@ export default function Layout({ children }) {
           { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
+          { to: '/direto/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' },
           ...(podeGerenciarLiderancas ? [
             { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
             { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
@@ -168,6 +176,7 @@ export default function Layout({ children }) {
         ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
+        ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -176,6 +185,7 @@ export default function Layout({ children }) {
           { to: '/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
           { to: '/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
           { to: '/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
+          { to: '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' },
           ...(podeGerenciarLiderancas ? [
             { to: '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
             { to: '/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },

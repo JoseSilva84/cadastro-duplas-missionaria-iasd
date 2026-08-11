@@ -13,6 +13,8 @@ import Cadastro from './pages/Cadastro';
 import CadastroAcompanhamento from './pages/CadastroAcompanhamento';
 import CadastroClasseBiblica from './pages/CadastroClasseBiblica';
 import CadastroEscolaSabatina from './pages/CadastroEscolaSabatina';
+import CadastroMapaIgreja from './pages/CadastroMapaIgreja';
+import MapaIgreja from './pages/MapaIgreja';
 import RegistroSaida from './pages/RegistroSaida';
 import CadastroPastores from './pages/CadastroPastores';
 import Relatorios from './pages/Relatorios';
@@ -242,6 +244,25 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="cadastro/mapa-igreja"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+                PERFIS.PASTOR_DISTRITAL,
+                PERFIS.COORDENADOR_REGIONAL,
+                PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+              ]}
+            >
+              <CadastroMapaIgreja />
+            </RotaComPerfis>
+          }
+        />
+        <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><MapaIgreja /></RotaComPerfis>} />
+
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL]}><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
@@ -378,6 +399,25 @@ function AppRoutes() {
             </RotaComPerfis>
           }
         />
+        <Route
+          path="cadastro/mapa-igreja"
+          element={
+            <RotaComPerfis
+              perfisPermitidos={[
+                PERFIS.SUPER_ADMIN,
+                PERFIS.ADMINISTRADOR,
+                PERFIS.PASTOR_REGIONAL,
+                PERFIS.PASTOR_DISTRITAL,
+                PERFIS.COORDENADOR_REGIONAL,
+                PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+              ]}
+              redirectTo="/direto/distritos"
+            >
+              <CadastroMapaIgreja />
+            </RotaComPerfis>
+          }
+        />
+        <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/distritos"><MapaIgreja /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
