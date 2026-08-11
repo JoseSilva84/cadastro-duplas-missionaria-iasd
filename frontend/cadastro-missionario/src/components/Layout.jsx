@@ -344,7 +344,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
+      <nav className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
         <p className="px-3 pt-0 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30 xl:px-4 xl:pb-2">Menu</p>
         {navLinks.map((link) => {
           if (link.type === 'dropdown') {
@@ -399,7 +399,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             </NavLink>
           );
         })}
-        <div className="mt-2 border-t border-white/10 pt-2">
+        <div className="mt-auto border-t border-white/10 pt-5">
           <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
