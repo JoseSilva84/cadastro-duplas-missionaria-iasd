@@ -1,5 +1,6 @@
 // Middleware de autenticação JWT e autorização RBAC
 const jwt = require('jsonwebtoken');
+const prisma = require('../lib/prisma');
 
 // ─── Constantes dos Perfis ────────────────────────────────────────────────────
 const PERFIS = {
@@ -42,7 +43,7 @@ const ehDiretorMissionarioIgreja = (perfil) => perfil === PERFIS.DIRETOR_MISSION
 const ehDupla = (perfil) => perfil === PERFIS.DUPLA_MISSIONARIA;
 
 // ─── Middleware: Verifica e decodifica o token JWT ─────────────────────────────
-const autenticar = (req, res, next) => {
+const autenticar = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -52,7 +53,36 @@ const autenticar = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = decoded;
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: Number(decoded.id) },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        ativo: true,
+        regiaoId: true,
+        distritoId: true,
+        duplaId: true,
+        igrejaId: true,
+        dupla: { select: { igrejaId: true } },
+      },
+    });
+
+    if (!usuario || !usuario.ativo) {
+      return res.status(401).json({ erro: 'UsuÃ¡rio inativo ou nÃ£o encontrado.' });
+    }
+
+    req.usuario = {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.perfil,
+      regiaoId: usuario.regiaoId,
+      distritoId: usuario.distritoId,
+      duplaId: usuario.duplaId,
+      igrejaId: usuario.igrejaId || usuario.dupla?.igrejaId || null,
+    };
     next();
   } catch (err) {
     return res.status(403).json({ erro: 'Token inválido ou expirado.' });

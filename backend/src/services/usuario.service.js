@@ -1,10 +1,47 @@
 // Service de Usuário — Regras de negócio
 const bcrypt = require('bcryptjs');
 const UsuarioModel = require('../models/usuario.model');
+const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
 // Perfis que NÃO podem ser criados por Pastor Regional
 const PERFIS_EXCLUSIVOS_ADMIN = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
+
+async function validarEscopoUsuarioRegional(data, regiaoIdCriador) {
+  if (data.regiaoId && Number(data.regiaoId) !== Number(regiaoIdCriador)) {
+    throw { status: 403, mensagem: 'Acesso negado: regiÃ£o fora do seu escopo.' };
+  }
+
+  if (data.distritoId) {
+    const distrito = await prisma.distrito.findUnique({
+      where: { id: Number(data.distritoId) },
+      select: { regiaoId: true },
+    });
+    if (!distrito || Number(distrito.regiaoId) !== Number(regiaoIdCriador)) {
+      throw { status: 403, mensagem: 'Acesso negado: distrito fora da sua regiÃ£o.' };
+    }
+  }
+
+  if (data.igrejaId) {
+    const igreja = await prisma.igreja.findUnique({
+      where: { id: Number(data.igrejaId) },
+      select: { distrito: { select: { regiaoId: true } } },
+    });
+    if (!igreja || Number(igreja.distrito.regiaoId) !== Number(regiaoIdCriador)) {
+      throw { status: 403, mensagem: 'Acesso negado: igreja fora da sua regiÃ£o.' };
+    }
+  }
+
+  if (data.duplaId) {
+    const dupla = await prisma.dupla.findUnique({
+      where: { id: Number(data.duplaId) },
+      select: { distrito: { select: { regiaoId: true } } },
+    });
+    if (!dupla || Number(dupla.distrito.regiaoId) !== Number(regiaoIdCriador)) {
+      throw { status: 403, mensagem: 'Acesso negado: dupla fora da sua regiÃ£o.' };
+    }
+  }
+}
 
 const UsuarioService = {
   // Lista todos os usuários (filtrado por escopo do perfil solicitante)
@@ -38,6 +75,7 @@ const UsuarioService = {
       if (!data.regiaoId || Number(data.regiaoId) !== regiaoIdCriador) {
         data.regiaoId = regiaoIdCriador;
       }
+      await validarEscopoUsuarioRegional(data, regiaoIdCriador);
     }
 
     const hash = await bcrypt.hash(data.senha, 10);
@@ -71,11 +109,29 @@ const UsuarioService = {
 
   // Atualiza usuário
   async atualizar(id, data, usuarioLogado) {
-    const { perfil: perfilCriador } = usuarioLogado;
+    const { perfil: perfilCriador, regiaoId: regiaoIdCriador } = usuarioLogado;
+    const usuarioAtual = await UsuarioModel.findById(id);
+    if (!usuarioAtual) {
+      throw { status: 404, mensagem: 'UsuÃ¡rio nÃ£o encontrado.' };
+    }
 
     // Apenas Super Admin pode alterar perfis de outros admins
     if (!ehAdmin(perfilCriador) && PERFIS_EXCLUSIVOS_ADMIN.includes(data.perfil)) {
       throw { status: 403, mensagem: 'Sem permissão para atribuir este perfil.' };
+    }
+
+    if (perfilCriador === PERFIS.PASTOR_REGIONAL) {
+      if (Number(usuarioAtual.regiaoId) !== Number(regiaoIdCriador)) {
+        throw { status: 403, mensagem: 'Acesso negado: usuÃ¡rio fora da sua regiÃ£o.' };
+      }
+      if (PERFIS_EXCLUSIVOS_ADMIN.includes(usuarioAtual.perfil)) {
+        throw { status: 403, mensagem: 'Sem permissÃ£o para alterar este usuÃ¡rio.' };
+      }
+      if (PERFIS_EXCLUSIVOS_ADMIN.includes(data.perfil)) {
+        throw { status: 403, mensagem: 'Sem permissÃ£o para atribuir este perfil.' };
+      }
+      data.regiaoId = regiaoIdCriador;
+      await validarEscopoUsuarioRegional(data, regiaoIdCriador);
     }
 
     const updateData = {

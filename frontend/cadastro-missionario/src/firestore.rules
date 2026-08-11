@@ -26,7 +26,7 @@ service cloud.firestore {
       // do Firebase Auth, a validação de quem pode excluir acaba vindo do seu 
       // próprio app frontend. Se desejar mais segurança, pode permitir isso 'if true'
       // mas escondendo o botão excluir apenas para perfis autorizados (Pastor/Admin) no React.
-      allow delete: if true; 
+      allow delete: if false; 
     }
   }
 }
