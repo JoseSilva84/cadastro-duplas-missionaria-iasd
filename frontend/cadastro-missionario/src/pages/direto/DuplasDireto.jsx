@@ -898,7 +898,7 @@ export default function DuplasDireto() {
             </button>
 
             {/* Chips ouro / prata / bronze */}
-            {(['ouro', 'prata', 'bronze', 'semAtividade']).map((m) => {
+            {(['ouro', 'prata', 'bronze']).map((m) => {
               const cfg = medalhaConfig[m];
               const ativo = filtro === m;
               return (
@@ -956,7 +956,7 @@ export default function DuplasDireto() {
               );
             })}
 
-            {[
+            {false && [
               {
                 key: 'estudoNaoRegistrado',
                 label: 'Dupla com estudo sem cadastro',
@@ -1079,7 +1079,6 @@ export default function DuplasDireto() {
                   <option value="ouro">Ouro</option>
                   <option value="prata">Prata</option>
                   <option value="bronze">Bronze</option>
-                  <option value="semAtividade">Dupla sem estudo/visita</option>
                 </optgroup>
               </select>
             </div>

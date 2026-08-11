@@ -79,10 +79,40 @@ const agruparSoma = (itens, chaveFn) => itens.reduce((acc, item) => {
 }, {});
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const temEstudoNaoRegistrado = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
   && getEstudosCount(dupla) === 0
 );
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const totalBatismosEncerrados = (estudos = []) => estudos
+  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+  .reduce((acc, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
+      return acc + estudo.participantes.length;
+    }
+    return acc + 1;
+  }, 0);
+const normalizarStatus = (valor) => String(valor || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase();
+const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
+const estudoEncerrado = (estudo) => (
+  estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
+);
+const temEstudoEmAndamento = (dupla) => (
+  (dupla?.estudosBiblicos || []).some((estudo) => !estudoEncerrado(estudo))
+  || (temEstudoBiblicoAtivo(dupla) && getEstudosCount(dupla) > 0)
+);
+const getMedalha = (dupla) => {
+  const temBatismoEncerrado = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
+  const temVisitacao = getVisitacoesCount(dupla) >= 1;
+  if (temBatismoEncerrado) return 'ouro';
+  if (temEstudoEmAndamento(dupla)) return 'prata';
+  if (temVisitacao) return 'bronze';
+  return 'semAtividade';
+};
 const estudoEmAndamento = (estudo) => (
   estudo?.encerrado !== true && String(estudo?.statusEstudo || '').toUpperCase() !== 'ENCERRADO'
 );
@@ -177,6 +207,7 @@ export default function RelatorioEstudosGeral() {
     const duplasComEstudoNaoRegistrado = Array.isArray(dados.duplas)
       ? dados.duplas.filter(temEstudoNaoRegistrado)
       : (dados.duplasComEstudoNaoRegistrado || []);
+    const duplas = Array.isArray(dados.duplas) ? dados.duplas : [];
     const sim = (campo) => estudosIndividuais.filter((item) => item[campo] === true).length;
     const baseEspiritual = Math.max(1, estudosIndividuais.length);
 
@@ -189,6 +220,48 @@ export default function RelatorioEstudosGeral() {
       porSerie,
       porMes,
       duplasComEstudoNaoRegistrado,
+      indicadoresDuplas: [
+        {
+          label: 'Dupla sem estudo/visita',
+          valor: duplas.filter((dupla) => getMedalha(dupla) === 'semAtividade').length,
+          cor: '#475569',
+          bg: '#f1f5f9',
+          destino: '/duplas?status=semAtividade',
+          title: 'Ver duplas sem estudo bÃ­blico cadastrado e sem visitaÃ§Ã£o registrada.',
+        },
+        {
+          label: 'Dupla com estudo sem cadastro',
+          valor: duplasComEstudoNaoRegistrado.length,
+          cor: '#b45309',
+          bg: '#fef3c7',
+          destino: '/duplas?filtro=estudoNaoRegistrado',
+          title: 'Ver duplas que responderam Sim em Estudo em andamento, mas ainda nÃ£o cadastraram estudo bÃ­blico.',
+        },
+        {
+          label: 'Sem atividade',
+          valor: duplas.filter((dupla) => dupla.estudoAtualEmAndamento !== true && getEstudosCount(dupla) === 0).length,
+          cor: '#64748b',
+          bg: '#f1f5f9',
+          destino: '/duplas?filtro=semEstudos',
+          title: 'Ver duplas sem estudo em andamento e sem estudo bÃ­blico cadastrado.',
+        },
+        {
+          label: 'Com visitaÃ§Ã£o',
+          valor: duplas.filter((dupla) => getVisitacoesCount(dupla) >= 1).length,
+          cor: '#7c3aed',
+          bg: '#ede9fe',
+          destino: '/duplas?filtro=comVisitacoes',
+          title: 'Ver duplas com uma ou mais visitaÃ§Ãµes.',
+        },
+        {
+          label: 'Com Estudo',
+          valor: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
+          cor: '#0284c7',
+          bg: '#e0f2fe',
+          destino: '/duplas?filtro=comEstudo',
+          title: 'Ver duplas com um ou mais estudos bÃ­blicos cadastrados.',
+        },
+      ],
       totalDuplasComEstudoNaoRegistrado: duplasComEstudoNaoRegistrado.length,
       totalRegistros: estudos.length,
       totalEstudantes: estudantes.length,
@@ -383,7 +456,7 @@ export default function RelatorioEstudosGeral() {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
             ['Pessoas estudando', resumo.totalEstudantes, '#0d9488'],
@@ -406,13 +479,26 @@ export default function RelatorioEstudosGeral() {
           </button>
           <button
             type="button"
-            className="card text-left border border-amber-200 bg-amber-50 transition hover:-translate-y-0.5 hover:shadow-md"
+            className="hidden"
             onClick={abrirDuplasComEstudoNaoRegistrado}
             title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda não cadastraram estudo bíblico."
           >
             <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
             <p className="text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
           </button>
+          {resumo.indicadoresDuplas.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              className="card text-left border transition hover:-translate-y-0.5 hover:shadow-md"
+              style={{ backgroundColor: item.bg, borderColor: `${item.cor}40` }}
+              onClick={() => navigate(caminho(item.destino))}
+              title={item.title}
+            >
+              <p className="text-xs font-medium" style={{ color: item.cor }}>{item.label}</p>
+              <p className="text-3xl font-bold mt-1" style={{ color: item.cor }}>{item.valor}</p>
+            </button>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
