@@ -97,6 +97,8 @@ const formatarBooleanoPdf = (valor) => {
   return 'Nao informado';
 };
 
+const perguntaVisitaPastoral = 'O pastor ou o ancionato visitou o candidato ao batismo?';
+
 const dadosCandidatoComissao = (estudo, participante = null) => ({
   nome: participante?.nome || participantesResumo(estudo),
   whatsapp: participante?.whatsapp || estudo.whatsapp,
@@ -155,7 +157,7 @@ const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
   janela.print();
 };
 
-const abrirPdfComissao = (estudo, participante = null) => {
+const abrirPdfComissao = (estudo, participante = null, respostaVisitaPastoral = 'Nao informado') => {
   if (!estudo) return;
 
   const tituloDocumento = 'Relatório para Comissão da Igreja: Aprovação de Batismo';
@@ -209,6 +211,7 @@ const abrirPdfComissao = (estudo, participante = null) => {
         <h1>${escapeHtml(tituloDocumento)}</h1>
         <p class="subtitulo">Histórico detalhado da jornada do candidato para auxiliar a comissão da igreja na decisão sobre o voto de batismo.</p>
 
+        <h2>Dados do Estudante</h2>
         <div class="resumo">
           <div class="grid">
             <div class="item"><span>Candidato</span><strong>${escapeHtml(candidato.nome)}</strong></div>
@@ -238,6 +241,7 @@ const abrirPdfComissao = (estudo, participante = null) => {
             <tr><td><strong>Endereço</strong></td><td>${escapeHtml(candidato.endereco || 'Nao informado')}</td></tr>
             <tr><td><strong>Observações</strong></td><td>${escapeHtml(estudo.observacoes || 'Sem observacoes registradas.')}</td></tr>
             <tr><td><strong>Motivo de impedimento</strong></td><td>${escapeHtml(candidato.motivoImpedimento || 'Nao informado')}</td></tr>
+            <tr><td><strong>${escapeHtml(perguntaVisitaPastoral)}</strong></td><td>${escapeHtml(respostaVisitaPastoral)}</td></tr>
           </tbody>
         </table>
 
@@ -277,6 +281,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const [totaisPorClassificacao, setTotaisPorClassificacao] = useState({ A: 0, B: 0, C: 0 });
   const [duplas, setDuplas] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
+  const [modalVisitaPastoral, setModalVisitaPastoral] = useState(null);
   const [licoesEditadas, setLicoesEditadas] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [filtros, setFiltros] = useState({
@@ -423,6 +428,14 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     }
     setSelecionado(estudo);
   };
+  const solicitarRelatorioComissao = (estudo, participante = null) => {
+    setModalVisitaPastoral({ estudo, participante });
+  };
+  const gerarRelatorioComissao = (resposta) => {
+    if (!modalVisitaPastoral?.estudo) return;
+    abrirPdfComissao(modalVisitaPastoral.estudo, modalVisitaPastoral.participante, resposta);
+    setModalVisitaPastoral(null);
+  };
   const BotoesBatismo = ({ estudo, participante = null, compacto = false }) => {
     if (isEncerrados) return null;
     const classificacao = participante?.classificacaoInteressado || estudo.classificacaoInteressado;
@@ -433,7 +446,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         <button
           type="button"
           className={`rounded-lg border border-[#1A3A6B]/30 bg-white font-semibold text-[#1A3A6B] hover:bg-[#1A3A6B]/5 ${baseClasses}`}
-          onClick={() => abrirPdfComissao(estudo, participante)}
+          onClick={() => solicitarRelatorioComissao(estudo, participante)}
         >
           Recomendar o batismo
         </button>
@@ -441,7 +454,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           <button
             type="button"
             className={`rounded-lg bg-emerald-600 font-semibold text-white shadow-sm hover:bg-emerald-700 ${baseClasses}`}
-            onClick={() => abrirPdfComissao(estudo, participante)}
+            onClick={() => solicitarRelatorioComissao(estudo, participante)}
           >
             Batismo
           </button>
@@ -996,6 +1009,42 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           )}
         </div>
       </div>
+      {modalVisitaPastoral && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setModalVisitaPastoral(null)}>
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Relatório para comissão</p>
+            <h3 className="mt-2 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Visita pastoral
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-gray-500">
+              {perguntaVisitaPastoral}
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="btn-outline px-4 py-2 text-sm"
+                onClick={() => setModalVisitaPastoral(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                onClick={() => gerarRelatorioComissao('Nao')}
+              >
+                Nao
+              </button>
+              <button
+                type="button"
+                className="btn-primary px-4 py-2 text-sm"
+                onClick={() => gerarRelatorioComissao('Sim')}
+              >
+                Sim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
