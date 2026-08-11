@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as echarts from 'echarts';
 import api from '../lib/api';
-import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
+import { SERIES_ESTUDO, getSerieNome } from '../lib/seriesEstudo';
 import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
 
@@ -16,13 +16,6 @@ const tipoCor = {
   UNICO: '#1A3A6B',
   PONTO: '#0d9488',
   CLASSE: '#7B2D8B',
-};
-
-const classeLabel = {
-  A: 'A - Pronto para batismo',
-  B: 'B - Com impedimento',
-  C: 'C - Não pronto',
-  SEM: 'Sem classificacao',
 };
 
 const classeCor = {
