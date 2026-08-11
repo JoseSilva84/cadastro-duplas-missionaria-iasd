@@ -246,7 +246,7 @@ export default function RelatorioEstudosGeral() {
           title: 'Ver duplas sem estudo em andamento e sem estudo bÃ­blico cadastrado.',
         },
         {
-          label: 'Com visitaÃ§Ã£o',
+          label: 'Com visitação',
           valor: duplas.filter((dupla) => getVisitacoesCount(dupla) >= 1).length,
           cor: '#7c3aed',
           bg: '#ede9fe',
