@@ -140,7 +140,6 @@ export default function Layout({ children }) {
         ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
-        ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', icon: icons.alunos }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -170,13 +169,13 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
           { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] }] : []),
+        ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
       ]
     : [
         ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
         ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
-        ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
@@ -206,6 +205,7 @@ export default function Layout({ children }) {
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
           { to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] }] : []),
+        ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
       ];
 
   const navLinksVisiveis = isCoordenadorRegional

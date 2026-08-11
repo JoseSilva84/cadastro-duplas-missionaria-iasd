@@ -46,11 +46,11 @@ export default function MapaIgrejaResumo({ mapas, titulo = 'Mapa da Igreja', sub
   const acoes = resumo.acoesMissionarias;
 
   return (
-    <section className="rounded-xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+    <section className="group rounded-xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10 sm:p-5">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">Relatorio analitico</p>
-          <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
+          <h3 className="text-lg font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h3>
           {subtitulo && <p className="mt-1 text-xs text-slate-400">{subtitulo}</p>}
         </div>
         <span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">
@@ -60,22 +60,22 @@ export default function MapaIgrejaResumo({ mapas, titulo = 'Mapa da Igreja', sub
 
       <div className={`grid grid-cols-1 gap-3 ${compacto ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 xl:grid-cols-6'}`}>
         {cardsBase.map(([label, campo, cor]) => (
-          <div key={campo} className="rounded-lg border bg-slate-50 p-3" style={{ borderColor: `${cor}30` }}>
-            <div className="mb-3 h-1.5 w-10 rounded-full" style={{ backgroundColor: cor }} />
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-            <p className="mt-1 text-2xl font-bold" style={{ color: cor }}>{numero(resumo[campo])}</p>
+          <div key={campo} className="group/card rounded-lg border bg-slate-50 p-3 transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white hover:shadow-lg" style={{ borderColor: `${cor}30` }}>
+            <div className="mb-3 h-1.5 w-10 rounded-full transition-all duration-300 group-hover/card:w-14" style={{ backgroundColor: cor }} />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors duration-300 group-hover/card:text-[#1A3A6B]">{label}</p>
+            <p className="mt-1 text-2xl font-bold transition-transform duration-300 group-hover/card:translate-x-0.5" style={{ color: cor }}>{numero(resumo[campo])}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3 transition-all duration-300 hover:border-[#C9963A]/40 hover:bg-white hover:shadow-lg">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">Acoes missionarias</p>
           <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">{acoes.length}</span>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
           {acoes.map((acao, index) => (
-            <div key={`${acao.nome}-${index}`} className="rounded-lg bg-white p-3 text-sm shadow-sm">
+            <div key={`${acao.nome}-${index}`} className="rounded-lg bg-white p-3 text-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <p className="font-bold text-[#1A3A6B]">{acao.nome}</p>
               <p className="mt-1 text-xs text-slate-400">{acao.responsavel || 'Sem responsavel'}</p>
               <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-[#C9963A]">{formatarData(acao.data)}</p>

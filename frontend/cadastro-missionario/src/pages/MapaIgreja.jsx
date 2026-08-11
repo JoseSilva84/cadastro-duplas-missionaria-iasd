@@ -16,12 +16,12 @@ const formatarData = (valor) => {
 };
 
 const CardIndicador = ({ label, valor, cor, detalhe }) => (
-  <article className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: `${cor}35` }}>
-    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md" style={{ backgroundColor: cor }}>
+  <article className="group rounded-xl border bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10" style={{ borderColor: `${cor}35` }}>
+    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg" style={{ backgroundColor: cor }}>
       <span className="text-lg font-bold">{String(label).charAt(0)}</span>
     </div>
-    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
-    <p className="mt-1 text-3xl font-bold" style={{ color: cor }}>{valor}</p>
+    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 transition-colors duration-300 group-hover:text-[#1A3A6B]">{label}</p>
+    <p className="mt-1 text-3xl font-bold transition-transform duration-300 group-hover:translate-x-0.5" style={{ color: cor }}>{valor}</p>
     {detalhe && <p className="mt-1 text-sm text-slate-400">{detalhe}</p>}
   </article>
 );
@@ -46,11 +46,11 @@ const MapaCard = ({ mapa, onEditar }) => {
   const acoes = Array.isArray(mapa.acoesMissionarias) ? mapa.acoesMissionarias : [];
 
   return (
-    <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+    <section className="group rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Mapa da Igreja</p>
-          <h2 className="mt-1 break-words text-2xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <h2 className="mt-1 break-words text-2xl font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
             {igreja.nome}
           </h2>
           <p className="mt-1 text-sm text-slate-400">
@@ -233,17 +233,17 @@ export default function MapaIgreja() {
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+        <section className="group rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Graficos</p>
-          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
             Estrutura missionaria
           </h2>
           <EChart option={indicadoresOption} className="h-80" />
         </section>
 
-        <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+        <section className="group rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Graficos</p>
-          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
             Acoes missionarias por igreja
           </h2>
           <EChart option={acoesPorIgrejaOption} className="h-80" />
