@@ -1382,7 +1382,11 @@ export default function DuplasDireto() {
                 {/* Card: Membros (Líder + Parceiro lado a lado) */}
                 <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm xl:col-span-2">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-[10px] font-bold">👥</div>
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a3 3 0 100-6 3 3 0 000 6zM9 10a3 3 0 100-6 3 3 0 000 6z" />
+                      </svg>
+                    </div>
                     <h4 className="text-xs font-bold text-[#1A3A6B] uppercase tracking-wide">Membros da Dupla</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
