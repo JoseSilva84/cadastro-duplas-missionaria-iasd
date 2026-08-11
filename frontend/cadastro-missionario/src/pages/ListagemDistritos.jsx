@@ -229,8 +229,8 @@ function ModalParcialDistrito({ distrito, onClose, navigate }) {
           </div>
 
           <div className="sticky bottom-0 mt-4 grid grid-cols-2 gap-2 bg-white/95 pt-2 backdrop-blur">
-            <button type="button" onClick={() => navigate(`/distritos/${distrito.id}/duplas`)} className="btn-primary px-3 py-2 text-xs">
-              Ver Duplas
+            <button type="button" onClick={() => navigate(`/distritos/${distrito.id}/igrejas`)} className="btn-primary px-3 py-2 text-xs">
+              Ver Igrejas
             </button>
             <button type="button" onClick={() => navigate(`/duplas/nova?distritoId=${distrito.id}`)} className="btn-outline px-3 py-2 text-xs">
               Nova Dupla
@@ -321,17 +321,17 @@ export default function ListagemDistritos() {
                 key={distrito.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => navigate(`/distritos/${distrito.id}/duplas`)}
+                onClick={() => navigate(`/distritos/${distrito.id}/igrejas`)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    navigate(`/distritos/${distrito.id}/duplas`);
+                    navigate(`/distritos/${distrito.id}/igrejas`);
                   }
                 }}
                 className={`w-full text-left px-4 py-3.5 border-l-[3px] transition-all duration-200 ${
                   sel ? 'bg-[#1A3A6B]/5 border-l-[#C9963A]' : 'border-l-transparent hover:bg-gray-50'
                 }`}
-                title={`Ver duplas de ${distrito.nome}`}
+                title={`Ver igrejas de ${distrito.nome}`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg bg-[#1A3A6B]/10 flex items-center justify-center flex-shrink-0 transition-transform ${sel ? 'scale-110' : ''}`}>
@@ -405,14 +405,14 @@ export default function ListagemDistritos() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate(`/distritos/${distritoSelecionado.id}/duplas`)}
+                    onClick={() => navigate(`/distritos/${distritoSelecionado.id}/igrejas`)}
                     className="btn-outline text-sm flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    Ver Duplas
+                    Ver Igrejas
                   </button>
                   <button
                     type="button"

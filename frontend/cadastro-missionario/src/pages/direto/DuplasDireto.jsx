@@ -413,7 +413,7 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
   );
 };
 
-const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navigate, estudosEncerrados }) => {
+const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igreja, navigate, estudosEncerrados }) => {
   const totalEstudos = duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
   const totalClasses = duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
   const duplasVisiveis = new Set(duplas.map((dupla) => String(dupla.id)));
@@ -433,7 +433,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navig
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
             <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-              {distrito?.nome ? `Distrito ${distrito.nome}` : 'Duplas'}
+              {igreja?.nome ? `Igreja ${igreja.nome}` : distrito?.nome ? `Distrito ${distrito.nome}` : 'Duplas'}
             </p>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -444,7 +444,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, navig
         <div className="flex flex-col items-start gap-2">
           <button
             type="button"
-            onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`)}
+            onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}${igreja?.id ? `&igrejaId=${igreja.id}` : ''}` : ''}`)}
             className="btn-primary flex items-center gap-2 self-start"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -784,6 +784,16 @@ export default function DuplasDireto() {
     });
   }, [duplasComMedalha, filtro, filtroClasse, filtroAtividade, estudoAtivoParam, distritoId, igrejaIdParam, regiaoIdParam, tipoProjetoParam, minBatismosParam, minPessoasParam, filtroEspecial, busca]);
 
+  const igrejaAtual = useMemo(() => {
+    if (!igrejaIdParam) return null;
+    const igrejaDoDistrito = (distritoAtual?.igrejas || []).find((igreja) => String(igreja.id) === igrejaIdParam);
+    if (igrejaDoDistrito) return igrejaDoDistrito;
+    return duplas.find((dupla) => String(dupla.igreja?.id || dupla.igrejaId || '') === igrejaIdParam)?.igreja || null;
+  }, [distritoAtual, duplas, igrejaIdParam]);
+  const parametrosNovaDupla = distritoId
+    ? `?distritoId=${distritoId}${igrejaAtual?.id ? `&igrejaId=${igrejaAtual.id}` : ''}`
+    : '';
+
   // Sincroniza a seleção quando a lista filtrada muda
   useEffect(() => {
     if (duplasFiltradas.length === 0) {
@@ -828,6 +838,7 @@ export default function DuplasDireto() {
         duplasFiltradas={duplasFiltradas}
         distritoId={distritoId}
         distrito={distritoAtual}
+        igreja={igrejaAtual}
         navigate={navigate}
         estudosEncerrados={estudosEncerrados}
       />
@@ -842,7 +853,7 @@ export default function DuplasDireto() {
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
                 <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">
-                  {distritoAtual?.nome ? `Distrito ${distritoAtual.nome}` : (isDireto ? 'Visão Direta' : 'Duplas Missionárias')}
+                  {igrejaAtual?.nome ? `Igreja ${igrejaAtual.nome}` : distritoAtual?.nome ? `Distrito ${distritoAtual.nome}` : (isDireto ? 'Visão Direta' : 'Duplas Missionárias')}
                 </p>
               </div>
               <h1 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -852,7 +863,7 @@ export default function DuplasDireto() {
             </div>
             <button
               type="button"
-              onClick={() => navigate(caminho(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`))}
+              onClick={() => navigate(caminho(`/duplas/nova${parametrosNovaDupla}`))}
               className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2 flex-shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1241,7 +1252,7 @@ export default function DuplasDireto() {
               <p className="text-sm">Nenhuma dupla encontrada.</p>
               <button
                 type="button"
-                onClick={() => navigate(caminho(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`))}
+                onClick={() => navigate(caminho(`/duplas/nova${parametrosNovaDupla}`))}
                 className="btn-primary mt-4 text-xs px-4 py-2"
               >
                 Cadastrar dupla

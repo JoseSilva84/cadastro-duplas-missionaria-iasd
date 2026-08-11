@@ -179,9 +179,9 @@ export default function Distritos() {
             key={distrito.id}
             role="button"
             tabIndex={0}
-            onClick={() => navigate(`/distritos/${distrito.id}/duplas`)}
+            onClick={() => navigate(`/distritos/${distrito.id}/igrejas`)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') navigate(`/distritos/${distrito.id}/duplas`);
+              if (event.key === 'Enter' || event.key === ' ') navigate(`/distritos/${distrito.id}/igrejas`);
             }}
             className="w-full text-left card border-2 border-transparent hover:border-[#1A3A6B]/20 group transition-all duration-300 hover:-translate-y-0.5"
           >

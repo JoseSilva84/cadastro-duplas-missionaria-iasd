@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import IgrejaCapa from '../components/IgrejaCapa';
 import { ehAdmin, useAuth } from '../contexts/AuthContext';
@@ -7,23 +7,35 @@ import LoadingState from '../components/LoadingState';
 
 export default function ListagemIgrejas() {
   const navigate = useNavigate();
+  const { distritoId } = useParams();
   const { usuario } = useAuth();
   const podeExcluir = ehAdmin(usuario);
   const [igrejas, setIgrejas] = useState([]);
+  const [distrito, setDistrito] = useState(null);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);
   const [igrejaModal, setIgrejaModal] = useState(null);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    api.get('/igrejas')
-      .then((res) => {
-        setIgrejas(res.data);
-        if (res.data.length > 0) setIgrejaSelecionada(res.data[0]);
+    const carregarDistrito = distritoId
+      ? api.get(`/distritos/${distritoId}`).catch(() => ({ data: null }))
+      : Promise.resolve({ data: null });
+
+    Promise.all([api.get('/igrejas'), carregarDistrito])
+      .then(([res, distritoRes]) => {
+        const lista = Array.isArray(res.data) ? res.data : [];
+        const igrejasDoDistrito = distritoId
+          ? lista.filter((igreja) => String(igreja.distritoId || igreja.distrito?.id || '') === String(distritoId))
+          : lista;
+        setIgrejas(igrejasDoDistrito);
+        setDistrito(distritoRes.data);
+        setIgrejaSelecionada(igrejasDoDistrito[0] || null);
+        setIgrejaModal(null);
       })
       .catch((err) => console.error(err))
       .finally(() => setCarregando(false));
-  }, []);
+  }, [distritoId]);
 
   const igrejasFiltradas = igrejas.filter((ig) => {
     const termo = busca.toLowerCase();
@@ -31,6 +43,10 @@ export default function ListagemIgrejas() {
   });
 
   const selecionarIgreja = (igreja) => {
+    if (distritoId) {
+      navigate(`/distritos/${distritoId}/duplas?igrejaId=${igreja.id}`);
+      return;
+    }
     setIgrejaSelecionada(igreja);
     if (window.matchMedia('(max-width: 1279px)').matches) {
       setIgrejaModal(igreja);
@@ -63,7 +79,7 @@ export default function ListagemIgrejas() {
             <p className="text-[#C9963A] text-xs font-semibold uppercase tracking-wider">Visão Geral</p>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-            Todas as Igrejas
+            {distritoId ? `Igrejas de ${distrito?.nome || 'Distrito'}` : 'Todas as Igrejas'}
           </h1>
           <p className="text-gray-400 text-xs mt-1">{igrejas.length} congregações cadastradas</p>
         </div>

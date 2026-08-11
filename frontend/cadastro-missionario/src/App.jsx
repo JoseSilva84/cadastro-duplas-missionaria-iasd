@@ -209,6 +209,7 @@ function AppRoutes() {
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Alunos /></RotaComPerfis>} />
 
         {/* Distritos */}
+        <Route path="distritos/:distritoId/igrejas" element={<ListagemIgrejas />} />
         <Route path="distritos/:distritoId/duplas" element={<Duplas />} />
 
         {/* Duplas */}
