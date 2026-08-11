@@ -83,40 +83,44 @@ export default function ListagemIgrejas() {
           </h1>
           <p className="text-gray-400 text-xs mt-1">{igrejas.length} congregações cadastradas</p>
         </div>
-        {distritoId && (
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="btn-outline flex items-center gap-2 self-start"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Voltar
-          </button>
-        )}
-        <div className="relative w-full sm:w-72">
-          <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar por nome ou distrito..."
-            className="input-field pl-12"
-            style={{ paddingLeft: '3.25rem' }}
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-72">
+              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar por nome ou distrito..."
+                className="input-field pl-12"
+                style={{ paddingLeft: '3.25rem' }}
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+            {podeExcluir && igrejaSelecionada && (
+              <button
+                type="button"
+                onClick={excluirIgreja}
+                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                Excluir igreja
+              </button>
+            )}
+          </div>
+          {distritoId && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-[#1A3A6B] transition-all hover:bg-[#1A3A6B]/8 hover:text-[#C9963A] focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar
+            </button>
+          )}
         </div>
-        {podeExcluir && igrejaSelecionada && (
-          <button
-            type="button"
-            onClick={excluirIgreja}
-            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-          >
-            Excluir igreja
-          </button>
-        )}
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 min-h-[520px]">
