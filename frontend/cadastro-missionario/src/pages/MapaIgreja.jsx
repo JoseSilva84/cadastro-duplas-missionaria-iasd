@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import EChart from '../components/EChart';
+import MapaIgrejaResumo, { somarMapasIgreja } from '../components/MapaIgrejaResumo';
 
 const cores = ['#1A3A6B', '#0d9488', '#7c3aed', '#ea580c', '#dc2626', '#C9963A'];
 
@@ -136,6 +138,66 @@ export default function MapaIgreja() {
     acoes: mapas.reduce((acc, mapa) => acc + (Array.isArray(mapa.acoesMissionarias) ? mapa.acoesMissionarias.length : 0), 0),
   }), [mapas]);
 
+  const resumoAnalitico = useMemo(() => somarMapasIgreja(mapas), [mapas]);
+
+  const indicadoresOption = useMemo(() => ({
+    color: ['#1A3A6B'],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 24, right: 16, top: 24, bottom: 58, containLabel: true },
+    xAxis: {
+      type: 'category',
+      axisTick: { show: false },
+      axisLabel: { color: '#64748b', fontWeight: 700, interval: 0, rotate: 18 },
+      data: ['Pequeno Grupo', 'Semana Santa', 'Classe Biblica', 'Aventureiros', 'Duplas', 'Desbravadores'],
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#94a3b8' },
+      splitLine: { lineStyle: { color: '#e5e7eb' } },
+    },
+    series: [{
+      name: 'Total',
+      type: 'bar',
+      barWidth: 28,
+      itemStyle: {
+        borderRadius: [8, 8, 0, 0],
+        color: (params) => ['#C9963A', '#0d9488', '#7c3aed', '#0284c7', '#1A3A6B', '#dc2626'][params.dataIndex],
+      },
+      data: [
+        resumoAnalitico.quantidadePequenosGrupos,
+        resumoAnalitico.semanaSanta,
+        resumoAnalitico.classeBiblica,
+        resumoAnalitico.aventureiros,
+        resumoAnalitico.quantidadeDuplasMissionarias,
+        resumoAnalitico.desbravadores,
+      ],
+    }],
+  }), [resumoAnalitico]);
+
+  const acoesPorIgrejaOption = useMemo(() => {
+    const dados = mapas
+      .map((mapa) => ({
+        name: mapa.igreja?.nome || 'Sem igreja',
+        value: Array.isArray(mapa.acoesMissionarias) ? mapa.acoesMissionarias.length : 0,
+      }))
+      .filter((item) => item.value > 0);
+
+    return {
+      color: cores,
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, type: 'scroll', textStyle: { color: '#64748b' } },
+      series: [{
+        name: 'Acoes missionarias',
+        type: 'pie',
+        radius: ['48%', '72%'],
+        center: ['50%', '42%'],
+        avoidLabelOverlap: true,
+        label: { color: '#334155', fontWeight: 700 },
+        data: dados.length ? dados : [{ name: 'Sem acoes', value: 0 }],
+      }],
+    };
+  }, [mapas]);
+
   if (carregando) return <LoadingState mensagem="Carregando Mapa da Igreja..." />;
 
   return (
@@ -160,6 +222,32 @@ export default function MapaIgreja() {
         <CardIndicador label="Membros" valor={numero(resumo.membros)} cor={cores[1]} />
         <CardIndicador label="Pequenos Grupos" valor={numero(resumo.pequenosGrupos)} cor={cores[2]} />
         <CardIndicador label="Ações Missionárias" valor={numero(resumo.acoes)} cor={cores[3]} />
+      </div>
+
+      <div className="mt-5">
+        <MapaIgrejaResumo
+          mapas={mapas}
+          titulo="Mapa da Igreja - Geral"
+          subtitulo="Consolidado de todas as igrejas mapeadas no escopo administrativo."
+        />
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Graficos</p>
+          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            Estrutura missionaria
+          </h2>
+          <EChart option={indicadoresOption} className="h-80" />
+        </section>
+
+        <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Graficos</p>
+          <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            Acoes missionarias por igreja
+          </h2>
+          <EChart option={acoesPorIgrejaOption} className="h-80" />
+        </section>
       </div>
 
       <div className="mt-5 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">

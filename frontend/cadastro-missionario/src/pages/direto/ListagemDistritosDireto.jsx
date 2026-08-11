@@ -2,26 +2,33 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import LoadingState from '../../components/LoadingState';
+import MapaIgrejaResumo from '../../components/MapaIgrejaResumo';
 
 export default function ListagemDistritosDireto() {
   const navigate = useNavigate();
   const [distritos, setDistritos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
+  const [mapasIgreja, setMapasIgreja] = useState([]);
   const [busca, setBusca] = useState('');
   const [mostraDetalhe, setMostraDetalhe] = useState(false);
 
   useEffect(() => {
-    api.get('/distritos')
-      .then((res) => {
-        setDistritos(res.data);
-        if (res.data.length > 0) {
-          setDistritoSelecionado(res.data[0]);
+    Promise.all([api.get('/distritos'), api.get('/mapa-igreja')])
+      .then(([resDistritos, resMapas]) => {
+        setDistritos(resDistritos.data);
+        setMapasIgreja(Array.isArray(resMapas.data) ? resMapas.data : []);
+        if (resDistritos.data.length > 0) {
+          setDistritoSelecionado(resDistritos.data[0]);
         }
       })
       .catch((err) => console.error(err))
       .finally(() => setCarregando(false));
   }, []);
+
+  const mapasDoDistrito = mapasIgreja.filter((mapa) => (
+    String(mapa.igreja?.distritoId || mapa.igreja?.distrito?.id || '') === String(distritoSelecionado?.id || '')
+  ));
 
   const distritosFiltrados = distritos.filter((d) => {
     if (!busca) return true;
@@ -229,6 +236,14 @@ export default function ListagemDistritosDireto() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                <div className="lg:col-span-2 xl:col-span-3">
+                  <MapaIgrejaResumo
+                    mapas={mapasDoDistrito}
+                    titulo={`Mapa da Igreja - ${distritoSelecionado.nome}`}
+                    subtitulo="Resumo das igrejas mapeadas neste distrito."
+                  />
                 </div>
 
                 {/* Card: Igrejas do Distrito */}

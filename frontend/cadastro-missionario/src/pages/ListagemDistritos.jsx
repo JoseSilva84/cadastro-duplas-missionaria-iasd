@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import LoadingState from '../components/LoadingState';
+import MapaIgrejaResumo from '../components/MapaIgrejaResumo';
 
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
@@ -98,10 +99,13 @@ const getResumoDistrito = (distrito) => {
   };
 };
 
-function ModalParcialDistrito({ distrito, onClose, navigate }) {
+function ModalParcialDistrito({ distrito, onClose, navigate, mapasIgreja = [] }) {
   if (!distrito) return null;
 
   const { duplas, estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distrito);
+  const mapasDoDistrito = mapasIgreja.filter((mapa) => (
+    String(mapa.igreja?.distritoId || mapa.igreja?.distrito?.id || '') === String(distrito.id || '')
+  ));
   const indicadores = [
     { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), icon: <MembersIcon />, gradient: 'from-[#7B2D8B] to-[#9333ea]', cor: '#7B2D8B' },
     { label: 'Igrejas', valor: (distrito.igrejas || []).length, icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', cor: '#16a34a' },
@@ -153,6 +157,15 @@ function ModalParcialDistrito({ distrito, onClose, navigate }) {
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">{item.label}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mb-4">
+            <MapaIgrejaResumo
+              mapas={mapasDoDistrito}
+              titulo={`Mapa da Igreja - ${distrito.nome}`}
+              subtitulo="Resumo das igrejas mapeadas neste distrito."
+              compacto
+            />
           </div>
 
           <div className="mb-4 rounded-xl border border-gray-100 bg-white shadow-sm">
@@ -247,18 +260,20 @@ export default function ListagemDistritos() {
   const [distritos, setDistritos] = useState([]);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
   const [distritoModal, setDistritoModal] = useState(null);
+  const [mapasIgreja, setMapasIgreja] = useState([]);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    api.get('/distritos')
-      .then(async (res) => {
-        const lista = Array.isArray(res.data) ? res.data : [];
+    Promise.all([api.get('/distritos'), api.get('/mapa-igreja')])
+      .then(async ([resDistritos, resMapas]) => {
+        const lista = Array.isArray(resDistritos.data) ? resDistritos.data : [];
         const listaComFotos = await Promise.all(lista.map(async (distrito) => ({
           ...distrito,
           duplas: await Promise.all((distrito.duplas || []).map(resolverFotosDaDupla)),
         })));
         setDistritos(listaComFotos);
+        setMapasIgreja(Array.isArray(resMapas.data) ? resMapas.data : []);
         if (listaComFotos.length > 0) setDistritoSelecionado(listaComFotos[0]);
       })
       .catch((err) => console.error(err))
@@ -274,6 +289,9 @@ export default function ListagemDistritos() {
 
   const duplasDist = distritoSelecionado?.duplas || [];
   const { estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distritoSelecionado);
+  const mapasDoDistritoSelecionado = mapasIgreja.filter((mapa) => (
+    String(mapa.igreja?.distritoId || mapa.igreja?.distrito?.id || '') === String(distritoSelecionado?.id || '')
+  ));
 
   const abrirParcial = (distrito) => {
     setDistritoSelecionado(distrito);
@@ -448,6 +466,14 @@ export default function ListagemDistritos() {
               ))}
             </div>
 
+            <div className="mb-4">
+              <MapaIgrejaResumo
+                mapas={mapasDoDistritoSelecionado}
+                titulo={`Mapa da Igreja - ${distritoSelecionado.nome}`}
+                subtitulo="Resumo das igrejas mapeadas neste distrito."
+              />
+            </div>
+
             {/* Igrejas do Distrito */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-4">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -560,6 +586,7 @@ export default function ListagemDistritos() {
         distrito={distritoModal}
         onClose={() => setDistritoModal(null)}
         navigate={navigate}
+        mapasIgreja={mapasIgreja}
       />
     </div>
   );

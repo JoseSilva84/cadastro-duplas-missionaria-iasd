@@ -6,6 +6,7 @@ import { toast } from '../lib/toast';
 import AvatarUpload from './AvatarUpload';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
+import MapaIgrejaResumo from './MapaIgrejaResumo';
 
 const formatarNumero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -723,6 +724,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const [igrejaAtual, setIgrejaAtual] = useState(igreja);
   const [relatorio, setRelatorio] = useState(null);
+  const [mapaIgreja, setMapaIgreja] = useState(null);
   const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
   const [fotos, setFotos] = useState({});
   const [editando, setEditando] = useState(false);
@@ -745,6 +747,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
 
     setIgrejaAtual(igreja);
     setRelatorio(null);
+    setMapaIgreja(null);
     setFotos({});
     setCarregandoRelatorio(true);
     setDuplasIgreja([]);
@@ -753,6 +756,14 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       .then((res) => { if (ativo) setRelatorio(res.data); })
       .catch(() => { if (ativo) setRelatorio(null); })
       .finally(() => { if (ativo) setCarregandoRelatorio(false); });
+
+    api.get('/mapa-igreja', { params: { igrejaId: igreja.id } })
+      .then((res) => {
+        if (!ativo) return;
+        const lista = Array.isArray(res.data) ? res.data : [];
+        setMapaIgreja(lista[0] || null);
+      })
+      .catch(() => { if (ativo) setMapaIgreja(null); });
 
     // Carregar duplas da igreja
     setCarregandoDuplas(true);
@@ -884,6 +895,13 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       </div>
 
       {/* ── Seção: Duplas Missionárias da Igreja ─────────────────────────── */}
+      <MapaIgrejaResumo
+        mapas={mapaIgreja}
+        titulo={`Mapa da Igreja - ${igrejaAtual.nome}`}
+        subtitulo="Estrutura missionaria e acoes cadastradas para esta igreja."
+        compacto
+      />
+
       <section>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
