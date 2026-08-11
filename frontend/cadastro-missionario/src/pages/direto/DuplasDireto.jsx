@@ -1278,16 +1278,6 @@ export default function DuplasDireto() {
             {/* Cabeçalho do detail */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
               {/* Botão voltar (mobile) */}
-              <button
-                type="button"
-                onClick={() => setMostraDetalhe(false)}
-                className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-[#1A3A6B] transition-colors hover:text-[#C9963A]"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Fechar
-              </button>
               {/* Mobile: empilhado | sm+: lado a lado */}
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-5">
                 {/* Fotos + Nomes */}
@@ -1337,7 +1327,18 @@ export default function DuplasDireto() {
                 </div>
 
                 {/* Botões de ação — linha separada no mobile */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:flex-shrink-0 xl:items-center">
+                <div className="flex flex-col items-end gap-2 xl:flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMostraDetalhe(false)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1A3A6B] transition-colors hover:text-[#C9963A]"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Fechar
+                  </button>
+                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:items-center">
                   {podeExcluir && (
                     <button
                       type="button"
@@ -1370,6 +1371,7 @@ export default function DuplasDireto() {
                   >
                     <span className="text-2xl font-bold leading-none text-white" aria-hidden="true">›</span>
                   </button>
+                  </div>
                 </div>
               </div>
             </div>
