@@ -24,7 +24,7 @@ const projetoIcon = {
 // Configuração visual de Classe A/B/C
 const classeConfig = {
   A: { label: 'Classe A', cor: '#16a34a', bg: '#dcfce7', desc: 'Já levou ao batismo' },
-  B: { label: 'Classe B', cor: '#b45309', bg: '#fef3c7', desc: 'Deu estudo, sem batismo' },
+  B: { label: 'Classe B', cor: '#2563eb', bg: '#dbeafe', desc: 'Deu estudo, sem batismo' },
   C: { label: 'Classe C', cor: '#dc2626', bg: '#fee2e2', desc: 'Nunca deu estudo' },
 };
 

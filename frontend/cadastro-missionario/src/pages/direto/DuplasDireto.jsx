@@ -112,7 +112,7 @@ const statusAcompanhamentoLabels = {
 
 const classeConfig = {
   A: { label: 'Classe A', cor: '#047857', bg: '#d1fae5' },
-  B: { label: 'Classe B', cor: '#b45309', bg: '#fef3c7' },
+  B: { label: 'Classe B', cor: '#2563eb', bg: '#dbeafe' },
   C: { label: 'Classe C', cor: '#b91c1c', bg: '#fee2e2' },
 };
 const classeRegras = {
