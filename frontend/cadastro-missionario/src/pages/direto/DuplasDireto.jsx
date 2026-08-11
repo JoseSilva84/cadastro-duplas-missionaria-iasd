@@ -112,8 +112,8 @@ const statusAcompanhamentoLabels = {
 
 const classeConfig = {
   A: { label: 'Classe A', cor: '#047857', bg: '#d1fae5' },
-  B: { label: 'Classe B', cor: '#2563eb', bg: '#dbeafe' },
-  C: { label: 'Classe C', cor: '#b91c1c', bg: '#fee2e2' },
+  B: { label: 'Classe B', cor: '#1d4ed8', bg: '#bfdbfe' },
+  C: { label: 'Classe C', cor: '#dc2626', bg: '#fee2e2' },
 };
 const classeRegras = {
   A: 'Classe A: levou pessoa ao batismo e possui pelo menos 1 estudo cadastrado.',
