@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
 import LoadingState from '../components/LoadingState';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
 
@@ -103,7 +104,9 @@ const alunoDoParticipante = (estudo, participante) => ({
 export default function Alunos() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
+  const isAdmin = ehAdmin(usuario);
   const prefix = isDireto ? '/direto' : '';
   const [dados, setDados] = useState({ estudos: [] });
   const [carregando, setCarregando] = useState(true);
@@ -298,9 +301,16 @@ export default function Alunos() {
             </h1>
             <p className="text-gray-400 text-sm mt-1">Alunos de estudos individuais, pontos de estudo e classes bíblicas dentro do seu escopo de acesso.</p>
           </div>
-          <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/cadastro/estudos-biblicos`)}>
-            Novo aluno
-          </button>
+          <div className="flex flex-wrap gap-3 xl:justify-end">
+            {isAdmin && (
+              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/estudos-geral`)}>
+                Estudos no Geral
+              </button>
+            )}
+            <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/cadastro/estudos-biblicos`)}>
+              Novo aluno
+            </button>
+          </div>
         </div>
       </div>
 
