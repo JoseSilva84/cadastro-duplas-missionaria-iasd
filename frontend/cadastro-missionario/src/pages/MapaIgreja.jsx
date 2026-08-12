@@ -77,22 +77,24 @@ const MapaCard = ({ mapa, onEditar }) => {
         ))}
       </div>
 
-      <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 p-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="group/actions relative mt-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all duration-500 ease-out hover:-translate-y-1 hover:border-[#C9963A]/50 hover:bg-white hover:shadow-2xl hover:shadow-[#1A3A6B]/10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(201,150,58,0.16),transparent_34%),linear-gradient(135deg,rgba(26,58,107,0.07),transparent_46%)] opacity-0 transition-opacity duration-500 group-hover/actions:opacity-100" />
+        <div className="pointer-events-none absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-transparent via-[#C9963A]/70 to-transparent opacity-0 transition-opacity duration-500 group-hover/actions:opacity-100" />
+        <div className="relative flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Ações missionárias</p>
-            <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A] transition-all duration-300 group-hover/actions:tracking-[0.22em]">Ações missionárias</p>
+            <h3 className="text-lg font-bold text-[#1A3A6B] transition-colors duration-300 group-hover/actions:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
               Planejamento local
             </h3>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500">{acoes.length} ação(ões)</span>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 shadow-sm transition-all duration-300 group-hover/actions:-translate-y-0.5 group-hover/actions:bg-[#1A3A6B] group-hover/actions:text-white">{acoes.length} ação(ões)</span>
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="relative mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {acoes.map((acao, index) => (
-            <div key={`${acao.nome}-${index}`} className="rounded-xl border border-white bg-white p-3 shadow-sm">
-              <p className="font-bold text-[#1A3A6B]">{acao.nome}</p>
-              <p className="mt-1 text-sm text-slate-400">{acao.responsavel || 'Sem responsável'}</p>
-              <p className="mt-3 text-xs font-bold uppercase tracking-widest text-[#C9963A]">{formatarData(acao.data)}</p>
+            <div key={`${acao.nome}-${index}`} className="group/action rounded-xl border border-white bg-white p-3 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/40 hover:shadow-xl hover:shadow-[#1A3A6B]/10">
+              <p className="font-bold text-[#1A3A6B] transition-colors duration-300 group-hover/action:text-[#C9963A]">{acao.nome}</p>
+              <p className="mt-1 text-sm text-slate-400 transition-colors duration-300 group-hover/action:text-slate-500">{acao.responsavel || 'Sem responsável'}</p>
+              <p className="mt-3 inline-flex rounded-full bg-[#C9963A]/10 px-2.5 py-1 text-xs font-bold uppercase tracking-widest text-[#C9963A] transition-all duration-300 group-hover/action:bg-[#C9963A] group-hover/action:text-white">{formatarData(acao.data)}</p>
             </div>
           ))}
           {acoes.length === 0 && (
