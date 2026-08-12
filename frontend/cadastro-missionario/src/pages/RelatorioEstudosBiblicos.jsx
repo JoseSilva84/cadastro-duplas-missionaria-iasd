@@ -403,6 +403,8 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     : 0;
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
   const totalEstudantes = resultado.totalEstudantes ?? resultado.estudos.reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
+  const totalBatismosEncerrados = analisesGraficos.totalBatismosEncerrados || 0;
+  const taxaBatismoEncerrados = totalEstudantes ? Math.round((totalBatismosEncerrados / totalEstudantes) * 100) : 0;
   const totalDuplasComEstudoNaoRegistrado = duplas.filter(temEstudoNaoRegistrado).length;
   const tooltipTotalEstudantes = isPonto
     ? 'Estudos nos pontos: soma dos estudantes/participantes cadastrados em todos os pontos filtrados.'
@@ -502,6 +504,10 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     const estudantesBatizados = estudos
       .filter((estudo) => motivoEncerramentoKey(estudo.motivoEncerramento) === 'BATISMO')
       .flatMap(estudantesDoEstudo);
+    const totalBatismosEncerrados = estudantesBatizados.length;
+    const totalDesistenciasEncerradas = estudos
+      .filter((estudo) => motivoEncerramentoKey(estudo.motivoEncerramento) === 'DESISTIU')
+      .reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
 
     const porSerie = Object.entries(agruparSoma(estudantes, (item) => getSerieNome(item.serie)))
       .map(([nome, total]) => ({ nome, total }))
@@ -539,6 +545,19 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         const [mb, ab] = b.nome.split('/').map(Number);
         return (aa || 0) - (ab || 0) || (ma || 0) - (mb || 0);
       });
+    const porSerieEncerramento = Object.values(estudos.reduce((acc, estudo) => {
+      const nome = getSerieNome(estudo.serie);
+      if (!acc[nome]) acc[nome] = { nome, batismos: 0, desistencias: 0, outros: 0, total: 0 };
+      const total = totalEstudantesDoEstudo(estudo);
+      const motivo = motivoEncerramentoKey(estudo.motivoEncerramento);
+      if (motivo === 'BATISMO') acc[nome].batismos += total;
+      else if (motivo === 'DESISTIU') acc[nome].desistencias += total;
+      else acc[nome].outros += total;
+      acc[nome].total += total;
+      return acc;
+    }, {}))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+      .slice(0, 8);
     const faixasProgresso = estudantes.reduce((acc, item) => {
       if (item.progresso >= 100) acc['100%'] += 1;
       else if (item.progresso >= 76) acc['76-99%'] += 1;
@@ -559,6 +578,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       porDuplaBatizados,
       porMotivoEncerramento,
       porMesEncerramento,
+      porSerieEncerramento,
+      totalBatismosEncerrados,
+      totalDesistenciasEncerradas,
       faixasProgresso,
       espiritual: [
         Math.round((sim('vaIgreja') / baseEspiritual) * 100),
@@ -699,6 +721,46 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       })),
     }],
   };
+  const seriesEncerramentoOption = {
+    ...chartBase,
+    color: ['#0d9488', '#b91c1c', '#64748b'],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: '#0f172a', borderWidth: 0, textStyle: { color: '#fff' } },
+    legend: { bottom: 0, icon: 'circle' },
+    grid: { left: 132, right: 24, top: 22, bottom: 54 },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: analisesGraficos.porSerieEncerramento.map((item) => item.nome),
+      axisLabel: { width: 112, overflow: 'truncate' },
+    },
+    series: [
+      {
+        name: 'Batismo',
+        type: 'bar',
+        stack: 'encerramento',
+        barWidth: 16,
+        itemStyle: { borderRadius: [0, 0, 0, 0] },
+        data: analisesGraficos.porSerieEncerramento.map((item) => item.batismos),
+      },
+      {
+        name: 'Desistiu do estudo',
+        type: 'bar',
+        stack: 'encerramento',
+        barWidth: 16,
+        itemStyle: { borderRadius: [0, 0, 0, 0] },
+        data: analisesGraficos.porSerieEncerramento.map((item) => item.desistencias),
+      },
+      {
+        name: 'Outros',
+        type: 'bar',
+        stack: 'encerramento',
+        barWidth: 16,
+        itemStyle: { borderRadius: [0, 8, 8, 0] },
+        data: analisesGraficos.porSerieEncerramento.map((item) => item.outros),
+      },
+    ],
+  };
   const evolucaoEncerramentosOption = {
     ...chartBase,
     color: ['#1A3A6B'],
@@ -732,7 +794,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className={`grid grid-cols-1 ${isGrupo || isTodos ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-1 ${isEncerrados ? 'md:grid-cols-3 xl:grid-cols-6' : isGrupo || isTodos ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
           {isGrupo && (
             <div
               className="smart-tooltip card"
@@ -767,8 +829,28 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             <p className="text-xs text-gray-400">{isPonto ? 'Estudos nos pontos' : isClasse ? 'Estudantes em classes' : isTodos || isEncerrados ? 'Pessoas envolvidas' : 'Estudantes'}</p>
             <p className="text-2xl font-bold text-[#1A3A6B]">{isGrupo || isTodos || isEncerrados ? totalEstudantes : resultado.total}</p>
           </div>
+          {isEncerrados && (
+            <div
+              className="smart-tooltip card border border-emerald-100 bg-emerald-50/60"
+              data-tooltip="Batismos: total de pessoas vinculadas a estudos encerrados com motivo Batismo."
+              tabIndex={0}
+            >
+              <p className="text-xs text-emerald-700">Batismos</p>
+              <p className="text-2xl font-bold text-[#0d9488]">{totalBatismosEncerrados}</p>
+            </div>
+          )}
           <div className="smart-tooltip card" data-tooltip="Progresso medio: media do percentual de licoes concluidas nos registros filtrados." tabIndex={0}><p className="text-xs text-gray-400">Progresso médio</p><p className="text-2xl font-bold text-[#C9963A]">{mediaProgresso}%</p></div>
           <div className="smart-tooltip card" data-tooltip="Concluidos: quantidade de estudos que chegaram a 100% da serie selecionada." tabIndex={0}><p className="text-xs text-gray-400">Concluídos</p><p className="text-2xl font-bold text-emerald-600">{concluidos}</p></div>
+          {isEncerrados && (
+            <div
+              className="smart-tooltip card"
+              data-tooltip="Taxa de batismo: percentual de pessoas encerradas cujo motivo foi Batismo."
+              tabIndex={0}
+            >
+              <p className="text-xs text-gray-400">Taxa de batismo</p>
+              <p className="text-2xl font-bold text-[#0d9488]">{taxaBatismoEncerrados}%</p>
+            </div>
+          )}
           {!isEncerrados && (
           <button
             type="button"
@@ -811,7 +893,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         )}
 
         {isEncerrados && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
             <section className="card">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
               <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos encerrados por motivo registrado.</p>
@@ -821,6 +903,11 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               <h2 className="text-lg font-bold text-[#1A3A6B]">Evolução dos encerramentos</h2>
               <p className="text-sm text-gray-400 mb-3">Quantidade de estudos encerrados por mês.</p>
               <EChart option={evolucaoEncerramentosOption} className="h-80" />
+            </section>
+            <section className="card">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Resultado por série</h2>
+              <p className="text-sm text-gray-400 mb-3">Batismos, desistências e outros motivos por série.</p>
+              <EChart option={seriesEncerramentoOption} className="h-80" />
             </section>
           </div>
         )}
