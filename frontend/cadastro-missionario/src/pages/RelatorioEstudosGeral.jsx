@@ -33,6 +33,14 @@ const motivoEncerramentoLabel = {
   'Nao informado': 'Não informado',
 };
 
+const motivoEncerramentoCor = {
+  BATISMO: '#0d9488',
+  DESISTIU: '#b91c1c',
+  TERMINOU_LICOES: '#C9963A',
+  OUTRO: '#64748b',
+  'NAO INFORMADO': '#1A3A6B',
+};
+
 const motivoEncerramentoKey = (valor) => String(valor || 'Nao informado').toUpperCase();
 
 const progresso = (estudo) => {
@@ -203,6 +211,7 @@ export default function RelatorioEstudosGeral() {
       .map(([motivo, total]) => ({
         motivo: motivoEncerramentoLabel[motivo] || motivo,
         total,
+        cor: motivoEncerramentoCor[motivo] || '#64748b',
       }))
       .sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
     const duplasComEstudoNaoRegistrado = Array.isArray(dados.duplas)
@@ -306,7 +315,6 @@ export default function RelatorioEstudosGeral() {
 
   const encerradosOption = {
     ...chartBase,
-    color: ['#b91c1c', '#C9963A', '#64748b', '#1A3A6B', '#0d9488'],
     legend: { bottom: 0, icon: 'circle' },
     series: [{
       name: 'Motivo',
@@ -319,6 +327,7 @@ export default function RelatorioEstudosGeral() {
       data: resumo.encerradosPorMotivo.map((item) => ({
         name: item.motivo,
         value: item.total,
+        itemStyle: { color: item.cor },
       })),
     }],
   };

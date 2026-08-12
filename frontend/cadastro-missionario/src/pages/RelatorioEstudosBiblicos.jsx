@@ -38,6 +38,14 @@ const motivoEncerramentoLabel = {
   'Nao informado': 'Nao informado',
 };
 
+const motivoEncerramentoCor = {
+  BATISMO: '#0d9488',
+  DESISTIU: '#b91c1c',
+  TERMINOU_LICOES: '#C9963A',
+  OUTRO: '#64748b',
+  'NAO INFORMADO': '#1A3A6B',
+};
+
 const motivoEncerramentoKey = (valor) => String(valor || 'Nao informado').toUpperCase();
 
 const mesAno = (valor) => {
@@ -519,6 +527,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       .map(([motivo, total]) => ({
         nome: motivoEncerramentoLabel[motivo] || motivo,
         total,
+        cor: motivoEncerramentoCor[motivo] || '#64748b',
       }))
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
     const porMesEncerramento = Object.entries(agruparSoma(estudos, (item) => mesAno(item.encerradoEm || item.atualizadoEm || item.criadoEm)))
@@ -675,7 +684,6 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
   const motivosEncerramentoOption = {
     ...chartBase,
-    color: ['#0d9488', '#b91c1c', '#C9963A', '#64748b', '#1A3A6B'],
     legend: { bottom: 0, icon: 'circle' },
     series: [{
       name: 'Motivo',
@@ -687,6 +695,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       data: analisesGraficos.porMotivoEncerramento.map((item) => ({
         name: item.nome,
         value: item.total,
+        itemStyle: { color: item.cor },
       })),
     }],
   };
