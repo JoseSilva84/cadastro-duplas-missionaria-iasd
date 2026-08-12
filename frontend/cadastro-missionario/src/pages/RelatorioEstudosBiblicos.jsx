@@ -511,7 +511,11 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       .map(([nome, total]) => ({ nome, total }))
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
       .slice(0, 8);
-    const porMotivoEncerramento = Object.entries(agruparSoma(estudos, (item) => motivoEncerramentoKey(item.motivoEncerramento)))
+    const porMotivoEncerramento = Object.entries(agruparSoma(
+      estudos,
+      (item) => motivoEncerramentoKey(item.motivoEncerramento),
+      totalEstudantesDoEstudo,
+    ))
       .map(([motivo, total]) => ({
         nome: motivoEncerramentoLabel[motivo] || motivo,
         total,

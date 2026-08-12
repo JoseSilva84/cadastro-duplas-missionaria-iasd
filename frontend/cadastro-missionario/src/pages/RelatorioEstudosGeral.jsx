@@ -65,9 +65,13 @@ function Chart({ option, className = 'h-80' }) {
   return <div ref={ref} className={`w-full ${className}`} />;
 }
 
-const agruparSoma = (itens, chaveFn) => itens.reduce((acc, item) => {
+const totalEstudantesDoEstudo = (estudo) => (
+  ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? (estudo.participantes?.length || 0) : 1
+);
+
+const agruparSoma = (itens, chaveFn, valorFn = () => 1) => itens.reduce((acc, item) => {
   const chave = chaveFn(item) || 'Não informado';
-  acc[chave] = (acc[chave] || 0) + 1;
+  acc[chave] = (acc[chave] || 0) + valorFn(item);
   return acc;
 }, {});
 
@@ -191,7 +195,11 @@ export default function RelatorioEstudosGeral() {
       : 0;
     const estudosIndividuais = estudos.filter((item) => item.tipoEstudo === 'UNICO');
     const estudosEncerrados = dados.estudosEncerrados || [];
-    const encerradosPorMotivo = Object.entries(agruparSoma(estudosEncerrados, (item) => motivoEncerramentoKey(item.motivoEncerramento)))
+    const encerradosPorMotivo = Object.entries(agruparSoma(
+      estudosEncerrados,
+      (item) => motivoEncerramentoKey(item.motivoEncerramento),
+      totalEstudantesDoEstudo,
+    ))
       .map(([motivo, total]) => ({
         motivo: motivoEncerramentoLabel[motivo] || motivo,
         total,
