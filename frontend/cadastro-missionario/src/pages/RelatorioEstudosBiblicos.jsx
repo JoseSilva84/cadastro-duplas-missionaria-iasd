@@ -403,8 +403,6 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     : 0;
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
   const totalEstudantes = resultado.totalEstudantes ?? resultado.estudos.reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
-  const totalBatismosEncerrados = analisesGraficos.totalBatismosEncerrados || 0;
-  const taxaBatismoEncerrados = totalEstudantes ? Math.round((totalBatismosEncerrados / totalEstudantes) * 100) : 0;
   const totalDuplasComEstudoNaoRegistrado = duplas.filter(temEstudoNaoRegistrado).length;
   const tooltipTotalEstudantes = isPonto
     ? 'Estudos nos pontos: soma dos estudantes/participantes cadastrados em todos os pontos filtrados.'
@@ -645,6 +643,8 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     }],
   };
   const ranking = isEncerrados ? analisesGraficos.porDuplaBatizados : (isPonto || isClasse ? analisesGraficos.porIgreja : analisesGraficos.porDupla);
+  const totalBatismosEncerrados = analisesGraficos.totalBatismosEncerrados || 0;
+  const taxaBatismoEncerrados = totalEstudantes ? Math.round((totalBatismosEncerrados / totalEstudantes) * 100) : 0;
   const tituloRanking = isEncerrados
     ? 'Duplas com mais estudantes batizados'
     : (isPonto || isClasse ? 'Igrejas com mais estudantes' : 'Duplas com mais estudantes');
