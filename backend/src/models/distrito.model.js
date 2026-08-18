@@ -1,11 +1,12 @@
 // Model de Distrito — Operações no banco de dados
 const prisma = require('../lib/prisma');
 const { removerDuplasPorFiltro } = require('./cadastroDelete.model');
+const { whereEstudoBatismoConfirmado, anexarBatismosConfirmadosNaDupla } = require('./batismoConfirmado');
 
 const DistritoModel = {
   // Lista distritos com filtro opcional
   async findAll(filtro = {}) {
-    return prisma.distrito.findMany({
+    const distritos = await prisma.distrito.findMany({
       where: filtro,
       include: {
         regiao: true,
@@ -19,27 +20,47 @@ const DistritoModel = {
           statusEvangelismo: true,
           batismos: true,
           status: true,
+          estudosBiblicos: {
+            where: whereEstudoBatismoConfirmado,
+            include: { participantes: { select: { id: true } } },
+          },
         }},
         _count: { select: { duplas: true } },
       },
       orderBy: { nome: 'asc' },
     });
+
+    return distritos.map((distrito) => ({
+      ...distrito,
+      duplas: distrito.duplas.map(anexarBatismosConfirmadosNaDupla),
+    }));
   },
 
   // Busca distrito por ID
   async findById(id) {
-    return prisma.distrito.findUnique({
+    const distrito = await prisma.distrito.findUnique({
       where: { id: Number(id) },
       include: {
         regiao: true,
         igrejas: true,
         _count: { select: { duplas: true } },
         duplas: {
-          include: { igreja: true },
+          include: {
+            igreja: true,
+            estudosBiblicos: {
+              where: whereEstudoBatismoConfirmado,
+              include: { participantes: { select: { id: true } } },
+            },
+          },
           orderBy: { criadoEm: 'desc' },
         },
       },
     });
+    if (!distrito) return null;
+    return {
+      ...distrito,
+      duplas: distrito.duplas.map(anexarBatismosConfirmadosNaDupla),
+    };
   },
 
   // Cria novo distrito

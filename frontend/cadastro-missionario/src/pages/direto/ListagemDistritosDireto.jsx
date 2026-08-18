@@ -4,6 +4,8 @@ import api from '../../lib/api';
 import LoadingState from '../../components/LoadingState';
 import MapaIgrejaResumo from '../../components/MapaIgrejaResumo';
 
+const batismosConfirmadosDaDupla = (dupla) => dupla?.batismosConfirmados ?? dupla?.batismos ?? 0;
+
 export default function ListagemDistritosDireto() {
   const navigate = useNavigate();
   const [distritos, setDistritos] = useState([]);
@@ -199,7 +201,7 @@ export default function ListagemDistritosDireto() {
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Estudos Bíblicos Ativos:</span><p className="text-[#0284c7] font-bold">{distritoSelecionado.duplas?.filter(d => d.statusEstudoBiblico === 'ATIVO').length || 0}</p></div>
                       <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Classes Bíblicas Ativas:</span><p className="text-[#ea580c] font-bold">{distritoSelecionado.duplas?.filter(d => d.statusEvangelismo === 'ATIVO').length || 0}</p></div>
-                      <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Batismos Realizados:</span><p className="text-[#0d9488] font-bold">{distritoSelecionado.duplas?.reduce((acc, d) => acc + (d.batismos || 0), 0) || 0}</p></div>
+                      <div className="flex justify-between items-center"><span className="text-gray-400 text-xs">Batismos Realizados:</span><p className="text-[#0d9488] font-bold">{distritoSelecionado.duplas?.reduce((acc, d) => acc + batismosConfirmadosDaDupla(d), 0) || 0}</p></div>
                     </div>
                   </div>
                 </div>

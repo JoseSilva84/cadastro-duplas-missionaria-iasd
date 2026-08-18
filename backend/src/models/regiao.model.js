@@ -1,6 +1,7 @@
 // Model de Região — Operações no banco de dados
 const prisma = require('../lib/prisma');
 const { removerDuplasPorFiltro } = require('./cadastroDelete.model');
+const { whereEstudoBatismoConfirmado, anexarBatismosConfirmadosNaDupla } = require('./batismoConfirmado');
 
 const REGIOES_OFICIAIS = Array.from({ length: 7 }, (_, index) => `REGIÃO ${index + 1}`);
 
@@ -37,7 +38,7 @@ const RegiaoModel = {
 
   // Busca região por ID
   async findById(id) {
-    return prisma.regiao.findFirst({
+    const regiao = await prisma.regiao.findFirst({
       where: {
         id: Number(id),
         nome: { in: REGIOES_OFICIAIS },
@@ -46,11 +47,35 @@ const RegiaoModel = {
         distritos: {
           include: {
             igrejas: true,
+            duplas: {
+              select: {
+                id: true,
+                liderNome: true,
+                membro2Nome: true,
+                estudoBiblico: true,
+                statusEstudoBiblico: true,
+                statusEvangelismo: true,
+                batismos: true,
+                status: true,
+                estudosBiblicos: {
+                  where: whereEstudoBatismoConfirmado,
+                  include: { participantes: { select: { id: true } } },
+                },
+              },
+            },
             _count: { select: { duplas: true } },
           },
         },
       },
     });
+    if (!regiao) return null;
+    return {
+      ...regiao,
+      distritos: regiao.distritos.map((distrito) => ({
+        ...distrito,
+        duplas: distrito.duplas.map(anexarBatismosConfirmadosNaDupla),
+      })),
+    };
   },
 
   // Cria nova região

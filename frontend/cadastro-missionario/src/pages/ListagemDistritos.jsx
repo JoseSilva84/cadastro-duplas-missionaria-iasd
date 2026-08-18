@@ -89,13 +89,15 @@ const DropletIcon = () => (
   </IconBase>
 );
 
+const batismosConfirmadosDaDupla = (dupla) => dupla?.batismosConfirmados ?? dupla?.batismos ?? 0;
+
 const getResumoDistrito = (distrito) => {
   const duplas = distrito?.duplas || [];
   return {
     duplas,
     estudosAtivos: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length,
     evangelismosAtivos: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length,
-    totalBatismos: duplas.reduce((acc, d) => acc + (d.batismos || 0), 0),
+    totalBatismos: duplas.reduce((acc, d) => acc + batismosConfirmadosDaDupla(d), 0),
   };
 };
 
@@ -559,8 +561,8 @@ export default function ListagemDistritos() {
                                 📢 <BadgeEvangelismo status={dupla.statusEvangelismo} />
                               </span>
                             )}
-                            {dupla.batismos > 0 && (
-                              <span className="text-[10px] text-teal-600 font-medium">💧 {dupla.batismos} batismo(s)</span>
+                            {batismosConfirmadosDaDupla(dupla) > 0 && (
+                              <span className="text-[10px] text-teal-600 font-medium">💧 {batismosConfirmadosDaDupla(dupla)} batismo(s)</span>
                             )}
                           </div>
                         </div>
