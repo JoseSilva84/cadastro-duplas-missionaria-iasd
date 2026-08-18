@@ -33,6 +33,7 @@ import ListagemIgrejas from './pages/ListagemIgrejas';
 import MinhaDupla from './pages/MinhaDupla';
 import GestaoUsuarios from './pages/GestaoUsuarios';
 import Alunos from './pages/Alunos';
+import Configuracoes from './pages/Configuracoes';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -262,6 +263,7 @@ function AppRoutes() {
           }
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><MapaIgreja /></RotaComPerfis>} />
+        <Route path="configuracoes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]}><Configuracoes /></RotaComPerfis>} />
 
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL]}><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
@@ -418,6 +420,7 @@ function AppRoutes() {
           }
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/distritos"><MapaIgreja /></RotaComPerfis>} />
+        <Route path="configuracoes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]} redirectTo="/direto/distritos"><Configuracoes /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />

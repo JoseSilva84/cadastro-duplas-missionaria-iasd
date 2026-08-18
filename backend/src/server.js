@@ -17,6 +17,7 @@ const evangelismosRoutes = require('./routes/evangelismos');
 const acompanhamentosRoutes = require('./routes/acompanhamentos');
 const escolaSabatinaRoutes = require('./routes/escolaSabatina');
 const mapaIgrejaRoutes = require('./routes/mapaIgreja');
+const configuracaoRoutes = require('./routes/configuracoes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,7 @@ app.use(cors({
     'https://www.pcmpaulistana.com.br'
   ],
   credentials: true,
+  exposedHeaders: ['Content-Disposition'],
 }));
 app.use(express.json());
 
@@ -48,6 +50,7 @@ app.use('/api/escola-sabatina', escolaSabatinaRoutes);
 app.use('/api/mapa-igreja', mapaIgrejaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/configuracoes', configuracaoRoutes);
 
 const publicDir = path.join(__dirname, '..', 'public');
 const indexHtml = path.join(publicDir, 'index.html');
