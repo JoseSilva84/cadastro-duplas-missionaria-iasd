@@ -58,6 +58,8 @@ const compararDuplasPorPrimeiroMembro = (a, b) => {
 };
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const getIgrejaNome = (dupla) => dupla?.igreja?.nome || dupla?.liderIgreja || dupla?.membro2Igreja || 'Sem igreja';
+const getDistritoNome = (dupla) => dupla?.distrito?.nome || dupla?.liderDistrito || dupla?.membro2Distrito || '';
 const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
 const totalBatismosEncerrados = (estudos = []) => estudos
   .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
@@ -690,9 +692,15 @@ export default function Duplas() {
                     className="w-10 h-10 rounded-full shadow-sm ring-2 ring-white group-hover:ring-[#1A3A6B]/20 transition-all flex-shrink-0"
                     fallbackGradient="from-[#C9963A] to-[#e5b05a]"
                   />
-                  <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
-                    {dupla.membro2Nome}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
+                      {dupla.membro2Nome}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-400 truncate">{getIgrejaNome(dupla)}</p>
+                    {getDistritoNome(dupla) && (
+                      <p className="mt-0.5 text-[11px] font-medium text-gray-400 truncate">Distrito: {getDistritoNome(dupla)}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Badges de classe + atividade + medalha + estudos + seta */}

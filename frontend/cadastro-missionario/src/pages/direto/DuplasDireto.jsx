@@ -133,6 +133,8 @@ const indicadorConfig = {
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
+const getIgrejaNome = (dupla) => dupla?.igreja?.nome || dupla?.liderIgreja || dupla?.membro2Igreja || 'Sem igreja';
+const getDistritoNome = (dupla) => dupla?.distrito?.nome || dupla?.liderDistrito || dupla?.membro2Distrito || '';
 const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
 const motivoEncerramentoLabels = {
   BATISMO: 'Batismo',
@@ -1149,9 +1151,12 @@ export default function DuplasDireto() {
                         {dupla.membro2Nome || 'Sem nome'}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
-                        <span>{dupla.igreja?.nome || dupla.liderIgreja || dupla.membro2Igreja || dupla.distrito?.nome || 'Sem igreja'}</span>
+                        <span>{getIgrejaNome(dupla)}</span>
                         <IndicadorBadge tipo="visitacoes" valor={getVisitacoesCount(dupla)} compact />
                       </div>
+                      {getDistritoNome(dupla) && (
+                        <p className="mt-0.5 truncate text-[10px] font-medium text-gray-400">Distrito: {getDistritoNome(dupla)}</p>
+                      )}
                     </div>
                   </button>
 
