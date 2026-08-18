@@ -8,6 +8,12 @@ const DownloadIcon = () => (
   </svg>
 );
 
+const UploadIcon = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21V9m0 0l-4 4m4-4l4 4M4 3h16" />
+  </svg>
+);
+
 const ShieldIcon = () => (
   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l7 3v5c0 4.5-2.9 8.6-7 10-4.1-1.4-7-5.5-7-10V6l7-3z" />
@@ -23,6 +29,10 @@ const nomeArquivoDaResposta = (headers) => {
 
 export default function Configuracoes() {
   const [gerando, setGerando] = useState(false);
+  const [restaurando, setRestaurando] = useState(false);
+  const [arquivoBackup, setArquivoBackup] = useState(null);
+  const [confirmacao, setConfirmacao] = useState('');
+  const [resultadoRestore, setResultadoRestore] = useState(null);
 
   const baixarBackup = async () => {
     setGerando(true);
@@ -42,6 +52,35 @@ export default function Configuracoes() {
       toastError(err.response?.data?.erro || 'Erro ao gerar backup.');
     } finally {
       setGerando(false);
+    }
+  };
+
+  const restaurarBackup = async () => {
+    if (!arquivoBackup) {
+      toastError('Selecione um arquivo de backup.');
+      return;
+    }
+    if (confirmacao !== 'RESTAURAR') {
+      toastError('Digite RESTAURAR para confirmar.');
+      return;
+    }
+
+    setRestaurando(true);
+    setResultadoRestore(null);
+    try {
+      const texto = await arquivoBackup.text();
+      const backup = JSON.parse(texto);
+      const { data } = await api.post('/configuracoes/backup/restaurar', backup);
+      setResultadoRestore(data);
+      toastSuccess('Backup restaurado com sucesso.');
+      setConfirmacao('');
+    } catch (err) {
+      const mensagem = err instanceof SyntaxError
+        ? 'Arquivo JSON invalido.'
+        : err.response?.data?.erro || 'Erro ao restaurar backup.';
+      toastError(mensagem);
+    } finally {
+      setRestaurando(false);
     }
   };
 
@@ -82,6 +121,52 @@ export default function Configuracoes() {
           >
             <DownloadIcon />
             {gerando ? 'Gerando...' : 'Baixar backup'}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-lg border border-red-100 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="flex min-w-0 gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+              <UploadIcon />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-[#1A3A6B]">Restaurar backup</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500">
+                Esta ação substitui os dados atuais pelo conteúdo do arquivo de backup selecionado.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={(event) => setArquivoBackup(event.target.files?.[0] || null)}
+                  className="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-[#1A3A6B] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                />
+                <input
+                  type="text"
+                  value={confirmacao}
+                  onChange={(event) => setConfirmacao(event.target.value)}
+                  placeholder="Digite RESTAURAR"
+                  className="input-field text-sm"
+                />
+              </div>
+              {resultadoRestore && (
+                <p className="mt-3 text-sm font-medium text-green-700">
+                  Restauração concluída em {new Date(resultadoRestore.restauradoEm).toLocaleString('pt-BR')}.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={restaurarBackup}
+            disabled={restaurando || !arquivoBackup || confirmacao !== 'RESTAURAR'}
+            className="inline-flex items-center justify-center gap-2 self-start whitespace-nowrap rounded-lg border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 md:self-center"
+          >
+            <UploadIcon />
+            {restaurando ? 'Restaurando...' : 'Restaurar backup'}
           </button>
         </div>
       </div>

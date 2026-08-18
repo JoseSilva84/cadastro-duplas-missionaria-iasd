@@ -12,6 +12,16 @@ const ConfiguracaoController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao gerar backup.' });
     }
   },
+
+  async restaurarBackup(req, res) {
+    try {
+      const resultado = await ConfiguracaoService.restaurarBackup(req.usuario, req.body);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao restaurar backup.' });
+    }
+  },
 };
 
 module.exports = ConfiguracaoController;

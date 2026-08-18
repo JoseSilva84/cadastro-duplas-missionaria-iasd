@@ -35,7 +35,7 @@ app.use(cors({
   credentials: true,
   exposedHeaders: ['Content-Disposition'],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
