@@ -415,7 +415,7 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
   );
 };
 
-const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igreja, navigate, estudosEncerrados }) => {
+const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igreja, navigate, estudosEncerrados, podeAlterar }) => {
   const totalEstudos = duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
   const totalClasses = duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
   const duplasVisiveis = new Set(duplas.map((dupla) => String(dupla.id)));
@@ -845,6 +845,7 @@ export default function DuplasDireto() {
         igreja={igrejaAtual}
         navigate={navigate}
         estudosEncerrados={estudosEncerrados}
+        podeAlterar={podeAlterar}
       />
     )}
     <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 sm:px-10 lg:px-16 xl:px-24 2xl:px-32' : 'animate-fade-in'} bg-transparent`}>
