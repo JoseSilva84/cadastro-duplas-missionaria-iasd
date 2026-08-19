@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
 
 const icons = {
@@ -107,6 +107,7 @@ export default function LayoutDireto() {
 
   const isAdmin = ehAdmin(usuario);
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
@@ -147,16 +148,18 @@ export default function LayoutDireto() {
     ))
     : relatorioItems;
 
-  const cadastroItemsVisiveis = isDiretorMissionario
-    ? cadastroItems.filter((item) => [
+  const cadastroItemsVisiveis = isSomenteLeitura
+    ? []
+    : isDiretorMissionario
+      ? cadastroItems.filter((item) => [
       '/direto/duplas/nova',
       '/direto/cadastro/estudos-biblicos',
       '/direto/cadastro/ponto-estudo',
       '/direto/cadastro/classe-biblica',
       '/direto/cadastro/escola-sabatina',
       '/direto/cadastro/liderancas?tipo=diretor_mp',
-    ].includes(item.to))
-    : cadastroItems;
+      ].includes(item.to))
+      : cadastroItems;
 
   const navLinks = isDupla ? [
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },

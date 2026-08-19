@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
-import { PERFIS, useAuth } from '../../contexts/AuthContext';
+import { PERFIS, ehSomenteLeitura, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 import { toast } from '../../lib/toast';
 import LoadingState from '../../components/LoadingState';
@@ -223,7 +223,7 @@ const tipoEstudoRelatorioPath = {
 };
 
 const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
-const podeExcluirDuplas = (usuario) => Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
+const podeAlterarDuplas = (usuario) => Boolean(usuario) && !ehSomenteLeitura(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
 
 const progressoEstudo = (estudo) => {
   const total = totalLicoesSerie(estudo?.serie);
@@ -444,16 +444,18 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igrej
           <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
         <div className="flex flex-col items-start gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}${igreja?.id ? `&igrejaId=${igreja.id}` : ''}` : ''}`)}
-            className="btn-primary flex items-center gap-2 self-start"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Nova Dupla
-          </button>
+          {podeAlterar && (
+            <button
+              type="button"
+              onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}${igreja?.id ? `&igrejaId=${igreja.id}` : ''}` : ''}`)}
+              className="btn-primary flex items-center gap-2 self-start"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Nova Dupla
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -582,7 +584,7 @@ export default function DuplasDireto() {
   const minPessoasParam = Number(searchParams.get('minPessoas') || 0);
   const filtroEspecialParam = searchParams.get('filtro');
   const { usuario } = useAuth();
-  const podeExcluir = podeExcluirDuplas(usuario);
+  const podeAlterar = podeAlterarDuplas(usuario);
   const [duplas, setDuplas] = useState([]);
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
@@ -1168,7 +1170,7 @@ export default function DuplasDireto() {
                     >
                       {mcfg.emoji && `${mcfg.emoji} `}{mcfg.label}
                     </span>
-                    {podeExcluir && (
+                    {podeAlterar && (
                       <button
                         type="button"
                         onClick={() => abrirConfirmacaoExcluir(dupla)}
@@ -1181,13 +1183,15 @@ export default function DuplasDireto() {
                         {excluindoId === dupla.id ? 'Excluindo...' : 'Excluir'}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => navigate(caminho(`/duplas/${dupla.id}/editar`))}
-                      className="btn-outline inline-flex h-9 items-center justify-center gap-1.5 px-3 text-xs"
-                    >
-                      Editar
-                    </button>
+                    {podeAlterar && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(caminho(`/duplas/${dupla.id}/editar`))}
+                        className="btn-outline inline-flex h-9 items-center justify-center gap-1.5 px-3 text-xs"
+                      >
+                        Editar
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => navigate(caminho(`/duplas/${dupla.id}`))}
@@ -1254,13 +1258,15 @@ export default function DuplasDireto() {
             <div className="text-center py-12 text-gray-400">
               <div className="text-3xl mb-2 animate-float">👥</div>
               <p className="text-sm">Nenhuma dupla encontrada.</p>
-              <button
-                type="button"
-                onClick={() => navigate(caminho(`/duplas/nova${parametrosNovaDupla}`))}
-                className="btn-primary mt-4 text-xs px-4 py-2"
-              >
-                Cadastrar dupla
-              </button>
+              {podeAlterar && (
+                <button
+                  type="button"
+                  onClick={() => navigate(caminho(`/duplas/nova${parametrosNovaDupla}`))}
+                  className="btn-primary mt-4 text-xs px-4 py-2"
+                >
+                  Cadastrar dupla
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1344,7 +1350,7 @@ export default function DuplasDireto() {
                     Fechar
                   </button>
                   <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:items-center">
-                  {podeExcluir && (
+                  {podeAlterar && (
                     <button
                       type="button"
                       onClick={() => abrirConfirmacaoExcluir(duplaSelecionada)}
@@ -1357,16 +1363,18 @@ export default function DuplasDireto() {
                       {excluindoId === duplaSelecionada.id ? 'Excluindo...' : 'Excluir'}
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => navigate(caminho(`/duplas/${duplaSelecionada.id}/editar`))}
-                    className="btn-outline inline-flex min-h-10 items-center justify-center gap-1.5 px-3 py-2 text-xs"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Editar
-                  </button>
+                  {podeAlterar && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(caminho(`/duplas/${duplaSelecionada.id}/editar`))}
+                      className="btn-outline inline-flex min-h-10 items-center justify-center gap-1.5 px-3 py-2 text-xs"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Editar
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate(caminho(`/duplas/${duplaSelecionada.id}`))}

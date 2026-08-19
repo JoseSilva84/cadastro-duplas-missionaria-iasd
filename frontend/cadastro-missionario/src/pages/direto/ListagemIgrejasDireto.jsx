@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../lib/api';
 import IgrejaCapa from '../../components/IgrejaCapa';
-import { ehAdmin, useAuth } from '../../contexts/AuthContext';
+import { ehAdmin, ehSomenteLeitura, useAuth } from '../../contexts/AuthContext';
 import LoadingState from '../../components/LoadingState';
 
 export default function ListagemIgrejasDireto() {
   const navigate = useNavigate();
   const { igrejaId } = useParams();
   const { usuario } = useAuth();
-  const podeExcluir = ehAdmin(usuario);
+  const podeExcluir = ehAdmin(usuario) && !ehSomenteLeitura(usuario);
   const [igrejas, setIgrejas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [igrejaSelecionada, setIgrejaSelecionada] = useState(null);

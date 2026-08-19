@@ -4,7 +4,7 @@ import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
-import { useAuth, PERFIS, ehAdmin } from '../../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../../contexts/AuthContext';
 import LoadingState from '../../components/LoadingState';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
@@ -126,8 +126,9 @@ const ModalPastorRegional = ({ regiao, fotoPreview, onClose, onSaved }) => {
 export default function RegioesDireto() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const podeEditarPastorRegional = ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
-  const podeCriarDupla = ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const somenteLeitura = ehSomenteLeitura(usuario);
+  const podeEditarPastorRegional = !somenteLeitura && (ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
+  const podeCriarDupla = !somenteLeitura && (ehAdmin(usuario) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [porRegiao, setPorRegiao] = useState([]);

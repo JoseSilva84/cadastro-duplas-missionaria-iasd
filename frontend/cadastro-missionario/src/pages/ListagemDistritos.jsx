@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import LoadingState from '../components/LoadingState';
 import MapaIgrejaResumo from '../components/MapaIgrejaResumo';
+import { ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 
 const resolverFotosDaDupla = async (dupla) => {
   const [fotoLiderPreview, fotoMembro2Preview] = await Promise.all([
@@ -101,7 +102,7 @@ const getResumoDistrito = (distrito) => {
   };
 };
 
-function ModalParcialDistrito({ distrito, onClose, navigate, mapasIgreja = [] }) {
+function ModalParcialDistrito({ distrito, onClose, navigate, mapasIgreja = [], podeCadastrarDupla = true }) {
   if (!distrito) return null;
 
   const { duplas, estudosAtivos, evangelismosAtivos, totalBatismos } = getResumoDistrito(distrito);
@@ -247,9 +248,11 @@ function ModalParcialDistrito({ distrito, onClose, navigate, mapasIgreja = [] })
             <button type="button" onClick={() => navigate(`/distritos/${distrito.id}/igrejas`)} className="btn-primary px-3 py-2 text-xs">
               Ver Igrejas
             </button>
-            <button type="button" onClick={() => navigate(`/duplas/nova?distritoId=${distrito.id}`)} className="btn-outline px-3 py-2 text-xs">
-              Nova Dupla
-            </button>
+            {podeCadastrarDupla && (
+              <button type="button" onClick={() => navigate(`/duplas/nova?distritoId=${distrito.id}`)} className="btn-outline px-3 py-2 text-xs">
+                Nova Dupla
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -259,6 +262,8 @@ function ModalParcialDistrito({ distrito, onClose, navigate, mapasIgreja = [] })
 
 export default function ListagemDistritos() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeCadastrarDupla = !ehSomenteLeitura(usuario);
   const [distritos, setDistritos] = useState([]);
   const [distritoSelecionado, setDistritoSelecionado] = useState(null);
   const [distritoModal, setDistritoModal] = useState(null);
@@ -434,16 +439,18 @@ export default function ListagemDistritos() {
                     </svg>
                     Ver Igrejas
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/duplas/nova?distritoId=${distritoSelecionado.id}`)}
-                    className="btn-primary text-sm flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Nova Dupla
-                  </button>
+                  {podeCadastrarDupla && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/duplas/nova?distritoId=${distritoSelecionado.id}`)}
+                      className="btn-primary text-sm flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Nova Dupla
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -589,6 +596,7 @@ export default function ListagemDistritos() {
         onClose={() => setDistritoModal(null)}
         navigate={navigate}
         mapasIgreja={mapasIgreja}
+        podeCadastrarDupla={podeCadastrarDupla}
       />
     </div>
   );

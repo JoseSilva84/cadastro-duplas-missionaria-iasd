@@ -4,7 +4,7 @@ import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { toast } from '../lib/toast';
 import AvatarUpload from './AvatarUpload';
-import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehSomenteLeitura } from '../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import MapaIgrejaResumo from './MapaIgrejaResumo';
 
@@ -721,7 +721,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
   const location = useLocation();
   const { usuario } = useAuth();
   const prefix = location.pathname.startsWith('/direto') ? '/direto' : '';
-  const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
+  const somenteVisualizacao = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA || ehSomenteLeitura(usuario);
   const [igrejaAtual, setIgrejaAtual] = useState(igreja);
   const [relatorio, setRelatorio] = useState(null);
   const [mapaIgreja, setMapaIgreja] = useState(null);

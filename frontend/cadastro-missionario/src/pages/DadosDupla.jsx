@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
-import { PERFIS, useAuth } from '../contexts/AuthContext';
+import { PERFIS, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
 
@@ -38,7 +38,7 @@ const InfoRow = ({ label, valor }) => valor ? (
   </div>
 ) : null;
 
-const podeExcluirDuplas = (usuario) => Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
+const podeAlterarDuplas = (usuario) => Boolean(usuario) && !ehSomenteLeitura(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
 
 export default function DadosDupla() {
   const { id } = useParams();
@@ -47,7 +47,7 @@ export default function DadosDupla() {
   const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
-  const podeExcluir = podeExcluirDuplas(usuario);
+  const podeAlterar = podeAlterarDuplas(usuario);
   const [dupla, setDupla] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [confirmandoDelete, setConfirmandoDelete] = useState(false);
@@ -142,13 +142,15 @@ export default function DadosDupla() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={() => navigate(isDireto ? `/direto/duplas/${id}/editar` : `/duplas/${id}/editar`)}
-                className="btn-outline text-sm px-4 py-2"
-              >
-                Editar
-              </button>
-              {podeExcluir && (
+              {podeAlterar && (
+                <button
+                  onClick={() => navigate(isDireto ? `/direto/duplas/${id}/editar` : `/duplas/${id}/editar`)}
+                  className="btn-outline text-sm px-4 py-2"
+                >
+                  Editar
+                </button>
+              )}
+              {podeAlterar && (
                 !confirmandoDelete ? (
                   <button
                     onClick={() => setConfirmandoDelete(true)}

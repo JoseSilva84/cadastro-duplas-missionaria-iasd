@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { FotoService } from '../foto.service';
-import { PERFIS, ehAdmin, useAuth } from '../contexts/AuthContext';
+import { PERFIS, ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
 
 const projetoLabel = {
@@ -228,6 +228,7 @@ export default function Duplas() {
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
+  const podeCadastrarDupla = !ehSomenteLeitura(usuario);
   const [duplas, setDuplas] = useState([]);
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distrito, setDistrito] = useState(null);
@@ -379,15 +380,17 @@ export default function Duplas() {
           </h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
-        <button
-          onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`)}
-          className="btn-primary flex items-center gap-2 self-start"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nova Dupla
-        </button>
+        {podeCadastrarDupla && (
+          <button
+            onClick={() => navigate(`/duplas/nova${distritoId ? `?distritoId=${distritoId}` : ''}`)}
+            className="btn-primary flex items-center gap-2 self-start"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nova Dupla
+          </button>
+        )}
       </div>
 
       {distrito && (

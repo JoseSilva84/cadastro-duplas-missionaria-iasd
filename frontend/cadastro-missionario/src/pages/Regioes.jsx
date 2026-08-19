@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { ehAdmin, useAuth } from '../contexts/AuthContext';
+import { ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
@@ -44,7 +44,7 @@ const TargetIcon = () => (
 export default function Regioes() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const podeExcluir = ehAdmin(usuario);
+  const podeExcluir = ehAdmin(usuario) && !ehSomenteLeitura(usuario);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [carregando, setCarregando] = useState(true);

@@ -4,7 +4,7 @@ import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
-import { PERFIS, useAuth } from '../../contexts/AuthContext';
+import { PERFIS, ehSomenteLeitura, useAuth } from '../../contexts/AuthContext';
 import LoadingState from '../../components/LoadingState';
 
 const projetoLabel = {
@@ -244,6 +244,7 @@ export default function DistritosDireto() {
   const location = useLocation();
   const { usuario } = useAuth();
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const podeAlterar = !ehSomenteLeitura(usuario);
   const voltarDestino = isPastorDistrital ? '/direto/distritos' : '/direto/regioes';
   const voltarLabel = isPastorDistrital ? 'Voltar para Distritos' : 'Voltar para Regiões';
   const [distrito, setDistrito] = useState(null);
@@ -665,7 +666,7 @@ export default function DistritosDireto() {
                       ? 'Nenhuma dupla nesta igreja.'
                       : 'Nenhuma dupla neste distrito.'}
                   </p>
-                  {!igrejaSelecionadaId && (
+                  {podeAlterar && !igrejaSelecionadaId && (
                     <button
                       type="button"
                       onClick={() => navigate('/direto/duplas/nova')}
@@ -678,6 +679,7 @@ export default function DistritosDireto() {
               )}
         </div>
 
+        {podeAlterar && (
         <div className="flex-shrink-0 p-3 border-t border-gray-100">
           <button
             type="button"
@@ -690,6 +692,7 @@ export default function DistritosDireto() {
             Nova Dupla
           </button>
         </div>
+        )}
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes da Dupla (Detail) ===== */}
@@ -929,13 +932,15 @@ export default function DistritosDireto() {
 
               {/* Ações */}
               <div className="mt-6 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}
-                  className="btn-outline text-sm px-4 py-2"
-                >
-                  Editar
-                </button>
+                {podeAlterar && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}/editar`)}
+                    className="btn-outline text-sm px-4 py-2"
+                  >
+                    Editar
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => navigate(`/direto/duplas/${duplaSelecionada.id}`)}
