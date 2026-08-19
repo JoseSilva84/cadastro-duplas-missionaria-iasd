@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla } from './contexts/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla, ehSomenteLeitura } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 
 // Páginas
@@ -82,6 +82,19 @@ function RotaBloqueadaParaDupla({ children }) {
 // redirectTo: para onde redirecionar se não tiver permissão
 function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) {
   const { usuario } = useAuth();
+  const location = useLocation();
+  const rotaBloqueadaSomenteLeitura = [
+    '/cadastro',
+    '/duplas/nova',
+    '/registro-saida',
+    '/gestao-usuarios',
+    '/configuracoes',
+  ].some((rota) => location.pathname.includes(rota)) || location.pathname.endsWith('/editar');
+
+  if (ehSomenteLeitura(usuario) && rotaBloqueadaSomenteLeitura) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
   if (!usuario || !perfisPermitidos.includes(usuario.perfil)) {
     return <Navigate to={redirectTo} replace />;
   }

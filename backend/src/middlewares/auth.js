@@ -13,6 +13,11 @@ const PERFIS = {
   DUPLA_MISSIONARIA:    'DUPLA_MISSIONARIA',
 };
 
+const EMAILS_SOMENTE_LEITURA = (process.env.SUPORTE_SOMENTE_LEITURA_EMAILS || 'suporte@pcmpaulistana.com.br')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 // Perfis com acesso administrativo total (operacional)
 const ADMINS = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
 
@@ -41,6 +46,8 @@ const ehPastorDistrital = (perfil) => perfil === PERFIS.PASTOR_DISTRITAL;
 const ehCoordenadorRegional = (perfil) => perfil === PERFIS.COORDENADOR_REGIONAL;
 const ehDiretorMissionarioIgreja = (perfil) => perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
 const ehDupla = (perfil) => perfil === PERFIS.DUPLA_MISSIONARIA;
+const ehSomenteLeitura = (usuario) => EMAILS_SOMENTE_LEITURA.includes(String(usuario?.email || '').toLowerCase());
+const metodosSomenteLeitura = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // ─── Middleware: Verifica e decodifica o token JWT ─────────────────────────────
 const autenticar = async (req, res, next) => {
@@ -82,7 +89,16 @@ const autenticar = async (req, res, next) => {
       distritoId: usuario.distritoId,
       duplaId: usuario.duplaId,
       igrejaId: usuario.igrejaId || usuario.dupla?.igrejaId || null,
+      somenteLeitura: ehSomenteLeitura(usuario),
     };
+
+    if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method)) {
+      return res.status(403).json({
+        erro: 'Este acesso e somente para observacao. Alteracoes nao sao permitidas.',
+        codigo: 'SOMENTE_LEITURA',
+      });
+    }
+
     next();
   } catch (err) {
     return res.status(403).json({ erro: 'Token inválido ou expirado.' });
@@ -140,4 +156,5 @@ module.exports = {
   ehCoordenadorRegional,
   ehDiretorMissionarioIgreja,
   ehDupla,
+  ehSomenteLeitura,
 };

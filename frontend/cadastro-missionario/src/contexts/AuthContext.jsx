@@ -22,6 +22,9 @@ export const ADMINS = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
 export const ehAdmin = (usuario) =>
   usuario && ADMINS.includes(usuario.perfil);
 
+export const ehSomenteLeitura = (usuario) =>
+  Boolean(usuario?.somenteLeitura);
+
 // Verifica se é DUPLA_MISSIONARIA
 export const ehDupla = (usuario) =>
   usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA;

@@ -18,7 +18,8 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const isLoginRequest = err.config?.url?.includes('/auth/login');
-    if (!isLoginRequest && (err.response?.status === 401 || err.response?.status === 403)) {
+    const isSomenteLeitura = err.response?.data?.codigo === 'SOMENTE_LEITURA';
+    if (!isLoginRequest && !isSomenteLeitura && (err.response?.status === 401 || err.response?.status === 403)) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       window.location.href = '/login';

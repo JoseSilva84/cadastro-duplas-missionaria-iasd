@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
+import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 
 const icons = {
   dashboard: (
@@ -107,14 +107,15 @@ export default function Layout({ children }) {
 
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
-  const podeGerenciarLiderancas = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
-  const podeCadastrarDupla = !isDupla;
+  const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla || isDiretorMissionario
@@ -216,8 +217,15 @@ export default function Layout({ children }) {
         ...(isSuperAdmin ? [{ to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes }] : []),
       ];
 
+  const navLinksSemEscrita = isSomenteLeitura
+    ? navLinks.filter((link) => (
+      link.key !== 'cadastro' &&
+      !['/gestao-usuarios', '/direto/gestao-usuarios', '/configuracoes', '/direto/configuracoes'].includes(link.to)
+    ))
+    : navLinks;
+
   const navLinksVisiveis = isCoordenadorRegional
-    ? navLinks.map((link) => {
+    ? navLinksSemEscrita.map((link) => {
       if (link.key === 'relatorios') {
         return {
           ...link,
@@ -231,7 +239,7 @@ export default function Layout({ children }) {
       }
       return link;
     })
-    : navLinks;
+    : navLinksSemEscrita;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -425,7 +433,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
               </div>
               <div className="min-w-0">
                 <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
-                <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
+                <p className="text-white/50 text-xs">{usuario?.somenteLeitura ? 'Suporte (somente leitura)' : perfilLabel[usuario?.perfil]}</p>
               </div>
             </div>
             {usuario?.regiao && (
@@ -453,7 +461,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             </div>
             <div className="min-w-0">
               <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
-              <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
+              <p className="text-white/50 text-xs">{usuario?.somenteLeitura ? 'Suporte (somente leitura)' : perfilLabel[usuario?.perfil]}</p>
             </div>
           </div>
           {usuario?.regiao && (

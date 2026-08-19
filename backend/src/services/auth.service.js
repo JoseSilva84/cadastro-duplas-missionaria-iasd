@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const UsuarioModel = require('../models/usuario.model');
+const { ehSomenteLeitura } = require('../middlewares/auth');
 
 const AuthService = {
   async login(email, senha) {
@@ -16,6 +17,7 @@ const AuthService = {
     }
 
     const igrejaId = usuario.igrejaId || usuario.dupla?.igrejaId || null;
+    const somenteLeitura = ehSomenteLeitura(usuario);
 
     const token = jwt.sign(
       {
@@ -27,6 +29,7 @@ const AuthService = {
         distritoId: usuario.distritoId,
         duplaId: usuario.duplaId,
         igrejaId,
+        somenteLeitura,
       },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
@@ -43,6 +46,7 @@ const AuthService = {
         distritoId: usuario.distritoId,
         duplaId: usuario.duplaId,
         igrejaId,
+        somenteLeitura,
         regiao: usuario.regiao,
         distrito: usuario.distrito,
         dupla: usuario.dupla,
@@ -52,7 +56,9 @@ const AuthService = {
   },
 
   async me(usuarioId) {
-    return UsuarioModel.findById(usuarioId);
+    const usuario = await UsuarioModel.findById(usuarioId);
+    if (!usuario) return usuario;
+    return { ...usuario, somenteLeitura: ehSomenteLeitura(usuario) };
   },
 };
 
