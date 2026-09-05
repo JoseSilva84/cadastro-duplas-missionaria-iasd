@@ -11,7 +11,10 @@ const AuthService = {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
 
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    // Ignora espaços acidentais ao copiar/colar a senha.
+    // Espaços internos continuam fazendo parte da senha.
+    const senhaNormalizada = String(senha ?? '').trim();
+    const senhaValida = await bcrypt.compare(senhaNormalizada, usuario.senha);
     if (!senhaValida) {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
