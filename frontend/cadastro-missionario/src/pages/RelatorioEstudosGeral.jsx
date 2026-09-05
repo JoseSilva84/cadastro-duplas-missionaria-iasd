@@ -313,21 +313,15 @@ export default function RelatorioEstudosGeral() {
     }],
   };
 
+  const totalEncerradosExibido = resumo.encerradosPorMotivo
+    .reduce((total, item) => total + item.total, 0);
+
   const encerradosOption = {
     ...chartBase,
     tooltip: {
       ...chartBase.tooltip,
       confine: true,
       formatter: '{b}<br/>{c} estudante(s) ({d}%)',
-    },
-    title: {
-      text: String(resumo.encerradosPorMotivo.reduce((total, item) => total + item.total, 0)),
-      subtext: 'encerrados',
-      left: 'center',
-      top: '37%',
-      textAlign: 'center',
-      textStyle: { color: '#1A3A6B', fontSize: 24, fontWeight: 800 },
-      subtextStyle: { color: '#94a3b8', fontSize: 11, fontWeight: 600 },
     },
     series: [{
       name: 'Motivo',
@@ -536,8 +530,20 @@ export default function RelatorioEstudosGeral() {
             <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
             <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos já encerrados.</p>
             {resumo.totalEncerrados > 0 ? (
-              <div className="grid min-h-80 grid-cols-1 items-center gap-2 sm:h-80 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <Chart option={encerradosOption} className="h-52 sm:h-64" />
+              <div className="grid min-h-80 grid-cols-1 items-center gap-3 sm:h-80 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+                <div className="relative h-52 min-w-0 sm:h-64">
+                  <Chart option={encerradosOption} className="h-full" />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <span className="text-3xl font-extrabold leading-none tracking-tight text-[#1A3A6B]">
+                        {totalEncerradosExibido}
+                      </span>
+                      <span className="mt-1.5 text-[11px] font-semibold leading-none text-slate-400">
+                        encerrados
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 <div className="max-h-56 space-y-2 overflow-y-auto pr-1 sm:max-h-64">
                   {resumo.encerradosPorMotivo.map((item) => (
                     <div
