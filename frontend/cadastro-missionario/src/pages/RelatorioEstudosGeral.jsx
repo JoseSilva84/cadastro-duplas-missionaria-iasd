@@ -315,15 +315,30 @@ export default function RelatorioEstudosGeral() {
 
   const encerradosOption = {
     ...chartBase,
-    legend: { bottom: 0, icon: 'circle' },
+    tooltip: {
+      ...chartBase.tooltip,
+      confine: true,
+      formatter: '{b}<br/>{c} estudante(s) ({d}%)',
+    },
+    title: {
+      text: String(resumo.encerradosPorMotivo.reduce((total, item) => total + item.total, 0)),
+      subtext: 'encerrados',
+      left: 'center',
+      top: '37%',
+      textAlign: 'center',
+      textStyle: { color: '#1A3A6B', fontSize: 24, fontWeight: 800 },
+      subtextStyle: { color: '#94a3b8', fontSize: 11, fontWeight: 600 },
+    },
     series: [{
       name: 'Motivo',
       type: 'pie',
-      radius: ['44%', '70%'],
-      center: ['50%', '43%'],
-      avoidLabelOverlap: true,
+      radius: ['52%', '78%'],
+      center: ['50%', '50%'],
+      avoidLabelOverlap: false,
       itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 },
-      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      label: { show: false },
+      labelLine: { show: false },
+      emphasis: { scaleSize: 6 },
       data: resumo.encerradosPorMotivo.map((item) => ({
         name: item.motivo,
         value: item.total,
@@ -521,7 +536,29 @@ export default function RelatorioEstudosGeral() {
             <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
             <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos já encerrados.</p>
             {resumo.totalEncerrados > 0 ? (
-              <Chart option={encerradosOption} className="h-80" />
+              <div className="grid min-h-80 grid-cols-1 items-center gap-2 sm:h-80 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <Chart option={encerradosOption} className="h-52 sm:h-64" />
+                <div className="max-h-56 space-y-2 overflow-y-auto pr-1 sm:max-h-64">
+                  {resumo.encerradosPorMotivo.map((item) => (
+                    <div
+                      key={item.motivo}
+                      className="flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2"
+                      title={item.motivo}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: item.cor }}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-600">
+                        {item.motivo}
+                      </span>
+                      <span className="shrink-0 rounded-md bg-white px-2 py-0.5 text-xs font-bold text-[#1A3A6B] shadow-sm">
+                        {item.total}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex h-80 items-center justify-center rounded-lg bg-gray-50 text-sm font-semibold text-gray-400">
                 Nenhum estudo encerrado.
