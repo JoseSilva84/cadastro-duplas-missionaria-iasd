@@ -78,12 +78,20 @@ const UsuarioService = {
       await validarEscopoUsuarioRegional(data, regiaoIdCriador);
     }
 
-    const hash = await bcrypt.hash(data.senha, 10);
+    const emailNormalizado = String(data.email || '').trim().toLowerCase();
+    if (await UsuarioModel.findByEmail(emailNormalizado)) {
+      throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário.' };
+    }
+    const senhaNormalizada = String(data.senha || '').trim();
+    if (senhaNormalizada.length < 8) {
+      throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+    }
+    const hash = await bcrypt.hash(senhaNormalizada, 10);
 
     try {
       const usuario = await UsuarioModel.create({
         nome: data.nome,
-        email: data.email,
+        email: emailNormalizado,
         senha: hash,
         perfil: data.perfil,
         regiaoId: data.regiaoId ? Number(data.regiaoId) : null,
@@ -115,9 +123,10 @@ const UsuarioService = {
       throw { status: 404, mensagem: 'UsuÃ¡rio nÃ£o encontrado.' };
     }
 
-    // Apenas Super Admin pode alterar perfis de outros admins
-    if (!ehAdmin(perfilCriador) && PERFIS_EXCLUSIVOS_ADMIN.includes(data.perfil)) {
-      throw { status: 403, mensagem: 'Sem permissão para atribuir este perfil.' };
+    // Administradores comuns não podem alterar nem promover contas Super Admin.
+    if (perfilCriador !== PERFIS.SUPER_ADMIN
+      && (usuarioAtual.perfil === PERFIS.SUPER_ADMIN || data.perfil === PERFIS.SUPER_ADMIN)) {
+      throw { status: 403, mensagem: 'Apenas um Super Administrador pode alterar esta conta ou perfil.' };
     }
 
     if (perfilCriador === PERFIS.PASTOR_REGIONAL) {
@@ -136,7 +145,7 @@ const UsuarioService = {
 
     const updateData = {
       nome: data.nome,
-      email: data.email,
+      email: String(data.email || '').trim().toLowerCase(),
       perfil: data.perfil,
       ativo: data.ativo,
       regiaoId: data.regiaoId ? Number(data.regiaoId) : null,
@@ -149,17 +158,33 @@ const UsuarioService = {
         : null,
     };
 
+    const donoDoEmail = await UsuarioModel.findByEmail(updateData.email);
+    if (donoDoEmail && donoDoEmail.id !== usuarioAtual.id) {
+      throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário.' };
+    }
+
     if (data.senha && !ehAdmin(perfilCriador)) {
       throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
     }
 
     if (data.senha) {
-      updateData.senha = await bcrypt.hash(data.senha, 10);
+      const senhaNormalizada = String(data.senha).trim();
+      if (senhaNormalizada.length < 8) {
+        throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
+      }
+      updateData.senha = await bcrypt.hash(senhaNormalizada, 10);
     }
 
-    const usuario = await UsuarioModel.update(id, updateData);
-    const { senha: _, ...usuarioSemSenha } = usuario;
-    return usuarioSemSenha;
+    try {
+      const usuario = await UsuarioModel.update(id, updateData);
+      const { senha: _, ...usuarioSemSenha } = usuario;
+      return usuarioSemSenha;
+    } catch (err) {
+      if (err.code === 'P2002') {
+        throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário.' };
+      }
+      throw err;
+    }
   },
 
   // Redefine senha por administradores sem expor a senha atual
@@ -167,11 +192,19 @@ const UsuarioService = {
     if (!ehAdmin(usuarioLogado.perfil)) {
       throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
     }
-    if (!senha || String(senha).length < 8) {
+    const usuarioAtual = await UsuarioModel.findById(id);
+    if (!usuarioAtual) {
+      throw { status: 404, mensagem: 'Usuário não encontrado.' };
+    }
+    if (usuarioAtual.perfil === PERFIS.SUPER_ADMIN && usuarioLogado.perfil !== PERFIS.SUPER_ADMIN) {
+      throw { status: 403, mensagem: 'Apenas um Super Administrador pode redefinir esta senha.' };
+    }
+    const senhaNormalizada = String(senha || '').trim();
+    if (senhaNormalizada.length < 8) {
       throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
     }
 
-    const hash = await bcrypt.hash(String(senha), 10);
+    const hash = await bcrypt.hash(senhaNormalizada, 10);
     const usuario = await UsuarioModel.update(id, { senha: hash });
     const { senha: _, ...usuarioSemSenha } = usuario;
     return usuarioSemSenha;

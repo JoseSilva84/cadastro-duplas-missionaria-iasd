@@ -8,13 +8,31 @@ const validarLogin = [
   body('senha').notEmpty().withMessage('Senha obrigatória.'),
 ];
 
+const validarAtualizacaoConta = [
+  body('email').trim().isEmail().withMessage('E-mail inválido.'),
+  body('senhaAtual').notEmpty().withMessage('Informe a senha atual.'),
+  body('novaSenha').optional({ checkFalsy: true }).custom((valor) => String(valor).trim().length >= 8)
+    .withMessage('A nova senha deve ter pelo menos 8 caracteres.'),
+];
+
+const validarRedefinicaoAcesso = [
+  body('token').notEmpty().withMessage('Token de redefinição obrigatório.'),
+  body('email').trim().isEmail().withMessage('E-mail inválido.'),
+  body('novaSenha').custom((valor) => String(valor || '').trim().length >= 8)
+    .withMessage('A nova senha deve ter pelo menos 8 caracteres.'),
+];
+
+const responderErrosValidacao = (req, res) => {
+  const erros = validationResult(req);
+  if (erros.isEmpty()) return false;
+  res.status(400).json({ erro: erros.array()[0].msg, erros: erros.array() });
+  return true;
+};
+
 const AuthController = {
   // POST /api/auth/login
   async login(req, res) {
-    const erros = validationResult(req);
-    if (!erros.isEmpty()) {
-      return res.status(400).json({ erros: erros.array() });
-    }
+    if (responderErrosValidacao(req, res)) return;
 
     const { email, senha } = req.body;
 
@@ -25,6 +43,28 @@ const AuthController = {
       const status = err.status || 500;
       const mensagem = err.mensagem || 'Erro interno do servidor.';
       res.status(status).json({ erro: mensagem });
+    }
+  },
+
+  // PATCH /api/auth/conta
+  async atualizarConta(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.atualizarConta(req.usuario.id, req.body);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar a conta.' });
+    }
+  },
+
+  // POST /api/auth/redefinir-acesso
+  async redefinirAcesso(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.redefinirAcessoComToken(req.body);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao redefinir o acesso.' });
     }
   },
 
@@ -39,4 +79,9 @@ const AuthController = {
   },
 };
 
-module.exports = { AuthController, validarLogin };
+module.exports = {
+  AuthController,
+  validarLogin,
+  validarAtualizacaoConta,
+  validarRedefinicaoAcesso,
+};

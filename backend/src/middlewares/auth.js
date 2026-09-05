@@ -1,5 +1,6 @@
 // Middleware de autenticação JWT e autorização RBAC
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const prisma = require('../lib/prisma');
 
 // ─── Constantes dos Perfis ────────────────────────────────────────────────────
@@ -48,6 +49,10 @@ const ehDiretorMissionarioIgreja = (perfil) => perfil === PERFIS.DIRETOR_MISSION
 const ehDupla = (perfil) => perfil === PERFIS.DUPLA_MISSIONARIA;
 const ehSomenteLeitura = (usuario) => EMAILS_SOMENTE_LEITURA.includes(String(usuario?.email || '').toLowerCase());
 const metodosSomenteLeitura = new Set(['GET', 'HEAD', 'OPTIONS']);
+const versaoDasCredenciais = (usuario) => crypto
+  .createHash('sha256')
+  .update(`${String(usuario.email || '').trim().toLowerCase()}\0${usuario.senha}`)
+  .digest('hex');
 
 // ─── Middleware: Verifica e decodifica o token JWT ─────────────────────────────
 const autenticar = async (req, res, next) => {
@@ -66,6 +71,7 @@ const autenticar = async (req, res, next) => {
         id: true,
         nome: true,
         email: true,
+        senha: true,
         perfil: true,
         ativo: true,
         regiaoId: true,
@@ -80,6 +86,12 @@ const autenticar = async (req, res, next) => {
       return res.status(401).json({ erro: 'UsuÃ¡rio inativo ou nÃ£o encontrado.' });
     }
 
+    // Mantém compatibilidade com tokens emitidos antes desta proteção.
+    // Tokens novos deixam de funcionar assim que o e-mail ou a senha mudam.
+    if (decoded.versaoCredenciais && decoded.versaoCredenciais !== versaoDasCredenciais(usuario)) {
+      return res.status(401).json({ erro: 'As credenciais foram alteradas. Entre novamente.' });
+    }
+
     req.usuario = {
       id: usuario.id,
       nome: usuario.nome,
@@ -92,7 +104,11 @@ const autenticar = async (req, res, next) => {
       somenteLeitura: ehSomenteLeitura(usuario),
     };
 
-    if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method)) {
+    const alteracaoDaPropriaConta = req.method === 'PATCH'
+      && req.baseUrl === '/api/auth'
+      && req.path === '/conta';
+
+    if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method) && !alteracaoDaPropriaConta) {
       return res.status(403).json({
         erro: 'Este acesso e somente para observacao. Alteracoes nao sao permitidas.',
         codigo: 'SOMENTE_LEITURA',

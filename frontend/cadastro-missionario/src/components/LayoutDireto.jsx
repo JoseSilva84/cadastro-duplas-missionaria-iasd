@@ -106,7 +106,6 @@ export default function LayoutDireto() {
   };
 
   const isAdmin = ehAdmin(usuario);
-  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
@@ -175,11 +174,13 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
+    { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : isDiretorMissionario ? [
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
+    { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
     ...(isAdmin ? [{ to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard }] : []),
     ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', shortLabel: 'Reg.', icon: icons.regioes }] : []),
@@ -189,7 +190,7 @@ export default function LayoutDireto() {
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
-    ...(isSuperAdmin ? [{ to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes }] : []),
+    { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ];
 
   return (

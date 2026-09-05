@@ -106,7 +106,6 @@ export default function Layout({ children }) {
   };
 
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
-  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
@@ -140,6 +139,7 @@ export default function Layout({ children }) {
           { to: isDireto ? '/direto/relatorios/pontos-estudo' : '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] }] : []),
+        { to: isDireto ? '/direto/configuracoes' : '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ]
     : isDireto
     ? [
@@ -177,7 +177,7 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] }] : []),
         ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
-        ...(isSuperAdmin ? [{ to: '/direto/configuracoes', label: 'Configurações', icon: icons.configuracoes }] : []),
+        { to: '/direto/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ]
     : [
         ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
@@ -214,13 +214,13 @@ export default function Layout({ children }) {
           { to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
         ] }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
-        ...(isSuperAdmin ? [{ to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes }] : []),
+        { to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ];
 
   const navLinksSemEscrita = isSomenteLeitura
     ? navLinks.filter((link) => (
       link.key !== 'cadastro' &&
-      !['/gestao-usuarios', '/direto/gestao-usuarios', '/configuracoes', '/direto/configuracoes'].includes(link.to)
+      !['/gestao-usuarios', '/direto/gestao-usuarios'].includes(link.to)
     ))
     : navLinks;
 

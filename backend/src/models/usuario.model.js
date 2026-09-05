@@ -4,8 +4,8 @@ const prisma = require('../lib/prisma');
 const UsuarioModel = {
   // Busca usuário por e-mail (inclui dados de região, distrito e dupla)
   async findByEmail(email) {
-    return prisma.usuario.findUnique({
-      where: { email },
+    return prisma.usuario.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
       include: {
         regiao: true,
         distrito: true,
@@ -33,6 +33,19 @@ const UsuarioModel = {
         distrito: { select: { id: true, nome: true } },
         igreja: { select: { id: true, nome: true, distritoId: true, distrito: { select: { id: true, nome: true } } } },
         dupla: { select: { id: true, liderNome: true, membro2Nome: true, igrejaId: true, igreja: { select: { id: true, nome: true } } } },
+      },
+    });
+  },
+
+  // Busca interna usada em validações de credenciais. A senha nunca é enviada ao cliente.
+  async findByIdComSenha(id) {
+    return prisma.usuario.findUnique({
+      where: { id: Number(id) },
+      include: {
+        regiao: true,
+        distrito: true,
+        dupla: { select: { id: true, liderNome: true, membro2Nome: true, distritoId: true, igrejaId: true, igreja: { select: { id: true, nome: true } } } },
+        igreja: { select: { id: true, nome: true, distritoId: true, distrito: { select: { id: true, nome: true } } } },
       },
     });
   },

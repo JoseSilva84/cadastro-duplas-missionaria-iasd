@@ -95,6 +95,15 @@ export function AuthProvider({ children }) {
     return data.usuario;
   };
 
+  // Atualiza as credenciais da própria conta e renova a sessão.
+  const atualizarConta = async (credenciais) => {
+    const { data } = await api.patch('/auth/conta', credenciais);
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    setUsuario(data.usuario);
+    return data.usuario;
+  };
+
   // Realiza logout
   const logout = () => {
     localStorage.removeItem('token');
@@ -111,7 +120,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, carregando, layout, setLayout }}>
+    <AuthContext.Provider value={{ usuario, login, atualizarConta, logout, carregando, layout, setLayout }}>
       {children}
     </AuthContext.Provider>
   );

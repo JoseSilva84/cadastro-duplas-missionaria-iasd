@@ -45,4 +45,12 @@ router.patch(
   UsuarioController.redefinirSenha
 );
 
+// POST /api/usuarios/:id/redefinicao-qrcode - Link temporário para troca de acesso
+router.post(
+  '/:id/redefinicao-qrcode',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  UsuarioController.gerarRedefinicaoQrCode
+);
+
 module.exports = router;

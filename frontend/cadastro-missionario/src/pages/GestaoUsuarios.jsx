@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import QRCode from 'qrcode';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
@@ -447,6 +448,86 @@ function ModalRedefinirSenha({ usuario, onClose, onSalvo }) {
   );
 }
 
+function ModalQrCode({ usuario, onClose }) {
+  const [imagemQr, setImagemQr] = useState('');
+  const [link, setLink] = useState('');
+  const [expiraEm, setExpiraEm] = useState('');
+  const [erro, setErro] = useState('');
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    api.post(`/usuarios/${usuario.id}/redefinicao-qrcode`)
+      .then(async ({ data }) => {
+        const url = `${window.location.origin}/redefinir-acesso?token=${encodeURIComponent(data.token)}`;
+        const dataUrl = await QRCode.toDataURL(url, {
+          width: 320,
+          margin: 2,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#1A3A6B', light: '#ffffff' },
+        });
+        if (!ativo) return;
+        setLink(url);
+        setImagemQr(dataUrl);
+        setExpiraEm(data.expiraEm);
+      })
+      .catch((err) => {
+        if (ativo) setErro(err.response?.data?.erro || 'Erro ao gerar QR Code.');
+      });
+    return () => { ativo = false; };
+  }, [usuario.id]);
+
+  const copiarLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiado(true);
+      window.setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setErro('Não foi possível copiar o link.');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#C9963A]">Redefinição assistida</p>
+            <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>QR Code de acesso</h2>
+            <p className="mt-1 text-sm text-gray-500">{usuario.nome}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700" aria-label="Fechar">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="p-5">
+          {erro ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>
+          ) : imagemQr ? (
+            <>
+              <div className="mx-auto w-fit rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                <img src={imagemQr} alt={`QR Code para redefinir o acesso de ${usuario.nome}`} className="h-64 w-64" />
+              </div>
+              <p className="mt-4 text-center text-sm text-gray-600">A pessoa deve ler o QR Code e definir um novo e-mail e uma nova senha.</p>
+              <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+                Válido por 15 minutos e para uma única redefinição. Expira às {new Date(expiraEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
+              </div>
+              <button type="button" onClick={copiarLink} className="mt-4 h-11 w-full rounded-lg border border-[#1A3A6B]/20 text-sm font-semibold text-[#1A3A6B] transition hover:bg-[#1A3A6B]/5">
+                {copiado ? 'Link copiado' : 'Copiar link de redefinição'}
+              </button>
+            </>
+          ) : (
+            <div className="flex h-72 items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1A3A6B] border-t-transparent" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ModalConfirmar({ usuario, onClose, onConfirmar, processando }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -490,6 +571,7 @@ export default function GestaoUsuarios() {
   const [modalCriar, setModalCriar] = useState(false);
   const [modalEditar, setModalEditar] = useState(null);
   const [modalSenha, setModalSenha] = useState(null);
+  const [modalQrCode, setModalQrCode] = useState(null);
   const [modalExcluir, setModalExcluir] = useState(null);
   const [processandoExcluir, setProcessandoExcluir] = useState(false);
 
@@ -716,6 +798,11 @@ export default function GestaoUsuarios() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
                             </svg>
                           </IconButton>
+                          <IconButton title="Gerar QR Code de redefinição" onClick={() => setModalQrCode(usuario)}>
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm11 0h2v2h-2v-2zm3 0h2v4h-2v-4zm-3 4h2v2h-2v-2zm3 2h2" />
+                            </svg>
+                          </IconButton>
                           {usuario.ativo && usuario.id !== usuarioLogado?.id && (
                             <IconButton title="Excluir usuário" onClick={() => setModalExcluir(usuario)} variant="danger">
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -756,6 +843,11 @@ export default function GestaoUsuarios() {
                       <IconButton title="Redefinir senha" onClick={() => setModalSenha(usuario)}>
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
+                        </svg>
+                      </IconButton>
+                      <IconButton title="Gerar QR Code de redefinição" onClick={() => setModalQrCode(usuario)}>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm11 0h2v2h-2v-2zm3 0h2v4h-2v-4zm-3 4h2v2h-2v-2zm3 2h2" />
                         </svg>
                       </IconButton>
                       {usuario.ativo && usuario.id !== usuarioLogado?.id && (
@@ -803,6 +895,9 @@ export default function GestaoUsuarios() {
           onClose={() => setModalSenha(null)}
           onSalvo={() => { setModalSenha(null); carregar(); }}
         />
+      )}
+      {modalQrCode && (
+        <ModalQrCode usuario={modalQrCode} onClose={() => setModalQrCode(null)} />
       )}
       {modalExcluir && (
         <ModalConfirmar

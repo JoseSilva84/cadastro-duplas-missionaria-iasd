@@ -17,9 +17,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const isLoginRequest = err.config?.url?.includes('/auth/login');
+    const isCredentialRequest = ['/auth/login', '/auth/conta', '/auth/redefinir-acesso']
+      .some((rota) => err.config?.url?.includes(rota));
     const isSomenteLeitura = err.response?.data?.codigo === 'SOMENTE_LEITURA';
-    if (!isLoginRequest && !isSomenteLeitura && (err.response?.status === 401 || err.response?.status === 403)) {
+    if (!isCredentialRequest && !isSomenteLeitura && (err.response?.status === 401 || err.response?.status === 403)) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       window.location.href = '/login';

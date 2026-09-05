@@ -1,5 +1,6 @@
 ﻿// Controller de UsuÃ¡rio â€” Entrada e saÃ­da HTTP
 const UsuarioService = require('../services/usuario.service');
+const AuthService = require('../services/auth.service');
 
 const UsuarioController = {
   // GET /api/usuarios â€” filtrado por perfil do usuÃ¡rio logado
@@ -43,6 +44,16 @@ const UsuarioController = {
     } catch (err) {
       const status = err.status || 500;
       res.status(status).json({ erro: err.mensagem || 'Erro ao redefinir senha.' });
+    }
+  },
+
+  // POST /api/usuarios/:id/redefinicao-qrcode
+  async gerarRedefinicaoQrCode(req, res) {
+    try {
+      const resultado = await AuthService.criarTokenRedefinicao(req.params.id, req.usuario);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao gerar QR Code.' });
     }
   },
 
