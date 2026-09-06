@@ -111,7 +111,6 @@ export default function Layout({ children }) {
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
-        ...(podeGerenciarUsuarios ? [{ to: isDireto ? '/direto/gestao-usuarios' : '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/cadastro/mapa-igreja' : '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' }] : []),

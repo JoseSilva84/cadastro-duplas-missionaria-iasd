@@ -117,7 +117,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
     { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
-    ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+    ...(podeGerenciarUsuarios && !isDiretorMissionario ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
   ];
 
   const relatorioItems = [
@@ -171,7 +171,6 @@ export default function LayoutDireto() {
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
-    ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', shortLabel: 'Usuários', icon: 'GU' }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
