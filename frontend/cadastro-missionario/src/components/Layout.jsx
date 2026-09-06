@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
+import UsuarioAvatar from './UsuarioAvatar';
+import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
   dashboard: (
@@ -81,20 +83,6 @@ const icons = {
   ),
 };
 
-const perfilLabel = {
-  SUPER_ADMIN: 'Super Administrador',
-  ADMINISTRADOR: 'Administrador (MIPES)',
-  PASTOR_REGIONAL: 'Pastor Departamental Regional',
-  COORDENADOR_REGIONAL: 'Coordenador Regional',
-  PASTOR_DISTRITAL: 'Pastor Distrital',
-  DIRETOR_MISSIONARIO_IGREJA: 'Diretor Missionário',
-  DUPLA_MISSIONARIA: 'Dupla Missionária',
-};
-
-const formatarNomeUsuario = (nome) => (
-  nome?.replace(/^Pastor Regional - REGIÃO/i, 'Pr. Dp. Regional - REGIÃO')
-);
-
 export default function Layout({ children }) {
   const { usuario, logout, layout } = useAuth();
   const navigate = useNavigate();
@@ -115,7 +103,7 @@ export default function Layout({ children }) {
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
-  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
+  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla || isDiretorMissionario
@@ -123,6 +111,7 @@ export default function Layout({ children }) {
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
+        ...(podeGerenciarUsuarios ? [{ to: isDireto ? '/direto/gestao-usuarios' : '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/cadastro/mapa-igreja' : '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' }] : []),
@@ -346,6 +335,9 @@ function BottomNavigation({ navLinks, onMenuClick }) {
 
 function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
   const [submenuAberto, setSubmenuAberto] = useState(null);
+  const funcao = usuario?.somenteLeitura ? 'Suporte (somente leitura)' : funcaoUsuario(usuario);
+  const nomePessoa = nomePessoaUsuario(usuario);
+  const escopo = escopoUsuario(usuario);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -429,16 +421,15 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         <div className="mt-auto border-t border-white/10 pt-5">
           <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
-                {usuario?.nome?.charAt(0)}
-              </div>
+              <UsuarioAvatar usuario={usuario} className="h-9 w-9 flex-shrink-0 rounded-full shadow-md" fallbackClassName="text-xs" />
               <div className="min-w-0">
-                <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
-                <p className="text-white/50 text-xs">{usuario?.somenteLeitura ? 'Suporte (somente leitura)' : perfilLabel[usuario?.perfil]}</p>
+                <p className="line-clamp-2 text-xs font-semibold leading-snug text-white">
+                  {funcao} <span className="text-[10px] font-normal text-white/60">• {nomePessoa}</span>
+                </p>
               </div>
             </div>
-            {usuario?.regiao && (
-              <p className="text-[#C9963A] text-xs mt-2 pl-10">{usuario.regiao.nome}</p>
+            {escopo.length > 0 && (
+              <p className="mt-2 truncate pl-11 text-[10px] text-[#C9963A]">{escopo.join(' • ')}</p>
             )}
           </div>
           <button
@@ -457,16 +448,15 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
         {/* Usuário logado */}
         <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:mb-3 xl:p-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
-              {usuario?.nome?.charAt(0)}
-            </div>
+            <UsuarioAvatar usuario={usuario} className="h-9 w-9 flex-shrink-0 rounded-full shadow-md" fallbackClassName="text-xs" />
             <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
-              <p className="text-white/50 text-xs">{usuario?.somenteLeitura ? 'Suporte (somente leitura)' : perfilLabel[usuario?.perfil]}</p>
+              <p className="line-clamp-2 text-xs font-semibold leading-snug text-white">
+                {funcao} <span className="text-[10px] font-normal text-white/60">• {nomePessoa}</span>
+              </p>
             </div>
           </div>
-          {usuario?.regiao && (
-            <p className="text-[#C9963A] text-xs mt-2 pl-10">📍 {usuario.regiao.nome}</p>
+          {escopo.length > 0 && (
+            <p className="mt-2 truncate pl-11 text-[10px] text-[#C9963A]">{escopo.join(' • ')}</p>
           )}
         </div>
         <button

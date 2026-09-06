@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
+import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -45,6 +46,9 @@ export default function Regioes() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const podeExcluir = ehAdmin(usuario) && !ehSomenteLeitura(usuario);
+  const funcao = funcaoUsuario(usuario);
+  const nomePessoa = nomePessoaUsuario(usuario);
+  const escopo = escopoUsuario(usuario);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -78,7 +82,12 @@ export default function Regioes() {
       <div className="mb-8 animate-fade-in-down">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Painel Geral</p>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
+            Painel Geral
+            <span className="ml-2 normal-case tracking-normal text-[10px] font-medium text-[#1A3A6B]/65 sm:text-xs">
+              • {funcao} • {nomePessoa}{escopo.length > 0 ? ` • ${escopo.join(' • ')}` : ''}
+            </span>
+          </p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
           Regiões Missionárias

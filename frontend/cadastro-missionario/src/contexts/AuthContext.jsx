@@ -64,12 +64,18 @@ export function AuthProvider({ children }) {
 
   // Restaura sessão ao carregar a aplicação
   useEffect(() => {
+    let ativo = true;
     const token = localStorage.getItem('token');
     const usuarioSalvo = localStorage.getItem('usuario');
     const layoutSalvo = localStorage.getItem('layout');
     if (token && usuarioSalvo) {
       try {
         setUsuario(JSON.parse(usuarioSalvo));
+        api.get('/auth/me').then(({ data }) => {
+          if (!ativo || !data) return;
+          localStorage.setItem('usuario', JSON.stringify(data));
+          setUsuario(data);
+        }).catch(() => {});
       } catch {
         localStorage.removeItem('usuario');
       }
@@ -79,6 +85,7 @@ export function AuthProvider({ children }) {
     }
     setLayoutState('avancado');
     setCarregando(false);
+    return () => { ativo = false; };
   }, []);
 
   // Realiza login e armazena token/dados do usuário

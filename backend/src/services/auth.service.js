@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const UsuarioModel = require('../models/usuario.model');
 const UsuarioService = require('./usuario.service');
+const { montarIdentidadeUsuario } = require('./usuarioIdentidade.service');
 const { ehSomenteLeitura } = require('../middlewares/auth');
 
 const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
@@ -50,6 +51,7 @@ const criarSessao = (usuario) => {
       distrito: usuario.distrito,
       dupla: usuario.dupla,
       igreja: usuario.igreja,
+      identidade: montarIdentidadeUsuario(usuario),
     },
   };
 };
@@ -186,9 +188,14 @@ const AuthService = {
   },
 
   async me(usuarioId) {
-    const usuario = await UsuarioModel.findById(usuarioId);
+    const usuario = await UsuarioModel.findByIdComSenha(usuarioId);
     if (!usuario) return usuario;
-    return { ...usuario, somenteLeitura: ehSomenteLeitura(usuario) };
+    const { senha: _, ...usuarioSemSenha } = usuario;
+    return {
+      ...usuarioSemSenha,
+      somenteLeitura: ehSomenteLeitura(usuario),
+      identidade: montarIdentidadeUsuario(usuario),
+    };
   },
 };
 

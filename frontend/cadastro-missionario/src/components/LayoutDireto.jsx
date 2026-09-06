@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
+import UsuarioAvatar from './UsuarioAvatar';
+import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
   dashboard: (
@@ -67,20 +69,6 @@ const icons = {
   ),
 };
 
-const perfilLabel = {
-  SUPER_ADMIN: 'Super Administrador',
-  ADMINISTRADOR: 'Administrador',
-  PASTOR_REGIONAL: 'Pastor Departamental Regional',
-  COORDENADOR_REGIONAL: 'Coordenador Regional',
-  PASTOR_DISTRITAL: 'Pastor Distrital',
-  DIRETOR_MISSIONARIO_IGREJA: 'Diretor Missionário',
-  LIDER_REGIOES: 'Líder de Regiões',
-};
-
-const formatarNomeUsuario = (nome) => (
-  nome?.replace(/^Pastor Regional - REGIÃO/i, 'Pr. Dp. Regional - REGIÃO')
-);
-
 const destinoAvancado = (usuario) => {
   if (ehAdmin(usuario)) return '/dashboard';
   if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return '/igrejas';
@@ -112,7 +100,10 @@ export default function LayoutDireto() {
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
-  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
+  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
+  const funcao = funcaoUsuario(usuario);
+  const nomePessoa = nomePessoaUsuario(usuario);
+  const escopo = escopoUsuario(usuario);
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -180,6 +171,7 @@ export default function LayoutDireto() {
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
+    ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', shortLabel: 'Usuários', icon: 'GU' }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
@@ -269,12 +261,10 @@ export default function LayoutDireto() {
 
               {/* Usuário */}
               <div className="hidden lg:flex items-center gap-2 bg-white/8 rounded-lg px-3 py-1.5">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                  {usuario?.nome?.charAt(0)}
-                </div>
+                <UsuarioAvatar usuario={usuario} className="h-7 w-7 flex-shrink-0 rounded-full" fallbackClassName="text-[10px]" />
                 <div className="hidden lg:block">
-                  <p className="text-white text-xs font-semibold leading-tight">{formatarNomeUsuario(usuario?.nome)}</p>
-                  <p className="text-white/40 text-[10px]">{perfilLabel[usuario?.perfil]}</p>
+                  <p className="text-xs font-semibold leading-tight text-white">{funcao} <span className="text-[10px] font-normal text-white/55">• {nomePessoa}</span></p>
+                  {escopo.length > 0 && <p className="max-w-52 truncate text-[10px] text-[#C9963A]">{escopo.join(' • ')}</p>}
                 </div>
               </div>
 
@@ -364,16 +354,14 @@ export default function LayoutDireto() {
               {/* Info usuário mobile */}
               <div className="bg-white/5 rounded-xl p-3 mt-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9963A] to-[#e5b05a] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {usuario?.nome?.charAt(0)}
-                  </div>
+                  <UsuarioAvatar usuario={usuario} className="h-9 w-9 flex-shrink-0 rounded-full" fallbackClassName="text-xs" />
                   <div className="min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{formatarNomeUsuario(usuario?.nome)}</p>
-                    <p className="text-white/50 text-xs">{perfilLabel[usuario?.perfil]}</p>
+                    <p className="truncate text-xs font-semibold text-white">{funcao}</p>
+                    <p className="truncate text-[10px] text-white/60">{nomePessoa}</p>
                   </div>
                 </div>
-                {usuario?.regiao && (
-                  <p className="text-[#C9963A] text-xs mt-2 pl-10">📍 {usuario.regiao.nome}</p>
+                {escopo.length > 0 && (
+                  <p className="mt-2 truncate pl-11 text-[10px] text-[#C9963A]">{escopo.join(' • ')}</p>
                 )}
               </div>
             </div>

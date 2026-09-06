@@ -3,6 +3,8 @@ import QRCode from 'qrcode';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import UsuarioAvatar from '../components/UsuarioAvatar';
+import { doisPrimeirosNomes } from '../lib/usuarioIdentidade';
 
 const PERFIL_CONFIG = {
   SUPER_ADMIN: { label: 'Super Admin', cor: 'bg-purple-100 text-purple-800 border-purple-200', dot: 'bg-purple-500' },
@@ -114,14 +116,17 @@ function SelectInput({ label, children, className = '', ...props }) {
 function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, duplas, usuarioLogado }) {
   const editando = Boolean(usuario);
   const gestorRegional = PERFIS_GESTORES_REGIONAIS.includes(usuarioLogado?.perfil);
+  const gestorDistrital = usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const gestorIgreja = usuarioLogado?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
+  const perfilPadrao = gestorIgreja ? PERFIS.DUPLA_MISSIONARIA : gestorDistrital ? PERFIS.PASTOR_DISTRITAL : gestorRegional ? PERFIS.PASTOR_DISTRITAL : PERFIS.ADMINISTRADOR;
   const [form, setForm] = useState({
     nome: usuario?.nome || '',
     email: usuario?.email || '',
     senha: '',
-    perfil: usuario?.perfil || (gestorRegional ? PERFIS.PASTOR_DISTRITAL : PERFIS.ADMINISTRADOR),
+    perfil: usuario?.perfil || perfilPadrao,
     regiaoId: usuario?.regiaoId || (gestorRegional ? usuarioLogado?.regiaoId : '') || '',
-    distritoId: usuario?.distritoId || '',
-    igrejaId: usuario?.igrejaId || '',
+    distritoId: usuario?.distritoId || (gestorDistrital ? usuarioLogado?.distritoId : '') || '',
+    igrejaId: usuario?.igrejaId || (gestorIgreja ? usuarioLogado?.igrejaId : '') || '',
     duplaId: usuario?.duplaId || '',
     ativo: usuario?.ativo !== undefined ? usuario.ativo : true,
   });
@@ -131,6 +136,8 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
   const campoExtra = CAMPO_EXTRA[form.perfil] || null;
   const perfisDisponiveis = PERFIS_LISTA.filter((p) => {
     if (gestorRegional) return ![PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(p.value);
+    if (gestorDistrital) return [PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(p.value);
+    if (gestorIgreja) return [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(p.value);
     return p.value !== PERFIS.SUPER_ADMIN || usuarioLogado?.perfil === PERFIS.SUPER_ADMIN;
   });
   const set = (campo, valor) => setForm((atual) => ({ ...atual, [campo]: valor }));
@@ -234,8 +241,8 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
                   ...atual,
                   perfil: e.target.value,
                   regiaoId: gestorRegional ? usuarioLogado?.regiaoId || '' : '',
-                  distritoId: '',
-                  igrejaId: '',
+                  distritoId: gestorDistrital ? usuarioLogado?.distritoId || '' : '',
+                  igrejaId: gestorIgreja ? usuarioLogado?.igrejaId || '' : '',
                   duplaId: '',
                 }));
               }}
@@ -277,6 +284,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
               label="Distrito"
               value={form.distritoId}
               onChange={(e) => set('distritoId', e.target.value)}
+              disabled={gestorDistrital}
               required
             >
               <option value="">Selecione um distrito</option>
@@ -293,6 +301,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
               label="Igreja"
               value={form.igrejaId}
               onChange={(e) => set('igrejaId', e.target.value)}
+              disabled={gestorIgreja}
               required
             >
               <option value="">Selecione uma igreja</option>
@@ -637,6 +646,17 @@ function ModalConfirmar({ usuario, onClose, onConfirmar, processando }) {
 }
 export default function GestaoUsuarios() {
   const { usuario: usuarioLogado } = useAuth();
+  const perfisVisiveis = PERFIS_LISTA.filter(({ value }) => {
+    if (usuarioLogado?.perfil === PERFIS.SUPER_ADMIN) return true;
+    if (usuarioLogado?.perfil === PERFIS.ADMINISTRADOR) return value !== PERFIS.SUPER_ADMIN;
+    if (PERFIS_GESTORES_REGIONAIS.includes(usuarioLogado?.perfil)) {
+      return ![PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(value);
+    }
+    if (usuarioLogado?.perfil === PERFIS.PASTOR_DISTRITAL) {
+      return [PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(value);
+    }
+    return [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(value);
+  });
 
   const [usuarios, setUsuarios] = useState([]);
   const [regioes, setRegioes] = useState([]);
@@ -760,7 +780,9 @@ export default function GestaoUsuarios() {
       </section>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        {Object.entries(PERFIL_CONFIG).map(([perfil, cfg]) => (
+        {perfisVisiveis.map(({ value: perfil }) => {
+          const cfg = PERFIL_CONFIG[perfil];
+          return (
           <button
             key={perfil}
             type="button"
@@ -776,7 +798,8 @@ export default function GestaoUsuarios() {
             </div>
             <p className="mt-3 text-xs font-semibold text-gray-600">{cfg.label}</p>
           </button>
-        ))}
+          );
+        })}
       </section>
 
       <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -800,7 +823,7 @@ export default function GestaoUsuarios() {
             className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-[#1A3A6B] focus:ring-2 focus:ring-[#1A3A6B]/20 lg:w-56"
           >
             <option value="">Todos os perfis</option>
-            {PERFIS_LISTA.map((perfil) => (
+            {perfisVisiveis.map((perfil) => (
               <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
             ))}
           </select>
@@ -854,11 +877,12 @@ export default function GestaoUsuarios() {
                     <tr key={usuario.id} className={`transition-colors hover:bg-gray-50 ${!usuario.ativo ? 'opacity-60' : ''}`}>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1A3A6B] text-sm font-bold text-white">
-                            {usuario.nome.charAt(0).toUpperCase()}
-                          </div>
+                          <UsuarioAvatar usuario={usuario} className="h-10 w-10 flex-shrink-0 rounded-full" fallbackClassName="bg-[#1A3A6B] text-sm" />
                           <div className="min-w-0">
                             <p className="font-semibold text-gray-900">{usuario.nome}</p>
+                            {usuario.identidade?.nome && usuario.identidade.nome !== usuario.nome && (
+                              <p className="text-[10px] font-medium text-[#1A3A6B]/65">{doisPrimeirosNomes(usuario.identidade.nome)}</p>
+                            )}
                             <p className="text-xs text-gray-400">{usuario.email}</p>
                           </div>
                         </div>
@@ -902,11 +926,12 @@ export default function GestaoUsuarios() {
               {usuariosFiltrados.map((usuario) => (
                 <div key={usuario.id} className={`p-4 ${!usuario.ativo ? 'opacity-60' : ''}`}>
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1A3A6B] text-sm font-bold text-white">
-                      {usuario.nome.charAt(0).toUpperCase()}
-                    </div>
+                    <UsuarioAvatar usuario={usuario} className="h-10 w-10 flex-shrink-0 rounded-full" fallbackClassName="bg-[#1A3A6B] text-sm" />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-gray-900">{usuario.nome}</p>
+                      {usuario.identidade?.nome && usuario.identidade.nome !== usuario.nome && (
+                        <p className="text-[10px] font-medium text-[#1A3A6B]/65">{doisPrimeirosNomes(usuario.identidade.nome)}</p>
+                      )}
                       <p className="truncate text-xs text-gray-400">{usuario.email}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <PerfilBadge perfil={usuario.perfil} />

@@ -45,6 +45,8 @@ export default function Configuracoes() {
     PERFIS.ADMINISTRADOR,
     PERFIS.PASTOR_REGIONAL,
     PERFIS.COORDENADOR_REGIONAL,
+    PERFIS.PASTOR_DISTRITAL,
+    PERFIS.DIRETOR_MISSIONARIO_IGREJA,
   ].includes(usuario?.perfil);
   const [aba, setAba] = useState('conta');
   const [conta, setConta] = useState({
