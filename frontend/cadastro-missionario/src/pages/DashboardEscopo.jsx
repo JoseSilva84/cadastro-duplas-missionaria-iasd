@@ -19,22 +19,26 @@ const projetoLabel = {
 
 function CardIndicador({ titulo, valor, detalhe, cor }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm" style={{ borderTop: `3px solid ${cor}` }}>
-      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{titulo}</p>
-      <p className="mt-2 text-3xl font-bold" style={{ color: cor }}>{numero(valor)}</p>
-      <p className="mt-2 text-xs text-gray-500">{detalhe}</p>
+    <div
+      className="group relative overflow-hidden rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/35 hover:shadow-xl hover:shadow-[#1A3A6B]/10"
+      style={{ borderTop: `3px solid ${cor}` }}
+    >
+      <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-0 transition-all duration-500 group-hover:scale-125 group-hover:opacity-10" style={{ backgroundColor: cor }} />
+      <p className="relative text-xs font-bold uppercase tracking-wider text-gray-400 transition-colors duration-300 group-hover:text-gray-600">{titulo}</p>
+      <p className="relative mt-2 text-3xl font-bold transition-transform duration-300 group-hover:translate-x-1" style={{ color: cor }}>{numero(valor)}</p>
+      <p className="relative mt-2 text-xs text-gray-500">{detalhe}</p>
     </div>
   );
 }
 
 function Ranking({ titulo, itens, campo, cor }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="group rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/30 hover:shadow-xl hover:shadow-[#1A3A6B]/10">
       <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{titulo}</h2>
       <div className="mt-4 space-y-2">
         {itens.slice(0, 5).map((item, indice) => (
-          <div key={item.id} className="flex items-center gap-3 rounded-lg bg-[#F8FAFC] px-3 py-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-bold text-gray-400">{indice + 1}</span>
+          <div key={item.id} className="flex items-center gap-3 rounded-lg border border-transparent bg-[#F8FAFC] px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:border-[#C9963A]/25 hover:bg-white hover:shadow-sm">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-bold text-gray-400 shadow-sm transition-colors duration-200 group-hover:text-[#C9963A]">{indice + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-[#1A3A6B]">{item.liderNome} &amp; {item.membro2Nome}</p>
               <p className="truncate text-[10px] text-gray-400">{item.igreja?.nome || item.distrito?.nome || 'Sem local informado'}</p>
@@ -102,16 +106,17 @@ export default function DashboardEscopo() {
 
   return (
     <div className="mx-auto max-w-7xl animate-fade-in p-4 sm:p-6 lg:p-8">
-      <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm sm:p-6">
+      <section className="group relative overflow-hidden rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm transition-all duration-500 hover:border-[#C9963A]/30 hover:shadow-xl hover:shadow-[#1A3A6B]/10 sm:p-6">
+        <span className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[#C9963A] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-[0.08]" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+          <div className="relative">
             <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Dashboard do seu escopo</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{nomeEscopo}</h1>
             <p className="mt-2 text-sm text-gray-500">
               {funcaoUsuario(usuario)} • {nomePessoaUsuario(usuario)} — indicadores limitados às informações permitidas para este acesso.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="relative flex flex-wrap gap-2">
             <button type="button" onClick={() => navigate(`${prefixo}/relatorios`)} className="btn-primary px-4 py-2 text-sm">Abrir relatórios</button>
             <button type="button" onClick={() => navigate(`${prefixo}/duplas`)} className="btn-outline px-4 py-2 text-sm">Ver duplas</button>
           </div>
@@ -126,7 +131,7 @@ export default function DashboardEscopo() {
       </section>
 
       <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="group rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/30 hover:shadow-xl hover:shadow-[#1A3A6B]/10">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Situação das duplas</p>
           <div className="mt-5 space-y-5">
             {status.map((item) => {
@@ -138,7 +143,7 @@ export default function DashboardEscopo() {
                     <span className="font-bold" style={{ color: item.cor }}>{numero(item.valor)} • {percentual}%</span>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full rounded-full" style={{ width: `${percentual}%`, backgroundColor: item.cor }} />
+                  <div className="h-full rounded-full transition-all duration-500 group-hover:brightness-110" style={{ width: `${percentual}%`, backgroundColor: item.cor }} />
                   </div>
                 </div>
               );
@@ -146,11 +151,11 @@ export default function DashboardEscopo() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="group rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/30 hover:shadow-xl hover:shadow-[#1A3A6B]/10">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Tipos de projeto</p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(resumo?.porProjeto || []).map((projeto) => (
-              <div key={projeto.tipoProjeto} className="rounded-lg bg-[#F8FAFC] p-4">
+              <div key={projeto.tipoProjeto} className="rounded-lg border border-transparent bg-[#F8FAFC] p-4 transition-all duration-250 hover:-translate-y-0.5 hover:border-[#C9963A]/25 hover:bg-white hover:shadow-md">
                 <p className="text-xs font-medium text-gray-500">{projetoLabel[projeto.tipoProjeto] || projeto.tipoProjeto}</p>
                 <p className="mt-1 text-2xl font-bold text-[#1A3A6B]">{numero(projeto._count?.tipoProjeto)}</p>
               </div>
