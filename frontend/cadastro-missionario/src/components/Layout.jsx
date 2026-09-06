@@ -97,17 +97,17 @@ export default function Layout({ children }) {
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
-  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
-  const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeVerRelatorios = Boolean(usuario);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
   const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla || isDiretorMissionario
     ? [
+        { to: isDireto ? '/direto/dashboard' : '/dashboard', label: 'Dashboard', icon: icons.dashboard },
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
@@ -122,7 +122,8 @@ export default function Layout({ children }) {
             { to: isDireto ? '/direto/cadastro/liderancas?tipo=diretor_mp' : '/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
           ] : []),
         ] },
-        ...(isDupla ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+        ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
+          { to: isDireto ? '/direto/relatorios' : '/relatorios', label: 'Geral', icon: '📊' },
           { to: isDireto ? '/direto/relatorios/estudos-geral' : '/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           { to: isDireto ? '/direto/relatorios/estudos-biblicos' : '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: isDireto ? '/direto/relatorios/pontos-estudo' : '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
@@ -132,7 +133,7 @@ export default function Layout({ children }) {
       ]
     : isDireto
     ? [
-        ...(isAdmin ? [{ to: '/direto/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
+        { to: '/direto/dashboard', label: 'Dashboard', icon: icons.dashboard },
         ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/direto/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
@@ -163,13 +164,15 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
+          ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
+            ? [{ to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }]
+            : []),
         ] }] : []),
         ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/direto/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ]
     : [
-        ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: icons.dashboard }] : []),
+        { to: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
         ...(!isPastorDistrital ? [{ to: '/regioes', label: 'Regiões', icon: icons.regioes }] : []),
         { to: '/distritos', label: 'Distritos', icon: icons.distritos },
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
@@ -200,7 +203,9 @@ export default function Layout({ children }) {
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          { to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
+          ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
+            ? [{ to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }]
+            : []),
         ] }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         { to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
@@ -213,22 +218,7 @@ export default function Layout({ children }) {
     ))
     : navLinks;
 
-  const navLinksVisiveis = isCoordenadorRegional
-    ? navLinksSemEscrita.map((link) => {
-      if (link.key === 'relatorios') {
-        return {
-          ...link,
-          items: link.items.filter((item) => (
-            item.to.includes('/relatorios/estudos-geral') ||
-            item.to.includes('/relatorios/estudos-biblicos') ||
-            item.to.includes('/relatorios/pontos-estudo') ||
-            item.to.includes('/relatorios/classes-biblicas')
-          )),
-        };
-      }
-      return link;
-    })
-    : navLinksSemEscrita;
+  const navLinksVisiveis = navLinksSemEscrita;
 
   return (
     <div className="flex h-screen overflow-hidden">

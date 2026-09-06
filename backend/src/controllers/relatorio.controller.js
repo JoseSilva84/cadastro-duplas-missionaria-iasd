@@ -79,11 +79,11 @@ const RelatorioController = {
   // GET /api/relatorios/coordenadores-regionais
   async coordenadoresRegionais(req, res) {
     try {
-      const resultado = await RelatorioService.coordenadoresRegionais();
+      const resultado = await RelatorioService.coordenadoresRegionais(req.usuario);
       res.json(resultado);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ erro: 'Erro ao gerar dashboard de coordenadores regionais.' });
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao gerar dashboard de coordenadores regionais.' });
     }
   },
 

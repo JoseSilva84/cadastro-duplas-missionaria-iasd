@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth, PERFIS, ehAdmin, ehDupla, ehSomenteLeitura } from './contexts/AuthContext';
+import { AuthProvider, useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 
 // Páginas
@@ -27,6 +27,7 @@ import RelatorioClassesBiblicas from './pages/RelatorioClassesBiblicas';
 import DashboardCoordenadorRegional from './pages/DashboardCoordenadorRegional';
 import DashboardAssociacao from './pages/DashboardAssociacao';
 import Dashboard from './pages/Dashboard';
+import DashboardEscopo from './pages/DashboardEscopo';
 import RelatorioPersonalizado from './pages/RelatorioPersonalizado';
 import ListagemDistritos from './pages/ListagemDistritos';
 import ListagemIgrejas from './pages/ListagemIgrejas';
@@ -61,18 +62,6 @@ function RotaProtegida({ children }) {
   return usuario ? children : <Navigate to="/login" replace />;
 }
 
-// ─── Rota apenas para Admins (SUPER_ADMIN + ADMINISTRADOR) ────────────────────
-function RotaAdmin({ children }) {
-  const { usuario } = useAuth();
-  if (!ehAdmin(usuario)) {
-    // DUPLA_MISSIONARIA vai direto para minha-dupla; outros vão para regiões
-    return ehDupla(usuario)
-      ? <Navigate to="/minha-dupla" replace />
-      : <Navigate to="/regioes" replace />;
-  }
-  return children;
-}
-
 // ─── Rota bloqueada para DUPLA_MISSIONARIA ────────────────────────────────────
 // A dupla não pode acessar nenhuma rota de listagem geográfica
 function RotaBloqueadaParaDupla({ children }) {
@@ -103,13 +92,17 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
 }
 
 function destinoInicial(usuario) {
-  if (ehAdmin(usuario)) return '/dashboard';
-  if (ehDupla(usuario)) return '/igrejas';
-  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) {
-    return '/regioes';
-  }
-  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
-  return '/igrejas';
+  return usuario ? '/dashboard' : '/login';
+}
+
+function DashboardAdaptavel() {
+  const { usuario } = useAuth();
+  return ehAdmin(usuario) ? <Dashboard /> : <DashboardEscopo />;
+}
+
+function RelatoriosAdaptaveis({ direto = false }) {
+  const { usuario } = useAuth();
+  return direto && ehAdmin(usuario) ? <RelatoriosDireto /> : <Relatorios />;
 }
 
 // ─── Redireciona para escolha de layout ou rota correta após login ────────────
@@ -191,10 +184,10 @@ function AppRoutes() {
           path="dashboard"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]}
               redirectTo="/igrejas"
             >
-              <Dashboard />
+              <DashboardAdaptavel />
             </RotaComPerfis>
           }
         />
@@ -326,6 +319,7 @@ function AppRoutes() {
                 PERFIS.PASTOR_DISTRITAL,
                 PERFIS.COORDENADOR_REGIONAL,
                 PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+                PERFIS.DUPLA_MISSIONARIA,
               ]}
             >
               <Relatorios />
@@ -346,7 +340,7 @@ function AppRoutes() {
         <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
         <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
-        <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
+        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
       </Route>
 
       {/* ============================================
@@ -369,10 +363,10 @@ function AppRoutes() {
           path="dashboard"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]}
               redirectTo="/direto/igrejas"
             >
-              <Dashboard />
+              <DashboardAdaptavel />
             </RotaComPerfis>
           }
         />
@@ -466,7 +460,7 @@ function AppRoutes() {
             </RotaComPerfis>
           }
         />
-        <Route path="relatorios" element={<RelatoriosDireto />} />
+        <Route path="relatorios" element={<RelatoriosAdaptaveis direto />} />
         <Route path="relatorios/dashboard-associacao" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><DashboardAssociacao /></RotaComPerfis>} />
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
@@ -481,7 +475,7 @@ function AppRoutes() {
         <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
         <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
-        <Route path="relatorios/coordenador-regional" element={<DashboardCoordenadorRegional />} />
+        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
       </Route>
 
       {/* Fallback */}

@@ -105,11 +105,8 @@ const EstudoBiblicoService = {
 
     // DUPLA_MISSIONARIA sÃ³ pode ver estudos da prÃ³pria dupla
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId) {
-        const escopo = await montarEscopo(usuario);
-        if (estudo.dupla?.igreja?.id !== escopo.igrejaId) {
-          throw { status: 403, mensagem: 'Acesso negado: estudo pertence a outra igreja.' };
-        }
+      if (!usuario.duplaId || Number(estudo.duplaId) !== Number(usuario.duplaId)) {
+        throw { status: 403, mensagem: 'Acesso negado: estudo pertence a outra dupla.' };
       }
     } else if (usuario && estudo.dupla?.igreja?.id) {
       await validarIgreja(usuario, estudo.dupla.igreja.id);

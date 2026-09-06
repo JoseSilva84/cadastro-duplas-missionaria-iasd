@@ -1,7 +1,7 @@
 const RelatorioModel = require('../models/relatorio.model');
 const EstudoBiblicoService = require('./estudoBiblico.service');
 const prisma = require('../lib/prisma');
-const { ehAdmin } = require('../middlewares/auth');
+const { ehAdmin, PERFIS } = require('../middlewares/auth');
 const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
 
 const RelatorioService = {
@@ -131,8 +131,12 @@ const RelatorioService = {
     return RelatorioModel.atualizarEscolaSabatinaResumo(data);
   },
 
-  async coordenadoresRegionais() {
-    return RelatorioModel.coordenadoresRegionais();
+  async coordenadoresRegionais(usuario) {
+    if (!usuario || ehAdmin(usuario.perfil)) return RelatorioModel.coordenadoresRegionais();
+    if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario.perfil) && usuario.regiaoId) {
+      return RelatorioModel.coordenadoresRegionais({ regiaoId: usuario.regiaoId });
+    }
+    throw { status: 403, mensagem: 'Este relatório não está disponível para o seu nível de acesso.' };
   },
 
   async personalizado(query, usuario) {

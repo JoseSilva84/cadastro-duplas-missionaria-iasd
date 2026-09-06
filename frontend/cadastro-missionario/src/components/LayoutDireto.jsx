@@ -69,13 +69,7 @@ const icons = {
   ),
 };
 
-const destinoAvancado = (usuario) => {
-  if (ehAdmin(usuario)) return '/dashboard';
-  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return '/igrejas';
-  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) return '/regioes';
-  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
-  return '/igrejas';
-};
+const destinoAvancado = () => '/dashboard';
 
 export default function LayoutDireto() {
   const { usuario, logout, setLayout } = useAuth();
@@ -97,13 +91,13 @@ export default function LayoutDireto() {
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
-  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
   const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
   const funcao = funcaoUsuario(usuario);
   const nomePessoa = nomePessoaUsuario(usuario);
   const escopo = escopoUsuario(usuario);
+  const podeVerRelatorioCoordenador = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -128,16 +122,9 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
     { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
     { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-    { to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' },
+    ...(podeVerRelatorioCoordenador ? [{ to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }] : []),
   ];
-  const relatorioItemsVisiveis = isCoordenadorRegional
-    ? relatorioItems.filter((item) => (
-      item.to.includes('/relatorios/estudos-geral') ||
-      item.to.includes('/relatorios/estudos-biblicos') ||
-      item.to.includes('/relatorios/pontos-estudo') ||
-      item.to.includes('/relatorios/classes-biblicas')
-    ))
-    : relatorioItems;
+  const relatorioItemsVisiveis = relatorioItems;
 
   const cadastroItemsVisiveis = isSomenteLeitura
     ? []
@@ -153,6 +140,7 @@ export default function LayoutDireto() {
       : cadastroItems;
 
   const navLinks = isDupla ? [
+    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: [
@@ -161,6 +149,7 @@ export default function LayoutDireto() {
       { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     ] },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: [
+      { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
       { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
       { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
@@ -168,13 +157,15 @@ export default function LayoutDireto() {
     ] },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : isDiretorMissionario ? [
+    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
+    { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
-    ...(isAdmin ? [{ to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard }] : []),
+    { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     ...(!isPastorDistrital ? [{ to: '/direto/regioes', label: 'Regiões', shortLabel: 'Reg.', icon: icons.regioes }] : []),
     { to: '/direto/distritos', label: 'Distritos', shortLabel: 'Dist.', icon: icons.distritos },
     { to: '/direto/igrejas', label: 'Igrejas', shortLabel: 'Igrej.', icon: icons.igrejas },

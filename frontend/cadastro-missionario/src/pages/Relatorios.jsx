@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import { ehAdmin, PERFIS, useAuth } from '../contexts/AuthContext';
+import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -19,21 +21,31 @@ const projetoIcon = {
 };
 
 export default function Relatorios() {
+  const { usuario } = useAuth();
+  const isAdmin = ehAdmin(usuario);
+  const isGestorRegional = [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeConsultarRegioes = isAdmin || isGestorRegional;
+  const escopo = escopoUsuario(usuario);
+  const nomeEscopo = escopo.join(' • ') || 'Seu escopo de acesso';
   const [resumo, setResumo] = useState(null);
   const [porRegiao, setPorRegiao] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     Promise.all([
       api.get('/relatorios/resumo'),
-      api.get('/relatorios/por-regiao'),
+      podeConsultarRegioes ? api.get('/relatorios/por-regiao') : Promise.resolve({ data: [] }),
     ]).then(([r, pr]) => {
       setResumo(r.data);
       setPorRegiao(pr.data);
+    }).catch((err) => {
+      setErro(err.response?.data?.erro || 'Não foi possível carregar os relatórios do seu escopo.');
     }).finally(() => setCarregando(false));
-  }, []);
+  }, [podeConsultarRegioes]);
 
   if (carregando) return <LoadingState mensagem="Carregando relatórios..." />;
+  if (erro) return <div className="m-6 rounded-xl border border-red-100 bg-red-50 p-5 text-sm font-medium text-red-700">{erro}</div>;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
@@ -41,12 +53,18 @@ export default function Relatorios() {
       <div className="mb-8 animate-fade-in-down">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Administração</p>
+          <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">
+            {isAdmin ? 'Administração' : funcaoUsuario(usuario)}
+          </p>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Relatórios
+          {isAdmin ? 'Relatórios' : `Relatórios — ${nomeEscopo}`}
         </h1>
-        <p className="text-gray-400 text-xs sm:text-sm mt-1">Visão geral do programa missionário da Associação Paulistana</p>
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">
+          {isAdmin
+            ? 'Visão geral do programa missionário da Associação Paulistana'
+            : `${nomePessoaUsuario(usuario)} • informações limitadas ao seu nível de acesso`}
+        </p>
       </div>
 
       {/* KPIs gerais */}
@@ -112,8 +130,9 @@ export default function Relatorios() {
         </div>
       )}
 
-      {/* Tabela por Região */}
-      <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+      {/* Distribuição geográfica para administradores/regionais; resumo do próprio escopo para os demais. */}
+      {podeConsultarRegioes ? (
+        <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center gap-2 mb-5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white text-sm shadow-sm">📊</div>
           <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -167,7 +186,31 @@ export default function Relatorios() {
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      ) : (
+        <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm font-bold text-white shadow-md">📊</div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Escopo deste relatório</p>
+              <h2 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>{nomeEscopo}</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ['Duplas', resumo?.totalDuplas],
+              ['Ativas', resumo?.totalAtivas],
+              ['Batismos', resumo?.totalBatismos],
+              ['Pessoas alcançadas', resumo?.totalPessoasAlcancadas],
+            ].map(([label, valor]) => (
+              <div key={label} className="rounded-lg border border-gray-100 bg-[#F8FAFC] p-4 text-center">
+                <p className="text-2xl font-bold text-[#1A3A6B]">{valor || 0}</p>
+                <p className="mt-1 text-xs font-medium text-gray-500">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Distribuição por tipo de projeto */}
       {resumo?.porProjeto?.length > 0 && (

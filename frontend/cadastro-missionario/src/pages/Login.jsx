@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
@@ -15,13 +15,7 @@ const Cruz = ({ size = 'w-25 h-25' }) => (
   </div>
 );
 
-const destinoPosLogin = (usuario) => {
-  if (ehAdmin(usuario)) return '/dashboard';
-  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) return '/igrejas';
-  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) return '/regioes';
-  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) return '/distritos';
-  return '/igrejas';
-};
+const destinoPosLogin = () => '/dashboard';
 
 export default function Login() {
   const { login } = useAuth();

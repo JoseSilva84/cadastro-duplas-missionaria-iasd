@@ -71,25 +71,15 @@ async function montarEscopo(usuario) {
 
   if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
     const dupla = await obterIgrejaDaDupla(usuario);
-    if (!usuario.duplaId) {
-      return {
-        regiao: {},
-        distrito: {},
-        igreja: {},
-        dupla: {},
-        estudo: {},
-        escolaSabatina: {},
-      };
-    }
-    if (!dupla?.igrejaId) return negarTudo();
+    if (!usuario.duplaId || !dupla) return negarTudo();
     return {
       regiao: semAcesso,
       distrito: { id: Number(dupla.distritoId) },
-      igreja: { id: Number(dupla.igrejaId) },
-      dupla: { igrejaId: Number(dupla.igrejaId) },
-      estudo: { dupla: { is: { igrejaId: Number(dupla.igrejaId) } } },
-      escolaSabatina: { igrejaId: Number(dupla.igrejaId) },
-      igrejaId: Number(dupla.igrejaId),
+      igreja: dupla.igrejaId ? { id: Number(dupla.igrejaId) } : semAcesso,
+      dupla: { id: Number(dupla.id) },
+      estudo: { duplaId: Number(dupla.id) },
+      escolaSabatina: dupla.igrejaId ? { igrejaId: Number(dupla.igrejaId) } : semAcesso,
+      igrejaId: dupla.igrejaId ? Number(dupla.igrejaId) : null,
       distritoId: Number(dupla.distritoId),
     };
   }
@@ -155,7 +145,6 @@ async function validarIgreja(usuario, igrejaId) {
   if (!igreja) throw { status: 404, mensagem: 'Igreja não encontrada.' };
 
   if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA || usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
-    if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && !usuario.duplaId) return;
     const escopo = await montarEscopo(usuario);
     if (igreja.id !== escopo.igrejaId) {
       throw { status: 403, mensagem: 'Acesso negado: igreja fora do seu escopo.' };

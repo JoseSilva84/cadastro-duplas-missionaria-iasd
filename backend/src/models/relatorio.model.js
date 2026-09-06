@@ -728,11 +728,12 @@ const RelatorioModel = {
     });
   },
 
-  async coordenadoresRegionais() {
+  async coordenadoresRegionais({ regiaoId } = {}) {
     const coordenadores = await prisma.usuario.findMany({
       where: {
         perfil: 'COORDENADOR_REGIONAL',
         ativo: true,
+        ...(regiaoId ? { regiaoId: Number(regiaoId) } : {}),
         regiao: { is: { nome: { in: REGIOES_OFICIAIS } } },
       },
       select: {
