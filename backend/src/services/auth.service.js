@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const UsuarioModel = require('../models/usuario.model');
+const UsuarioService = require('./usuario.service');
 const { ehSomenteLeitura } = require('../middlewares/auth');
 
 const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
@@ -119,23 +120,21 @@ const AuthService = {
     if (!usuario || !usuario.ativo) {
       throw { status: 404, mensagem: 'Usuário não encontrado ou inativo.' };
     }
-    if (usuario.perfil === 'SUPER_ADMIN' && usuarioSolicitante.perfil !== 'SUPER_ADMIN') {
-      throw { status: 403, mensagem: 'Apenas outro Super Administrador pode gerar este acesso.' };
-    }
+    await UsuarioService.validarPermissaoGerenciarUsuario(usuario, usuarioSolicitante);
 
     const token = jwt.sign(
       {
         finalidade: 'redefinir-acesso',
-        versaoCredenciais: versaoDasCredenciais(usuario),
         nonce: crypto.randomUUID(),
       },
       segredoRedefinicao(),
-      { subject: String(usuario.id), expiresIn: '15m' }
+      { subject: String(usuario.id), expiresIn: '9m' }
     );
+    const tokenDecodificado = jwt.decode(token);
 
     return {
       token,
-      expiraEm: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      expiraEm: new Date(tokenDecodificado.exp * 1000).toISOString(),
       usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email },
     };
   },
@@ -154,8 +153,8 @@ const AuthService = {
     }
 
     const usuario = await UsuarioModel.findByIdComSenha(payload.sub);
-    if (!usuario || !usuario.ativo || versaoDasCredenciais(usuario) !== payload.versaoCredenciais) {
-      throw { status: 400, mensagem: 'Este QR Code já foi utilizado ou não é mais válido.' };
+    if (!usuario || !usuario.ativo) {
+      throw { status: 400, mensagem: 'Este QR Code não é mais válido.' };
     }
 
     const emailNormalizado = normalizarEmail(email);

@@ -65,7 +65,7 @@ const UsuarioController = {
         await UsuarioService.excluir(req.params.id, req.usuario);
         return res.json({ mensagem: 'Usuario excluido com sucesso.' });
       }
-      await UsuarioService.desativar(req.params.id);
+      await UsuarioService.desativar(req.params.id, req.usuario);
       res.json({ mensagem: 'Usuario desativado com sucesso.' });
     } catch (err) {
       const status = err.status || 500;

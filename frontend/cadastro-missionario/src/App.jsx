@@ -304,11 +304,11 @@ function AppRoutes() {
           }
         />
 
-        {/* Gestão de Usuários — apenas admins */}
+        {/* Gestão de Usuários — admins e gestores regionais */}
         <Route
           path="gestao-usuarios"
           element={
-            <RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}>
+            <RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]}>
               <GestaoUsuarios />
             </RotaComPerfis>
           }
@@ -459,7 +459,7 @@ function AppRoutes() {
           path="gestao-usuarios"
           element={
             <RotaComPerfis
-              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}
+              perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]}
               redirectTo="/direto/distritos"
             >
               <GestaoUsuarios />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PERFIS, useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { toastError, toastSuccess } from '../lib/toast';
@@ -36,7 +37,15 @@ const nomeArquivoDaResposta = (headers) => {
 
 export default function Configuracoes() {
   const { usuario, atualizarConta } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const podeGerenciarUsuarios = !usuario?.somenteLeitura && [
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.COORDENADOR_REGIONAL,
+  ].includes(usuario?.perfil);
   const [aba, setAba] = useState('conta');
   const [conta, setConta] = useState({
     email: usuario?.email || '',
@@ -147,10 +156,19 @@ export default function Configuracoes() {
         <p className="mt-1 text-sm text-gray-400">Gerencie seus dados de acesso e segurança.</p>
       </div>
 
-      <div className="mb-5 flex gap-2 border-b border-gray-200">
+      <div className="mb-5 flex gap-2 overflow-x-auto border-b border-gray-200">
         <button type="button" onClick={() => setAba('conta')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'conta' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
           Conta
         </button>
+        {podeGerenciarUsuarios && (
+          <button
+            type="button"
+            onClick={() => navigate(location.pathname.startsWith('/direto/') ? '/direto/gestao-usuarios' : '/gestao-usuarios')}
+            className="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-gray-400 transition hover:text-gray-600"
+          >
+            Gestão de usuários
+          </button>
+        )}
         {isSuperAdmin && (
           <button type="button" onClick={() => setAba('backup')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'backup' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Backup dos dados

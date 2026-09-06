@@ -112,6 +112,7 @@ export default function LayoutDireto() {
   const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
+  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -125,7 +126,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
     { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
-    ...(isAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+    ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
   ];
 
   const relatorioItems = [

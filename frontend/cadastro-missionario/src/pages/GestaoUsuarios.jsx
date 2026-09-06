@@ -19,6 +19,8 @@ const PERFIS_LISTA = Object.entries(PERFIL_CONFIG).map(([value, cfg]) => ({
   label: cfg.label,
 }));
 
+const PERFIS_GESTORES_REGIONAIS = [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL];
+
 const CAMPO_EXTRA = {
   PASTOR_REGIONAL: 'regiao',
   COORDENADOR_REGIONAL: 'regiao',
@@ -49,6 +51,15 @@ function StatusBadge({ ativo }) {
 }
 
 function EscopoUsuario({ usuario }) {
+  if (usuario.perfil === PERFIS.PASTOR_DISTRITAL && usuario.distrito) {
+    return <span className="text-sm text-gray-600">{usuario.distrito.nome}</span>;
+  }
+  if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA && usuario.igreja) {
+    return <span className="text-sm text-gray-600">{usuario.igreja.nome}</span>;
+  }
+  if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && usuario.dupla) {
+    return <span className="text-sm text-gray-600">{usuario.dupla.liderNome}</span>;
+  }
   if (usuario.regiao) return <span className="text-sm text-gray-600">{usuario.regiao.nome}</span>;
   if (usuario.distrito) return <span className="text-sm text-gray-600">{usuario.distrito.nome}</span>;
   if (usuario.igreja) return <span className="text-sm text-gray-600">{usuario.igreja.nome}</span>;
@@ -102,12 +113,13 @@ function SelectInput({ label, children, className = '', ...props }) {
 
 function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, duplas, usuarioLogado }) {
   const editando = Boolean(usuario);
+  const gestorRegional = PERFIS_GESTORES_REGIONAIS.includes(usuarioLogado?.perfil);
   const [form, setForm] = useState({
     nome: usuario?.nome || '',
     email: usuario?.email || '',
     senha: '',
-    perfil: usuario?.perfil || 'ADMINISTRADOR',
-    regiaoId: usuario?.regiaoId || '',
+    perfil: usuario?.perfil || (gestorRegional ? PERFIS.PASTOR_DISTRITAL : PERFIS.ADMINISTRADOR),
+    regiaoId: usuario?.regiaoId || (gestorRegional ? usuarioLogado?.regiaoId : '') || '',
     distritoId: usuario?.distritoId || '',
     igrejaId: usuario?.igrejaId || '',
     duplaId: usuario?.duplaId || '',
@@ -117,7 +129,10 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
   const [erro, setErro] = useState(null);
 
   const campoExtra = CAMPO_EXTRA[form.perfil] || null;
-  const perfisDisponiveis = PERFIS_LISTA.filter((p) => p.value !== 'SUPER_ADMIN' || usuarioLogado?.perfil === PERFIS.SUPER_ADMIN);
+  const perfisDisponiveis = PERFIS_LISTA.filter((p) => {
+    if (gestorRegional) return ![PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(p.value);
+    return p.value !== PERFIS.SUPER_ADMIN || usuarioLogado?.perfil === PERFIS.SUPER_ADMIN;
+  });
   const set = (campo, valor) => setForm((atual) => ({ ...atual, [campo]: valor }));
 
   const handleSubmit = async (event) => {
@@ -218,7 +233,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
                 setForm((atual) => ({
                   ...atual,
                   perfil: e.target.value,
-                  regiaoId: '',
+                  regiaoId: gestorRegional ? usuarioLogado?.regiaoId || '' : '',
                   distritoId: '',
                   igrejaId: '',
                   duplaId: '',
@@ -247,6 +262,7 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
               label="Região"
               value={form.regiaoId}
               onChange={(e) => set('regiaoId', e.target.value)}
+              disabled={gestorRegional}
               required
             >
               <option value="">Selecione uma região</option>
@@ -452,13 +468,19 @@ function ModalQrCode({ usuario, onClose }) {
   const [imagemQr, setImagemQr] = useState('');
   const [link, setLink] = useState('');
   const [expiraEm, setExpiraEm] = useState('');
+  const [segundosRestantes, setSegundosRestantes] = useState(0);
   const [erro, setErro] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [compartilhado, setCompartilhado] = useState(false);
 
   useEffect(() => {
     let ativo = true;
-    api.post(`/usuarios/${usuario.id}/redefinicao-qrcode`)
-      .then(async ({ data }) => {
+    let timerRenovacao;
+
+    const gerarQrCode = async () => {
+      try {
+        setErro('');
+        const { data } = await api.post(`/usuarios/${usuario.id}/redefinicao-qrcode`);
         const url = `${window.location.origin}/redefinir-acesso?token=${encodeURIComponent(data.token)}`;
         const dataUrl = await QRCode.toDataURL(url, {
           width: 320,
@@ -470,12 +492,34 @@ function ModalQrCode({ usuario, onClose }) {
         setLink(url);
         setImagemQr(dataUrl);
         setExpiraEm(data.expiraEm);
-      })
-      .catch((err) => {
-        if (ativo) setErro(err.response?.data?.erro || 'Erro ao gerar QR Code.');
-      });
-    return () => { ativo = false; };
+        const tempoAteRenovar = Math.max(new Date(data.expiraEm).getTime() - Date.now(), 1000);
+        timerRenovacao = window.setTimeout(gerarQrCode, tempoAteRenovar);
+      } catch (err) {
+        if (ativo) {
+          setErro(err.response?.data?.erro || 'Erro ao gerar QR Code. Tentaremos novamente.');
+          timerRenovacao = window.setTimeout(gerarQrCode, 15000);
+        }
+      }
+    };
+
+    gerarQrCode();
+    return () => {
+      ativo = false;
+      window.clearTimeout(timerRenovacao);
+    };
   }, [usuario.id]);
+
+  useEffect(() => {
+    if (!expiraEm) return undefined;
+    const atualizarContagem = () => {
+      setSegundosRestantes(Math.max(0, Math.ceil((new Date(expiraEm).getTime() - Date.now()) / 1000)));
+    };
+    atualizarContagem();
+    const timerContagem = window.setInterval(atualizarContagem, 1000);
+    return () => window.clearInterval(timerContagem);
+  }, [expiraEm]);
+
+  const tempoRestante = `${String(Math.floor(segundosRestantes / 60)).padStart(2, '0')}:${String(segundosRestantes % 60).padStart(2, '0')}`;
 
   const copiarLink = async () => {
     try {
@@ -484,6 +528,36 @@ function ModalQrCode({ usuario, onClose }) {
       window.setTimeout(() => setCopiado(false), 2000);
     } catch {
       setErro('Não foi possível copiar o link.');
+    }
+  };
+
+  const compartilharQrCode = async () => {
+    try {
+      const blob = await (await fetch(imagemQr)).blob();
+      const arquivo = new File([blob], `qrcode-acesso-${usuario.id}.png`, { type: 'image/png' });
+      const dadosComArquivo = {
+        title: `Redefinir acesso de ${usuario.nome}`,
+        text: `Use este QR Code para alterar o login e a senha. O código é renovado a cada 9 minutos.\n${link}`,
+        files: [arquivo],
+      };
+
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [arquivo] }))) {
+        await navigator.share(dadosComArquivo);
+      } else if (navigator.share) {
+        await navigator.share({
+          title: dadosComArquivo.title,
+          text: dadosComArquivo.text,
+          url: link,
+        });
+      } else {
+        await navigator.clipboard.writeText(link);
+      }
+      setCompartilhado(true);
+      window.setTimeout(() => setCompartilhado(false), 2000);
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setErro('Não foi possível compartilhar o QR Code.');
+      }
     }
   };
 
@@ -511,9 +585,15 @@ function ModalQrCode({ usuario, onClose }) {
               </div>
               <p className="mt-4 text-center text-sm text-gray-600">A pessoa deve ler o QR Code e definir um novo e-mail e uma nova senha.</p>
               <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
-                Válido por 15 minutos e para uma única redefinição. Expira às {new Date(expiraEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
+                Reutilizável enquanto estiver válido. O QR Code será renovado automaticamente em <strong>{tempoRestante}</strong> e o anterior expirará às {new Date(expiraEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
               </div>
-              <button type="button" onClick={copiarLink} className="mt-4 h-11 w-full rounded-lg border border-[#1A3A6B]/20 text-sm font-semibold text-[#1A3A6B] transition hover:bg-[#1A3A6B]/5">
+              <button type="button" onClick={compartilharQrCode} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1A3A6B] px-4 text-sm font-semibold text-white transition hover:bg-[#0d2347]">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.368-2.684 3 3 0 00-5.368 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                {compartilhado ? 'QR Code compartilhado' : 'Compartilhar QR Code'}
+              </button>
+              <button type="button" onClick={copiarLink} className="mt-2 h-11 w-full rounded-lg border border-[#1A3A6B]/20 text-sm font-semibold text-[#1A3A6B] transition hover:bg-[#1A3A6B]/5">
                 {copiado ? 'Link copiado' : 'Copiar link de redefinição'}
               </button>
             </>
@@ -798,7 +878,7 @@ export default function GestaoUsuarios() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
                             </svg>
                           </IconButton>
-                          <IconButton title="Gerar QR Code de redefinição" onClick={() => setModalQrCode(usuario)}>
+                          <IconButton title="Compartilhar QR Code de acesso" onClick={() => setModalQrCode(usuario)}>
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm11 0h2v2h-2v-2zm3 0h2v4h-2v-4zm-3 4h2v2h-2v-2zm3 2h2" />
                             </svg>
@@ -845,7 +925,7 @@ export default function GestaoUsuarios() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586l6.257-6.257A6 6 0 1121 9z" />
                         </svg>
                       </IconButton>
-                      <IconButton title="Gerar QR Code de redefinição" onClick={() => setModalQrCode(usuario)}>
+                      <IconButton title="Compartilhar QR Code de acesso" onClick={() => setModalQrCode(usuario)}>
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm11 0h2v2h-2v-2zm3 0h2v4h-2v-4zm-3 4h2v2h-2v-2zm3 2h2" />
                         </svg>

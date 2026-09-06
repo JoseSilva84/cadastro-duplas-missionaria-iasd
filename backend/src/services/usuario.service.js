@@ -4,12 +4,52 @@ const UsuarioModel = require('../models/usuario.model');
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
-// Perfis que NÃO podem ser criados por Pastor Regional
+// Perfis reservados à administração da Associação.
 const PERFIS_EXCLUSIVOS_ADMIN = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
+const PERFIS_GESTORES_REGIONAIS = [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL];
+
+const ehGestorRegional = (perfil) => PERFIS_GESTORES_REGIONAIS.includes(perfil);
+
+const obterRegiaoIdUsuario = (usuario) => {
+  if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) {
+    return usuario?.distrito?.regiaoId || usuario?.regiaoId || null;
+  }
+  if (usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    return usuario?.igreja?.distrito?.regiaoId || usuario?.regiaoId || null;
+  }
+  if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    return usuario?.dupla?.distrito?.regiaoId
+      || usuario?.dupla?.igreja?.distrito?.regiaoId
+      || usuario?.regiaoId
+      || null;
+  }
+  return usuario?.regiaoId || null;
+};
+
+async function validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado) {
+  if (usuarioLogado.perfil === PERFIS.SUPER_ADMIN) return;
+
+  if (usuarioAtual.perfil === PERFIS.SUPER_ADMIN) {
+    throw { status: 403, mensagem: 'Apenas um Super Administrador pode gerenciar esta conta.' };
+  }
+  if (usuarioLogado.perfil === PERFIS.ADMINISTRADOR) return;
+  if (!ehGestorRegional(usuarioLogado.perfil)) {
+    throw { status: 403, mensagem: 'Sem permissão para gerenciar usuários.' };
+  }
+
+  const regiaoIdSolicitante = Number(usuarioLogado.regiaoId);
+  const regiaoIdAlvo = Number(obterRegiaoIdUsuario(usuarioAtual));
+  if (!regiaoIdSolicitante || !regiaoIdAlvo || regiaoIdAlvo !== regiaoIdSolicitante) {
+    throw { status: 403, mensagem: 'Acesso negado: usuário fora da sua região.' };
+  }
+  if (PERFIS_EXCLUSIVOS_ADMIN.includes(usuarioAtual.perfil)) {
+    throw { status: 403, mensagem: 'Sem permissão para gerenciar este usuário.' };
+  }
+}
 
 async function validarEscopoUsuarioRegional(data, regiaoIdCriador) {
   if (data.regiaoId && Number(data.regiaoId) !== Number(regiaoIdCriador)) {
-    throw { status: 403, mensagem: 'Acesso negado: regiÃ£o fora do seu escopo.' };
+    throw { status: 403, mensagem: 'Acesso negado: região fora do seu escopo.' };
   }
 
   if (data.distritoId) {
@@ -18,7 +58,7 @@ async function validarEscopoUsuarioRegional(data, regiaoIdCriador) {
       select: { regiaoId: true },
     });
     if (!distrito || Number(distrito.regiaoId) !== Number(regiaoIdCriador)) {
-      throw { status: 403, mensagem: 'Acesso negado: distrito fora da sua regiÃ£o.' };
+      throw { status: 403, mensagem: 'Acesso negado: distrito fora da sua região.' };
     }
   }
 
@@ -28,7 +68,7 @@ async function validarEscopoUsuarioRegional(data, regiaoIdCriador) {
       select: { distrito: { select: { regiaoId: true } } },
     });
     if (!igreja || Number(igreja.distrito.regiaoId) !== Number(regiaoIdCriador)) {
-      throw { status: 403, mensagem: 'Acesso negado: igreja fora da sua regiÃ£o.' };
+      throw { status: 403, mensagem: 'Acesso negado: igreja fora da sua região.' };
     }
   }
 
@@ -38,7 +78,7 @@ async function validarEscopoUsuarioRegional(data, regiaoIdCriador) {
       select: { distrito: { select: { regiaoId: true } } },
     });
     if (!dupla || Number(dupla.distrito.regiaoId) !== Number(regiaoIdCriador)) {
-      throw { status: 403, mensagem: 'Acesso negado: dupla fora da sua regiÃ£o.' };
+      throw { status: 403, mensagem: 'Acesso negado: dupla fora da sua região.' };
     }
   }
 }
@@ -53,9 +93,18 @@ const UsuarioService = {
       return UsuarioModel.findAll();
     }
 
-    // Pastor Regional vê apenas usuários da sua região
-    if (perfil === PERFIS.PASTOR_REGIONAL && regiaoId) {
-      return UsuarioModel.findAll({ regiaoId });
+    // Pastor e Coordenador Regional veem apenas usuários da própria região.
+    if (ehGestorRegional(perfil) && regiaoId) {
+      const regiaoIdNumerica = Number(regiaoId);
+      return UsuarioModel.findAll({
+        OR: [
+          { perfil: { in: PERFIS_GESTORES_REGIONAIS }, regiaoId: regiaoIdNumerica },
+          { perfil: PERFIS.PASTOR_DISTRITAL, distrito: { is: { regiaoId: regiaoIdNumerica } } },
+          { perfil: PERFIS.DIRETOR_MISSIONARIO_IGREJA, igreja: { is: { distrito: { is: { regiaoId: regiaoIdNumerica } } } } },
+          { perfil: PERFIS.DUPLA_MISSIONARIA, dupla: { is: { distrito: { is: { regiaoId: regiaoIdNumerica } } } } },
+          { perfil: PERFIS.DUPLA_MISSIONARIA, dupla: { is: { igreja: { is: { distrito: { is: { regiaoId: regiaoIdNumerica } } } } } } },
+        ],
+      });
     }
 
     // Demais perfis sem acesso à listagem (bloqueado na rota, mas reforçado aqui)
@@ -66,12 +115,15 @@ const UsuarioService = {
   async criar(data, usuarioLogado) {
     const { perfil: perfilCriador, regiaoId: regiaoIdCriador } = usuarioLogado;
 
-    // Pastor Regional só pode criar PD e Coordenadores dentro da sua região
-    if (perfilCriador === PERFIS.PASTOR_REGIONAL) {
+    // Gestores regionais só podem criar contas dentro da própria região.
+    if (ehGestorRegional(perfilCriador)) {
+      if (!regiaoIdCriador) {
+        throw { status: 403, mensagem: 'Seu usuário não possui uma região vinculada.' };
+      }
       if (PERFIS_EXCLUSIVOS_ADMIN.includes(data.perfil)) {
         throw { status: 403, mensagem: 'Você não tem permissão para criar este tipo de perfil.' };
       }
-      // Força o regiaoId do novo usuário a ser o da região do Pastor Regional
+      // Força o regiaoId do novo usuário a ser o da região do gestor.
       if (!data.regiaoId || Number(data.regiaoId) !== regiaoIdCriador) {
         data.regiaoId = regiaoIdCriador;
       }
@@ -120,7 +172,7 @@ const UsuarioService = {
     const { perfil: perfilCriador, regiaoId: regiaoIdCriador } = usuarioLogado;
     const usuarioAtual = await UsuarioModel.findById(id);
     if (!usuarioAtual) {
-      throw { status: 404, mensagem: 'UsuÃ¡rio nÃ£o encontrado.' };
+      throw { status: 404, mensagem: 'Usuário não encontrado.' };
     }
 
     // Administradores comuns não podem alterar nem promover contas Super Admin.
@@ -129,15 +181,17 @@ const UsuarioService = {
       throw { status: 403, mensagem: 'Apenas um Super Administrador pode alterar esta conta ou perfil.' };
     }
 
-    if (perfilCriador === PERFIS.PASTOR_REGIONAL) {
-      if (Number(usuarioAtual.regiaoId) !== Number(regiaoIdCriador)) {
-        throw { status: 403, mensagem: 'Acesso negado: usuÃ¡rio fora da sua regiÃ£o.' };
+    await validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado);
+
+    if (ehGestorRegional(perfilCriador)) {
+      if (Number(obterRegiaoIdUsuario(usuarioAtual)) !== Number(regiaoIdCriador)) {
+        throw { status: 403, mensagem: 'Acesso negado: usuário fora da sua região.' };
       }
       if (PERFIS_EXCLUSIVOS_ADMIN.includes(usuarioAtual.perfil)) {
-        throw { status: 403, mensagem: 'Sem permissÃ£o para alterar este usuÃ¡rio.' };
+        throw { status: 403, mensagem: 'Sem permissão para alterar este usuário.' };
       }
       if (PERFIS_EXCLUSIVOS_ADMIN.includes(data.perfil)) {
-        throw { status: 403, mensagem: 'Sem permissÃ£o para atribuir este perfil.' };
+        throw { status: 403, mensagem: 'Sem permissão para atribuir este perfil.' };
       }
       data.regiaoId = regiaoIdCriador;
       await validarEscopoUsuarioRegional(data, regiaoIdCriador);
@@ -163,7 +217,7 @@ const UsuarioService = {
       throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário.' };
     }
 
-    if (data.senha && !ehAdmin(perfilCriador)) {
+    if (data.senha && !ehAdmin(perfilCriador) && !ehGestorRegional(perfilCriador)) {
       throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
     }
 
@@ -187,15 +241,16 @@ const UsuarioService = {
     }
   },
 
-  // Redefine senha por administradores sem expor a senha atual
+  // Redefine senha por gestores autorizados sem expor a senha atual.
   async redefinirSenha(id, senha, usuarioLogado) {
-    if (!ehAdmin(usuarioLogado.perfil)) {
+    if (!ehAdmin(usuarioLogado.perfil) && !ehGestorRegional(usuarioLogado.perfil)) {
       throw { status: 403, mensagem: 'Sem permissão para redefinir senha.' };
     }
     const usuarioAtual = await UsuarioModel.findById(id);
     if (!usuarioAtual) {
       throw { status: 404, mensagem: 'Usuário não encontrado.' };
     }
+    await validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado);
     if (usuarioAtual.perfil === PERFIS.SUPER_ADMIN && usuarioLogado.perfil !== PERFIS.SUPER_ADMIN) {
       throw { status: 403, mensagem: 'Apenas um Super Administrador pode redefinir esta senha.' };
     }
@@ -211,7 +266,15 @@ const UsuarioService = {
   },
 
   // Desativa usuário (soft delete)
-  async desativar(id) {
+  async desativar(id, usuarioLogado) {
+    const usuarioAtual = await UsuarioModel.findById(id);
+    if (!usuarioAtual) {
+      throw { status: 404, mensagem: 'Usuário não encontrado.' };
+    }
+    await validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado);
+    if (Number(id) === Number(usuarioLogado.id)) {
+      throw { status: 400, mensagem: 'Você não pode desativar o próprio usuário logado.' };
+    }
     return UsuarioModel.deactivate(id);
   },
 
@@ -220,8 +283,15 @@ const UsuarioService = {
     if (Number(id) === Number(usuarioLogado.id)) {
       throw { status: 400, mensagem: 'Você não pode excluir o próprio usuário logado.' };
     }
+    const usuarioAtual = await UsuarioModel.findById(id);
+    if (!usuarioAtual) {
+      throw { status: 404, mensagem: 'Usuário não encontrado.' };
+    }
+    await validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado);
     return UsuarioModel.remove(id);
   },
+
+  validarPermissaoGerenciarUsuario,
 };
 
 module.exports = UsuarioService;

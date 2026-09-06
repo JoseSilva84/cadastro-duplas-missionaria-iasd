@@ -115,6 +115,7 @@ export default function Layout({ children }) {
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const podeVerRelatorios = isAdmin || isDupla || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
+  const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla || isDiretorMissionario
@@ -163,7 +164,7 @@ export default function Layout({ children }) {
             { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
-          ...(isAdmin ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
           { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
@@ -200,7 +201,7 @@ export default function Layout({ children }) {
             { to: '/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
             { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
-          ...(isAdmin ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
+          ...(podeGerenciarUsuarios ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
           { to: '/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [

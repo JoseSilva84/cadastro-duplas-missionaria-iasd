@@ -60,7 +60,7 @@ export default function RedefinirAcesso() {
               </svg>
             </div>
             <h2 className="mt-4 text-xl font-bold text-[#1A3A6B]">Acesso atualizado</h2>
-            <p className="mt-2 text-sm text-gray-500">O QR Code foi invalidado. Entre usando seu novo e-mail e sua nova senha.</p>
+            <p className="mt-2 text-sm text-gray-500">Entre usando seu novo e-mail e sua nova senha. Este QR Code continuará válido somente até o fim do ciclo atual de 9 minutos.</p>
             <Link to="/login" className="btn-primary mt-6 inline-flex w-full items-center justify-center">Ir para o login</Link>
           </div>
         ) : (
@@ -89,7 +89,7 @@ export default function RedefinirAcesso() {
             <button type="submit" disabled={salvando || !token} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60">
               {salvando ? 'Salvando...' : 'Salvar novo acesso'}
             </button>
-            {!token && <p className="text-center text-xs text-red-600">Token ausente. Leia novamente o QR Code fornecido pelo administrador.</p>}
+            {!token && <p className="text-center text-xs text-red-600">Token ausente. Leia novamente o QR Code fornecido pelo responsável regional.</p>}
           </form>
         )}
       </div>
