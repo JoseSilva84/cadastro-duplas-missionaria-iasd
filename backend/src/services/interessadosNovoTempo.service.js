@@ -38,8 +38,20 @@ function possuiCredencial(cfg) {
   return Boolean(cfg.token || (cfg.email && cfg.password));
 }
 
-function numeroValido(valor) {
-  return Boolean(texto(valor));
+function booleano(valor) {
+  if (typeof valor === 'boolean') return valor;
+  if (typeof valor === 'number') return valor === 1;
+  return ['1', 'true', 'sim', 'yes'].includes(chaveNormalizada(valor));
+}
+
+function booleanoOuNulo(valor) {
+  return valor === null || valor === undefined || valor === '' ? null : booleano(valor);
+}
+
+function numeroOuNulo(valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
 }
 
 function camposAdicionais(registro) {
@@ -47,7 +59,7 @@ function camposAdicionais(registro) {
     'id', 'n', 'name', 'nome', 't', 'tel', 'phone', 'telefone', 'whatsapp', 'd', 'district', 'distrito',
     'v', 'vip', 'vipHistorico', 'p', 'priority', 'prioridade', 's', 'score', 'e', 'hasActiveStudy',
     'birthDate', 'dataNascimento', 'address', 'endereco', 'end', 'materialName', 'materialPrincipal',
-    'material', 'tm', 'email', 'status', 'source', 'origem', 'observations', 'notes', 'observacoes',
+    'material', 'tm', 'email', 'em', 'status', 'source', 'origem', 'observations', 'notes', 'observacoes',
     'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags',
   ]);
 
@@ -57,25 +69,46 @@ function camposAdicionais(registro) {
 }
 
 function normalizarRegistro(registro) {
-  const whatsapp = texto(registro?.t || registro?.tel || registro?.whatsapp || registro?.phone || registro?.telefone);
+  const telefoneInformado = registro?.tel || registro?.whatsapp || registro?.phone || registro?.telefone;
+  const whatsapp = texto(telefoneInformado || (texto(registro?.t).replace(/\D/g, '').length >= 10 ? registro.t : ''));
   const distrito = texto(registro?.d || registro?.distrito || registro?.district) || 'Sem distrito';
   const prioridade = texto(registro?.p || registro?.prioridade || registro?.priority);
   const material = texto(registro?.materialName || registro?.materialPrincipal || registro?.material || registro?.tm);
+  const email = texto(registro?.em || registro?.email);
+  const bruto = registro?.raw && typeof registro.raw === 'object' ? registro.raw : {};
+  const temWhatsapp = booleano(registro?.temTelefone ?? registro?.t ?? Boolean(whatsapp));
 
   return {
     id: texto(registro?.id || registro?.uuid),
     nome: texto(registro?.n || registro?.nome || registro?.name) || `Contato ${whatsapp.slice(-4)}`,
     whatsapp,
-    email: texto(registro?.email),
+    email,
     distrito,
-    vipHistorico: Boolean(registro?.v ?? registro?.vipHistorico ?? registro?.vip),
-    estudoAtivo: Boolean(registro?.e ?? registro?.hasActiveStudy),
+    temWhatsapp,
+    vipHistorico: booleano(registro?.v ?? registro?.vipHistorico ?? registro?.vip),
+    estudoAtivo: booleano(registro?.e ?? registro?.estudoAtivo ?? registro?.hasActiveStudy),
     prioridade,
-    pontuacao: registro?.s ?? registro?.score ?? null,
+    prioridadeRotulo: texto(registro?.priorityLabel),
+    pontuacao: numeroOuNulo(registro?.s ?? registro?.score),
+    genero: texto(registro?.g || registro?.genero),
+    religiao: texto(registro?.r || registro?.religiao),
+    diasSemContato: numeroOuNulo(registro?.c ?? bruto?.c),
     status: texto(registro?.status),
     origem: texto(registro?.source || registro?.origem),
     endereco: texto(registro?.address || registro?.endereco || registro?.end),
     material,
+    materiaisQuantidade: numeroOuNulo(registro?.m ?? registro?.materiaisQuantidade) || 0,
+    cidade: texto(registro?.cidade),
+    bairro: texto(registro?.bairro),
+    canal: texto(registro?.canal),
+    telefoneValido: booleano(registro?.telefoneValido ?? temWhatsapp),
+    emailValido: booleano(registro?.emailValido ?? Boolean(email)),
+    temDescricao: booleano(registro?.temDescricao ?? Boolean(registro?.descricao || registro?.observacoes)),
+    tentativaContato: booleanoOuNulo(registro?.tentativaContato),
+    respondeu: booleanoOuNulo(registro?.respondeu),
+    demonstrouInteresse: booleanoOuNulo(registro?.demonstrouInteresse),
+    aceitouVisita: booleanoOuNulo(registro?.aceitouVisita),
+    participou: booleanoOuNulo(registro?.participou),
     dataNascimento: registro?.birthDate || registro?.dataNascimento || null,
     observacoes: texto(registro?.observations || registro?.notes || registro?.observacoes),
     criadoEm: registro?.createdAt || registro?.created_at || null,
@@ -205,7 +238,7 @@ function resumir(dados) {
       estudosAtivos: 0,
     };
     atual.total += 1;
-    if (numeroValido(contato.whatsapp)) atual.comWhatsapp += 1;
+    if (contato.temWhatsapp) atual.comWhatsapp += 1;
     if (contato.vipHistorico) atual.vipsHistoricos += 1;
     if (chaveNormalizada(contato.prioridade) === 'hot') atual.quentes += 1;
     if (contato.estudoAtivo) atual.estudosAtivos += 1;
@@ -216,7 +249,7 @@ function resumir(dados) {
   return {
     resumo: {
       totalInteressados: dados.contatos.length,
-      comWhatsapp: dados.contatos.filter((contato) => numeroValido(contato.whatsapp)).length,
+      comWhatsapp: dados.contatos.filter((contato) => contato.temWhatsapp).length,
       vipsHistoricos: dados.contatos.filter((contato) => contato.vipHistorico).length,
       quentes: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
       estudosAtivos: dados.contatos.filter((contato) => contato.estudoAtivo).length,
@@ -227,9 +260,212 @@ function resumir(dados) {
   };
 }
 
+function prioridadeCanonica(valor) {
+  return ({ hot: 'Hot', warm: 'Warm', cool: 'Cool', cold: 'Cold' })[chaveNormalizada(valor)] || 'Cold';
+}
+
+function faixaSemContato(dias) {
+  if (dias === null) return 'Não informado';
+  if (dias <= 90) return 'Até 3 meses';
+  if (dias <= 365) return '3 meses a 1 ano';
+  if (dias <= 730) return '1 a 2 anos';
+  if (dias <= 1825) return '2 a 5 anos';
+  return '5+ anos';
+}
+
+function contarPor(contatos, seletor, limite = null) {
+  const mapa = new Map();
+  contatos.forEach((contato) => {
+    const nome = texto(seletor(contato)) || 'Não informado';
+    mapa.set(nome, (mapa.get(nome) || 0) + 1);
+  });
+  const lista = [...mapa.entries()]
+    .map(([nome, total]) => ({ nome, total }))
+    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
+  return limite ? lista.slice(0, limite) : lista;
+}
+
+function aplicarFiltrosAnalise(contatos, filtros = {}) {
+  return contatos.filter((contato) => {
+    if (filtros.distrito && filtros.distrito !== 'todos'
+      && chaveNormalizada(contato.distrito) !== chaveNormalizada(filtros.distrito)) return false;
+    if (filtros.prioridade && filtros.prioridade !== 'todos'
+      && prioridadeCanonica(contato.prioridade) !== filtros.prioridade) return false;
+    if (['0', '1'].includes(filtros.vip) && contato.vipHistorico !== (filtros.vip === '1')) return false;
+    if (['0', '1'].includes(filtros.whatsapp) && contato.temWhatsapp !== (filtros.whatsapp === '1')) return false;
+    if (['0', '1'].includes(filtros.estudos) && contato.estudoAtivo !== (filtros.estudos === '1')) return false;
+    if (filtros.genero && filtros.genero !== 'todos'
+      && chaveNormalizada(contato.genero) !== chaveNormalizada(filtros.genero)) return false;
+    return true;
+  });
+}
+
+function analisarContatos(contatos, filtros = {}) {
+  const filtrados = aplicarFiltrosAnalise(contatos, filtros);
+  const prioridades = { Hot: 0, Warm: 0, Cool: 0, Cold: 0 };
+  const distritos = new Map();
+
+  filtrados.forEach((contato) => {
+    const prioridade = prioridadeCanonica(contato.prioridade);
+    prioridades[prioridade] += 1;
+    const chave = chaveNormalizada(contato.distrito) || 'sem distrito';
+    const atual = distritos.get(chave) || {
+      nome: contato.distrito,
+      total: 0,
+      comWhatsapp: 0,
+      quentes: 0,
+      potenciais: 0,
+      mornos: 0,
+      frios: 0,
+      vips: 0,
+      estudos: 0,
+      semContato5Anos: 0,
+      somaPontuacao: 0,
+      pontuados: 0,
+    };
+    atual.total += 1;
+    if (contato.temWhatsapp) atual.comWhatsapp += 1;
+    if (prioridade === 'Hot') atual.quentes += 1;
+    if (prioridade === 'Warm') atual.potenciais += 1;
+    if (prioridade === 'Cool') atual.mornos += 1;
+    if (prioridade === 'Cold') atual.frios += 1;
+    if (contato.vipHistorico) atual.vips += 1;
+    if (contato.estudoAtivo) atual.estudos += 1;
+    if (contato.diasSemContato !== null && contato.diasSemContato > 1825) atual.semContato5Anos += 1;
+    if (contato.pontuacao !== null) {
+      atual.somaPontuacao += contato.pontuacao;
+      atual.pontuados += 1;
+    }
+    distritos.set(chave, atual);
+  });
+
+  const listaDistritos = [...distritos.values()]
+    .map((distrito) => ({
+      ...distrito,
+      pontuacaoMedia: distrito.pontuados
+        ? Number((distrito.somaPontuacao / distrito.pontuados).toFixed(1))
+        : 0,
+    }))
+    .map(({ somaPontuacao, pontuados, ...distrito }) => distrito)
+    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  const maior = (campo) => [...listaDistritos].sort((a, b) => b[campo] - a[campo])[0] || null;
+  return {
+    resumo: {
+      total: filtrados.length,
+      comWhatsapp: filtrados.filter((contato) => contato.temWhatsapp).length,
+      quentes: prioridades.Hot,
+      potenciais: prioridades.Warm,
+      mornos: prioridades.Cool,
+      frios: prioridades.Cold,
+      vips: filtrados.filter((contato) => contato.vipHistorico).length,
+      estudos: filtrados.filter((contato) => contato.estudoAtivo).length,
+      distritos: listaDistritos.length,
+    },
+    prioridades: [
+      { nome: 'Quentes', total: prioridades.Hot, cor: '#f97316' },
+      { nome: 'Potenciais', total: prioridades.Warm, cor: '#f59e0b' },
+      { nome: 'Mornos', total: prioridades.Cool, cor: '#3b82f6' },
+      { nome: 'Frios', total: prioridades.Cold, cor: '#64748b' },
+    ],
+    religioes: contarPor(filtrados, (contato) => contato.religiao, 10),
+    tempoSemContato: contarPor(filtrados, (contato) => faixaSemContato(contato.diasSemContato)),
+    distritos: listaDistritos,
+    prioridadesAcao: [
+      { titulo: 'Atacar agora', distrito: maior('quentes')?.nome, total: maior('quentes')?.quentes || 0, descricao: 'contatos quentes para priorizar', cor: '#f97316' },
+      { titulo: 'Maior potencial', distrito: maior('potenciais')?.nome, total: maior('potenciais')?.potenciais || 0, descricao: 'contatos potenciais no funil', cor: '#f59e0b' },
+      { titulo: 'Base VIP', distrito: maior('vips')?.nome, total: maior('vips')?.vips || 0, descricao: 'VIPs para relacionamento', cor: '#8b5cf6' },
+      { titulo: 'Recuperação', distrito: maior('semContato5Anos')?.nome, total: maior('semContato5Anos')?.semContato5Anos || 0, descricao: 'contatos há 5+ anos sem contato', cor: '#dc2626' },
+    ].filter((item) => item.distrito),
+    filtrosDisponiveis: {
+      distritos: [...new Set(contatos.map((contato) => contato.distrito))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+      generos: [...new Set(contatos.map((contato) => contato.genero).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    },
+  };
+}
+
+function grupo(nome, contatos) {
+  return { nome, total: contatos.length };
+}
+
+function analisarDistrito(dados) {
+  const contatos = dados.leads;
+  const analiseBase = analisarContatos(contatos);
+  const comTelefone = contatos.filter((contato) => contato.temWhatsapp);
+  const comEmail = contatos.filter((contato) => Boolean(contato.email));
+  const porBooleano = (campo, sim, nao) => [
+    grupo(sim, contatos.filter((contato) => contato[campo] === true)),
+    grupo(nao, contatos.filter((contato) => contato[campo] === false)),
+    grupo('Sem informação', contatos.filter((contato) => contato[campo] === null || contato[campo] === undefined)),
+  ];
+
+  return {
+    distrito: dados.distrito,
+    atualizadoEm: dados.atualizadoEm,
+    resumo: analiseBase.resumo,
+    prioridades: analiseBase.prioridades,
+    religioes: contarPor(contatos, (contato) => contato.religiao, 10),
+    tempoSemContato: analiseBase.tempoSemContato,
+    funil: [
+      grupo('Base', contatos),
+      grupo('Tentativa', contatos.filter((contato) => contato.tentativaContato === true)),
+      grupo('Respondeu', contatos.filter((contato) => contato.respondeu === true)),
+      grupo('Interesse', contatos.filter((contato) => contato.demonstrouInteresse === true)),
+      grupo('Aceitou visita', contatos.filter((contato) => contato.aceitouVisita === true)),
+      grupo('Participou', contatos.filter((contato) => contato.participou === true)),
+    ],
+    qualidadeContato: [
+      grupo('Telefone e e-mail válidos', contatos.filter((contato) => contato.telefoneValido && contato.emailValido)),
+      grupo('Só telefone válido', contatos.filter((contato) => contato.telefoneValido && !contato.emailValido)),
+      grupo('Só e-mail válido', contatos.filter((contato) => !contato.telefoneValido && contato.emailValido)),
+      grupo('Sem contato válido', contatos.filter((contato) => !contato.telefoneValido && !contato.emailValido)),
+    ],
+    qualidadeTelefone: [
+      grupo('Telefone válido', contatos.filter((contato) => contato.temWhatsapp && contato.telefoneValido)),
+      grupo('Telefone inválido', contatos.filter((contato) => contato.temWhatsapp && !contato.telefoneValido)),
+      grupo('Sem telefone', contatos.filter((contato) => !contato.temWhatsapp)),
+    ],
+    qualidadeEmail: [
+      grupo('E-mail válido', contatos.filter((contato) => contato.email && contato.emailValido)),
+      grupo('E-mail inválido', contatos.filter((contato) => contato.email && !contato.emailValido)),
+      grupo('Sem e-mail', contatos.filter((contato) => !contato.email)),
+    ],
+    descricao: [
+      grupo('Com descrição', contatos.filter((contato) => contato.temDescricao)),
+      grupo('Sem descrição', contatos.filter((contato) => !contato.temDescricao)),
+    ],
+    vipHistorico: [
+      grupo('VIP histórico', contatos.filter((contato) => contato.vipHistorico)),
+      grupo('Não VIP', contatos.filter((contato) => !contato.vipHistorico)),
+    ],
+    tentativas: porBooleano('tentativaContato', 'Tentativa registrada', 'Sem tentativa'),
+    respostas: porBooleano('respondeu', 'Respondeu', 'Não respondeu'),
+    interesse: porBooleano('demonstrouInteresse', 'Demonstrou interesse', 'Não demonstrou'),
+    visitas: porBooleano('aceitouVisita', 'Aceitou visita', 'Não aceitou'),
+    participacao: porBooleano('participou', 'Participou', 'Não participou'),
+    materiaisQuantidade: [
+      grupo('1 material', contatos.filter((contato) => contato.materiaisQuantidade === 1)),
+      grupo('2 materiais', contatos.filter((contato) => contato.materiaisQuantidade === 2)),
+      grupo('3 ou mais', contatos.filter((contato) => contato.materiaisQuantidade >= 3)),
+      grupo('Sem material', contatos.filter((contato) => !contato.materiaisQuantidade)),
+    ],
+    canais: contarPor(contatos, (contato) => contato.canal, 10),
+    cidades: contarPor(contatos, (contato) => contato.cidade, 10),
+    bairros: contarPor(contatos, (contato) => contato.bairro, 10),
+    materiais: contarPor(contatos, (contato) => contato.material, 10),
+    contatos: { comTelefone: comTelefone.length, comEmail: comEmail.length },
+    leads: [...contatos].sort((a, b) => (b.pontuacao || 0) - (a.pontuacao || 0) || a.nome.localeCompare(b.nome, 'pt-BR')),
+  };
+}
+
 const InteressadosNovoTempoService = {
   async resumo({ atualizar = false } = {}) {
     return resumir(await carregarResumo({ ignorarCache: atualizar }));
+  },
+
+  async analise(filtros = {}, { atualizar = false } = {}) {
+    const dados = await carregarResumo({ ignorarCache: atualizar });
+    return { ...analisarContatos(dados.contatos, filtros), atualizadoEm: dados.atualizadoEm };
   },
 
   async porDistrito(nomeDistrito, { atualizar = false } = {}) {
@@ -260,7 +496,7 @@ const InteressadosNovoTempoService = {
       distrito: contatos[0]?.distrito || nome,
       resumo: {
         totalInteressados: contatos.length,
-        comWhatsapp: contatos.filter((contato) => numeroValido(contato.whatsapp)).length,
+        comWhatsapp: contatos.filter((contato) => contato.temWhatsapp).length,
         vipsHistoricos: contatos.filter((contato) => contato.vipHistorico).length,
         quentes: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
         estudosAtivos: contatos.filter((contato) => contato.estudoAtivo).length,
@@ -268,6 +504,10 @@ const InteressadosNovoTempoService = {
       leads: contatos,
       atualizadoEm: dados.atualizadoEm,
     };
+  },
+
+  async analisePorDistrito(nomeDistrito, { atualizar = false } = {}) {
+    return analisarDistrito(await this.porDistrito(nomeDistrito, { atualizar }));
   },
 
   statusConfiguracao() {
@@ -286,6 +526,8 @@ const InteressadosNovoTempoService = {
     normalizarRegistro,
     registrosInteressados,
     resumir,
+    analisarContatos,
+    analisarDistrito,
   },
 };
 

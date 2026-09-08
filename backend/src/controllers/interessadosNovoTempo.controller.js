@@ -29,6 +29,33 @@ const InteressadosNovoTempoController = {
     }
   },
 
+  async analise(req, res) {
+    try {
+      const resultado = await InteressadosNovoTempoService.analise({
+        distrito: req.query.distrito,
+        prioridade: req.query.prioridade,
+        vip: req.query.vip,
+        whatsapp: req.query.whatsapp,
+        estudos: req.query.estudos,
+        genero: req.query.genero,
+      }, { atualizar: req.query.atualizar === '1' });
+      return res.json(resultado);
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
+  async analisePorDistrito(req, res) {
+    try {
+      const resultado = await InteressadosNovoTempoService.analisePorDistrito(req.params.distrito, {
+        atualizar: req.query.atualizar === '1',
+      });
+      return res.json(resultado);
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
   status(req, res) {
     return res.json(InteressadosNovoTempoService.statusConfiguracao());
   },

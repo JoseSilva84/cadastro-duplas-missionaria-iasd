@@ -37,6 +37,7 @@ import Alunos from './pages/Alunos';
 import Configuracoes from './pages/Configuracoes';
 import RedefinirAcesso from './pages/RedefinirAcesso';
 import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
+import AnalisePotenciaisNovoTempo from './pages/AnalisePotenciaisNovoTempo';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -221,6 +222,8 @@ function AppRoutes() {
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/analise/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
 
         {/* Distritos */}
         <Route path="distritos/:distritoId/igrejas" element={<ListagemIgrejas />} />
@@ -389,6 +392,8 @@ function AppRoutes() {
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/analise/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
         <Route path="igrejas/:igrejaId" element={<ListagemIgrejasDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />
