@@ -145,14 +145,13 @@ function VisaoDistritos({ dados, prefix }) {
             key={distrito.nome}
             type="button"
             onClick={() => navigate(`${prefix}/interessados-nt/distritos/${encodeURIComponent(distrito.nome)}`)}
-            className="group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F8FAFC] sm:px-6 xl:grid-cols-[minmax(170px,1fr)_70px_115px_80px_minmax(330px,auto)_24px]"
+            className="group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-[#F8FAFC] sm:px-6 xl:grid-cols-[minmax(170px,1fr)_70px_80px_minmax(330px,auto)_24px]"
           >
             <div className="min-w-0">
               <p className="truncate font-semibold text-[#1A3A6B] group-hover:text-[#C9963A]">{distrito.nome}</p>
-              <p className="mt-0.5 text-xs text-gray-400 xl:hidden">{numero(distrito.comWhatsapp)} com WhatsApp · {numero(distrito.vipsHistoricos)} VIPs</p>
+              <p className="mt-0.5 text-xs text-gray-400 xl:hidden">{numero(distrito.vipsHistoricos)} VIPs</p>
             </div>
             <p className="text-right text-lg font-bold text-[#1A3A6B]">{numero(distrito.total)}</p>
-            <p className="hidden text-center text-sm font-semibold text-emerald-700 xl:block">{numero(distrito.comWhatsapp)} WhatsApp</p>
             <p className="hidden text-center text-sm font-semibold text-[#C9963A] xl:block">{numero(distrito.vipsHistoricos)} VIPs</p>
             <div className="col-span-2 flex min-w-0 flex-wrap items-center gap-1.5 xl:col-span-1 xl:flex-nowrap xl:justify-end">
               <span title="Leads quentes" className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700 transition-transform group-hover:scale-[1.03]">Quentes <b>{numero(distrito.quentes)}</b></span>
