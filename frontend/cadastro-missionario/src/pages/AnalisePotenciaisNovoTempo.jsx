@@ -163,15 +163,15 @@ function GraficoDistritos({ itens = [], onAbrir }) {
   const maximo = Math.max(1, ...itens.map((item) => Number(item.total) || 0));
 
   return (
-    <article className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
+    <article className="min-w-0 overflow-hidden rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
       <h2 className="text-lg font-bold text-[#173766]">Top 15 distritos por volume</h2>
       <p className="mt-1 text-sm text-slate-400">Passe o mouse para ver os dados ou clique para abrir o distrito.</p>
-      <div className="mt-6 overflow-x-auto pb-2">
-        <div className="relative h-[350px] min-w-[920px] border-b border-l border-slate-200 px-4 pt-8">
+      <div className="mt-6 min-w-0 pb-2">
+        <div className="relative h-[330px] w-full min-w-0 border-b border-l border-slate-200 px-2 pt-8 sm:px-3">
           {[25, 50, 75, 100].map((linha) => (
             <span key={linha} className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-slate-200" style={{ bottom: `${linha}%` }} />
           ))}
-          <div className="relative z-10 grid h-full items-end gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(itens.length, 1)}, minmax(48px, 1fr))` }}>
+          <div className="relative z-10 grid h-full min-w-0 items-end gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(itens.length, 1)}, minmax(0, 1fr))` }}>
             {itens.map((item, index) => {
               const altura = Math.max(12, ((Number(item.total) || 0) / maximo) * 225);
               return (
@@ -182,16 +182,16 @@ function GraficoDistritos({ itens = [], onAbrir }) {
                   className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end outline-none"
                   aria-label={`Abrir análise de ${item.nome}, ${numero(item.total)} contatos`}
                 >
-                  <span className="pointer-events-none absolute z-20 w-max max-w-52 -translate-y-2 rounded-xl bg-[#10284e] px-3 py-2 text-left text-xs text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100" style={{ bottom: `${altura + 58}px` }}>
+                  <span className="pointer-events-none absolute z-20 hidden w-max max-w-52 -translate-y-2 rounded-xl bg-[#10284e] px-3 py-2 text-left text-xs text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:block" style={{ bottom: `${altura + 52}px` }}>
                     <strong className="block">{item.nome}</strong>
                     <span className="mt-1 block text-white/80">{numero(item.total)} contatos · {numero(item.comWhatsapp)} WhatsApp · {numero(item.vips)} VIPs</span>
                   </span>
                   <strong className="mb-2 text-xs tabular-nums text-slate-600 transition-colors group-hover:text-blue-600">{numero(item.total)}</strong>
                   <span
-                    className="w-full max-w-12 shrink-0 rounded-t-lg bg-gradient-to-t from-blue-700 to-blue-400 shadow-[0_8px_18px_rgba(37,99,235,0.2)] transition-all duration-300 group-hover:max-w-14 group-hover:-translate-y-1 group-hover:from-blue-600 group-hover:to-cyan-400 group-hover:shadow-[0_12px_26px_rgba(37,99,235,0.38)]"
+                    className="w-[72%] min-w-2 max-w-10 shrink-0 rounded-t-md bg-gradient-to-t from-blue-700 to-blue-400 shadow-[0_8px_18px_rgba(37,99,235,0.2)] transition-all duration-300 group-hover:w-[82%] group-hover:-translate-y-1 group-hover:from-blue-600 group-hover:to-cyan-400 group-hover:shadow-[0_12px_26px_rgba(37,99,235,0.38)]"
                     style={{ height: `${altura}px` }}
                   />
-                  <span className="mt-2 block h-10 w-full overflow-hidden text-ellipsis text-[10px] font-bold uppercase leading-tight text-slate-500 transition-colors group-hover:text-blue-700" title={item.nome}>
+                  <span className="mt-2 block h-8 w-full overflow-hidden text-ellipsis text-center text-[8px] font-bold uppercase leading-tight text-slate-500 transition-colors group-hover:text-blue-700 lg:text-[9px]" title={item.nome}>
                     {item.nome}
                   </span>
                   <span className="absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-600">{index + 1}</span>
@@ -211,7 +211,7 @@ function DonutPrioridades({ itens = [], total = 0 }) {
     return { acumulado: fim, valores: [...resultado.valores, `${item.cor} ${resultado.acumulado}% ${fim}%`] };
   }, { acumulado: 0, valores: [] }).valores;
   return (
-    <article className="group rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)]">
+    <article className="group min-w-0 overflow-hidden rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)]">
       <h2 className="text-lg font-bold text-[#173766]">Distribuição de prioridade ML</h2>
       <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
         <div className="grid h-52 w-52 shrink-0 place-items-center rounded-full shadow-md transition-all duration-500 group-hover:scale-105 group-hover:rotate-2 group-hover:shadow-xl" title={`Total: ${numero(total)}`} style={{ background: `conic-gradient(${fatias.join(', ') || '#e2e8f0 0 100%'})` }}>
@@ -249,7 +249,7 @@ function VisaoGeral({ dados, filtros, setFiltros, atualizar, atualizando, abrirD
       <Filtros filtros={filtros} opcoes={dados.filtrosDisponiveis} onChange={(campo, valor) => setFiltros((atual) => ({ ...atual, [campo]: valor }))} onLimpar={() => setFiltros(FILTROS_INICIAIS)} />
       <CardsResumo resumo={dados.resumo} />
       <PrioridadesAcao itens={dados.prioridadesAcao} onAbrir={abrirDistrito} />
-      <section className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
         <GraficoDistritos itens={dados.distritos.slice(0, 15)} onAbrir={abrirDistrito} />
         <DonutPrioridades itens={dados.prioridades} total={dados.resumo.total} />
       </section>
