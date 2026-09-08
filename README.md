@@ -88,21 +88,19 @@ Crie `backend/.env`:
 DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/BANCO"
 JWT_SECRET="troque-por-um-segredo-forte"
 PORT=3001
-SEVENFLOW_API_URL="https://api.sevenflowia.tech"
-SEVENFLOW_API_TOKEN="token-de-leitura-da-sevenflow"
+SEVENFLOW_API_URL="https://backend-leadsnt.sevenflowia.tech"
+# Opção temporária: token retornado pelo login do Amigos NT.
+SEVENFLOW_API_TOKEN="token-bearer-do-amigos-nt"
+# Opção recomendada: conta exclusiva de integração; renova o token automaticamente.
+SEVENFLOW_API_EMAIL="integracao-pcm@exemplo.com"
+SEVENFLOW_API_PASSWORD="senha-forte-da-conta-de-integracao"
 ```
 
-Para habilitar a tela administrativa **Interessados NT**, configure no backend uma credencial da SevenFlow com permissão de leitura em `GET /contacts`. A credencial nunca deve ser colocada no frontend. Se a integração fornecer uma chave de licença em vez de Bearer token, use `SEVENFLOW_LICENSE_KEY`.
+Para habilitar a tela administrativa **Interessados NT**, use uma conta autorizada do sistema Amigos Novo Tempo. A integração autentica em `POST /api/auth/login`, consulta `GET /api/dashboard` e carrega os detalhes em `GET /api/dashboard/district-interest/:distrito`. A credencial nunca deve ser colocada no frontend.
 
-Mapeamentos opcionais da integração:
+Configuração opcional da integração:
 
 ```env
-# Se preenchido, somente contatos com uma destas tags serão considerados interessados.
-SEVENFLOW_INTERESSADO_TAGS="Novo Tempo,Interessado NT"
-# Tags usadas para identificar VIPs históricos.
-SEVENFLOW_VIP_HISTORICO_TAGS="VIP Histórico,Vips Históricos"
-# Nome do campo personalizado que contém o distrito.
-SEVENFLOW_DISTRITO_CAMPO="distrito"
 # Cache local para evitar excesso de chamadas à API externa (milissegundos).
 SEVENFLOW_CACHE_TTL_MS=300000
 ```

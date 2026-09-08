@@ -50,11 +50,15 @@ Crie `backend/.env`:
 DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/BANCO"
 JWT_SECRET="troque-por-um-segredo-forte"
 PORT=3001
-SEVENFLOW_API_URL="https://api.sevenflowia.tech"
-SEVENFLOW_API_TOKEN="token-de-leitura-da-sevenflow"
+SEVENFLOW_API_URL="https://backend-leadsnt.sevenflowia.tech"
+# Escolha um dos modos abaixo:
+SEVENFLOW_API_TOKEN="token-bearer-do-amigos-nt"
+# ou uma conta exclusiva, para renovação automática do token:
+SEVENFLOW_API_EMAIL="integracao-pcm@exemplo.com"
+SEVENFLOW_API_PASSWORD="senha-forte-da-conta-de-integracao"
 ```
 
-`SEVENFLOW_API_TOKEN` habilita a integração administrativa de contatos Novo Tempo. Também são aceitas `SEVENFLOW_LICENSE_KEY`, `SEVENFLOW_INTERESSADO_TAGS`, `SEVENFLOW_VIP_HISTORICO_TAGS`, `SEVENFLOW_DISTRITO_CAMPO` e `SEVENFLOW_CACHE_TTL_MS`. As credenciais ficam exclusivamente no backend.
+As credenciais habilitam a integração administrativa com o backend dos Amigos Novo Tempo. Também é aceita `SEVENFLOW_CACHE_TTL_MS`. As credenciais ficam exclusivamente no backend.
 
 Nunca coloque credenciais reais em commits.
 

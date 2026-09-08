@@ -100,7 +100,7 @@ function AvisoErro({ erro }) {
       <p className="mt-2 text-sm text-red-600">{erro}</p>
       {erro.includes('ainda não configurada') && (
         <p className="mt-3 text-xs leading-relaxed text-gray-600">
-          Configure a credencial somente no backend, usando <code>SEVENFLOW_API_TOKEN</code> ou <code>SEVENFLOW_LICENSE_KEY</code>, e reinicie o serviço.
+          Configure <code>SEVENFLOW_API_TOKEN</code> ou o usuário de integração somente no backend e reinicie o serviço.
         </p>
       )}
     </div>
@@ -180,6 +180,12 @@ function LeadCard({ lead }) {
         <Campo rotulo="E-mail" valor={lead.email || 'Não informado'} />
         <Campo rotulo="Status" valor={lead.status || 'Não informado'} />
         <Campo rotulo="Origem" valor={lead.origem || 'Não informada'} />
+        <Campo rotulo="Prioridade" valor={lead.prioridade || 'Não informada'} />
+        <Campo rotulo="Pontuação" valor={lead.pontuacao ?? 'Não informada'} />
+        <Campo rotulo="Estudo ativo" valor={lead.estudoAtivo ? 'Sim' : 'Não'} />
+        <Campo rotulo="Endereço" valor={lead.endereco || 'Não informado'} />
+        <Campo rotulo="Material" valor={lead.material || 'Não informado'} />
+        <Campo rotulo="Nascimento" valor={lead.dataNascimento || 'Não informado'} />
         <Campo rotulo="Criado em" valor={dataHora(lead.criadoEm)} />
         <Campo rotulo="Atualizado em" valor={dataHora(lead.atualizadoEm)} />
         <Campo rotulo="Tags" valor={lead.tags?.length ? lead.tags.join(', ') : 'Nenhuma'} />
