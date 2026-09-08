@@ -1,9 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 
-export default function BackButton({ fallbackTo = '/', label = 'Voltar', className = '' }) {
+export default function BackButton({ fallbackTo = '/', label = 'Voltar', className = '', forceFallback = false }) {
   const navigate = useNavigate();
 
   const voltar = () => {
+    if (forceFallback) {
+      navigate(fallbackTo, { replace: true });
+      return;
+    }
     if (window.history.length > 1) {
       navigate(-1);
       return;

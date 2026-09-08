@@ -134,7 +134,7 @@ function AvisoErro({ erro }) {
 function VisaoDistritos({ dados, prefix }) {
   const navigate = useNavigate();
   return (
-    <section className="card p-0">
+    <section className="card p-0 transition-shadow duration-300 hover:shadow-xl">
       <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
         <h2 className="text-lg font-bold text-[#1A3A6B]">Leads por distrito</h2>
         <p className="mt-1 text-sm text-gray-400">Clique em um distrito para abrir todos os dados dos interessados.</p>
@@ -179,7 +179,7 @@ function Campo({ rotulo, valor }) {
 function LeadCard({ lead }) {
   const camposExtras = Object.entries(lead.camposAdicionais || {});
   return (
-    <article className="card p-0">
+    <article className="card p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-xl">
       <div className="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

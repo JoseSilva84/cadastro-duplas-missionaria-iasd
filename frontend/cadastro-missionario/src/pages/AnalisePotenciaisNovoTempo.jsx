@@ -19,10 +19,10 @@ const cores = {
 function CardKpi({ titulo, valor, detalhe, cor = cores.azul }) {
   return (
     <article
-      className="relative min-h-40 overflow-hidden rounded-2xl p-5 text-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className="group relative min-h-40 overflow-hidden rounded-2xl p-5 text-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl"
       style={{ background: `linear-gradient(135deg, ${cor[0]}, ${cor[1]})` }}
     >
-      <span className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+      <span className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125" />
       <p className="relative text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">{titulo}</p>
       <p className="relative mt-5 text-4xl font-black tracking-tight">{numero(valor)}</p>
       <p className="relative mt-2 text-sm font-medium text-white/85">{detalhe}</p>
@@ -33,13 +33,13 @@ function CardKpi({ titulo, valor, detalhe, cor = cores.azul }) {
 function Barra({ nome, total, maximo, cor = '#3b82f6', detalhe }) {
   const largura = maximo ? Math.max(2, (total / maximo) * 100) : 0;
   return (
-    <div className="space-y-1.5">
+    <div className="group -mx-2 space-y-1.5 rounded-xl px-2 py-2 transition-all duration-300 hover:bg-blue-50/70" title={`${nome}: ${numero(total)}`}>
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="truncate font-semibold text-slate-700">{nome}</span>
         <strong className="tabular-nums text-slate-900">{numero(total)}</strong>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${largura}%`, background: cor }} />
+        <div className="h-full origin-left rounded-full transition-all duration-500 group-hover:scale-y-150 group-hover:brightness-110" style={{ width: `${largura}%`, background: cor }} />
       </div>
       {detalhe && <p className="text-xs text-slate-400">{detalhe}</p>}
     </div>
@@ -49,11 +49,11 @@ function Barra({ nome, total, maximo, cor = '#3b82f6', detalhe }) {
 function CardDistribuicao({ titulo, itens = [], cor = '#3b82f6', vazio = 'Sem informação disponível' }) {
   const maximo = Math.max(0, ...itens.map((item) => item.total));
   return (
-    <article className="rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)]">
+    <article className="rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)]">
       <h2 className="text-lg font-bold text-[#173766]">{titulo}</h2>
       <div className="mt-5 space-y-4">
         {itens.length ? itens.map((item) => (
-          <Barra key={item.nome} nome={item.nome} total={item.total} maximo={maximo} cor={item.cor || cor} />
+          <Barra key={item.nome} nome={item.nome} total={item.total} maximo={maximo} cor={item.cor || cor} detalhe={item.detalhe} />
         )) : <p className="text-sm text-slate-400">{vazio}</p>}
       </div>
     </article>
@@ -63,7 +63,7 @@ function CardDistribuicao({ titulo, itens = [], cor = '#3b82f6', vazio = 'Sem in
 function Cabecalho({ distrito, atualizadoEm, atualizando, onAtualizar, fallback }) {
   return (
     <header className="rounded-2xl border border-white bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm sm:p-8">
-      <BackButton fallbackTo={fallback} className="mb-4" />
+      <BackButton fallbackTo={fallback} forceFallback={Boolean(distrito)} className="mb-4" />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
@@ -159,19 +159,65 @@ function PrioridadesAcao({ itens = [], onAbrir }) {
   );
 }
 
+function GraficoDistritos({ itens = [], onAbrir }) {
+  const maximo = Math.max(1, ...itens.map((item) => Number(item.total) || 0));
+
+  return (
+    <article className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
+      <h2 className="text-lg font-bold text-[#173766]">Top 15 distritos por volume</h2>
+      <p className="mt-1 text-sm text-slate-400">Passe o mouse para ver os dados ou clique para abrir o distrito.</p>
+      <div className="mt-6 overflow-x-auto pb-2">
+        <div className="relative h-[350px] min-w-[920px] border-b border-l border-slate-200 px-4 pt-8">
+          {[25, 50, 75, 100].map((linha) => (
+            <span key={linha} className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-slate-200" style={{ bottom: `${linha}%` }} />
+          ))}
+          <div className="relative z-10 grid h-full items-end gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(itens.length, 1)}, minmax(48px, 1fr))` }}>
+            {itens.map((item, index) => {
+              const altura = Math.max(12, ((Number(item.total) || 0) / maximo) * 225);
+              return (
+                <button
+                  key={item.nome}
+                  type="button"
+                  onClick={() => onAbrir(item.nome)}
+                  className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end outline-none"
+                  aria-label={`Abrir análise de ${item.nome}, ${numero(item.total)} contatos`}
+                >
+                  <span className="pointer-events-none absolute z-20 w-max max-w-52 -translate-y-2 rounded-xl bg-[#10284e] px-3 py-2 text-left text-xs text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100" style={{ bottom: `${altura + 58}px` }}>
+                    <strong className="block">{item.nome}</strong>
+                    <span className="mt-1 block text-white/80">{numero(item.total)} contatos · {numero(item.comWhatsapp)} WhatsApp · {numero(item.vips)} VIPs</span>
+                  </span>
+                  <strong className="mb-2 text-xs tabular-nums text-slate-600 transition-colors group-hover:text-blue-600">{numero(item.total)}</strong>
+                  <span
+                    className="w-full max-w-12 shrink-0 rounded-t-lg bg-gradient-to-t from-blue-700 to-blue-400 shadow-[0_8px_18px_rgba(37,99,235,0.2)] transition-all duration-300 group-hover:max-w-14 group-hover:-translate-y-1 group-hover:from-blue-600 group-hover:to-cyan-400 group-hover:shadow-[0_12px_26px_rgba(37,99,235,0.38)]"
+                    style={{ height: `${altura}px` }}
+                  />
+                  <span className="mt-2 block h-10 w-full overflow-hidden text-ellipsis text-[10px] font-bold uppercase leading-tight text-slate-500 transition-colors group-hover:text-blue-700" title={item.nome}>
+                    {item.nome}
+                  </span>
+                  <span className="absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-600">{index + 1}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function DonutPrioridades({ itens = [], total = 0 }) {
   const fatias = itens.reduce((resultado, item) => {
     const fim = resultado.acumulado + percentual(item.total, total);
     return { acumulado: fim, valores: [...resultado.valores, `${item.cor} ${resultado.acumulado}% ${fim}%`] };
   }, { acumulado: 0, valores: [] }).valores;
   return (
-    <article className="rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)]">
+    <article className="group rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)]">
       <h2 className="text-lg font-bold text-[#173766]">Distribuição de prioridade ML</h2>
       <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
-        <div className="grid h-52 w-52 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${fatias.join(', ') || '#e2e8f0 0 100%'})` }}>
+        <div className="grid h-52 w-52 shrink-0 place-items-center rounded-full shadow-md transition-all duration-500 group-hover:scale-105 group-hover:rotate-2 group-hover:shadow-xl" title={`Total: ${numero(total)}`} style={{ background: `conic-gradient(${fatias.join(', ') || '#e2e8f0 0 100%'})` }}>
           <div className="grid h-32 w-32 place-items-center rounded-full bg-white text-center shadow-inner"><span><small className="text-slate-400">Total</small><strong className="block text-2xl text-[#10284e]">{numero(total)}</strong></span></div>
         </div>
-        <div className="w-full space-y-3">{itens.map((item) => <div key={item.nome} className="flex items-center justify-between gap-3 text-sm"><span className="flex items-center gap-2 text-slate-600"><i className="h-3 w-3 rounded-full" style={{ background: item.cor }} />{item.nome}</span><b>{numero(item.total)} · {percentual(item.total, total)}%</b></div>)}</div>
+        <div className="w-full space-y-2">{itens.map((item) => <div key={item.nome} title={`${item.nome}: ${numero(item.total)} (${percentual(item.total, total)}%)`} className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition-all duration-200 hover:translate-x-1 hover:bg-slate-50"><span className="flex items-center gap-2 text-slate-600"><i className="h-3 w-3 rounded-full transition-transform duration-200 group-hover:scale-110" style={{ background: item.cor }} />{item.nome}</span><b>{numero(item.total)} · {percentual(item.total, total)}%</b></div>)}</div>
       </div>
     </article>
   );
@@ -181,7 +227,7 @@ function TabelaDistritos({ distritos = [], onAbrir }) {
   const [busca, setBusca] = useState('');
   const lista = useMemo(() => distritos.filter((item) => item.nome.toLocaleLowerCase('pt-BR').includes(busca.toLocaleLowerCase('pt-BR'))), [busca, distritos]);
   return (
-    <section className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] sm:p-6">
+    <section className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div><h2 className="text-lg font-bold text-[#173766]">Distritos — dados filtrados</h2><p className="mt-1 text-sm text-emerald-600">Clique no distrito para abrir sua análise detalhada.</p></div>
         <input className="input-field sm:max-w-xs" placeholder="Buscar distrito..." value={busca} onChange={(e) => setBusca(e.target.value)} />
@@ -204,7 +250,7 @@ function VisaoGeral({ dados, filtros, setFiltros, atualizar, atualizando, abrirD
       <CardsResumo resumo={dados.resumo} />
       <PrioridadesAcao itens={dados.prioridadesAcao} onAbrir={abrirDistrito} />
       <section className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-        <CardDistribuicao titulo="Top 15 distritos por volume" itens={dados.distritos.slice(0, 15)} />
+        <GraficoDistritos itens={dados.distritos.slice(0, 15)} onAbrir={abrirDistrito} />
         <DonutPrioridades itens={dados.prioridades} total={dados.resumo.total} />
       </section>
       <section className="grid gap-5 lg:grid-cols-2">
@@ -222,9 +268,9 @@ function GrupoIndicadores({ titulo, itens, total }) {
 
 function ListaRanking({ titulo, itens = [], cor = '#3b82f6' }) {
   return (
-    <article className="rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)]">
+    <article className="rounded-2xl border border-white bg-white p-6 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)]">
       <h2 className="text-lg font-bold text-[#173766]">{titulo}</h2>
-      <div className="mt-4 space-y-3">{itens.map((item, index) => <div key={`${item.nome}-${index}`} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-xs font-bold text-slate-500">#{index + 1}</span><span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{item.nome}</span><b className="rounded-full px-3 py-1 text-xs text-white" style={{ background: cor }}>{numero(item.total)}</b></div>)}</div>
+      <div className="mt-4 space-y-3">{itens.map((item, index) => <div key={`${item.nome}-${index}`} title={`${item.nome}: ${numero(item.total)}`} className="group flex items-center gap-3 rounded-xl bg-slate-50 p-3 transition-all duration-200 hover:translate-x-1 hover:bg-blue-50 hover:shadow-sm"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-xs font-bold text-slate-500 transition-transform group-hover:scale-105">#{index + 1}</span><span className="min-w-0 flex-1 truncate font-semibold text-slate-700 group-hover:text-blue-700">{item.nome}</span><b className="rounded-full px-3 py-1 text-xs text-white transition-transform group-hover:scale-105" style={{ background: cor }}>{numero(item.total)}</b></div>)}</div>
     </article>
   );
 }
@@ -234,12 +280,12 @@ function ListaLeads({ leads = [] }) {
   const [limite, setLimite] = useState(60);
   const lista = useMemo(() => leads.filter((lead) => `${lead.nome} ${lead.whatsapp} ${lead.email} ${lead.bairro}`.toLocaleLowerCase('pt-BR').includes(busca.toLocaleLowerCase('pt-BR'))), [busca, leads]);
   return (
-    <section className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] sm:p-6">
+    <section className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-bold text-[#173766]">Leads do distrito por score</h2><p className="text-sm text-slate-400">Ordenados pela pontuação operacional.</p></div><input className="input-field sm:max-w-sm" placeholder="Buscar nome, telefone, e-mail ou bairro..." value={busca} onChange={(e) => { setBusca(e.target.value); setLimite(60); }} /></div>
       <div className="mt-5 space-y-3">{lista.slice(0, limite).map((lead, index) => {
         const prioridade = lead.prioridade || 'Cold';
         const tom = prioridade === 'Hot' ? 'bg-orange-500' : prioridade === 'Warm' ? 'bg-amber-500' : prioridade === 'Cool' ? 'bg-blue-500' : 'bg-slate-500';
-        return <article key={lead.id || `${lead.nome}-${index}`} className="grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4 sm:grid-cols-[auto_1fr_auto]"><span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-sm font-bold">#{index + 1}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-base text-[#10284e]">{lead.nome}</strong><span className={`${tom} rounded-full px-2.5 py-1 text-[10px] font-bold uppercase text-white`}>{lead.prioridadeRotulo || prioridade}</span></div><p className="mt-1 break-words text-sm text-slate-500">{lead.bairro || lead.distrito} · {lead.whatsapp || 'sem telefone'} · {lead.email || 'sem e-mail'}</p><div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600"><span>WhatsApp: {lead.temWhatsapp ? 'sim' : 'não'}</span><span>VIP: {lead.vipHistorico ? 'sim' : 'não'}</span><span>Estudo: {lead.estudoAtivo ? 'sim' : 'não'}</span><span>Material: {lead.material || 'não informado'}</span></div></div><strong className="self-start rounded-xl bg-blue-600 px-4 py-2 text-lg text-white">{Number(lead.pontuacao || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong></article>;
+        return <article key={lead.id || `${lead.nome}-${index}`} className="group grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg sm:grid-cols-[auto_1fr_auto]"><span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-sm font-bold transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">#{index + 1}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-base text-[#10284e]">{lead.nome}</strong><span className={`${tom} rounded-full px-2.5 py-1 text-[10px] font-bold uppercase text-white`}>{lead.prioridadeRotulo || prioridade}</span></div><p className="mt-1 break-words text-sm text-slate-500">{lead.bairro || lead.distrito} · {lead.whatsapp || 'sem telefone'} · {lead.email || 'sem e-mail'}</p><div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600"><span>WhatsApp: {lead.temWhatsapp ? 'sim' : 'não'}</span><span>VIP: {lead.vipHistorico ? 'sim' : 'não'}</span><span>Estudo: {lead.estudoAtivo ? 'sim' : 'não'}</span><span>Material: {lead.material || 'não informado'}</span></div></div><strong className="self-start rounded-xl bg-blue-600 px-4 py-2 text-lg text-white transition-transform group-hover:scale-105">{Number(lead.pontuacao || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong></article>;
       })}</div>
       {lista.length > limite && <button type="button" className="btn-outline mx-auto mt-5 block" onClick={() => setLimite((valor) => valor + 60)}>Carregar mais</button>}
     </section>
@@ -270,8 +316,10 @@ export default function AnalisePotenciaisNovoTempo() {
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
   const prefix = isDireto ? '/direto' : '';
+  const tipoTela = distrito ? 'distrito' : 'geral';
   const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
   const [dados, setDados] = useState(null);
+  const [tipoDosDados, setTipoDosDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState('');
@@ -285,26 +333,28 @@ export default function AnalisePotenciaisNovoTempo() {
       const caminho = distrito ? `/interessados-nt/analise/distritos/${encodeURIComponent(distrito)}` : '/interessados-nt/analise';
       const { data } = await api.get(caminho, { params: { ...parametros, ...(forcar ? { atualizar: 1 } : {}) } });
       setDados(data);
+      setTipoDosDados(tipoTela);
     } catch (falha) {
       setErro(falha.response?.data?.erro || 'Não foi possível carregar a análise dos potenciais.');
     } finally {
       setCarregando(false);
       setAtualizando(false);
     }
-  }, [distrito, parametros]);
+  }, [distrito, parametros, tipoTela]);
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  if (carregando) return <LoadingState mensagem="Preparando análise dos potenciais..." />;
+  const dadosDaTelaAtual = tipoDosDados === tipoTela ? dados : null;
+  if (carregando || (!dadosDaTelaAtual && !erro)) return <LoadingState mensagem="Preparando análise dos potenciais..." />;
   const abrirDistrito = (nome) => navigate(`${prefix}/interessados-nt/analise/distritos/${encodeURIComponent(nome)}`);
 
   return (
     <main className={isDireto ? 'h-full overflow-y-auto bg-[#eef2f7]' : 'min-h-full bg-[#eef2f7]'}>
       <div className="mx-auto max-w-[1600px] space-y-5 p-4 sm:p-6 lg:p-8">
         {erro && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{erro}</div>}
-        {dados && (distrito
-          ? <VisaoDistrito dados={dados} atualizar={() => carregar(true)} atualizando={atualizando} fallback={`${prefix}/interessados-nt/analise`} />
-          : <VisaoGeral dados={dados} filtros={filtros} setFiltros={setFiltros} atualizar={() => carregar(true)} atualizando={atualizando} abrirDistrito={abrirDistrito} fallback={`${prefix}/interessados-nt`} />)}
+        {dadosDaTelaAtual && (distrito
+          ? <VisaoDistrito dados={dadosDaTelaAtual} atualizar={() => carregar(true)} atualizando={atualizando} fallback={`${prefix}/interessados-nt/analise`} />
+          : <VisaoGeral dados={dadosDaTelaAtual} filtros={filtros} setFiltros={setFiltros} atualizar={() => carregar(true)} atualizando={atualizando} abrirDistrito={abrirDistrito} fallback={`${prefix}/interessados-nt`} />)}
       </div>
     </main>
   );
