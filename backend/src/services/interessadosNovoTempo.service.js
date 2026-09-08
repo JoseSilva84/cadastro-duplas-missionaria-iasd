@@ -235,12 +235,19 @@ function resumir(dados) {
       comWhatsapp: 0,
       vipsHistoricos: 0,
       quentes: 0,
+      potenciais: 0,
+      mornos: 0,
+      frios: 0,
       estudosAtivos: 0,
     };
     atual.total += 1;
     if (contato.temWhatsapp) atual.comWhatsapp += 1;
     if (contato.vipHistorico) atual.vipsHistoricos += 1;
-    if (chaveNormalizada(contato.prioridade) === 'hot') atual.quentes += 1;
+    const prioridade = chaveNormalizada(contato.prioridade);
+    if (prioridade === 'hot') atual.quentes += 1;
+    if (prioridade === 'warm') atual.potenciais += 1;
+    if (prioridade === 'cool') atual.mornos += 1;
+    if (prioridade === 'cold') atual.frios += 1;
     if (contato.estudoAtivo) atual.estudosAtivos += 1;
     distritos.set(chave, atual);
   });
@@ -252,6 +259,9 @@ function resumir(dados) {
       comWhatsapp: dados.contatos.filter((contato) => contato.temWhatsapp).length,
       vipsHistoricos: dados.contatos.filter((contato) => contato.vipHistorico).length,
       quentes: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
+      potenciais: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'warm').length,
+      mornos: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cool').length,
+      frios: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cold').length,
       estudosAtivos: dados.contatos.filter((contato) => contato.estudoAtivo).length,
       totalDistritos: grupos.length,
     },
@@ -499,6 +509,9 @@ const InteressadosNovoTempoService = {
         comWhatsapp: contatos.filter((contato) => contato.temWhatsapp).length,
         vipsHistoricos: contatos.filter((contato) => contato.vipHistorico).length,
         quentes: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
+        potenciais: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'warm').length,
+        mornos: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cool').length,
+        frios: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cold').length,
         estudosAtivos: contatos.filter((contato) => contato.estudoAtivo).length,
       },
       leads: contatos,
