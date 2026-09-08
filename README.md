@@ -88,6 +88,23 @@ Crie `backend/.env`:
 DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/BANCO"
 JWT_SECRET="troque-por-um-segredo-forte"
 PORT=3001
+SEVENFLOW_API_URL="https://api.sevenflowia.tech"
+SEVENFLOW_API_TOKEN="token-de-leitura-da-sevenflow"
+```
+
+Para habilitar a tela administrativa **Interessados NT**, configure no backend uma credencial da SevenFlow com permissão de leitura em `GET /contacts`. A credencial nunca deve ser colocada no frontend. Se a integração fornecer uma chave de licença em vez de Bearer token, use `SEVENFLOW_LICENSE_KEY`.
+
+Mapeamentos opcionais da integração:
+
+```env
+# Se preenchido, somente contatos com uma destas tags serão considerados interessados.
+SEVENFLOW_INTERESSADO_TAGS="Novo Tempo,Interessado NT"
+# Tags usadas para identificar VIPs históricos.
+SEVENFLOW_VIP_HISTORICO_TAGS="VIP Histórico,Vips Históricos"
+# Nome do campo personalizado que contém o distrito.
+SEVENFLOW_DISTRITO_CAMPO="distrito"
+# Cache local para evitar excesso de chamadas à API externa (milissegundos).
+SEVENFLOW_CACHE_TTL_MS=300000
 ```
 
 Prepare o Prisma:
@@ -191,4 +208,3 @@ Em produção, configure o servidor web ou plataforma de hospedagem para:
 - Servir o build do frontend.
 - Encaminhar chamadas `/api` para o backend.
 - Definir `DATABASE_URL`, `JWT_SECRET` e `PORT`.
-

@@ -36,6 +36,7 @@ import GestaoUsuarios from './pages/GestaoUsuarios';
 import Alunos from './pages/Alunos';
 import Configuracoes from './pages/Configuracoes';
 import RedefinirAcesso from './pages/RedefinirAcesso';
+import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -218,6 +219,8 @@ function AppRoutes() {
         <Route path="distritos" element={<ListagemDistritos />} />
         <Route path="igrejas" element={<ListagemIgrejas />} />
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Alunos /></RotaComPerfis>} />
+        <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><InteressadosNovoTempo /></RotaComPerfis>} />
 
         {/* Distritos */}
         <Route path="distritos/:distritoId/igrejas" element={<ListagemIgrejas />} />
@@ -384,6 +387,8 @@ function AppRoutes() {
         <Route path="distritos" element={<ListagemDistritosDireto />} />
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
+        <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="igrejas/:igrejaId" element={<ListagemIgrejasDireto />} />
         <Route path="distritos/:distritoId" element={<DistritosDireto />} />
         <Route path="duplas" element={<DuplasDireto />} />

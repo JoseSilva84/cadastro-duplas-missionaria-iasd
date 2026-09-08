@@ -50,7 +50,11 @@ Crie `backend/.env`:
 DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/BANCO"
 JWT_SECRET="troque-por-um-segredo-forte"
 PORT=3001
+SEVENFLOW_API_URL="https://api.sevenflowia.tech"
+SEVENFLOW_API_TOKEN="token-de-leitura-da-sevenflow"
 ```
+
+`SEVENFLOW_API_TOKEN` habilita a integração administrativa de contatos Novo Tempo. Também são aceitas `SEVENFLOW_LICENSE_KEY`, `SEVENFLOW_INTERESSADO_TAGS`, `SEVENFLOW_VIP_HISTORICO_TAGS`, `SEVENFLOW_DISTRITO_CAMPO` e `SEVENFLOW_CACHE_TTL_MS`. As credenciais ficam exclusivamente no backend.
 
 Nunca coloque credenciais reais em commits.
 
@@ -148,6 +152,7 @@ Todas as rotas abaixo usam o prefixo `/api`.
 | `/acompanhamentos` | Saídas/acompanhamentos de coordenadores. |
 | `/escola-sabatina` | Cadastros de indicadores da Escola Sabatina. |
 | `/relatorios` | Resumos, dashboards e relatórios. |
+| `/interessados-nt` | Resumo e contatos Novo Tempo por distrito (somente administradores). |
 | `/usuarios` | Gestão de usuários. |
 | `/public/estatisticas` | Estatísticas públicas exibidas no login. |
 | `/health` | Health check simples. |
@@ -231,4 +236,3 @@ Principais modelos:
 - Tratar escopo em services para evitar vazamento de dados.
 - Evitar remover dados vinculados fora de transações.
 - Rodar `npm run db:generate` após mudanças no schema.
-

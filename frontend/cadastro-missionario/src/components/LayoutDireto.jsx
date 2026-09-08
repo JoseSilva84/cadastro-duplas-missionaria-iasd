@@ -36,6 +36,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14c3.314 0 6 1.343 6 3v2H6v-2c0-1.657 2.686-3 6-3zM12 11a4 4 0 100-8 4 4 0 000 8z" />
     </svg>
   ),
+  interessadosNt: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 01-13.7 7.66L3 21l1.34-4.3A9 9 0 1121 12z" />
+    </svg>
+  ),
   cadastro: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -171,6 +176,7 @@ export default function LayoutDireto() {
     { to: '/direto/igrejas', label: 'Igrejas', shortLabel: 'Igrej.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
     ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
+    ...(isAdmin ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', shortLabel: 'Int. NT', icon: icons.interessadosNt }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },

@@ -35,6 +35,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14c3.314 0 6 1.343 6 3v2H6v-2c0-1.657 2.686-3 6-3zM12 11a4 4 0 100-8 4 4 0 000 8z" />
     </svg>
   ),
+  interessadosNt: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 01-13.7 7.66L3 21l1.34-4.3A9 9 0 1121 12z" />
+    </svg>
+  ),
   cadastro: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -139,6 +144,7 @@ export default function Layout({ children }) {
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', icon: icons.alunos }] : []),
+        ...(isAdmin ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(podeCadastrarDupla ? [{ to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
@@ -178,6 +184,7 @@ export default function Layout({ children }) {
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
+        ...(isAdmin ? [{ to: '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(podeCadastrarDupla ? [{ to: '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
