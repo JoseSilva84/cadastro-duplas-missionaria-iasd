@@ -39,7 +39,7 @@ function possuiCredencial(cfg) {
 }
 
 function numeroValido(valor) {
-  return texto(valor).replace(/\D/g, '').length >= 10;
+  return Boolean(texto(valor));
 }
 
 function camposAdicionais(registro) {
@@ -161,6 +161,10 @@ async function requisitar(caminho, cfg = configuracao(), repetirAposLogin = true
 
 function registrosInteressados(dashboard) {
   const raiz = dashboard?.data || dashboard || {};
+  // A visão geral do Amigos NT calcula seus indicadores sobre `records`.
+  // `interestRecords` é apenas um recorte usado pelas telas de detalhamento.
+  if (Array.isArray(raiz.records)) return raiz.records;
+
   if (Array.isArray(raiz.interestRecords)) return raiz.interestRecords;
 
   if (raiz.interestRecordsByDistrict && typeof raiz.interestRecordsByDistrict === 'object') {
@@ -169,7 +173,7 @@ function registrosInteressados(dashboard) {
     ));
   }
 
-  return Array.isArray(raiz.records) ? raiz.records : [];
+  return [];
 }
 
 async function carregarResumo({ ignorarCache = false } = {}) {
@@ -197,10 +201,14 @@ function resumir(dados) {
       total: 0,
       comWhatsapp: 0,
       vipsHistoricos: 0,
+      quentes: 0,
+      estudosAtivos: 0,
     };
     atual.total += 1;
     if (numeroValido(contato.whatsapp)) atual.comWhatsapp += 1;
     if (contato.vipHistorico) atual.vipsHistoricos += 1;
+    if (chaveNormalizada(contato.prioridade) === 'hot') atual.quentes += 1;
+    if (contato.estudoAtivo) atual.estudosAtivos += 1;
     distritos.set(chave, atual);
   });
 
@@ -210,6 +218,8 @@ function resumir(dados) {
       totalInteressados: dados.contatos.length,
       comWhatsapp: dados.contatos.filter((contato) => numeroValido(contato.whatsapp)).length,
       vipsHistoricos: dados.contatos.filter((contato) => contato.vipHistorico).length,
+      quentes: dados.contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
+      estudosAtivos: dados.contatos.filter((contato) => contato.estudoAtivo).length,
       totalDistritos: grupos.length,
     },
     distritos: grupos,
@@ -252,6 +262,8 @@ const InteressadosNovoTempoService = {
         totalInteressados: contatos.length,
         comWhatsapp: contatos.filter((contato) => numeroValido(contato.whatsapp)).length,
         vipsHistoricos: contatos.filter((contato) => contato.vipHistorico).length,
+        quentes: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
+        estudosAtivos: contatos.filter((contato) => contato.estudoAtivo).length,
       },
       leads: contatos,
       atualizadoEm: dados.atualizadoEm,

@@ -20,6 +20,16 @@ const icones = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 16L3 6l5 4 4-6 4 6 5-4-2 10H5zm0 4h14" />
     </svg>
   ),
+  quente: (
+    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3c1 4-2 5-2 8a2 2 0 104 0c0-2-1-3 0-6 3 2 5 5 5 9a7 7 0 11-14 0c0-3 2-6 5-8 0 3 1 4 2 5" />
+    </svg>
+  ),
+  estudo: (
+    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0M9 12l2 2 4-4" />
+    </svg>
+  ),
 };
 
 const numero = (valor) => new Intl.NumberFormat('pt-BR').format(Number(valor) || 0);
@@ -67,28 +77,39 @@ function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, atualizando 
   );
 }
 
-function CardMetrica({ titulo, valor, detalhe, cor, icone }) {
+const percentual = (parte, total) => total ? Math.round((Number(parte) / Number(total)) * 100) : 0;
+
+function CardMetrica({ titulo, valor, detalhe, inicio, fim, icone }) {
   return (
-    <div className="card relative overflow-hidden">
-      <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: cor }} />
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{titulo}</p>
-          <p className="mt-2 text-3xl font-bold" style={{ color: cor }}>{numero(valor)}</p>
-          <p className="mt-1 text-sm text-gray-400">{detalhe}</p>
+    <div
+      className="group relative min-h-48 overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      style={{ background: `linear-gradient(135deg, ${inicio} 0%, ${fim} 100%)` }}
+    >
+      <span className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125" />
+      <span className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-black/5" />
+      <div className="relative flex h-full flex-col justify-between gap-5">
+        <div className="flex items-start justify-between gap-4">
+          <p className="pt-1 text-xs font-bold uppercase tracking-[0.18em] text-white/90">{titulo}</p>
+          <span className="rounded-xl border border-white/25 bg-white/10 p-3 shadow-inner backdrop-blur-sm">{icone}</span>
         </div>
-        <span className="rounded-xl p-3" style={{ color: cor, backgroundColor: `${cor}16` }}>{icone}</span>
+        <div>
+          <p className="text-4xl font-bold tracking-tight">{numero(valor)}</p>
+          <p className="mt-2 text-sm font-medium text-white/85">{detalhe}</p>
+        </div>
       </div>
     </div>
   );
 }
 
 function CardsResumo({ resumo }) {
+  const total = resumo?.totalInteressados || 0;
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <CardMetrica titulo="Leads interessados" valor={resumo?.totalInteressados} detalhe="Total recebido" cor="#1A3A6B" icone={icones.pessoas} />
-      <CardMetrica titulo="Com WhatsApp" valor={resumo?.comWhatsapp} detalhe="Contatos com número válido" cor="#16845B" icone={icones.whatsapp} />
-      <CardMetrica titulo="VIPs históricos" valor={resumo?.vipsHistoricos} detalhe="Leads identificados como VIP" cor="#C9963A" icone={icones.vip} />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <CardMetrica titulo="Interessados" valor={total} detalhe={`em ${numero(resumo?.totalDistritos)} distritos`} inicio="#2563EB" fim="#0891B2" icone={icones.pessoas} />
+      <CardMetrica titulo="Com WhatsApp" valor={resumo?.comWhatsapp} detalhe={`${percentual(resumo?.comWhatsapp, total)}% com telefone`} inicio="#059669" fim="#0F766E" icone={icones.whatsapp} />
+      <CardMetrica titulo="Quentes" valor={resumo?.quentes} detalhe={`${percentual(resumo?.quentes, total)}% para ação rápida`} inicio="#DC2626" fim="#F97316" icone={icones.quente} />
+      <CardMetrica titulo="VIPs" valor={resumo?.vipsHistoricos} detalhe={`${percentual(resumo?.vipsHistoricos, total)}% da base`} inicio="#7C3AED" fim="#C026D3" icone={icones.vip} />
+      <CardMetrica titulo="Estudos ativos" valor={resumo?.estudosAtivos} detalhe={`${percentual(resumo?.estudosAtivos, total)}% em andamento`} inicio="#2563EB" fim="#0284C7" icone={icones.estudo} />
     </div>
   );
 }
