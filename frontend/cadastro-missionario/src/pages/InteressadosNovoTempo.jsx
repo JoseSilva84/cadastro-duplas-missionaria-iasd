@@ -33,6 +33,11 @@ const icones = {
 };
 
 const numero = (valor) => new Intl.NumberFormat('pt-BR').format(Number(valor) || 0);
+const normalizarPesquisa = (valor) => String(valor || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLocaleLowerCase('pt-BR')
+  .trim();
 
 const dataHora = (valor) => {
   if (!valor) return 'Não informado';
@@ -133,14 +138,37 @@ function AvisoErro({ erro }) {
 
 function VisaoDistritos({ dados, prefix }) {
   const navigate = useNavigate();
+  const [buscaDistrito, setBuscaDistrito] = useState('');
+  const distritosFiltrados = useMemo(() => {
+    const termo = normalizarPesquisa(buscaDistrito);
+    if (!termo) return dados.distritos || [];
+    return (dados.distritos || []).filter((distrito) => normalizarPesquisa(distrito.nome).includes(termo));
+  }, [buscaDistrito, dados.distritos]);
+
   return (
     <section className="card p-0 transition-shadow duration-300 hover:shadow-xl">
-      <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
-        <h2 className="text-lg font-bold text-[#1A3A6B]">Leads por distrito</h2>
-        <p className="mt-1 text-sm text-gray-400">Clique em um distrito para abrir todos os dados dos interessados.</p>
+      <div className="flex flex-col gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-[#1A3A6B]">Leads por distrito</h2>
+          <p className="mt-1 text-sm text-gray-400">Clique em um distrito para abrir todos os dados dos interessados.</p>
+        </div>
+        <label className="relative w-full lg:max-w-sm">
+          <span className="sr-only">Pesquisar distrito</span>
+          <svg className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            value={buscaDistrito}
+            onChange={(evento) => setBuscaDistrito(evento.target.value)}
+            placeholder="Pesquisar distrito..."
+            className="input-field w-full pl-10"
+          />
+        </label>
       </div>
       <div className="divide-y divide-gray-100">
-        {(dados.distritos || []).map((distrito) => (
+        {distritosFiltrados.map((distrito) => (
           <button
             key={distrito.nome}
             type="button"
@@ -164,7 +192,7 @@ function VisaoDistritos({ dados, prefix }) {
             </svg>
           </button>
         ))}
-        {!dados.distritos?.length && <p className="px-6 py-10 text-center text-sm text-gray-400">Nenhum distrito encontrado nos contatos.</p>}
+        {!distritosFiltrados.length && <p className="px-6 py-10 text-center text-sm text-gray-400">Nenhum distrito encontrado para “{buscaDistrito}”.</p>}
       </div>
     </section>
   );
