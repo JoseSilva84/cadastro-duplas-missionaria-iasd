@@ -54,13 +54,41 @@ function numeroOuNulo(valor) {
   return Number.isFinite(numero) ? numero : null;
 }
 
+function coordenada(valor, minimo, maximo) {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const numero = Number(String(valor).replace(',', '.'));
+  return Number.isFinite(numero) && numero >= minimo && numero <= maximo ? numero : null;
+}
+
+function extrairCoordenadas(registro = {}) {
+  const bruto = registro.raw && typeof registro.raw === 'object' ? registro.raw : {};
+  const local = registro.location || registro.geolocation || bruto.location || bruto.geolocation || {};
+  const vetor = registro.coordinates || bruto.coordinates || local.coordinates;
+  const latitude = coordenada(
+    registro.lat ?? registro.latitude ?? bruto.lat ?? bruto.latitude ?? local.lat ?? local.latitude
+      ?? (Array.isArray(vetor) ? vetor[1] : null),
+    -90,
+    90
+  );
+  const longitude = coordenada(
+    registro.lng ?? registro.lon ?? registro.longitude ?? bruto.lng ?? bruto.lon ?? bruto.longitude
+      ?? local.lng ?? local.lon ?? local.longitude ?? (Array.isArray(vetor) ? vetor[0] : null),
+    -180,
+    180
+  );
+  return { latitude, longitude };
+}
+
 function camposAdicionais(registro) {
   const conhecidos = new Set([
     'id', 'n', 'name', 'nome', 't', 'tel', 'phone', 'telefone', 'whatsapp', 'd', 'district', 'distrito',
     'v', 'vip', 'vipHistorico', 'p', 'priority', 'prioridade', 's', 'score', 'e', 'hasActiveStudy',
     'birthDate', 'dataNascimento', 'address', 'endereco', 'end', 'materialName', 'materialPrincipal',
     'material', 'tm', 'email', 'em', 'status', 'source', 'origem', 'observations', 'notes', 'observacoes',
-    'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags',
+    'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags', 'a', 'idade',
+    'lat', 'lng', 'lon', 'latitude', 'longitude', 'coordinates', 'location', 'geolocation',
+    'geoPrecision', 'geoSource', 'geoDisplayName',
+    'cidade', 'city', 'municipio', 'bairro', 'neighborhood', 'neighbourhood',
   ]);
 
   return Object.fromEntries(
@@ -77,6 +105,7 @@ function normalizarRegistro(registro) {
   const email = texto(registro?.em || registro?.email);
   const bruto = registro?.raw && typeof registro.raw === 'object' ? registro.raw : {};
   const temWhatsapp = booleano(registro?.temTelefone ?? registro?.t ?? Boolean(whatsapp));
+  const { latitude, longitude } = extrairCoordenadas(registro);
 
   return {
     id: texto(registro?.id || registro?.uuid),
@@ -92,14 +121,15 @@ function normalizarRegistro(registro) {
     pontuacao: numeroOuNulo(registro?.s ?? registro?.score),
     genero: texto(registro?.g || registro?.genero),
     religiao: texto(registro?.r || registro?.religiao),
+    idade: numeroOuNulo(registro?.a ?? registro?.idade),
     diasSemContato: numeroOuNulo(registro?.c ?? bruto?.c),
     status: texto(registro?.status),
     origem: texto(registro?.source || registro?.origem),
     endereco: texto(registro?.address || registro?.endereco || registro?.end),
     material,
     materiaisQuantidade: numeroOuNulo(registro?.m ?? registro?.materiaisQuantidade) || 0,
-    cidade: texto(registro?.cidade),
-    bairro: texto(registro?.bairro),
+    cidade: texto(registro?.cidade || registro?.city || registro?.municipio || bruto?.cidade || bruto?.city),
+    bairro: texto(registro?.bairro || registro?.neighborhood || registro?.neighbourhood || bruto?.bairro || bruto?.neighborhood),
     canal: texto(registro?.canal),
     telefoneValido: booleano(registro?.telefoneValido ?? temWhatsapp),
     emailValido: booleano(registro?.emailValido ?? Boolean(email)),
@@ -110,6 +140,11 @@ function normalizarRegistro(registro) {
     aceitouVisita: booleanoOuNulo(registro?.aceitouVisita),
     participou: booleanoOuNulo(registro?.participou),
     dataNascimento: registro?.birthDate || registro?.dataNascimento || null,
+    latitude,
+    longitude,
+    geoPrecisao: texto(registro?.geoPrecision || bruto?.geoPrecision),
+    geoOrigem: texto(registro?.geoSource || bruto?.geoSource),
+    geoNomeExibicao: texto(registro?.geoDisplayName || bruto?.geoDisplayName),
     observacoes: texto(registro?.observations || registro?.notes || registro?.observacoes),
     criadoEm: registro?.createdAt || registro?.created_at || null,
     atualizadoEm: registro?.updatedAt || registro?.updated_at || null,
@@ -209,17 +244,50 @@ function registrosInteressados(dashboard) {
   return [];
 }
 
+function extrairTerritorio(dashboard) {
+  const raiz = dashboard?.data || dashboard || {};
+  const territorio = raiz?.meta?.territory || {};
+  const distritosOficiais = Array.isArray(territorio.districts) ? territorio.districts : [];
+  const nomes = new Map(distritosOficiais.map((item) => {
+    const nome = texto(typeof item === 'string' ? item : item?.name || item?.nome || item?.label);
+    const identificador = texto(typeof item === 'object' ? item?.slug || item?.id : '') || slug(nome);
+    return [identificador, nome];
+  }));
+
+  const igrejas = Object.entries(territorio.churchesByDistrict || {}).flatMap(([distritoSlug, itens]) => (
+    (Array.isArray(itens) ? itens : []).map((item) => {
+      const igreja = typeof item === 'string' ? { name: item } : (item || {});
+      const { latitude, longitude } = extrairCoordenadas(igreja);
+      return {
+        nome: texto(igreja.name || igreja.nome) || 'Igreja Adventista',
+        endereco: texto(igreja.address || igreja.endereco),
+        distrito: nomes.get(distritoSlug) || texto(igreja.districtName || igreja.distrito) || distritoSlug,
+        distritoSlug,
+        latitude,
+        longitude,
+        geoPrecisao: texto(igreja.geoPrecision),
+        geoOrigem: texto(igreja.geoSource),
+        geoNomeExibicao: texto(igreja.geoDisplayName),
+      };
+    })
+  ));
+
+  return { distritosOficiais, igrejas };
+}
+
 async function carregarResumo({ ignorarCache = false } = {}) {
   const cfg = configuracao();
   if (!ignorarCache && cacheResumo && Date.now() - cacheResumo.criadoEm < cfg.cacheTtl) return cacheResumo;
 
   const dashboard = await requisitar('/api/dashboard', cfg);
   const contatos = registrosInteressados(dashboard).map(normalizarRegistro);
+  const territorio = extrairTerritorio(dashboard);
 
   cacheResumo = {
     criadoEm: Date.now(),
     atualizadoEm: new Date().toISOString(),
     contatos,
+    ...territorio,
   };
   return cacheResumo;
 }
@@ -473,6 +541,43 @@ const InteressadosNovoTempoService = {
     return resumir(await carregarResumo({ ignorarCache: atualizar }));
   },
 
+  async filtragemAvancada({ atualizar = false } = {}) {
+    const dados = await carregarResumo({ ignorarCache: atualizar });
+    const leads = dados.contatos.map((contato) => ({
+      id: contato.id,
+      nome: contato.nome,
+      whatsapp: contato.whatsapp,
+      email: contato.email,
+      distrito: contato.distrito,
+      bairro: contato.bairro,
+      cidade: contato.cidade,
+      material: contato.material,
+      prioridade: prioridadeCanonica(contato.prioridade),
+      genero: contato.genero,
+      religiao: contato.religiao,
+      idade: contato.idade,
+      dataNascimento: contato.dataNascimento,
+      temWhatsapp: contato.temWhatsapp,
+      emailValido: contato.emailValido,
+      estudoAtivo: contato.estudoAtivo,
+      vipHistorico: contato.vipHistorico,
+      diasSemContato: contato.diasSemContato,
+      latitude: contato.latitude,
+      longitude: contato.longitude,
+      geoPrecisao: contato.geoPrecisao,
+      geoOrigem: contato.geoOrigem,
+      geoNomeExibicao: contato.geoNomeExibicao,
+    }));
+
+    return {
+      atualizadoEm: dados.atualizadoEm,
+      total: leads.length,
+      leads,
+      igrejas: dados.igrejas || [],
+      distritosOficiais: dados.distritosOficiais || [],
+    };
+  },
+
   async analise(filtros = {}, { atualizar = false } = {}) {
     const dados = await carregarResumo({ ignorarCache: atualizar });
     return { ...analisarContatos(dados.contatos, filtros), atualizadoEm: dados.atualizadoEm };
@@ -538,6 +643,7 @@ const InteressadosNovoTempoService = {
     slug,
     normalizarRegistro,
     registrosInteressados,
+    extrairTerritorio,
     resumir,
     analisarContatos,
     analisarDistrito,

@@ -45,6 +45,17 @@ const InteressadosNovoTempoController = {
     }
   },
 
+  async filtragemAvancada(req, res) {
+    try {
+      const resultado = await InteressadosNovoTempoService.filtragemAvancada({
+        atualizar: req.query.atualizar === '1',
+      });
+      return res.json(resultado);
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
   async analisePorDistrito(req, res) {
     try {
       const resultado = await InteressadosNovoTempoService.analisePorDistrito(req.params.distrito, {

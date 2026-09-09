@@ -163,7 +163,7 @@ function GraficoDistritos({ itens = [], onAbrir }) {
   const maximo = Math.max(1, ...itens.map((item) => Number(item.total) || 0));
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
+    <article className="relative z-0 min-w-0 overflow-visible rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-all duration-300 hover:z-40 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
       <h2 className="text-lg font-bold text-[#173766]">Top 15 distritos por volume</h2>
       <p className="mt-1 text-sm text-slate-400">Passe o mouse para ver os dados ou clique para abrir o distrito.</p>
       <div className="mt-6 min-w-0 pb-2">
@@ -174,15 +174,20 @@ function GraficoDistritos({ itens = [], onAbrir }) {
           <div className="relative z-10 grid h-full min-w-0 items-end gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(itens.length, 1)}, minmax(0, 1fr))` }}>
             {itens.map((item, index) => {
               const altura = Math.max(12, ((Number(item.total) || 0) / maximo) * 225);
+              const alinhamentoTooltip = index === 0
+                ? 'left-0'
+                : index === itens.length - 1
+                  ? 'right-0'
+                  : 'left-1/2 -translate-x-1/2';
               return (
                 <button
                   key={item.nome}
                   type="button"
                   onClick={() => onAbrir(item.nome)}
-                  className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end outline-none"
+                  className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end outline-none hover:z-50 focus-visible:z-50"
                   aria-label={`Abrir análise de ${item.nome}, ${numero(item.total)} contatos`}
                 >
-                  <span className="pointer-events-none absolute z-20 hidden w-max max-w-52 -translate-y-2 rounded-xl bg-[#10284e] px-3 py-2 text-left text-xs text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:block" style={{ bottom: `${altura + 52}px` }}>
+                  <span className={`pointer-events-none absolute z-[100] hidden w-max max-w-52 -translate-y-2 rounded-xl bg-[#10284e] px-3 py-2 text-left text-xs text-white opacity-0 shadow-2xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:block ${alinhamentoTooltip}`} style={{ bottom: `${altura + 52}px` }}>
                     <strong className="block">{item.nome}</strong>
                     <span className="mt-1 block text-white/80">{numero(item.total)} contatos · {numero(item.comWhatsapp)} WhatsApp · {numero(item.vips)} VIPs</span>
                   </span>
@@ -194,7 +199,7 @@ function GraficoDistritos({ itens = [], onAbrir }) {
                   <span className="mt-2 block h-8 w-full overflow-hidden text-ellipsis text-center text-[8px] font-bold uppercase leading-tight text-slate-500 transition-colors group-hover:text-blue-700 lg:text-[9px]" title={item.nome}>
                     {item.nome}
                   </span>
-                  <span className="absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-600">{index + 1}</span>
+                  <span className="absolute -top-5 left-1 z-10 grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-600 shadow-sm">{index + 1}</span>
                 </button>
               );
             })}

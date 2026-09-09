@@ -54,7 +54,7 @@ const formatarWhatsapp = (valor) => {
   return valor;
 };
 
-function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, atualizando }) {
+function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, onFiltragem, atualizando }) {
   return (
     <div className={isDireto ? 'flex-shrink-0 border-b border-gray-200 bg-white px-4 py-4 sm:px-6' : 'mb-7'}>
       {distrito && <BackButton fallbackTo={isDireto ? '/direto/interessados-nt' : '/interessados-nt'} className="mb-3" />}
@@ -75,6 +75,7 @@ function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, a
           {atualizadoEm && <p className="text-xs text-gray-400">Atualizado em {dataHora(atualizadoEm)}</p>}
           <div className="flex flex-nowrap items-center gap-2">
             {!distrito && <button type="button" className="whitespace-nowrap rounded-lg bg-gradient-to-r from-blue-600 to-[#173766] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg" onClick={onAnalise}>Análise dos Potenciais →</button>}
+            {!distrito && <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" onClick={onFiltragem}>Filtragem Avançada</button>}
             <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" disabled={atualizando} onClick={onAtualizar}>
               {atualizando ? 'Atualizando...' : 'Atualizar dados'}
             </button>
@@ -154,7 +155,7 @@ function VisaoDistritos({ dados, prefix }) {
         </div>
         <label className="relative w-full lg:max-w-sm">
           <span className="sr-only">Pesquisar distrito</span>
-          <svg className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
@@ -163,7 +164,7 @@ function VisaoDistritos({ dados, prefix }) {
             value={buscaDistrito}
             onChange={(evento) => setBuscaDistrito(evento.target.value)}
             placeholder="Pesquisar distrito..."
-            className="input-field w-full pl-10"
+            className="input-field w-full pl-12"
           />
         </label>
       </div>
@@ -338,7 +339,7 @@ export default function InteressadosNovoTempo() {
 
   return (
     <div className={isDireto ? 'flex h-full flex-col bg-[#F4F5F7] animate-fade-in' : 'mx-auto max-w-7xl p-4 animate-fade-in sm:p-6 lg:p-8'}>
-      <Cabecalho distrito={dados?.distrito || nomeDistrito} isDireto={isDireto} atualizadoEm={dados?.atualizadoEm} onAtualizar={() => carregar(true)} onAnalise={() => navigate(`${prefix}/interessados-nt/analise`)} atualizando={atualizando} />
+      <Cabecalho distrito={dados?.distrito || nomeDistrito} isDireto={isDireto} atualizadoEm={dados?.atualizadoEm} onAtualizar={() => carregar(true)} onAnalise={() => navigate(`${prefix}/interessados-nt/analise`)} onFiltragem={() => navigate(`${prefix}/interessados-nt/filtragem-avancada`)} atualizando={atualizando} />
       <div className={isDireto ? 'flex-1 space-y-5 overflow-y-auto p-4 sm:p-6' : 'space-y-5'}>
         {erro && <AvisoErro erro={erro} />}
         {dados && <CardsResumo resumo={dados.resumo} />}
