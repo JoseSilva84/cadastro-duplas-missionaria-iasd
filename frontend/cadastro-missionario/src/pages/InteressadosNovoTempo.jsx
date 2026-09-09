@@ -164,7 +164,8 @@ function VisaoDistritos({ dados, prefix }) {
             value={buscaDistrito}
             onChange={(evento) => setBuscaDistrito(evento.target.value)}
             placeholder="Pesquisar distrito..."
-            className="input-field w-full pl-12"
+            className="input-field w-full"
+            style={{ paddingLeft: '3.5rem' }}
           />
         </label>
       </div>
