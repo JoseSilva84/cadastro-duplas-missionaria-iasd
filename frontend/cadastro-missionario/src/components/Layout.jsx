@@ -104,6 +104,7 @@ export default function Layout({ children }) {
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
+  const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const podeVerRelatorios = Boolean(usuario);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
@@ -116,6 +117,7 @@ export default function Layout({ children }) {
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
+        ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/interessados-nt' : '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/cadastro/mapa-igreja' : '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' }] : []),
@@ -144,7 +146,7 @@ export default function Layout({ children }) {
         { to: '/direto/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/direto/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', icon: icons.alunos }] : []),
-        ...(isAdmin ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
+        ...(podeVerInteressadosNt ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(podeCadastrarDupla ? [{ to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
@@ -184,7 +186,7 @@ export default function Layout({ children }) {
         { to: '/igrejas', label: 'Igrejas', icon: icons.igrejas },
         { to: '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
-        ...(isAdmin ? [{ to: '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
+        ...(podeVerInteressadosNt ? [{ to: '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(podeCadastrarDupla ? [{ to: '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           { to: '/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },

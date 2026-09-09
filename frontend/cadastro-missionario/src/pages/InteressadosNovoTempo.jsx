@@ -68,7 +68,7 @@ function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, o
             {distrito ? `Interessados — ${distrito}` : 'Interessados NT'}
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            {distrito ? 'Informações dos leads interessados deste distrito.' : 'Visão administrativa dos leads recebidos pela Novo Tempo.'}
+            {distrito ? 'Informações dos leads interessados deste distrito.' : 'Visão dos leads recebidos pela Novo Tempo dentro do seu acesso.'}
           </p>
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">

@@ -156,7 +156,7 @@ Todas as rotas abaixo usam o prefixo `/api`.
 | `/acompanhamentos` | Saídas/acompanhamentos de coordenadores. |
 | `/escola-sabatina` | Cadastros de indicadores da Escola Sabatina. |
 | `/relatorios` | Resumos, dashboards e relatórios. |
-| `/interessados-nt` | Resumo e contatos Novo Tempo por distrito (somente administradores). |
+| `/interessados-nt` | Resumo e contatos Novo Tempo filtrados pelo escopo territorial do usuário. |
 | `/usuarios` | Gestão de usuários. |
 | `/public/estatisticas` | Estatísticas públicas exibidas no login. |
 | `/health` | Health check simples. |

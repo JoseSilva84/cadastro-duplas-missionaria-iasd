@@ -96,7 +96,7 @@ SEVENFLOW_API_EMAIL="integracao-pcm@exemplo.com"
 SEVENFLOW_API_PASSWORD="senha-forte-da-conta-de-integracao"
 ```
 
-Para habilitar a tela administrativa **Interessados NT**, use uma conta autorizada do sistema Amigos Novo Tempo. A integração autentica em `POST /api/auth/login`, consulta `GET /api/dashboard` e carrega os detalhes em `GET /api/dashboard/district-interest/:distrito`. A credencial nunca deve ser colocada no frontend.
+Para habilitar a tela **Interessados NT**, use uma conta autorizada do sistema Amigos Novo Tempo. A integração autentica em `POST /api/auth/login`, consulta `GET /api/dashboard` e carrega os detalhes em `GET /api/dashboard/district-interest/:distrito`. Administradores veem toda a associação; pastor e coordenador regional veem sua região; pastor distrital e diretor missionário veem seu distrito. A credencial nunca deve ser colocada no frontend.
 
 Configuração opcional da integração:
 

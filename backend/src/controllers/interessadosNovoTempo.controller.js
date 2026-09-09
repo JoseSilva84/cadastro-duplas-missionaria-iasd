@@ -11,7 +11,10 @@ function responderErro(res, falha) {
 const InteressadosNovoTempoController = {
   async resumo(req, res) {
     try {
-      const resultado = await InteressadosNovoTempoService.resumo({ atualizar: req.query.atualizar === '1' });
+      const resultado = await InteressadosNovoTempoService.resumo({
+        atualizar: req.query.atualizar === '1',
+        usuario: req.usuario,
+      });
       return res.json(resultado);
     } catch (falha) {
       return responderErro(res, falha);
@@ -22,6 +25,7 @@ const InteressadosNovoTempoController = {
     try {
       const resultado = await InteressadosNovoTempoService.porDistrito(req.params.distrito, {
         atualizar: req.query.atualizar === '1',
+        usuario: req.usuario,
       });
       return res.json(resultado);
     } catch (falha) {
@@ -38,7 +42,10 @@ const InteressadosNovoTempoController = {
         whatsapp: req.query.whatsapp,
         estudos: req.query.estudos,
         genero: req.query.genero,
-      }, { atualizar: req.query.atualizar === '1' });
+      }, {
+        atualizar: req.query.atualizar === '1',
+        usuario: req.usuario,
+      });
       return res.json(resultado);
     } catch (falha) {
       return responderErro(res, falha);
@@ -49,6 +56,7 @@ const InteressadosNovoTempoController = {
     try {
       const resultado = await InteressadosNovoTempoService.filtragemAvancada({
         atualizar: req.query.atualizar === '1',
+        usuario: req.usuario,
       });
       return res.json(resultado);
     } catch (falha) {
@@ -60,6 +68,7 @@ const InteressadosNovoTempoController = {
     try {
       const resultado = await InteressadosNovoTempoService.analisePorDistrito(req.params.distrito, {
         atualizar: req.query.atualizar === '1',
+        usuario: req.usuario,
       });
       return res.json(resultado);
     } catch (falha) {

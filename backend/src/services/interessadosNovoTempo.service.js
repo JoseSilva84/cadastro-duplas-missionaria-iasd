@@ -1,5 +1,7 @@
 const API_URL_PADRAO = 'https://backend-leadsnt.sevenflowia.tech';
 const CACHE_TTL_PADRAO = 5 * 60 * 1000;
+const prisma = require('../lib/prisma');
+const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
 let cacheResumo = null;
 const cacheDistritos = new Map();
@@ -22,6 +24,72 @@ function erro(status, mensagem, codigo) {
   falha.mensagem = mensagem;
   falha.codigo = codigo;
   return falha;
+}
+
+async function obterEscopoTerritorial(usuario) {
+  if (usuario && ehAdmin(usuario.perfil)) return { acessoTotal: true, distritos: null };
+
+  let distritos = [];
+  if ([PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil)) {
+    if (!usuario.regiaoId) {
+      throw erro(403, 'Seu usuário não possui uma região vinculada.', 'ESCOPO_NT_NAO_CONFIGURADO');
+    }
+    distritos = await prisma.distrito.findMany({
+      where: { regiaoId: Number(usuario.regiaoId) },
+      select: { nome: true },
+    });
+  } else if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) {
+    if (!usuario.distritoId) {
+      throw erro(403, 'Seu usuário não possui um distrito vinculado.', 'ESCOPO_NT_NAO_CONFIGURADO');
+    }
+    const distrito = await prisma.distrito.findUnique({
+      where: { id: Number(usuario.distritoId) },
+      select: { nome: true },
+    });
+    if (distrito) distritos = [distrito];
+  } else if (usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    if (!usuario.igrejaId) {
+      throw erro(403, 'Seu usuário não possui uma igreja vinculada.', 'ESCOPO_NT_NAO_CONFIGURADO');
+    }
+    const igreja = await prisma.igreja.findUnique({
+      where: { id: Number(usuario.igrejaId) },
+      select: { distrito: { select: { nome: true } } },
+    });
+    if (igreja?.distrito) distritos = [igreja.distrito];
+  } else {
+    throw erro(403, 'Seu perfil não possui acesso aos interessados do Novo Tempo.', 'ESCOPO_NT_NEGADO');
+  }
+
+  const nomes = distritos.map(({ nome }) => texto(nome)).filter(Boolean);
+  if (!nomes.length) {
+    throw erro(403, 'Não foi possível identificar os distritos do seu acesso.', 'ESCOPO_NT_NAO_CONFIGURADO');
+  }
+
+  return {
+    acessoTotal: false,
+    distritos: new Set(nomes.map(chaveNormalizada)),
+  };
+}
+
+function nomeDistritoOficial(item) {
+  return texto(typeof item === 'string' ? item : item?.name || item?.nome || item?.label);
+}
+
+function aplicarEscopoTerritorial(dados, escopo) {
+  if (escopo.acessoTotal) return dados;
+  const permitido = (nome) => escopo.distritos.has(chaveNormalizada(nome));
+  return {
+    ...dados,
+    contatos: dados.contatos.filter((contato) => permitido(contato.distrito)),
+    igrejas: (dados.igrejas || []).filter((igreja) => permitido(igreja.distrito)),
+    distritosOficiais: (dados.distritosOficiais || []).filter((distrito) => permitido(nomeDistritoOficial(distrito))),
+  };
+}
+
+function validarDistritoNoEscopo(nomeDistrito, escopo) {
+  if (!escopo.acessoTotal && !escopo.distritos.has(chaveNormalizada(nomeDistrito))) {
+    throw erro(403, 'Acesso negado: distrito fora do seu escopo.', 'DISTRITO_FORA_DO_ESCOPO');
+  }
 }
 
 function configuracao() {
@@ -537,12 +605,15 @@ function analisarDistrito(dados) {
 }
 
 const InteressadosNovoTempoService = {
-  async resumo({ atualizar = false } = {}) {
-    return resumir(await carregarResumo({ ignorarCache: atualizar }));
+  async resumo({ atualizar = false, usuario } = {}) {
+    const escopo = await obterEscopoTerritorial(usuario);
+    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
+    return resumir(dados);
   },
 
-  async filtragemAvancada({ atualizar = false } = {}) {
-    const dados = await carregarResumo({ ignorarCache: atualizar });
+  async filtragemAvancada({ atualizar = false, usuario } = {}) {
+    const escopo = await obterEscopoTerritorial(usuario);
+    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
     const leads = dados.contatos.map((contato) => ({
       id: contato.id,
       nome: contato.nome,
@@ -578,14 +649,17 @@ const InteressadosNovoTempoService = {
     };
   },
 
-  async analise(filtros = {}, { atualizar = false } = {}) {
-    const dados = await carregarResumo({ ignorarCache: atualizar });
+  async analise(filtros = {}, { atualizar = false, usuario } = {}) {
+    const escopo = await obterEscopoTerritorial(usuario);
+    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
     return { ...analisarContatos(dados.contatos, filtros), atualizadoEm: dados.atualizadoEm };
   },
 
-  async porDistrito(nomeDistrito, { atualizar = false } = {}) {
+  async porDistrito(nomeDistrito, { atualizar = false, usuario } = {}) {
     const nome = texto(nomeDistrito);
     if (!nome) throw erro(400, 'Informe o distrito.', 'DISTRITO_OBRIGATORIO');
+    const escopo = await obterEscopoTerritorial(usuario);
+    validarDistritoNoEscopo(nome, escopo);
 
     const cfg = configuracao();
     const chave = slug(nome);
@@ -602,11 +676,15 @@ const InteressadosNovoTempoService = {
       cacheDistritos.set(chave, dados);
     }
 
-    if (!dados.contatos.length) {
+    const contatosNoEscopo = escopo.acessoTotal
+      ? dados.contatos
+      : dados.contatos.filter((contato) => escopo.distritos.has(chaveNormalizada(contato.distrito)));
+
+    if (!contatosNoEscopo.length) {
       throw erro(404, 'Nenhum interessado encontrado para este distrito.', 'DISTRITO_SEM_INTERESSADOS');
     }
 
-    const contatos = [...dados.contatos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const contatos = [...contatosNoEscopo].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     return {
       distrito: contatos[0]?.distrito || nome,
       resumo: {
@@ -624,8 +702,8 @@ const InteressadosNovoTempoService = {
     };
   },
 
-  async analisePorDistrito(nomeDistrito, { atualizar = false } = {}) {
-    return analisarDistrito(await this.porDistrito(nomeDistrito, { atualizar }));
+  async analisePorDistrito(nomeDistrito, { atualizar = false, usuario } = {}) {
+    return analisarDistrito(await this.porDistrito(nomeDistrito, { atualizar, usuario }));
   },
 
   statusConfiguracao() {
@@ -647,6 +725,9 @@ const InteressadosNovoTempoService = {
     resumir,
     analisarContatos,
     analisarDistrito,
+    obterEscopoTerritorial,
+    aplicarEscopoTerritorial,
+    validarDistritoNoEscopo,
   },
 };
 

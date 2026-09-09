@@ -1,10 +1,20 @@
 const express = require('express');
 const InteressadosNovoTempoController = require('../controllers/interessadosNovoTempo.controller');
-const { autenticar, apenasAdmins } = require('../middlewares/auth');
+const { autenticar, autorizar, PERFIS } = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.use(autenticar, apenasAdmins);
+router.use(
+  autenticar,
+  autorizar(
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.COORDENADOR_REGIONAL,
+    PERFIS.PASTOR_DISTRITAL,
+    PERFIS.DIRETOR_MISSIONARIO_IGREJA
+  )
+);
 router.get('/status', InteressadosNovoTempoController.status);
 router.get('/resumo', InteressadosNovoTempoController.resumo);
 router.get('/filtragem-avancada', InteressadosNovoTempoController.filtragemAvancada);
