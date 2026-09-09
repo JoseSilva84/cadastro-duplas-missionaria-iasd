@@ -156,12 +156,31 @@ function camposAdicionais(registro) {
     'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags', 'a', 'idade',
     'lat', 'lng', 'lon', 'latitude', 'longitude', 'coordinates', 'location', 'geolocation',
     'geoPrecision', 'geoSource', 'geoDisplayName',
-    'cidade', 'city', 'municipio', 'bairro', 'neighborhood', 'neighbourhood',
+    'cidade', 'city', 'municipio', 'bairro', 'b', 'neighborhood', 'neighbourhood',
   ]);
 
   return Object.fromEntries(
     Object.entries(registro || {}).filter(([nome, valor]) => !conhecidos.has(nome) && valor !== null && valor !== '')
   );
+}
+
+function extrairBairroDoEndereco(endereco, distrito, cidade) {
+  const valor = texto(endereco);
+  if (!valor) return '';
+
+  const rotulado = valor.match(/\bbairro\s*:?\s*([^,;]+?)(?=\s+-\s+|,?\s+(?:cidade|munic[ií]pio|cep)\b|$)/i);
+  if (rotulado?.[1]) return texto(rotulado[1]).replace(/^[-–—\s]+|[-–—\s]+$/g, '');
+
+  const ignorar = new Set([distrito, cidade, 'Brasil'].map(chaveNormalizada).filter(Boolean));
+  const partes = valor.split(/\s+-\s+/).map((parte) => texto(parte).replace(/^,\s*|,\s*$/g, '')).filter(Boolean);
+  return partes.slice(1).find((parte) => {
+    const chave = chaveNormalizada(parte);
+    return chave
+      && !ignorar.has(chave)
+      && !/^cep\b/i.test(parte)
+      && !/^\d{5}-?\d{3}$/.test(parte)
+      && !/^[a-z]{2}$/i.test(parte);
+  }) || '';
 }
 
 function normalizarRegistro(registro) {
@@ -172,6 +191,10 @@ function normalizarRegistro(registro) {
   const material = texto(registro?.materialName || registro?.materialPrincipal || registro?.material || registro?.tm);
   const email = texto(registro?.em || registro?.email);
   const bruto = registro?.raw && typeof registro.raw === 'object' ? registro.raw : {};
+  const endereco = texto(registro?.address || registro?.endereco || registro?.end || bruto?.address || bruto?.endereco || bruto?.end);
+  const cidade = texto(registro?.cidade || registro?.city || registro?.municipio || bruto?.cidade || bruto?.city || bruto?.municipio);
+  const bairro = texto(registro?.bairro || registro?.b || registro?.neighborhood || registro?.neighbourhood || bruto?.bairro || bruto?.b || bruto?.neighborhood || bruto?.neighbourhood)
+    || extrairBairroDoEndereco(endereco, distrito, cidade);
   const temWhatsapp = booleano(registro?.temTelefone ?? registro?.t ?? Boolean(whatsapp));
   const { latitude, longitude } = extrairCoordenadas(registro);
 
@@ -193,11 +216,11 @@ function normalizarRegistro(registro) {
     diasSemContato: numeroOuNulo(registro?.c ?? bruto?.c),
     status: texto(registro?.status),
     origem: texto(registro?.source || registro?.origem),
-    endereco: texto(registro?.address || registro?.endereco || registro?.end),
+    endereco,
     material,
     materiaisQuantidade: numeroOuNulo(registro?.m ?? registro?.materiaisQuantidade) || 0,
-    cidade: texto(registro?.cidade || registro?.city || registro?.municipio || bruto?.cidade || bruto?.city),
-    bairro: texto(registro?.bairro || registro?.neighborhood || registro?.neighbourhood || bruto?.bairro || bruto?.neighborhood),
+    cidade,
+    bairro,
     canal: texto(registro?.canal),
     telefoneValido: booleano(registro?.telefoneValido ?? temWhatsapp),
     emailValido: booleano(registro?.emailValido ?? Boolean(email)),
@@ -744,6 +767,7 @@ const InteressadosNovoTempoService = {
     resumir,
     analisarContatos,
     analisarDistrito,
+    extrairBairroDoEndereco,
     obterEscopoTerritorial,
     aplicarEscopoTerritorial,
     validarDistritoNoEscopo,

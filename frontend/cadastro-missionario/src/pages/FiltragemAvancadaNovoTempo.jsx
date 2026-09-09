@@ -222,10 +222,14 @@ export default function FiltragemAvancadaNovoTempo() {
   }, []);
 
   const leads = useMemo(() => dados?.leads || [], [dados?.leads]);
+  const leadsDosDistritos = useMemo(() => {
+    if (!filtros.distritos.length) return leads;
+    return leads.filter((lead) => filtros.distritos.includes(lead.distrito || 'Não informado'));
+  }, [filtros.distritos, leads]);
   const opcoes = useMemo(() => ({
-    distritos: contar(leads, (x) => x.distrito), bairros: contar(leads, (x) => x.bairro), materiais: contar(leads, (x) => x.material),
+    distritos: contar(leads, (x) => x.distrito), bairros: contar(leadsDosDistritos, (x) => x.bairro), materiais: contar(leads, (x) => x.material),
     idades: contar(leads, faixaIdade), generos: contar(leads, (x) => x.genero), prioridades: contar(leads, (x) => PRIORIDADES[x.prioridade]?.[0] || x.prioridade),
-  }), [leads]);
+  }), [leads, leadsDosDistritos]);
 
   const filtrados = useMemo(() => leads.filter((lead) => {
     const textoBusca = normalizar(filtros.busca);
@@ -246,7 +250,10 @@ export default function FiltragemAvancadaNovoTempo() {
   }), [filtros, leads]);
 
   const igrejasFiltradas = useMemo(() => (dados?.igrejas || []).filter((igreja) => !filtros.distritos.length || filtros.distritos.some((nome) => normalizar(nome) === normalizar(igreja.distrito))), [dados?.igrejas, filtros.distritos]);
-  const alterar = (campo, valor) => { setFiltros((atual) => ({ ...atual, [campo]: valor })); setLimite(80); };
+  const alterar = (campo, valor) => {
+    setFiltros((atual) => ({ ...atual, [campo]: valor, ...(campo === 'distritos' ? { bairros: [] } : {}) }));
+    setLimite(80);
+  };
   const totalWhats = filtrados.filter((x) => x.temWhatsapp).length;
   const totalQuentes = filtrados.filter((x) => x.prioridade === 'Hot').length;
   const reativar = filtrados.filter((x) => Number(x.diasSemContato) > 365).length;
@@ -269,7 +276,7 @@ export default function FiltragemAvancadaNovoTempo() {
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Associação</span><select className="input-field w-full" value="paulistana" disabled><option value="paulistana">Associação Paulistana</option></select></label>
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Buscar</span><span className="relative block"><svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input value={filtros.busca} onChange={(e) => alterar('busca', e.target.value)} className="input-field w-full" style={{ paddingLeft: '3.5rem' }} placeholder="Nome, e-mail, distrito, bairro, material ou WhatsApp" /></span></label>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2"><PainelOpcoes titulo="Distritos" pesquisavel opcoes={opcoes.distritos} selecionados={filtros.distritos} onChange={(v) => alterar('distritos', v)}/><PainelOpcoes titulo="Bairros" pesquisavel opcoes={opcoes.bairros} selecionados={filtros.bairros} onChange={(v) => alterar('bairros', v)}/><PainelOpcoes titulo="Materiais" pesquisavel opcoes={opcoes.materiais} selecionados={filtros.materiais} onChange={(v) => alterar('materiais', v)}/><div className="grid gap-4 sm:grid-cols-2"><PainelOpcoes titulo="Prioridade" opcoes={opcoes.prioridades} selecionados={filtros.prioridades} onChange={(v) => alterar('prioridades', v)}/><PainelOpcoes titulo="Idade" opcoes={opcoes.idades} selecionados={filtros.idades} onChange={(v) => alterar('idades', v)}/><PainelOpcoes titulo="Gênero" opcoes={opcoes.generos} selecionados={filtros.generos} onChange={(v) => alterar('generos', v)}/></div></div>
+          <div className="grid gap-4 lg:grid-cols-2"><PainelOpcoes titulo="Distritos" pesquisavel opcoes={opcoes.distritos} selecionados={filtros.distritos} onChange={(v) => alterar('distritos', v)}/><PainelOpcoes key={`bairros-${filtros.distritos.join('|')}`} titulo="Bairros" pesquisavel opcoes={opcoes.bairros} selecionados={filtros.bairros} onChange={(v) => alterar('bairros', v)}/><PainelOpcoes titulo="Materiais" pesquisavel opcoes={opcoes.materiais} selecionados={filtros.materiais} onChange={(v) => alterar('materiais', v)}/><div className="grid gap-4 sm:grid-cols-2"><PainelOpcoes titulo="Prioridade" opcoes={opcoes.prioridades} selecionados={filtros.prioridades} onChange={(v) => alterar('prioridades', v)}/><PainelOpcoes titulo="Idade" opcoes={opcoes.idades} selecionados={filtros.idades} onChange={(v) => alterar('idades', v)}/><PainelOpcoes titulo="Gênero" opcoes={opcoes.generos} selecionados={filtros.generos} onChange={(v) => alterar('generos', v)}/></div></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"><SelectFiltro titulo="WhatsApp" valor={filtros.whatsapp} onChange={(v) => alterar('whatsapp', v)} opcoes={[{valor:'sim',rotulo:'Com WhatsApp'},{valor:'nao',rotulo:'Sem WhatsApp'}]}/><SelectFiltro titulo="E-mail" valor={filtros.email} onChange={(v) => alterar('email', v)} opcoes={[{valor:'sim',rotulo:'Com e-mail'},{valor:'nao',rotulo:'Sem e-mail'}]}/><SelectFiltro titulo="Estudos" valor={filtros.estudos} onChange={(v) => alterar('estudos', v)} opcoes={[{valor:'sim',rotulo:'Ativo'},{valor:'nao',rotulo:'Sem estudo ativo'}]}/><SelectFiltro titulo="VIP" valor={filtros.vip} onChange={(v) => alterar('vip', v)} opcoes={[{valor:'sim',rotulo:'VIP'},{valor:'nao',rotulo:'Não VIP'}]}/><SelectFiltro titulo="Religião" valor={filtros.religiao} onChange={(v) => alterar('religiao', v)} opcoes={[{valor:'adventista',rotulo:'Adventista'},{valor:'outra',rotulo:'Outras'}]}/><SelectFiltro titulo="Tempo" valor={filtros.tempo} onChange={(v) => alterar('tempo', v)} opcoes={['Até 3 meses','3 meses a 1 ano','1 a 2 anos','2 a 5 anos','5+ anos','Não informado'].map((x)=>({valor:x,rotulo:x}))}/></div>
         </section>
         <Mapa leads={filtrados} igrejas={igrejasFiltradas} onSelecionarLead={setLeadSelecionado}/>
