@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import ModalLeadNovoTempo from '../components/ModalLeadNovoTempo';
 import { exportarListaLeadsPdf } from '../lib/pdfNovoTempo';
+import { ICONE_IGREJA_NT } from '../lib/iconesMapaNovoTempo';
 
 const numero = (valor) => new Intl.NumberFormat('pt-BR').format(Number(valor) || 0);
 const normalizar = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const PRIORIDADES = { Hot: ['Quente', '#dc2626'], Warm: ['Potencial', '#f97316'], Cool: ['Morno', '#2563eb'], Cold: ['Frio', '#334155'] };
+const cacheTextoBusca = new WeakMap();
 
 const filtrosIniciais = {
   busca: '', distritos: [], bairros: [], materiais: [], idades: [], generos: [], prioridades: [],
@@ -72,6 +74,33 @@ function linksDoMapa(lead) {
   };
 }
 
+function textoBuscaDoLead(lead) {
+  if (cacheTextoBusca.has(lead)) return cacheTextoBusca.get(lead);
+  const valor = normalizar([lead.nome, lead.email, lead.whatsapp, lead.distrito, lead.bairro, lead.material, lead.religiao, lead.id].join(' '));
+  cacheTextoBusca.set(lead, valor);
+  return valor;
+}
+
+function aplicarFiltros(leads, filtros, ignorarCampo = '') {
+  const textoBusca = normalizar(filtros.busca);
+  return leads.filter((lead) => {
+    if (textoBusca && !textoBuscaDoLead(lead).includes(textoBusca)) return false;
+    if (ignorarCampo !== 'distritos' && filtros.distritos.length && !filtros.distritos.includes(lead.distrito || 'Não informado')) return false;
+    if (ignorarCampo !== 'bairros' && filtros.bairros.length && !filtros.bairros.includes(lead.bairro || 'Não informado')) return false;
+    if (ignorarCampo !== 'materiais' && filtros.materiais.length && !filtros.materiais.includes(lead.material || 'Não informado')) return false;
+    if (ignorarCampo !== 'idades' && filtros.idades.length && !filtros.idades.includes(faixaIdade(lead))) return false;
+    if (ignorarCampo !== 'generos' && filtros.generos.length && !filtros.generos.includes(lead.genero || 'Não informado')) return false;
+    if (ignorarCampo !== 'prioridades' && filtros.prioridades.length && !filtros.prioridades.includes(PRIORIDADES[lead.prioridade]?.[0] || lead.prioridade)) return false;
+    if (ignorarCampo !== 'whatsapp' && filtros.whatsapp !== 'todos' && lead.temWhatsapp !== (filtros.whatsapp === 'sim')) return false;
+    if (ignorarCampo !== 'email' && filtros.email !== 'todos' && Boolean(lead.email) !== (filtros.email === 'sim')) return false;
+    if (ignorarCampo !== 'estudos' && filtros.estudos !== 'todos' && lead.estudoAtivo !== (filtros.estudos === 'sim')) return false;
+    if (ignorarCampo !== 'vip' && filtros.vip !== 'todos' && lead.vipHistorico !== (filtros.vip === 'sim')) return false;
+    if (ignorarCampo !== 'religiao' && filtros.religiao !== 'todos' && normalizar(lead.religiao).includes('adventista') !== (filtros.religiao === 'adventista')) return false;
+    if (ignorarCampo !== 'tempo' && filtros.tempo !== 'todos' && faixaTempo(lead.diasSemContato) !== filtros.tempo) return false;
+    return true;
+  });
+}
+
 function Alternador({ ativo, children, onClick, quantidade }) {
   return (
     <button type="button" onClick={onClick} className={`rounded-xl border px-3 py-2 text-left text-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-white text-slate-600'}`}>
@@ -106,13 +135,13 @@ function PainelOpcoes({ titulo, opcoes, selecionados, onChange, pesquisavel = fa
   );
 }
 
-function SelectFiltro({ titulo, valor, onChange, opcoes }) {
+function SelectFiltro({ titulo, valor, onChange, opcoes, total }) {
   return (
     <label className="rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-sm">
       <span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">{titulo}</span>
       <select className="input-field w-full" value={valor} onChange={(e) => onChange(e.target.value)}>
-        <option value="todos">Todos</option>
-        {opcoes.map((opcao) => <option key={opcao.valor} value={opcao.valor}>{opcao.rotulo}</option>)}
+        <option value="todos">Todos ({numero(total)})</option>
+        {opcoes.map((opcao) => <option key={opcao.valor} value={opcao.valor}>{opcao.rotulo} ({numero(opcao.quantidade)})</option>)}
       </select>
     </label>
   );
@@ -140,6 +169,10 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
   const centro = pontos[0] ? [Number(pontos[0].latitude), Number(pontos[0].longitude)] : [-23.5505, -46.6333];
   const exatos = leadsVisiveis.filter((item) => coordenadasValidas(item) && !ehAproximada(item)).length;
   const aproximados = leadsVisiveis.filter((item) => coordenadasValidas(item) && ehAproximada(item)).length;
+  const contagensPrioridade = useMemo(() => leads.reduce((totais, lead) => {
+    totais[lead.prioridade] = (totais[lead.prioridade] || 0) + 1;
+    return totais;
+  }, {}), [leads]);
   const selecionarCategoria = (categoria) => setCategoriaAtiva((atual) => atual === categoria ? null : categoria);
   return (
     <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-lg">
@@ -152,7 +185,7 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {
             const ativo = !categoriaAtiva || categoriaAtiva === chave;
-            return <button type="button" key={chave} aria-pressed={ativo} onClick={() => selecionarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo}</button>;
+            return <button type="button" key={chave} aria-pressed={ativo} onClick={() => selecionarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo} <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{numero(contagensPrioridade[chave])}</span></button>;
           })}
           <button type="button" aria-pressed={!categoriaAtiva || categoriaAtiva === 'igrejas' || Boolean(PRIORIDADES[categoriaAtiva])} onClick={() => selecionarCategoria('igrejas')} className={`rounded-full border px-3 py-2 text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${categoriaAtiva === 'igrejas' || !categoriaAtiva || PRIORIDADES[categoriaAtiva] ? 'border-emerald-100 bg-white' : 'border-transparent bg-white/50 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" />Igrejas {numero(pontosIgrejas.length)}</button>
         </div>
@@ -186,7 +219,26 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
               </CircleMarker>
             );
           })}
-          {pontosIgrejas.map((igreja, indice) => <CircleMarker key={`igreja-${indice}`} center={[Number(igreja.latitude), Number(igreja.longitude)]} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: '#059669', fillOpacity: 1 }}><Popup><strong>⛪ {igreja.nome}</strong><br />{igreja.distrito}<br />{igreja.endereco || igreja.geoNomeExibicao || 'Endereço não informado'}<br />{ehAproximada(igreja) ? 'Coordenada aproximada' : 'Coordenada exata'}</Popup></CircleMarker>)}
+          {pontosIgrejas.map((igreja, indice) => {
+            const aproximada = ehAproximada(igreja);
+            const links = linksDoMapa(igreja);
+            return (
+              <Marker key={`igreja-${igreja.nome}-${indice}`} position={[Number(igreja.latitude), Number(igreja.longitude)]} icon={ICONE_IGREJA_NT} zIndexOffset={1000}>
+                <Popup minWidth={285} maxWidth={340}>
+                  <div className="space-y-1 text-sm leading-snug text-slate-700">
+                    <strong className="block pr-5 text-base text-slate-900">{igreja.nome}</strong>
+                    <strong className="block text-emerald-600">Igreja Adventista</strong>
+                    <span className="block">{igreja.distrito || 'Distrito não informado'}</span>
+                    <span className="block">{igreja.endereco || igreja.geoNomeExibicao || 'Endereço não informado'}</span>
+                    <span className="block text-xs font-semibold text-slate-600">Endereço {aproximada ? 'aproximado' : 'exato'}</span>
+                    {aproximada && <strong className="block text-xs text-amber-700">Coordenada aproximada. Confira a precisão no Google Maps.</strong>}
+                    <a href={links.osm} target="_blank" rel="noreferrer" className="block font-medium text-sky-600 hover:underline">Abrir igreja no OSM</a>
+                    <a href={links.google} target="_blank" rel="noreferrer" className="block font-medium text-sky-600 hover:underline">Abrir igreja no Google Maps</a>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
       <div className="flex flex-col gap-2 border-t border-emerald-100 bg-emerald-50/60 px-5 py-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between">
@@ -222,32 +274,34 @@ export default function FiltragemAvancadaNovoTempo() {
   }, []);
 
   const leads = useMemo(() => dados?.leads || [], [dados?.leads]);
-  const leadsDosDistritos = useMemo(() => {
-    if (!filtros.distritos.length) return leads;
-    return leads.filter((lead) => filtros.distritos.includes(lead.distrito || 'Não informado'));
-  }, [filtros.distritos, leads]);
   const opcoes = useMemo(() => ({
-    distritos: contar(leads, (x) => x.distrito), bairros: contar(leadsDosDistritos, (x) => x.bairro), materiais: contar(leads, (x) => x.material),
-    idades: contar(leads, faixaIdade), generos: contar(leads, (x) => x.genero), prioridades: contar(leads, (x) => PRIORIDADES[x.prioridade]?.[0] || x.prioridade),
-  }), [leads, leadsDosDistritos]);
-
-  const filtrados = useMemo(() => leads.filter((lead) => {
-    const textoBusca = normalizar(filtros.busca);
-    if (textoBusca && !normalizar([lead.nome, lead.email, lead.whatsapp, lead.distrito, lead.bairro, lead.material, lead.religiao, lead.id].join(' ')).includes(textoBusca)) return false;
-    if (filtros.distritos.length && !filtros.distritos.includes(lead.distrito || 'Não informado')) return false;
-    if (filtros.bairros.length && !filtros.bairros.includes(lead.bairro || 'Não informado')) return false;
-    if (filtros.materiais.length && !filtros.materiais.includes(lead.material || 'Não informado')) return false;
-    if (filtros.idades.length && !filtros.idades.includes(faixaIdade(lead))) return false;
-    if (filtros.generos.length && !filtros.generos.includes(lead.genero || 'Não informado')) return false;
-    if (filtros.prioridades.length && !filtros.prioridades.includes(PRIORIDADES[lead.prioridade]?.[0] || lead.prioridade)) return false;
-    if (filtros.whatsapp !== 'todos' && lead.temWhatsapp !== (filtros.whatsapp === 'sim')) return false;
-    if (filtros.email !== 'todos' && Boolean(lead.email) !== (filtros.email === 'sim')) return false;
-    if (filtros.estudos !== 'todos' && lead.estudoAtivo !== (filtros.estudos === 'sim')) return false;
-    if (filtros.vip !== 'todos' && lead.vipHistorico !== (filtros.vip === 'sim')) return false;
-    if (filtros.religiao !== 'todos' && normalizar(lead.religiao).includes('adventista') !== (filtros.religiao === 'adventista')) return false;
-    if (filtros.tempo !== 'todos' && faixaTempo(lead.diasSemContato) !== filtros.tempo) return false;
-    return true;
+    distritos: contar(aplicarFiltros(leads, filtros, 'distritos'), (x) => x.distrito),
+    bairros: contar(aplicarFiltros(leads, filtros, 'bairros'), (x) => x.bairro),
+    materiais: contar(aplicarFiltros(leads, filtros, 'materiais'), (x) => x.material),
+    idades: contar(aplicarFiltros(leads, filtros, 'idades'), faixaIdade),
+    generos: contar(aplicarFiltros(leads, filtros, 'generos'), (x) => x.genero),
+    prioridades: contar(aplicarFiltros(leads, filtros, 'prioridades'), (x) => PRIORIDADES[x.prioridade]?.[0] || x.prioridade),
   }), [filtros, leads]);
+
+  const facetasSelect = useMemo(() => {
+    const whatsapp = aplicarFiltros(leads, filtros, 'whatsapp');
+    const email = aplicarFiltros(leads, filtros, 'email');
+    const estudos = aplicarFiltros(leads, filtros, 'estudos');
+    const vip = aplicarFiltros(leads, filtros, 'vip');
+    const religiao = aplicarFiltros(leads, filtros, 'religiao');
+    const tempo = aplicarFiltros(leads, filtros, 'tempo');
+    const quantidade = (lista, teste) => lista.filter(teste).length;
+    return {
+      whatsapp: { total: whatsapp.length, opcoes: [{ valor: 'sim', rotulo: 'Com WhatsApp', quantidade: quantidade(whatsapp, (lead) => lead.temWhatsapp) }, { valor: 'nao', rotulo: 'Sem WhatsApp', quantidade: quantidade(whatsapp, (lead) => !lead.temWhatsapp) }] },
+      email: { total: email.length, opcoes: [{ valor: 'sim', rotulo: 'Com e-mail', quantidade: quantidade(email, (lead) => Boolean(lead.email)) }, { valor: 'nao', rotulo: 'Sem e-mail', quantidade: quantidade(email, (lead) => !lead.email) }] },
+      estudos: { total: estudos.length, opcoes: [{ valor: 'sim', rotulo: 'Ativo', quantidade: quantidade(estudos, (lead) => lead.estudoAtivo) }, { valor: 'nao', rotulo: 'Sem estudo ativo', quantidade: quantidade(estudos, (lead) => !lead.estudoAtivo) }] },
+      vip: { total: vip.length, opcoes: [{ valor: 'sim', rotulo: 'VIP', quantidade: quantidade(vip, (lead) => lead.vipHistorico) }, { valor: 'nao', rotulo: 'Não VIP', quantidade: quantidade(vip, (lead) => !lead.vipHistorico) }] },
+      religiao: { total: religiao.length, opcoes: [{ valor: 'adventista', rotulo: 'Adventista', quantidade: quantidade(religiao, (lead) => normalizar(lead.religiao).includes('adventista')) }, { valor: 'outra', rotulo: 'Outras', quantidade: quantidade(religiao, (lead) => !normalizar(lead.religiao).includes('adventista')) }] },
+      tempo: { total: tempo.length, opcoes: ['Até 3 meses', '3 meses a 1 ano', '1 a 2 anos', '2 a 5 anos', '5+ anos', 'Não informado'].map((faixa) => ({ valor: faixa, rotulo: faixa, quantidade: quantidade(tempo, (lead) => faixaTempo(lead.diasSemContato) === faixa) })) },
+    };
+  }, [filtros, leads]);
+
+  const filtrados = useMemo(() => aplicarFiltros(leads, filtros), [filtros, leads]);
 
   const igrejasFiltradas = useMemo(() => (dados?.igrejas || []).filter((igreja) => !filtros.distritos.length || filtros.distritos.some((nome) => normalizar(nome) === normalizar(igreja.distrito))), [dados?.igrejas, filtros.distritos]);
   const alterar = (campo, valor) => {
@@ -277,7 +331,14 @@ export default function FiltragemAvancadaNovoTempo() {
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Buscar</span><span className="relative block"><svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input value={filtros.busca} onChange={(e) => alterar('busca', e.target.value)} className="input-field w-full" style={{ paddingLeft: '3.5rem' }} placeholder="Nome, e-mail, distrito, bairro, material ou WhatsApp" /></span></label>
           </div>
           <div className="grid gap-4 lg:grid-cols-2"><PainelOpcoes titulo="Distritos" pesquisavel opcoes={opcoes.distritos} selecionados={filtros.distritos} onChange={(v) => alterar('distritos', v)}/><PainelOpcoes key={`bairros-${filtros.distritos.join('|')}`} titulo="Bairros" pesquisavel opcoes={opcoes.bairros} selecionados={filtros.bairros} onChange={(v) => alterar('bairros', v)}/><PainelOpcoes titulo="Materiais" pesquisavel opcoes={opcoes.materiais} selecionados={filtros.materiais} onChange={(v) => alterar('materiais', v)}/><div className="grid gap-4 sm:grid-cols-2"><PainelOpcoes titulo="Prioridade" opcoes={opcoes.prioridades} selecionados={filtros.prioridades} onChange={(v) => alterar('prioridades', v)}/><PainelOpcoes titulo="Idade" opcoes={opcoes.idades} selecionados={filtros.idades} onChange={(v) => alterar('idades', v)}/><PainelOpcoes titulo="Gênero" opcoes={opcoes.generos} selecionados={filtros.generos} onChange={(v) => alterar('generos', v)}/></div></div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"><SelectFiltro titulo="WhatsApp" valor={filtros.whatsapp} onChange={(v) => alterar('whatsapp', v)} opcoes={[{valor:'sim',rotulo:'Com WhatsApp'},{valor:'nao',rotulo:'Sem WhatsApp'}]}/><SelectFiltro titulo="E-mail" valor={filtros.email} onChange={(v) => alterar('email', v)} opcoes={[{valor:'sim',rotulo:'Com e-mail'},{valor:'nao',rotulo:'Sem e-mail'}]}/><SelectFiltro titulo="Estudos" valor={filtros.estudos} onChange={(v) => alterar('estudos', v)} opcoes={[{valor:'sim',rotulo:'Ativo'},{valor:'nao',rotulo:'Sem estudo ativo'}]}/><SelectFiltro titulo="VIP" valor={filtros.vip} onChange={(v) => alterar('vip', v)} opcoes={[{valor:'sim',rotulo:'VIP'},{valor:'nao',rotulo:'Não VIP'}]}/><SelectFiltro titulo="Religião" valor={filtros.religiao} onChange={(v) => alterar('religiao', v)} opcoes={[{valor:'adventista',rotulo:'Adventista'},{valor:'outra',rotulo:'Outras'}]}/><SelectFiltro titulo="Tempo" valor={filtros.tempo} onChange={(v) => alterar('tempo', v)} opcoes={['Até 3 meses','3 meses a 1 ano','1 a 2 anos','2 a 5 anos','5+ anos','Não informado'].map((x)=>({valor:x,rotulo:x}))}/></div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <SelectFiltro titulo="WhatsApp" valor={filtros.whatsapp} onChange={(v) => alterar('whatsapp', v)} {...facetasSelect.whatsapp}/>
+            <SelectFiltro titulo="E-mail" valor={filtros.email} onChange={(v) => alterar('email', v)} {...facetasSelect.email}/>
+            <SelectFiltro titulo="Estudos" valor={filtros.estudos} onChange={(v) => alterar('estudos', v)} {...facetasSelect.estudos}/>
+            <SelectFiltro titulo="VIP" valor={filtros.vip} onChange={(v) => alterar('vip', v)} {...facetasSelect.vip}/>
+            <SelectFiltro titulo="Religião" valor={filtros.religiao} onChange={(v) => alterar('religiao', v)} {...facetasSelect.religiao}/>
+            <SelectFiltro titulo="Tempo" valor={filtros.tempo} onChange={(v) => alterar('tempo', v)} {...facetasSelect.tempo}/>
+          </div>
         </section>
         <Mapa leads={filtrados} igrejas={igrejasFiltradas} onSelecionarLead={setLeadSelecionado}/>
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">

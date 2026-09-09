@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { exportarLeadPdf, resumoOperacionalLead } from '../lib/pdfNovoTempo';
+import { ICONE_IGREJA_NT } from '../lib/iconesMapaNovoTempo';
 
 const PRIORIDADES = {
   Hot: ['Quente', '#dc2626'],
@@ -17,6 +18,10 @@ function coordenadasValidas(item) {
   const latitude = Number(item?.latitude);
   const longitude = Number(item?.longitude);
   return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
+
+function ehAproximada(item) {
+  return /aproxim|fallback/i.test(`${item?.geoPrecisao || ''} ${item?.geoOrigem || ''}`);
 }
 
 function dataCurta(valor) {
@@ -135,7 +140,7 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
                     <MapContainer center={centro} zoom={14} scrollWheelZoom={false} className="h-full w-full">
                       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       <CircleMarker center={centro} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: corPrioridade, fillOpacity: 1 }}><Popup><strong>{lead.nome}</strong><br />{prioridade}</Popup></CircleMarker>
-                      {igrejasComLocalizacao.map((igreja, indice) => <CircleMarker key={`${igreja.nome}-${indice}`} center={[Number(igreja.latitude), Number(igreja.longitude)]} radius={7} pathOptions={{ color: '#fff', weight: 2, fillColor: '#059669', fillOpacity: 1 }}><Popup><strong>{igreja.nome}</strong><br />{igreja.endereco || 'Endereço não informado'}</Popup></CircleMarker>)}
+                      {igrejasComLocalizacao.map((igreja, indice) => <Marker key={`${igreja.nome}-${indice}`} position={[Number(igreja.latitude), Number(igreja.longitude)]} icon={ICONE_IGREJA_NT} zIndexOffset={1000}><Popup><strong>{igreja.nome}</strong><br />{igreja.distrito}<br />{igreja.endereco || igreja.geoNomeExibicao || 'Endereço não informado'}<br />{ehAproximada(igreja) ? 'Coordenada aproximada' : 'Coordenada exata'}</Popup></Marker>)}
                     </MapContainer>
                   ) : <div className="grid h-full place-items-center bg-slate-50 px-6 text-center text-sm text-slate-500">Este lead não possui coordenadas válidas para exibição no mapa.</div>}
                 </div>
