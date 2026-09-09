@@ -39,6 +39,25 @@ const normalizarPesquisa = (valor) => String(valor || '')
   .toLocaleLowerCase('pt-BR')
   .trim();
 
+const CLASSIFICACOES = {
+  hot: { rotulo: 'Quente', classe: 'bg-red-100 text-red-700 ring-red-200' },
+  warm: { rotulo: 'Potencial', classe: 'bg-orange-100 text-orange-700 ring-orange-200' },
+  cool: { rotulo: 'Morno', classe: 'bg-blue-100 text-blue-700 ring-blue-200' },
+  cold: { rotulo: 'Frio', classe: 'bg-slate-200 text-slate-700 ring-slate-300' },
+  quente: { rotulo: 'Quente', classe: 'bg-red-100 text-red-700 ring-red-200' },
+  potencial: { rotulo: 'Potencial', classe: 'bg-orange-100 text-orange-700 ring-orange-200' },
+  morno: { rotulo: 'Morno', classe: 'bg-blue-100 text-blue-700 ring-blue-200' },
+  frio: { rotulo: 'Frio', classe: 'bg-slate-200 text-slate-700 ring-slate-300' },
+};
+
+const classificacaoDoLead = (lead) => {
+  const chave = normalizarPesquisa(lead?.prioridade);
+  return CLASSIFICACOES[chave] || {
+    rotulo: lead?.prioridadeRotulo || lead?.prioridade || 'Sem classificação',
+    classe: 'bg-gray-100 text-gray-600 ring-gray-200',
+  };
+};
+
 const dataHora = (valor) => {
   if (!valor) return 'Não informado';
   const data = new Date(valor);
@@ -213,12 +232,17 @@ function Campo({ rotulo, valor }) {
 
 function LeadCard({ lead }) {
   const camposExtras = Object.entries(lead.camposAdicionais || {});
+  const classificacao = classificacaoDoLead(lead);
+  const endereco = lead.endereco || lead.geoNomeExibicao || [lead.bairro, lead.cidade].filter(Boolean).join(' - ');
   return (
     <article className="card p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-xl">
       <div className="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-bold text-[#1A3A6B]">{lead.nome}</h2>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${classificacao.classe}`}>
+              {classificacao.rotulo}
+            </span>
             {lead.vipHistorico && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">VIP histórico</span>}
           </div>
           <p className="mt-1 text-sm text-gray-400">ID {lead.id || 'não informado'}</p>
@@ -239,10 +263,10 @@ function LeadCard({ lead }) {
         <Campo rotulo="E-mail" valor={lead.email || 'Não informado'} />
         <Campo rotulo="Status" valor={lead.status || 'Não informado'} />
         <Campo rotulo="Origem" valor={lead.origem || 'Não informada'} />
-        <Campo rotulo="Prioridade" valor={lead.prioridade || 'Não informada'} />
+        <Campo rotulo="Classificação" valor={classificacao.rotulo} />
         <Campo rotulo="Pontuação" valor={lead.pontuacao ?? 'Não informada'} />
         <Campo rotulo="Estudo ativo" valor={lead.estudoAtivo ? 'Sim' : 'Não'} />
-        <Campo rotulo="Endereço" valor={lead.endereco || 'Não informado'} />
+        <Campo rotulo="Endereço" valor={endereco || 'Não informado'} />
         <Campo rotulo="Material" valor={lead.material || 'Não informado'} />
         <Campo rotulo="Nascimento" valor={lead.dataNascimento || 'Não informado'} />
         <Campo rotulo="Criado em" valor={dataHora(lead.criadoEm)} />
