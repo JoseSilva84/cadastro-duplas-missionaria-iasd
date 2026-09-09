@@ -8,6 +8,11 @@ router.get('/', autenticar, EstudoBiblicoController.listar);
 router.get('/:id', autenticar, EstudoBiblicoController.buscarPorId);
 router.post('/', autenticar, validarEstudoBiblico, EstudoBiblicoController.criar);
 router.put('/:id', autenticar, validarEstudoBiblico, EstudoBiblicoController.atualizar);
-router.delete('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), EstudoBiblicoController.remover);
+router.delete(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  EstudoBiblicoController.remover
+);
 
 module.exports = router;

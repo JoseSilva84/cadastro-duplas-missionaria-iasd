@@ -26,7 +26,7 @@ router.post(
 router.put(
   '/:id',
   autenticar,
-  bloquear(PERFIS.DUPLA_MISSIONARIA, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  bloquear(PERFIS.DUPLA_MISSIONARIA),
   validarDupla,
   DuplaController.atualizar
 );

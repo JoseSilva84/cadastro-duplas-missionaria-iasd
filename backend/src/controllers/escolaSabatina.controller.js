@@ -41,6 +41,16 @@ const EscolaSabatinaController = {
     }
   },
 
+  async atualizar(req, res) {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) return res.status(400).json({ erros: erros.array() });
+    try {
+      res.json(await EscolaSabatinaService.atualizar(req.params.id, req.body, req.usuario));
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar Escola Sabatina.' });
+    }
+  },
+
   async remover(req, res) {
     try {
       await EscolaSabatinaService.remover(req.params.id, req.usuario);

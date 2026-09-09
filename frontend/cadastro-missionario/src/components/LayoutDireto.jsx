@@ -111,6 +111,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },
     { to: '/direto/cadastro/classe-biblica', label: 'Classe Bíblica', icon: 'CB' },
     { to: '/direto/cadastro/escola-sabatina', label: 'Escola Sabatina', icon: 'ES' },
+    { to: '/direto/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' },
     { to: '/direto/cadastro/liderancas?tipo=diretor_mp', label: 'Diretor Minist. Pessoal', icon: 'MP' },
     { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
     { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
@@ -141,6 +142,7 @@ export default function LayoutDireto() {
       '/direto/cadastro/ponto-estudo',
       '/direto/cadastro/classe-biblica',
       '/direto/cadastro/escola-sabatina',
+      '/direto/cadastro/mapa-igreja',
       '/direto/cadastro/liderancas?tipo=diretor_mp',
       ].includes(item.to))
       : cadastroItems;

@@ -4,6 +4,7 @@ import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import EChart from '../components/EChart';
 import MapaIgrejaResumo, { somarMapasIgreja } from '../components/MapaIgrejaResumo';
+import { toast } from '../lib/toast';
 
 const cores = ['#1A3A6B', '#0d9488', '#7c3aed', '#ea580c', '#dc2626', '#C9963A'];
 
@@ -33,7 +34,7 @@ const LinhaLideranca = ({ label, valor }) => (
   </div>
 );
 
-const MapaCard = ({ mapa, onEditar }) => {
+const MapaCard = ({ mapa, onEditar, onExcluir, excluindo }) => {
   const igreja = mapa.igreja || {};
   const indicadores = [
     ['Pequeno Grupo', mapa.quantidadePequenosGrupos, '#C9963A'],
@@ -57,9 +58,12 @@ const MapaCard = ({ mapa, onEditar }) => {
             {igreja.distrito?.nome || 'Sem distrito'} · {igreja.distrito?.regiao?.nome || 'Sem região'}
           </p>
         </div>
-        <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => onEditar(mapa)}>
-          Editar cadastro
-        </button>
+        <div className="flex gap-2">
+          <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => onEditar(mapa)}>Editar cadastro</button>
+          <button type="button" className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" disabled={excluindo} onClick={() => onExcluir(mapa)}>
+            {excluindo ? 'Excluindo...' : 'Excluir'}
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -115,6 +119,7 @@ export default function MapaIgreja() {
   const [igrejas, setIgrejas] = useState([]);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [excluindoId, setExcluindoId] = useState(null);
 
   useEffect(() => {
     Promise.all([api.get('/mapa-igreja'), api.get('/igrejas')]).then(([mapasRes, igrejasRes]) => {
@@ -141,6 +146,20 @@ export default function MapaIgreja() {
   }), [mapas]);
 
   const resumoAnalitico = useMemo(() => somarMapasIgreja(mapas), [mapas]);
+
+  const excluirMapa = async (mapa) => {
+    if (!window.confirm(`Excluir o Mapa da Igreja de ${mapa.igreja?.nome || 'esta igreja'}?`)) return;
+    setExcluindoId(mapa.id);
+    try {
+      await api.delete(`/mapa-igreja/${mapa.id}`);
+      setMapas((atuais) => atuais.filter((item) => item.id !== mapa.id));
+      toast.success('Mapa da Igreja excluído.');
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao excluir Mapa da Igreja.');
+    } finally {
+      setExcluindoId(null);
+    }
+  };
 
   const indicadoresOption = useMemo(() => ({
     color: ['#1A3A6B'],
@@ -263,7 +282,7 @@ export default function MapaIgreja() {
 
       <div className="mt-5 space-y-5">
         {filtrados.map((mapa) => (
-          <MapaCard key={mapa.id} mapa={mapa} onEditar={() => navigate(`${prefix}/cadastro/mapa-igreja?igrejaId=${mapa.igrejaId}`)} />
+          <MapaCard key={mapa.id} mapa={mapa} excluindo={excluindoId === mapa.id} onExcluir={excluirMapa} onEditar={() => navigate(`${prefix}/cadastro/mapa-igreja?igrejaId=${mapa.igrejaId}`)} />
         ))}
         {filtrados.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-400">

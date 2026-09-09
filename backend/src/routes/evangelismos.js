@@ -8,6 +8,11 @@ router.get('/', autenticar, EvangelismoController.listar);
 router.get('/:id', autenticar, EvangelismoController.buscarPorId);
 router.post('/', autenticar, validarEvangelismo, EvangelismoController.criar);
 router.put('/:id', autenticar, validarEvangelismo, EvangelismoController.atualizar);
-router.delete('/:id', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), EvangelismoController.remover);
+router.delete(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  EvangelismoController.remover
+);
 
 module.exports = router;

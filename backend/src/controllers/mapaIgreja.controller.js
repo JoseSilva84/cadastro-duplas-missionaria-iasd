@@ -57,6 +57,15 @@ const MapaIgrejaController = {
       responderErro(res, err, 'Erro ao salvar mapa da igreja.');
     }
   },
+
+  async remover(req, res) {
+    try {
+      await MapaIgrejaService.remover(req.usuario, req.params.id);
+      res.json({ mensagem: 'Mapa da igreja removido com sucesso.' });
+    } catch (err) {
+      responderErro(res, err, 'Erro ao remover mapa da igreja.');
+    }
+  },
 };
 
 module.exports = { MapaIgrejaController, validarMapaIgreja, validarBase };

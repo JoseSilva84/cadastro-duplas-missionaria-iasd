@@ -26,6 +26,13 @@ const MapaIgrejaModel = {
     });
   },
 
+  buscarPorId(id) {
+    return prisma.mapaIgreja.findUnique({
+      where: { id: Number(id) },
+      include: includeMapa,
+    });
+  },
+
   buscarIgreja(igrejaId) {
     return prisma.igreja.findUnique({
       where: { id: Number(igrejaId) },
@@ -43,6 +50,10 @@ const MapaIgrejaModel = {
       update: data,
       include: includeMapa,
     });
+  },
+
+  remover(id) {
+    return prisma.mapaIgreja.delete({ where: { id: Number(id) } });
   },
 };
 

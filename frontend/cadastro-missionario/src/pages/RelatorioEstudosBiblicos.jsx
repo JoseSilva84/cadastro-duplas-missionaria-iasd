@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
-import { ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
+import { PERFIS, ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import EChart from '../components/EChart';
 import BackButton from '../components/BackButton';
 
@@ -270,7 +270,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
-  const podeExcluir = ehAdmin(usuario) && !ehSomenteLeitura(usuario);
+  const podeExcluir = !ehSomenteLeitura(usuario) && (
+    ehAdmin(usuario) || usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA
+  );
   const isPonto = tipoRelatorio === 'PONTO';
   const isClasse = tipoRelatorio === 'CLASSE';
   const isTodos = tipoRelatorio === 'TODOS';

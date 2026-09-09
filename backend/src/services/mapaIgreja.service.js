@@ -90,6 +90,13 @@ const MapaIgrejaService = {
 
     return MapaIgrejaModel.salvar(igrejaId, payload);
   },
+
+  async remover(usuario, id) {
+    const mapa = await MapaIgrejaModel.buscarPorId(id);
+    if (!mapa) throw { status: 404, mensagem: 'Mapa da igreja nao encontrado.' };
+    await validarIgreja(usuario, mapa.igrejaId);
+    return MapaIgrejaModel.remover(id);
+  },
 };
 
 module.exports = MapaIgrejaService;

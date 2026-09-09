@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { toast } from '../lib/toast';
 import BackButton from '../components/BackButton';
+import { ehAdmin, useAuth } from '../contexts/AuthContext';
 
 const estadoInicial = {
   distritoId: '',
@@ -43,6 +44,7 @@ const nomeDupla = (dupla) => `${dupla.liderNome || 'Lider'} + ${dupla.membro2Nom
 export default function CadastroEscolaSabatina() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
 
   const [form, setForm] = useState(estadoInicial);
@@ -54,14 +56,19 @@ export default function CadastroEscolaSabatina() {
   const [pequenosGruposEditado, setPequenosGruposEditado] = useState(false);
   const [carregandoDuplas, setCarregandoDuplas] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [cadastros, setCadastros] = useState([]);
+  const [editandoId, setEditandoId] = useState(null);
+  const [excluindoId, setExcluindoId] = useState(null);
 
   useEffect(() => {
     Promise.all([
       api.get('/distritos'),
       api.get('/igrejas'),
-    ]).then(([resDistritos, resIgrejas]) => {
+      api.get('/escola-sabatina'),
+    ]).then(([resDistritos, resIgrejas, resCadastros]) => {
       setDistritos(Array.isArray(resDistritos.data) ? resDistritos.data : []);
       setIgrejas(Array.isArray(resIgrejas.data) ? resIgrejas.data : []);
+      setCadastros(Array.isArray(resCadastros.data) ? resCadastros.data : []);
     });
   }, []);
 
@@ -77,14 +84,9 @@ export default function CadastroEscolaSabatina() {
     api.get(`/duplas?distritoId=${form.distritoId}`)
       .then((res) => {
         setDuplas(Array.isArray(res.data) ? res.data : []);
-        setDuplaIds([]);
       })
       .finally(() => setCarregandoDuplas(false));
   }, [form.distritoId]);
-
-  useEffect(() => {
-    setDuplaIds([]);
-  }, [form.igrejaId]);
 
   const igrejasDoDistrito = useMemo(() => (
     igrejas.filter((igreja) => String(igreja.distritoId) === String(form.distritoId))
@@ -109,6 +111,9 @@ export default function CadastroEscolaSabatina() {
   ), [duplaIds, duplasDaIgreja]);
 
   const quantidadePequenosGruposCalculada = duplasSelecionadas.filter((dupla) => dupla.tipoProjeto === 'PEQUENOS_GRUPOS').length;
+  const podeAlterarCadastro = (cadastro) => ehAdmin(usuario)
+    || !cadastro.criadoPorId
+    || Number(cadastro.criadoPorId) === Number(usuario?.id);
 
   useEffect(() => {
     setForm((prev) => {
@@ -121,6 +126,7 @@ export default function CadastroEscolaSabatina() {
     if (campo === 'distritoId' || campo === 'igrejaId') {
       setPequenosGruposEditado(false);
     }
+    if (campo === 'distritoId' || campo === 'igrejaId') setDuplaIds([]);
     setForm((prev) => ({
       ...prev,
       [campo]: valor,
@@ -144,6 +150,41 @@ export default function CadastroEscolaSabatina() {
     setDuplaIds([]);
     setBusca('');
     setPequenosGruposEditado(false);
+    setEditandoId(null);
+  };
+
+  const editarCadastro = (cadastro) => {
+    setEditandoId(cadastro.id);
+    setForm({
+      distritoId: String(cadastro.distritoId),
+      igrejaId: String(cadastro.igrejaId),
+      unidadesAcao: String(cadastro.unidadesAcao ?? ''),
+      classeProfessores: String(cadastro.classeProfessores ?? ''),
+      classeInteressados: String(cadastro.classeInteressados ?? ''),
+      visitasDiretores: String(cadastro.visitasDiretores ?? ''),
+      visitasProfessores: String(cadastro.visitasProfessores ?? ''),
+      visitasAlunos: String(cadastro.visitasAlunos ?? ''),
+      quantidadePequenosGrupos: String(cadastro.quantidadePequenosGrupos ?? ''),
+      observacoes: cadastro.observacoes || '',
+    });
+    setDuplaIds((cadastro.duplas || []).map((item) => item.duplaId || item.dupla?.id).filter(Boolean));
+    setPequenosGruposEditado(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const excluirCadastro = async (cadastro) => {
+    if (!window.confirm(`Excluir o cadastro da Escola Sabatina de ${cadastro.igreja?.nome || 'esta igreja'}?`)) return;
+    setExcluindoId(cadastro.id);
+    try {
+      await api.delete(`/escola-sabatina/${cadastro.id}`);
+      setCadastros((atuais) => atuais.filter((item) => item.id !== cadastro.id));
+      if (editandoId === cadastro.id) limpar();
+      toast.success('Cadastro da Escola Sabatina excluído.');
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao excluir cadastro.');
+    } finally {
+      setExcluindoId(null);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -155,14 +196,19 @@ export default function CadastroEscolaSabatina() {
 
     setEnviando(true);
     try {
-      await api.post('/escola-sabatina', {
+      const payload = {
         ...form,
         duplaIds,
-      });
+      };
+      const { data } = editandoId
+        ? await api.put(`/escola-sabatina/${editandoId}`, payload)
+        : await api.post('/escola-sabatina', payload);
 
-      toast.success(`Escola Sabatina cadastrada. ${form.quantidadePequenosGrupos || 0} Pequeno(s) Grupo(s) informado(s).`);
+      setCadastros((atuais) => editandoId
+        ? atuais.map((item) => item.id === data.id ? data : item)
+        : [data, ...atuais]);
+      toast.success(editandoId ? 'Cadastro da Escola Sabatina atualizado.' : `Escola Sabatina cadastrada. ${form.quantidadePequenosGrupos || 0} Pequeno(s) Grupo(s) informado(s).`);
       limpar();
-      setTimeout(() => navigate(isDireto ? '/direto/relatorios/dashboard-associacao' : '/relatorios/dashboard-associacao'), 600);
     } catch (err) {
       const erros = err.response?.data?.erros;
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : err.response?.data?.erro || 'Erro ao salvar Escola Sabatina.');
@@ -326,6 +372,30 @@ export default function CadastroEscolaSabatina() {
                 </div>
               )}
             </Secao>
+
+            <Secao numero="4" titulo="Cadastros realizados">
+              <div className="space-y-3">
+                {cadastros.map((cadastro) => (
+                  <article key={cadastro.id} className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-bold text-[#1A3A6B]">{cadastro.igreja?.nome || 'Igreja'}</p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        {cadastro.distrito?.nome || 'Distrito'} · {(cadastro.duplas || []).length} dupla(s) · {cadastro.quantidadePequenosGrupos || 0} Pequeno(s) Grupo(s)
+                      </p>
+                    </div>
+                    {podeAlterarCadastro(cadastro) && (
+                      <div className="flex gap-2">
+                        <button type="button" className="btn-outline px-3 py-2 text-xs" onClick={() => editarCadastro(cadastro)}>Editar</button>
+                        <button type="button" className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50" disabled={excluindoId === cadastro.id} onClick={() => excluirCadastro(cadastro)}>
+                          {excluindoId === cadastro.id ? 'Excluindo...' : 'Excluir'}
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+                {!cadastros.length && <p className="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-400">Nenhum cadastro realizado neste escopo.</p>}
+              </div>
+            </Secao>
           </div>
         </div>
 
@@ -333,7 +403,7 @@ export default function CadastroEscolaSabatina() {
           <button type="button" onClick={() => navigate(-1)} className="btn-outline">Cancelar</button>
           <button type="button" onClick={limpar} className="btn-outline">Limpar</button>
           <button type="submit" disabled={enviando || duplaIds.length === 0} className="btn-primary">
-            {enviando ? 'Salvando...' : 'Salvar Escola Sabatina'}
+            {enviando ? 'Salvando...' : editandoId ? 'Atualizar Escola Sabatina' : 'Salvar Escola Sabatina'}
           </button>
         </div>
       </form>

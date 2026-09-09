@@ -1,5 +1,6 @@
 const EscolaSabatinaModel = require('../models/escolaSabatina.model');
 const { montarEscopo, combinar, validarIgreja } = require('./escopo.service');
+const { PERFIS } = require('../middlewares/auth');
 
 const inteiro = (valor) => Math.max(Number(valor || 0), 0);
 
@@ -26,6 +27,41 @@ const EscolaSabatinaService = {
     }
     await validarIgreja(usuario, cadastro.igrejaId);
     return cadastro;
+  },
+
+  async atualizar(id, data, usuario) {
+    const cadastro = await this.buscarPorId(id, usuario);
+    if (usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA
+      && cadastro.criadoPorId && Number(cadastro.criadoPorId) !== Number(usuario.id)) {
+      throw { status: 403, mensagem: 'Acesso negado: este cadastro foi realizado por outro usuário.' };
+    }
+
+    const distritoId = Number(data.distritoId);
+    const igrejaId = Number(data.igrejaId);
+    const duplaIds = [...new Set((data.duplaIds || []).map(Number).filter(Boolean))];
+    const igreja = await EscolaSabatinaModel.buscarIgreja(igrejaId);
+    if (!igreja || igreja.distritoId !== distritoId) {
+      throw { status: 400, mensagem: 'A igreja selecionada nao pertence ao distrito informado.' };
+    }
+    await validarIgreja(usuario, igrejaId);
+    const duplas = await EscolaSabatinaModel.buscarDuplas(duplaIds);
+    if (!duplaIds.length || duplas.length !== duplaIds.length
+      || duplas.some((dupla) => dupla.distritoId !== distritoId || dupla.igrejaId !== igrejaId)) {
+      throw { status: 400, mensagem: 'Selecione apenas duplas da igreja e distrito informados.' };
+    }
+
+    return EscolaSabatinaModel.atualizar(id, {
+      distritoId,
+      igrejaId,
+      unidadesAcao: inteiro(data.unidadesAcao),
+      classeProfessores: inteiro(data.classeProfessores),
+      classeInteressados: inteiro(data.classeInteressados),
+      visitasDiretores: inteiro(data.visitasDiretores),
+      visitasProfessores: inteiro(data.visitasProfessores),
+      visitasAlunos: inteiro(data.visitasAlunos),
+      quantidadePequenosGrupos: inteiro(data.quantidadePequenosGrupos),
+      observacoes: data.observacoes || null,
+    }, duplaIds);
   },
 
   async criar(data, usuario) {
@@ -73,7 +109,11 @@ const EscolaSabatinaService = {
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
+    const cadastro = await this.buscarPorId(id, usuario);
+    if (usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA
+      && cadastro.criadoPorId && Number(cadastro.criadoPorId) !== Number(usuario.id)) {
+      throw { status: 403, mensagem: 'Acesso negado: este cadastro foi realizado por outro usuário.' };
+    }
     return EscolaSabatinaModel.remover(id);
   },
 };

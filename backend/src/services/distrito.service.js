@@ -1,5 +1,18 @@
 const DistritoModel = require('../models/distrito.model');
 const { montarEscopo, combinar, validarDistrito, validarRegiao } = require('./escopo.service');
+const { PERFIS } = require('../middlewares/auth');
+
+const limitarDetalhesAoDiretor = (distrito, usuario, igrejaId) => {
+  if (!distrito || usuario?.perfil !== PERFIS.DIRETOR_MISSIONARIO_IGREJA) return distrito;
+  const id = Number(igrejaId || usuario.igrejaId);
+  const duplas = (distrito.duplas || []).filter((dupla) => Number(dupla.igrejaId || dupla.igreja?.id) === id);
+  return {
+    ...distrito,
+    igrejas: (distrito.igrejas || []).filter((igreja) => Number(igreja.id) === id),
+    duplas,
+    _count: { ...(distrito._count || {}), duplas: duplas.length },
+  };
+};
 
 const DistritoService = {
   async listar(usuario, query = {}) {
@@ -10,7 +23,8 @@ const DistritoService = {
     if (regiaoId) condicoes.push({ regiaoId: Number(regiaoId) });
     if (nome) condicoes.push({ nome: { contains: nome, mode: 'insensitive' } });
 
-    return DistritoModel.findAll(combinar(...condicoes));
+    const distritos = await DistritoModel.findAll(combinar(...condicoes));
+    return distritos.map((distrito) => limitarDetalhesAoDiretor(distrito, usuario, escopo.igrejaId));
   },
 
   async buscarPorId(id, usuario) {
@@ -19,7 +33,8 @@ const DistritoService = {
     if (!distrito) {
       throw { status: 404, mensagem: 'Distrito não encontrado.' };
     }
-    return distrito;
+    const escopo = await montarEscopo(usuario);
+    return limitarDetalhesAoDiretor(distrito, usuario, escopo.igrejaId);
   },
 
   async criar(data, usuario) {

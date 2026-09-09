@@ -20,5 +20,11 @@ router.post(
   validarMapaIgreja,
   MapaIgrejaController.salvar
 );
+router.delete(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  MapaIgrejaController.remover
+);
 
 module.exports = router;

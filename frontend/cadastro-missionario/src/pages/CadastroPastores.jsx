@@ -5,6 +5,7 @@ import { toast } from '../lib/toast';
 import AvatarUpload from '../components/AvatarUpload';
 import BackButton from '../components/BackButton';
 import { FotoService } from '../foto.service';
+import { PERFIS, useAuth } from '../contexts/AuthContext';
 
 const Campo = ({ label, obrigatorio, children, icone }) => (
   <div className="group/campo">
@@ -83,11 +84,13 @@ const CARGO_POR_TIPO = {
 export default function CadastroPastores() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
+  const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const tipoUrl = new URLSearchParams(location.search).get('tipo');
-  const tiposDisponiveis = TIPOS;
+  const tiposDisponiveis = isDiretorMissionario ? TIPOS.filter((item) => item.value === 'diretor_mp') : TIPOS;
 
-  const [tipo, setTipo] = useState('regional');
+  const [tipo, setTipo] = useState(isDiretorMissionario ? 'diretor_mp' : 'regional');
   const [foto, setFoto] = useState('');
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState(CARGO_POR_TIPO.regional);
@@ -103,15 +106,53 @@ export default function CadastroPastores() {
   const [igrejas, setIgrejas] = useState([]);
   const [enviando, setEnviando] = useState(false);
 
+  // Zera os selects ao mudar o tipo
+  const handleTipo = (t) => {
+    const proximoTipo = t;
+    setTipo(proximoTipo);
+    setRegiaoId('');
+    setDistritoId('');
+    setIgrejaId('');
+    setCargo(CARGO_POR_TIPO[proximoTipo]);
+    setFoto('');
+    setNome('');
+    setEndereco('');
+    setTelefone('');
+    setDataNascimento('');
+  };
+
   // Carrega regiões ao montar
   useEffect(() => {
+    if (isDiretorMissionario) {
+      Promise.all([api.get('/distritos'), api.get('/igrejas')]).then(async ([resDistritos, resIgrejas]) => {
+        const distritosPermitidos = Array.isArray(resDistritos.data) ? resDistritos.data : [];
+        const igrejasPermitidas = Array.isArray(resIgrejas.data) ? resIgrejas.data : [];
+        const distrito = distritosPermitidos[0];
+        const igreja = igrejasPermitidas[0];
+        setRegioes(distrito?.regiao ? [distrito.regiao] : []);
+        setDistritos(distritosPermitidos);
+        setIgrejas(igrejasPermitidas);
+        setRegiaoId(distrito?.regiaoId ? String(distrito.regiaoId) : '');
+        setDistritoId(distrito?.id ? String(distrito.id) : '');
+        setIgrejaId(igreja?.id ? String(igreja.id) : '');
+        if (igreja) {
+          setNome(igreja.nomeDiretorMinisterioPessoal || usuario?.nome || '');
+          setTelefone(igreja.whatsappDiretorMinisterioPessoal || '');
+          setEndereco(igreja.enderecoDiretorMinisterioPessoal || '');
+          setDataNascimento(igreja.dataNascimentoDiretorMinisterioPessoal?.slice(0, 10) || '');
+          setFoto(await FotoService.resolverFotoParaPreview(igreja.fotoDiretorMinisterioPessoal));
+        }
+      }).catch(() => {});
+      return;
+    }
     api.get('/regioes').then((r) => setRegioes(Array.isArray(r.data) ? r.data : [])).catch(() => {});
-  }, []);
+  }, [isDiretorMissionario, usuario?.nome]);
 
   useEffect(() => {
-    if (!tipoUrl || !CARGO_POR_TIPO[tipoUrl]) return;
-    handleTipo(tipoUrl);
-  }, [tipoUrl]);
+    const tipoPermitido = isDiretorMissionario ? 'diretor_mp' : tipoUrl;
+    if (!tipoPermitido || !CARGO_POR_TIPO[tipoPermitido]) return;
+    handleTipo(tipoPermitido);
+  }, [isDiretorMissionario, tipoUrl]);
 
   // Carrega distritos quando região muda
   useEffect(() => {
@@ -128,21 +169,6 @@ export default function CadastroPastores() {
       .then((r) => setIgrejas(r.data.igrejas || []))
       .catch(() => {});
   }, [distritoId]);
-
-  // Zera os selects ao mudar o tipo
-  const handleTipo = (t) => {
-    const proximoTipo = t;
-    setTipo(proximoTipo);
-    setRegiaoId('');
-    setDistritoId('');
-    setIgrejaId('');
-    setCargo(CARGO_POR_TIPO[proximoTipo]);
-    setFoto('');
-    setNome('');
-    setEndereco('');
-    setTelefone('');
-    setDataNascimento('');
-  };
 
   const cargoAtual = CARGO_POR_TIPO[tipo];
 
@@ -213,9 +239,11 @@ export default function CadastroPastores() {
       setTelefone('');
       setDataNascimento('');
       setCargo(cargoAtual);
-      setRegiaoId('');
-      setDistritoId('');
-      setIgrejaId('');
+      if (!isDiretorMissionario) {
+        setRegiaoId('');
+        setDistritoId('');
+        setIgrejaId('');
+      }
     } catch (err) {
       toast.error(err.response?.data?.erro || 'Erro ao salvar. Tente novamente.');
     } finally {

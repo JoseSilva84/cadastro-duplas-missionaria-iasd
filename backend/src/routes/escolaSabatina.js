@@ -12,10 +12,17 @@ router.post(
   validarCadastroEscolaSabatina,
   EscolaSabatinaController.criar
 );
+router.put(
+  '/:id',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  validarCadastroEscolaSabatina,
+  EscolaSabatinaController.atualizar
+);
 router.delete(
   '/:id',
   autenticar,
-  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
   EscolaSabatinaController.remover
 );
 
