@@ -116,6 +116,8 @@ const formVazio = {
   metaEstudosBiblicos: 0,
   observacoes: '',
   dataInicio: new Date().toISOString().split('T')[0],
+  emailAcesso: '',
+  senhaAcesso: '',
 };
 
 export default function Cadastro() {
@@ -261,6 +263,20 @@ export default function Cadastro() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (form.liderNome && form.membro2Nome) {
+      const norm = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      if (norm(form.liderNome) === norm(form.membro2Nome)) {
+        toast.error('O Membro 1 e o Membro 2 não podem ter o mesmo nome.');
+        return;
+      }
+    }
+
+    if (form.senhaAcesso && form.senhaAcesso.length < 8) {
+      toast.error('A senha de acesso deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
     setEnviando(true);
     try {
       const montarPayload = (fotoLiderRef = fotoRefs.fotoLider, fotoMembro2Ref = fotoRefs.fotoMembro2) => ({
@@ -600,6 +616,34 @@ export default function Cadastro() {
                 onChange={(e) => set('observacoes', e.target.value)}
               />
             </div>
+
+            {/* SEÇÃO 6 — Dados de Acesso (Login da Dupla — Opcional para líderes) */}
+            {!isEdicao && (
+              <div className={`card animate-fade-in-up flex flex-col ${isDireto ? 'w-[420px] flex-shrink-0' : ''}`} style={{ animationDelay: '520ms' }}>
+                <SecaoHeader numero="6" titulo="Dados de Acesso (Login da Dupla)" descricao="Opcional: defina o acesso agora ou use o QR Code depois" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Campo label="E-mail de Login da Dupla" icone="📧">
+                    <input
+                      type="email"
+                      className="input-field"
+                      placeholder="ex: dupla.joao.maria@gmail.com"
+                      value={form.emailAcesso || ''}
+                      onChange={(e) => set('emailAcesso', e.target.value)}
+                    />
+                  </Campo>
+                  <Campo label="Senha de Acesso (mínimo 8 dígitos)" icone="🔑">
+                    <input
+                      type="password"
+                      className="input-field"
+                      placeholder="Deixe em branco para criar via QR Code"
+                      minLength={8}
+                      value={form.senhaAcesso || ''}
+                      onChange={(e) => set('senhaAcesso', e.target.value)}
+                    />
+                  </Campo>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
 import { toast } from '../lib/toast';
@@ -20,9 +20,16 @@ const destinoPosLogin = () => '/dashboard';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', senha: '' });
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState({
+    email: searchParams.get('email') || '',
+    senha: '',
+  });
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [modalChaveAberto, setModalChaveAberto] = useState(false);
+  const [chaveInput, setChaveInput] = useState('');
+  const [validandoChave, setValidandoChave] = useState(false);
   const [estatisticas, setEstatisticas] = useState({
     regioes: '-',
     distritos: '-',
@@ -54,6 +61,35 @@ export default function Login() {
       })
       .catch((err) => console.error('Erro ao carregar estatísticas:', err));
   }, []);
+
+  // Se o usuário acessar /login?chave=..., redireciona direto para o cadastro com chave
+  useEffect(() => {
+    const chave = searchParams.get('chave');
+    if (chave) {
+      navigate(`/cadastro-dupla?chave=${encodeURIComponent(chave)}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
+  const handleValidarChaveModal = async (e) => {
+    e?.preventDefault();
+    const chave = String(chaveInput || '').trim().toUpperCase();
+    if (!chave) {
+      toast.error('Informe a chave de acesso.');
+      return;
+    }
+
+    setValidandoChave(true);
+    try {
+      await api.get('/auth/validar-chave-cadastro', { params: { chave } });
+      setModalChaveAberto(false);
+      navigate(`/cadastro-dupla?chave=${encodeURIComponent(chave)}`);
+    } catch (err) {
+      const msg = err.response?.data?.erro || 'Chave de acesso inválida ou não encontrada.';
+      toast.error(msg);
+    } finally {
+      setValidandoChave(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -235,7 +271,104 @@ export default function Login() {
               </button>
             </form>
 
+            {/* Separador e Botão de Auto-Cadastro com Chave de Acesso */}
+            <div className="mt-6">
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink mx-3 text-xs font-semibold uppercase tracking-wider text-gray-400">ou</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalChaveAberto(true)}
+                className="mt-1 w-full group relative flex items-center justify-between gap-3 p-3.5 rounded-2xl border-2 border-[#C9963A]/40 bg-gradient-to-r from-amber-50/70 via-white to-amber-50/30 hover:from-amber-100/70 hover:to-amber-50 hover:border-[#C9963A] transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3 text-left">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9963A] to-[#b0802c] text-white flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform text-lg">
+                    ✨
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#0f2347]">Cadastrar Minha Dupla</span>
+                      <span className="text-[10px] bg-[#C9963A]/15 text-[#916719] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Auto-cadastro com a chave do pastor</p>
+                  </div>
+                </div>
+                <div className="text-[#C9963A] pr-1 group-hover:translate-x-1 transition-transform">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            </div>
           </div>
+
+          {/* Modal para digitar a Chave de Acesso */}
+          {modalChaveAberto && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-7 max-w-md w-full border border-gray-100 relative">
+                <button
+                  type="button"
+                  onClick={() => setModalChaveAberto(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 rounded-full p-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#C9963A] flex items-center justify-center text-2xl border border-amber-200 shadow-inner">
+                    🔑
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#1A3A6B]">Chave de Acesso</h3>
+                    <p className="text-xs text-gray-500">Cadastro de Dupla Missionária</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                  Para cadastrar sua dupla missionária, informe a chave de acesso fornecida pelo seu <strong>Pastor Distrital</strong> ou <strong>Coordenador Regional</strong>.
+                </p>
+
+                <form onSubmit={handleValidarChaveModal} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Código da Chave (Ex: ITAPEVI-2026)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="DIGITE SUA CHAVE AQUI"
+                      value={chaveInput}
+                      onChange={(e) => setChaveInput(e.target.value.toUpperCase())}
+                      className="input-field font-mono uppercase text-center tracking-wider text-base"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setModalChaveAberto(false)}
+                      className="w-1/3 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={validandoChave || !chaveInput.trim()}
+                      className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold disabled:opacity-50"
+                    >
+                      {validandoChave ? 'Verificando...' : 'Avançar para Cadastro →'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           <p className="text-center text-xs text-gray-400 mt-6">
             © {new Date().getFullYear()} <a href="https://ap.adventistas.org/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline">

@@ -101,9 +101,41 @@ const DuplaService = {
     if (!distritoId) throw { status: 400, mensagem: 'Nao ha distrito disponivel para vincular este cadastro.' };
     await validarDistrito(usuario, distritoId);
     if (igrejaId) await validarIgreja(usuario, igrejaId);
+
+    // Anti-duplicidade de membros
+    const normalizarTexto = (txt) => String(txt || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    const nLider = normalizarTexto(data.liderNome);
+    const nMembro2 = normalizarTexto(data.membro2Nome);
+
+    if (nLider && nMembro2 && nMembro2 !== 'nao informado') {
+      if (nLider === nMembro2) {
+        throw { status: 400, mensagem: 'O Membro 1 e o Membro 2 não podem ter o mesmo nome.' };
+      }
+      const duplasExistentes = await prisma.dupla.findMany({
+        select: { id: true, liderNome: true, membro2Nome: true },
+      });
+      const duplicada = duplasExistentes.find((d) => {
+        const dL = normalizarTexto(d.liderNome);
+        const dM = normalizarTexto(d.membro2Nome);
+        return (dL === nLider && dM === nMembro2) || (dL === nMembro2 && dM === nLider);
+      });
+      if (duplicada) {
+        throw {
+          status: 400,
+          mensagem: `Já existe uma dupla cadastrada com estes membros (${duplicada.liderNome} e ${duplicada.membro2Nome}).`,
+        };
+      }
+    }
+
     const classificacao = calcularClassificacao(data);
 
-    return DuplaModel.create({
+    const novaDupla = await DuplaModel.create({
       regiaoNome: data.regiaoNome || distritoPadrao?.regiao?.nome || '',
       distritoId,
       igrejaId: igrejaId || null,
@@ -145,6 +177,35 @@ const DuplaService = {
       membro2Endereco: data.membro2Endereco || null,
       ultimoAcompanhamento: data.ultimoAcompanhamento ? new Date(data.ultimoAcompanhamento) : null,
     });
+
+    // Se foram fornecidos emailAcesso e senhaAcesso (Seção 5 opcional no painel de líderes)
+    if (data.emailAcesso && data.senhaAcesso) {
+      const emailNorm = String(data.emailAcesso).trim().toLowerCase();
+      const senhaNorm = String(data.senhaAcesso).trim();
+      if (emailNorm.includes('@') && senhaNorm.length >= 8) {
+        const donoDoEmail = await prisma.usuario.findUnique({ where: { email: emailNorm } });
+        if (!donoDoEmail) {
+          const bcrypt = require('bcryptjs');
+          const senhaHash = await bcrypt.hash(senhaNorm, 10);
+          const dist = await prisma.distrito.findUnique({ where: { id: distritoId }, select: { regiaoId: true } });
+          await prisma.usuario.create({
+            data: {
+              nome: `${novaDupla.liderNome} e ${novaDupla.membro2Nome}`,
+              email: emailNorm,
+              senha: senhaHash,
+              perfil: 'DUPLA_MISSIONARIA',
+              duplaId: novaDupla.id,
+              distritoId,
+              igrejaId: igrejaId || null,
+              regiaoId: dist?.regiaoId || null,
+              ativo: true,
+            },
+          });
+        }
+      }
+    }
+
+    return novaDupla;
   },
 
   // Atualiza dupla (com verificação de permissão por perfil)

@@ -22,6 +22,26 @@ const ConfiguracaoController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao restaurar backup.' });
     }
   },
+
+  async listarChavesAcesso(req, res) {
+    try {
+      const resultado = await ConfiguracaoService.listarChavesAcesso(req.usuario);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao carregar chaves de acesso.' });
+    }
+  },
+
+  async atualizarChaveAcesso(req, res) {
+    try {
+      const resultado = await ConfiguracaoService.atualizarChaveAcesso(req.usuario, req.body);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao atualizar chave de acesso.' });
+    }
+  },
 };
 
 module.exports = ConfiguracaoController;

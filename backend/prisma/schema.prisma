@@ -105,6 +105,8 @@ model Regiao {
   nome      String   @unique
   descricao String?
   cor       String   @default("#1A3A6B") // cor identificadora do card
+  chaveAcesso String?  @unique
+  chaveAtiva  Boolean  @default(true)
   criadoEm DateTime @default(now())
 
   // Pastor Regional
@@ -125,6 +127,8 @@ model Distrito {
   nome      String
   regiaoId  Int
   membros   Int      @default(0)
+  chaveAcesso String?  @unique
+  chaveAtiva  Boolean  @default(true)
   criadoEm DateTime @default(now())
 
   // Pastor Distrital

@@ -149,6 +149,175 @@ const ConfiguracaoService = {
       totais,
     };
   },
+
+  async listarChavesAcesso(usuario) {
+    const perfil = usuario?.perfil;
+
+    if (perfil === 'SUPER_ADMIN' || perfil === 'ADMINISTRADOR') {
+      const [regioes, distritos] = await Promise.all([
+        prisma.regiao.findMany({
+          select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true },
+          orderBy: { id: 'asc' },
+        }),
+        prisma.distrito.findMany({
+          select: {
+            id: true,
+            nome: true,
+            regiaoId: true,
+            regiao: { select: { id: true, nome: true } },
+            chaveAcesso: true,
+            chaveAtiva: true,
+            nomePastor: true,
+            telefonePastor: true,
+          },
+          orderBy: { nome: 'asc' },
+        }),
+      ]);
+      return { tipoUsuario: 'ADMIN', regioes, distritos };
+    }
+
+    if (perfil === 'PASTOR_REGIONAL' || perfil === 'COORDENADOR_REGIONAL') {
+      let regiaoId = usuario.regiaoId;
+      if (!regiaoId && usuario.distritoId) {
+        const d = await prisma.distrito.findUnique({ where: { id: usuario.distritoId }, select: { regiaoId: true } });
+        regiaoId = d?.regiaoId;
+      }
+      if (!regiaoId) {
+        throw { status: 400, mensagem: 'Região do usuário não identificada.' };
+      }
+
+      const [regiao, distritos] = await Promise.all([
+        prisma.regiao.findUnique({
+          where: { id: Number(regiaoId) },
+          select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true },
+        }),
+        prisma.distrito.findMany({
+          where: { regiaoId: Number(regiaoId) },
+          select: {
+            id: true,
+            nome: true,
+            regiaoId: true,
+            chaveAcesso: true,
+            chaveAtiva: true,
+            nomePastor: true,
+            telefonePastor: true,
+          },
+          orderBy: { nome: 'asc' },
+        }),
+      ]);
+
+      return { tipoUsuario: 'REGIONAL', regiao, distritos };
+    }
+
+    if (perfil === 'PASTOR_DISTRITAL' || perfil === 'DIRETOR_MISSIONARIO_IGREJA') {
+      let distritoId = usuario.distritoId;
+      if (!distritoId && usuario.igrejaId) {
+        const i = await prisma.igreja.findUnique({ where: { id: usuario.igrejaId }, select: { distritoId: true } });
+        distritoId = i?.distritoId;
+      }
+      if (!distritoId) {
+        throw { status: 400, mensagem: 'Distrito do usuário não identificado.' };
+      }
+
+      const distrito = await prisma.distrito.findUnique({
+        where: { id: Number(distritoId) },
+        select: {
+          id: true,
+          nome: true,
+          regiaoId: true,
+          regiao: { select: { id: true, nome: true } },
+          chaveAcesso: true,
+          chaveAtiva: true,
+          nomePastor: true,
+          telefonePastor: true,
+        },
+      });
+
+      return { tipoUsuario: 'DISTRITAL', distrito };
+    }
+
+    throw { status: 403, mensagem: 'Você não tem permissão para visualizar chaves de acesso.' };
+  },
+
+  async atualizarChaveAcesso(usuario, dados) {
+    const { tipo, id, chaveAcesso, chaveAtiva } = dados;
+    const perfil = usuario?.perfil;
+    const idNum = Number(id);
+
+    if (!['REGIAO', 'DISTRITO'].includes(tipo) || !idNum) {
+      throw { status: 400, mensagem: 'Dados inválidos para atualizar chave.' };
+    }
+
+    const chaveFormatada = String(chaveAcesso || '').trim().toUpperCase();
+    if (!chaveFormatada) {
+      throw { status: 400, mensagem: 'A chave de acesso não pode ser vazia.' };
+    }
+
+    // Validação de permissões
+    const ehAdmin = ['SUPER_ADMIN', 'ADMINISTRADOR'].includes(perfil);
+    if (!ehAdmin) {
+      if (['PASTOR_REGIONAL', 'COORDENADOR_REGIONAL'].includes(perfil)) {
+        if (tipo === 'REGIAO' && Number(usuario.regiaoId) !== idNum) {
+          throw { status: 403, mensagem: 'Você só pode alterar a chave da sua própria região.' };
+        }
+        if (tipo === 'DISTRITO') {
+          const d = await prisma.distrito.findUnique({ where: { id: idNum }, select: { regiaoId: true } });
+          if (!d || Number(d.regiaoId) !== Number(usuario.regiaoId)) {
+            throw { status: 403, mensagem: 'Você só pode alterar distritos da sua região.' };
+          }
+        }
+      } else if (perfil === 'PASTOR_DISTRITAL') {
+        if (tipo !== 'DISTRITO' || Number(usuario.distritoId) !== idNum) {
+          throw { status: 403, mensagem: 'Você só pode alterar a chave do seu próprio distrito.' };
+        }
+      } else {
+        throw { status: 403, mensagem: 'Sem permissão para alterar chaves de acesso.' };
+      }
+    }
+
+    // Validação de duplicidade da chave
+    const [regiaoExistente, distritoExistente] = await Promise.all([
+      prisma.regiao.findFirst({
+        where: {
+          chaveAcesso: { equals: chaveFormatada, mode: 'insensitive' },
+          ...(tipo === 'REGIAO' ? { NOT: { id: idNum } } : {}),
+        },
+        select: { id: true, nome: true },
+      }),
+      prisma.distrito.findFirst({
+        where: {
+          chaveAcesso: { equals: chaveFormatada, mode: 'insensitive' },
+          ...(tipo === 'DISTRITO' ? { NOT: { id: idNum } } : {}),
+        },
+        select: { id: true, nome: true },
+      }),
+    ]);
+
+    if (regiaoExistente) {
+      throw { status: 400, mensagem: `A chave "${chaveFormatada}" já está sendo usada pela Região ${regiaoExistente.nome}.` };
+    }
+    if (distritoExistente) {
+      throw { status: 400, mensagem: `A chave "${chaveFormatada}" já está sendo usada pelo Distrito ${distritoExistente.nome}.` };
+    }
+
+    if (tipo === 'REGIAO') {
+      return prisma.regiao.update({
+        where: { id: idNum },
+        data: {
+          chaveAcesso: chaveFormatada,
+          ...(chaveAtiva !== undefined ? { chaveAtiva: Boolean(chaveAtiva) } : {}),
+        },
+      });
+    }
+
+    return prisma.distrito.update({
+      where: { id: idNum },
+      data: {
+        chaveAcesso: chaveFormatada,
+        ...(chaveAtiva !== undefined ? { chaveAtiva: Boolean(chaveAtiva) } : {}),
+      },
+    });
+  },
 };
 
 module.exports = ConfiguracaoService;

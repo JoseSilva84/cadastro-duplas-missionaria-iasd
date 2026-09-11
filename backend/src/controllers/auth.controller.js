@@ -106,7 +106,39 @@ const AuthController = {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao criar conta da dupla.' });
     }
   },
+
+  // GET /api/auth/validar-chave-cadastro
+  async validarChaveCadastro(req, res) {
+    try {
+      const { chave } = req.query;
+      const resultado = await AuthService.validarChaveCadastro(chave);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao validar chave de acesso.' });
+    }
+  },
+
+  // POST /api/auth/cadastrar-dupla-com-chave
+  async cadastrarDuplaComChave(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.cadastrarDuplaComChave(req.body);
+      res.status(201).json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao cadastrar dupla missionária.' });
+    }
+  },
 };
+
+const validarCadastroDuplaComChave = [
+  body('chave').notEmpty().withMessage('Chave de acesso obrigatória.'),
+  body('liderNome').notEmpty().withMessage('Nome do Membro 1 (Líder) obrigatório.'),
+  body('membro2Nome').notEmpty().withMessage('Nome do Membro 2 (Parceiro) obrigatório.'),
+  body('email').trim().isEmail().withMessage('E-mail de acesso inválido.'),
+  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
+    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+  body('igrejaId').notEmpty().withMessage('Selecione a igreja da dupla.'),
+];
 
 module.exports = {
   AuthController,
@@ -114,4 +146,5 @@ module.exports = {
   validarAtualizacaoConta,
   validarRedefinicaoAcesso,
   validarCriacaoContaDupla,
+  validarCadastroDuplaComChave,
 };

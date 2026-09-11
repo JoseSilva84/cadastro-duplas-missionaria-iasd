@@ -382,6 +382,245 @@ const AuthService = {
     };
   },
 
+  // Valida a chave de acesso do distrito ou da região para auto-cadastro
+  async validarChaveCadastro(chaveBruta) {
+    const chave = String(chaveBruta || '').trim().toUpperCase();
+    if (!chave) {
+      throw { status: 400, mensagem: 'Informe a chave de acesso.' };
+    }
+
+    // 1. Tenta encontrar por Distrito
+    const distrito = await prisma.distrito.findFirst({
+      where: {
+        chaveAcesso: { equals: chave, mode: 'insensitive' },
+      },
+      include: {
+        regiao: { select: { id: true, nome: true } },
+        igrejas: { select: { id: true, nome: true }, orderBy: { nome: 'asc' } },
+      },
+    });
+
+    if (distrito) {
+      if (!distrito.chaveAtiva) {
+        throw { status: 400, mensagem: 'Esta chave de acesso distrital está desativada. Solicite uma nova ao seu pastor distrital.' };
+      }
+      return {
+        tipo: 'DISTRITO',
+        distrito: { id: distrito.id, nome: distrito.nome },
+        regiao: { id: distrito.regiao.id, nome: distrito.regiao.nome },
+        igrejas: distrito.igrejas,
+      };
+    }
+
+    // 2. Tenta encontrar por Região
+    const regiao = await prisma.regiao.findFirst({
+      where: {
+        chaveAcesso: { equals: chave, mode: 'insensitive' },
+      },
+      include: {
+        distritos: {
+          select: {
+            id: true,
+            nome: true,
+            igrejas: { select: { id: true, nome: true }, orderBy: { nome: 'asc' } },
+          },
+          orderBy: { nome: 'asc' },
+        },
+      },
+    });
+
+    if (regiao) {
+      if (!regiao.chaveAtiva) {
+        throw { status: 400, mensagem: 'Esta chave de acesso regional está desativada. Solicite uma nova ao seu coordenador regional.' };
+      }
+      return {
+        tipo: 'REGIAO',
+        regiao: { id: regiao.id, nome: regiao.nome },
+        distritos: regiao.distritos.map((d) => ({
+          id: d.id,
+          nome: d.nome,
+          igrejas: d.igrejas,
+        })),
+      };
+    }
+
+    throw { status: 404, mensagem: 'Chave de acesso inválida ou não encontrada. Verifique com seu pastor ou coordenador.' };
+  },
+
+  // Auto-cadastro de Dupla Missionária através de chave de acesso
+  async cadastrarDuplaComChave(dados) {
+    const { chave, email, senha, liderNome, membro2Nome } = dados;
+
+    if (!chave) {
+      throw { status: 400, mensagem: 'Chave de acesso é obrigatória.' };
+    }
+
+    // 1. Valida a chave
+    const infoChave = await this.validarChaveCadastro(chave);
+
+    // 2. Validação de Escopo
+    let regiaoId = Number(dados.regiaoId);
+    let distritoId = Number(dados.distritoId);
+    let igrejaId = Number(dados.igrejaId);
+
+    if (infoChave.tipo === 'DISTRITO') {
+      distritoId = infoChave.distrito.id;
+      regiaoId = infoChave.regiao.id;
+    } else if (infoChave.tipo === 'REGIAO') {
+      regiaoId = infoChave.regiao.id;
+      const distValido = infoChave.distritos.find((d) => d.id === distritoId);
+      if (!distValido) {
+        throw { status: 400, mensagem: 'O distrito selecionado não pertence a esta região.' };
+      }
+    }
+
+    // Valida igreja
+    const igreja = await prisma.igreja.findFirst({
+      where: { id: igrejaId, distritoId },
+    });
+    if (!igreja) {
+      throw { status: 400, mensagem: 'Selecione uma igreja válida deste distrito.' };
+    }
+
+    // 3. Validação dos Nomes dos Membros
+    if (!liderNome || !liderNome.trim()) {
+      throw { status: 400, mensagem: 'Nome do Membro 1 (Líder) é obrigatório.' };
+    }
+    if (!membro2Nome || !membro2Nome.trim()) {
+      throw { status: 400, mensagem: 'Nome do Membro 2 (Parceiro) é obrigatório.' };
+    }
+
+    // 4. Anti-Duplicidade de Nomes
+    const normalizar = (txt) => String(txt || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    const nLider = normalizar(liderNome);
+    const nMembro2 = normalizar(membro2Nome);
+
+    if (nLider === nMembro2) {
+      throw { status: 400, mensagem: 'O Membro 1 e o Membro 2 não podem ter o mesmo nome.' };
+    }
+
+    const duplasExistentes = await prisma.dupla.findMany({
+      select: { id: true, liderNome: true, membro2Nome: true },
+    });
+
+    const duplicada = duplasExistentes.find((d) => {
+      const dL = normalizar(d.liderNome);
+      const dM = normalizar(d.membro2Nome);
+      return (dL === nLider && dM === nMembro2) || (dL === nMembro2 && dM === nLider);
+    });
+
+    if (duplicada) {
+      throw {
+        status: 400,
+        mensagem: `Já existe uma dupla missionária cadastrada com estes membros (${duplicada.liderNome} e ${duplicada.membro2Nome}). Se vocês já são esta dupla e precisam de login, solicitem o link ou QR code de acesso ao seu pastor distrital.`,
+      };
+    }
+
+    // 5. Validação de Credenciais (E-mail e Senha)
+    const emailNorm = normalizarEmail(email);
+    const senhaNorm = normalizarSenha(senha);
+
+    if (!emailNorm || !emailNorm.includes('@')) {
+      throw { status: 400, mensagem: 'Informe um e-mail válido para o login de acesso da dupla.' };
+    }
+    if (senhaNorm.length < 8) {
+      throw { status: 400, mensagem: 'A senha de acesso deve ter no mínimo 8 caracteres.' };
+    }
+
+    const emailEmUso = await UsuarioModel.findByEmail(emailNorm);
+    if (emailEmUso) {
+      throw { status: 400, mensagem: 'Este e-mail já está sendo utilizado por outro usuário no sistema.' };
+    }
+
+    // 6. Classificação e Atividade Missionária
+    const levouPessoaBatismo = dados.levouPessoaBatismo === true || dados.levouPessoaBatismo === 'true';
+    const jaDeuEstudoBiblico = dados.jaDeuEstudoBiblico === true || dados.jaDeuEstudoBiblico === 'true';
+    const estudoAtualEmAndamento = dados.estudoAtualEmAndamento === true || dados.estudoAtualEmAndamento === 'true';
+
+    let classificacaoDupla = 'C';
+    if (levouPessoaBatismo) {
+      classificacaoDupla = 'A';
+    } else if (jaDeuEstudoBiblico) {
+      classificacaoDupla = 'B';
+    }
+
+    const nomeDupla = `${liderNome.trim()} e ${membro2Nome.trim()}`;
+    const senhaHash = await bcrypt.hash(senhaNorm, 10);
+
+    // 7. Transação Atômica: Dupla + Usuário
+    const resultado = await prisma.$transaction(async (tx) => {
+      const regiao = await tx.regiao.findUnique({ where: { id: regiaoId }, select: { nome: true } });
+      const distrito = await tx.distrito.findUnique({ where: { id: distritoId }, select: { nome: true } });
+
+      const novaDupla = await tx.dupla.create({
+        data: {
+          regiaoNome: regiao?.nome || '',
+          distritoId,
+          igrejaId,
+          bairro: dados.bairro?.trim() || 'Não informado',
+          tipoProjeto: dados.tipoProjeto || 'ESTUDO_BIBLICO',
+          liderNome: liderNome.trim(),
+          liderTelefone: dados.liderTelefone?.trim() || null,
+          liderEmail: dados.liderEmail?.trim() || emailNorm,
+          liderIgreja: igreja.nome,
+          liderDistrito: distrito?.nome,
+          liderDataNascimento: dados.liderDataNascimento ? new Date(dados.liderDataNascimento) : null,
+          liderDataBatismo: dados.liderDataBatismo ? new Date(dados.liderDataBatismo) : null,
+          liderSexo: dados.liderSexo || null,
+          liderEndereco: dados.liderEndereco?.trim() || null,
+          membro2Tipo: 'MEMBRO_IASD',
+          membro2Nome: membro2Nome.trim(),
+          membro2Telefone: dados.membro2Telefone?.trim() || null,
+          membro2Email: dados.membro2Email?.trim() || null,
+          membro2Igreja: dados.membro2Igreja?.trim() || igreja.nome,
+          membro2Distrito: dados.membro2Distrito?.trim() || distrito?.nome,
+          membro2DataNascimento: dados.membro2DataNascimento ? new Date(dados.membro2DataNascimento) : null,
+          membro2DataBatismo: dados.membro2DataBatismo ? new Date(dados.membro2DataBatismo) : null,
+          membro2Sexo: dados.membro2Sexo || null,
+          membro2Endereco: dados.membro2Endereco?.trim() || null,
+          status: 'ATIVA',
+          classificacaoDupla,
+          atividadeDupla: estudoAtualEmAndamento ? 'ATIVA' : 'INATIVA',
+          levouPessoaBatismo,
+          jaDeuEstudoBiblico,
+          estudoAtualEmAndamento,
+          estudoBiblico: estudoAtualEmAndamento ? 'SIM' : 'NÃO',
+          statusEstudoBiblico: estudoAtualEmAndamento ? 'EM_ANDAMENTO' : 'ENCERRADO',
+          observacoes: dados.observacoes?.trim() || null,
+        },
+      });
+
+      const novoUsuario = await tx.usuario.create({
+        data: {
+          nome: nomeDupla,
+          email: emailNorm,
+          senha: senhaHash,
+          perfil: 'DUPLA_MISSIONARIA',
+          duplaId: novaDupla.id,
+          distritoId,
+          igrejaId,
+          regiaoId,
+          ativo: true,
+        },
+      });
+
+      return { dupla: novaDupla, usuario: novoUsuario };
+    });
+
+    return {
+      sucesso: true,
+      mensagem: 'Dupla missionária cadastrada com sucesso! Você já pode entrar com seu e-mail e senha.',
+      email: emailNorm,
+      nomeDupla,
+    };
+  },
+
   async me(usuarioId) {
     const usuario = await UsuarioModel.findByIdComSenha(usuarioId);
     if (!usuario) return usuario;
