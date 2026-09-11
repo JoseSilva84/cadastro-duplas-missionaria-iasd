@@ -97,8 +97,8 @@ export default function LayoutDireto() {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
-  const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
-  const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
+  const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
+  const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
   const funcao = funcaoUsuario(usuario);
   const nomePessoa = nomePessoaUsuario(usuario);
@@ -151,6 +151,8 @@ export default function LayoutDireto() {
     { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
     { to: '/direto/igrejas', label: 'Minha Igreja', shortLabel: 'Minha Igr.', icon: icons.igrejas },
     { to: '/direto/duplas', label: 'Duplas', shortLabel: 'Dup.', icon: icons.duplas },
+    ...(podeVerAlunos ? [{ to: '/direto/alunos', label: 'Alunos', shortLabel: 'Alun.', icon: icons.alunos }] : []),
+    ...(podeVerInteressadosNt ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', shortLabel: 'Int. NT', icon: icons.interessadosNt }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: [
       { to: '/direto/cadastro/estudos-biblicos', label: 'Estudos Bíblicos', icon: '📖' },
       { to: '/direto/cadastro/ponto-estudo', label: 'Ponto de Estudo', icon: 'PE' },

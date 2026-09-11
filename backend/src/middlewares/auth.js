@@ -78,12 +78,12 @@ const autenticar = async (req, res, next) => {
         distritoId: true,
         duplaId: true,
         igrejaId: true,
-        dupla: { select: { igrejaId: true } },
+        dupla: { select: { igrejaId: true, distritoId: true } },
       },
     });
 
     if (!usuario || !usuario.ativo) {
-      return res.status(401).json({ erro: 'UsuÃ¡rio inativo ou nÃ£o encontrado.' });
+      return res.status(401).json({ erro: 'Usuário inativo ou não encontrado.' });
     }
 
     // Mantém compatibilidade com tokens emitidos antes desta proteção.
@@ -98,7 +98,7 @@ const autenticar = async (req, res, next) => {
       email: usuario.email,
       perfil: usuario.perfil,
       regiaoId: usuario.regiaoId,
-      distritoId: usuario.distritoId,
+      distritoId: usuario.distritoId || usuario.dupla?.distritoId || null,
       duplaId: usuario.duplaId,
       igrejaId: usuario.igrejaId || usuario.dupla?.igrejaId || null,
       somenteLeitura: ehSomenteLeitura(usuario),

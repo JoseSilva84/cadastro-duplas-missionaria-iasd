@@ -120,6 +120,23 @@ async function obterEscopoTerritorial(usuario) {
       select: { distrito: { select: { nome: true } } },
     });
     if (igreja?.distrito) distritos = [igreja.distrito];
+  } else if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA) {
+    let distritoId = usuario.distritoId;
+    if (!distritoId && usuario.duplaId) {
+      const dupla = await prisma.dupla.findUnique({
+        where: { id: Number(usuario.duplaId) },
+        select: { distritoId: true },
+      });
+      distritoId = dupla?.distritoId;
+    }
+    if (!distritoId) {
+      throw erro(403, 'Sua dupla missionária não possui um distrito vinculado.', 'ESCOPO_NT_NAO_CONFIGURADO');
+    }
+    const distrito = await prisma.distrito.findUnique({
+      where: { id: Number(distritoId) },
+      select: { nome: true },
+    });
+    if (distrito) distritos = [distrito];
   } else {
     throw erro(403, 'Seu perfil não possui acesso aos interessados do Novo Tempo.', 'ESCOPO_NT_NEGADO');
   }

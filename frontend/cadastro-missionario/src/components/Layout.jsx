@@ -103,8 +103,8 @@ export default function Layout({ children }) {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
-  const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
-  const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
+  const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
+  const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
   const podeVerRelatorios = Boolean(usuario);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
@@ -117,7 +117,7 @@ export default function Layout({ children }) {
         { to: isDireto ? '/direto/igrejas' : '/igrejas', label: 'Minha Igreja', icon: icons.igrejas },
         { to: isDireto ? '/direto/duplas' : '/duplas', label: 'Duplas', icon: icons.duplas },
         ...(podeVerAlunos ? [{ to: isDireto ? '/direto/alunos' : '/alunos', label: 'Alunos', icon: icons.alunos }] : []),
-        ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/interessados-nt' : '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
+        ...(podeVerInteressadosNt ? [{ to: isDireto ? '/direto/interessados-nt' : '/interessados-nt', label: 'Interessados NT', icon: icons.interessadosNt }] : []),
         { type: 'dropdown', key: 'cadastro', label: 'Cadastro', icon: icons.cadastro, items: [
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/duplas/nova' : '/duplas/nova', label: 'Nova Dupla', icon: '+' }] : []),
           ...(isDiretorMissionario ? [{ to: isDireto ? '/direto/cadastro/mapa-igreja' : '/cadastro/mapa-igreja', label: 'Mapa da Igreja', icon: 'MI' }] : []),

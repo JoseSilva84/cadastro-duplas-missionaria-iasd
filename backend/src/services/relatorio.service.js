@@ -2,7 +2,7 @@ const RelatorioModel = require('../models/relatorio.model');
 const EstudoBiblicoService = require('./estudoBiblico.service');
 const prisma = require('../lib/prisma');
 const { ehAdmin, PERFIS } = require('../middlewares/auth');
-const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
+const { montarEscopo, combinar, validarDistrito, validarIgreja } = require('./escopo.service');
 
 const RelatorioService = {
   async resumo(usuario) {

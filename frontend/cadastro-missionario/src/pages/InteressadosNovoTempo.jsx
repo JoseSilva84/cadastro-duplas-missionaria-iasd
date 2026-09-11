@@ -73,7 +73,7 @@ const formatarWhatsapp = (valor) => {
   return valor;
 };
 
-function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, onFiltragem, atualizando }) {
+function Cabecalho({ distrito, distritoUnico, onAbrirDistritoUnico, isDireto, atualizadoEm, onAtualizar, onAnalise, onFiltragem, atualizando }) {
   return (
     <div className={isDireto ? 'flex-shrink-0 border-b border-gray-200 bg-white px-4 py-4 sm:px-6' : 'mb-7'}>
       {distrito && <BackButton fallbackTo={isDireto ? '/direto/interessados-nt' : '/interessados-nt'} className="mb-3" />}
@@ -93,6 +93,15 @@ function Cabecalho({ distrito, isDireto, atualizadoEm, onAtualizar, onAnalise, o
         <div className="flex flex-col items-start gap-2 sm:items-end">
           {atualizadoEm && <p className="text-xs text-gray-400">Atualizado em {dataHora(atualizadoEm)}</p>}
           <div className="flex flex-nowrap items-center gap-2">
+            {distritoUnico && (
+              <button
+                type="button"
+                className="whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700 hover:-translate-y-0.5 hover:shadow-lg"
+                onClick={onAbrirDistritoUnico}
+              >
+                Ver contatos de {distritoUnico} →
+              </button>
+            )}
             {!distrito && <button type="button" className="whitespace-nowrap rounded-lg bg-gradient-to-r from-blue-600 to-[#173766] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg" onClick={onAnalise}>Análise dos Potenciais →</button>}
             {!distrito && <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" onClick={onFiltragem}>Filtragem Avançada</button>}
             <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" disabled={atualizando} onClick={onAtualizar}>
@@ -362,9 +371,21 @@ export default function InteressadosNovoTempo() {
 
   if (carregando) return <LoadingState mensagem="Carregando interessados do Novo Tempo..." />;
 
+  const distritoUnico = !nomeDistrito && dados?.distritos?.length === 1 ? dados.distritos[0]?.nome : null;
+
   return (
     <div className={isDireto ? 'flex h-full flex-col bg-[#F4F5F7] animate-fade-in' : 'mx-auto max-w-7xl p-4 animate-fade-in sm:p-6 lg:p-8'}>
-      <Cabecalho distrito={dados?.distrito || nomeDistrito} isDireto={isDireto} atualizadoEm={dados?.atualizadoEm} onAtualizar={() => carregar(true)} onAnalise={() => navigate(`${prefix}/interessados-nt/analise`)} onFiltragem={() => navigate(`${prefix}/interessados-nt/filtragem-avancada`)} atualizando={atualizando} />
+      <Cabecalho
+        distrito={dados?.distrito || nomeDistrito}
+        distritoUnico={distritoUnico}
+        onAbrirDistritoUnico={() => navigate(`${prefix}/interessados-nt/distritos/${encodeURIComponent(distritoUnico)}`)}
+        isDireto={isDireto}
+        atualizadoEm={dados?.atualizadoEm}
+        onAtualizar={() => carregar(true)}
+        onAnalise={() => navigate(`${prefix}/interessados-nt/analise`)}
+        onFiltragem={() => navigate(`${prefix}/interessados-nt/filtragem-avancada`)}
+        atualizando={atualizando}
+      />
       <div className={isDireto ? 'flex-1 space-y-5 overflow-y-auto p-4 sm:p-6' : 'space-y-5'}>
         {erro && <AvisoErro erro={erro} />}
         {dados && <CardsResumo resumo={dados.resumo} />}

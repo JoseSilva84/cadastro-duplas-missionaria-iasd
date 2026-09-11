@@ -58,6 +58,7 @@ const PERFIS_INTERESSADOS_NT = [
   PERFIS.COORDENADOR_REGIONAL,
   PERFIS.PASTOR_DISTRITAL,
   PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+  PERFIS.DUPLA_MISSIONARIA,
 ];
 
 // ─── Rota protegida — redireciona para login se não autenticado ────────────────
@@ -233,7 +234,7 @@ function AppRoutes() {
         {/* Global lists */}
         <Route path="distritos" element={<ListagemDistritos />} />
         <Route path="igrejas" element={<ListagemIgrejas />} />
-        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Alunos /></RotaComPerfis>} />
+        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]}><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
@@ -402,7 +403,7 @@ function AppRoutes() {
         />
         <Route path="distritos" element={<ListagemDistritosDireto />} />
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />
-        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
+        <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
