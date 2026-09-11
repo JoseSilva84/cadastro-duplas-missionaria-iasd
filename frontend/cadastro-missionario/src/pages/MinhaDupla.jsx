@@ -22,7 +22,7 @@ export default function MinhaDupla() {
           setCarregando(false);
         })
         .catch((err) => {
-          setErro(err.response?.data?.erro || 'Erro ao carregar duplas missionarias.');
+          setErro(err.response?.data?.erro || 'Erro ao carregar duplas missionárias.');
           setCarregando(false);
         });
       return;

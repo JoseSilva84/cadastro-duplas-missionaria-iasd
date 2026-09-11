@@ -80,6 +80,18 @@ const DuplaController = {
       res.status(status).json({ erro: err.mensagem || 'Erro ao remover dupla.' });
     }
   },
+
+  // POST /api/duplas/:id/qrcode-acesso — Gera token/link para a dupla criar login e senha
+  async gerarQrCodeAcesso(req, res) {
+    try {
+      const AuthService = require('../services/auth.service');
+      const resultado = await AuthService.criarTokenCadastroDupla(req.params.id, req.usuario);
+      res.json(resultado);
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ erro: err.mensagem || 'Erro ao gerar QR Code de acesso para a dupla.' });
+    }
+  },
 };
 
 module.exports = { DuplaController, validarDupla };

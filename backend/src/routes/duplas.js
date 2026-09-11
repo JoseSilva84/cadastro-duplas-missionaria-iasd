@@ -46,4 +46,12 @@ router.delete(
   DuplaController.remover
 );
 
+// POST /api/duplas/:id/qrcode-acesso — Gera token/link para a dupla criar login e senha
+router.post(
+  '/:id/qrcode-acesso',
+  autenticar,
+  bloquear(PERFIS.DUPLA_MISSIONARIA),
+  DuplaController.gerarQrCodeAcesso
+);
+
 module.exports = router;

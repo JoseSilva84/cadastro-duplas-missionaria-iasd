@@ -17,8 +17,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const isCredentialRequest = ['/auth/login', '/auth/conta', '/auth/redefinir-acesso']
-      .some((rota) => err.config?.url?.includes(rota));
+    const isCredentialRequest = [
+      '/auth/login',
+      '/auth/conta',
+      '/auth/redefinir-acesso',
+      '/auth/validar-token-dupla',
+      '/auth/criar-conta-dupla',
+    ].some((rota) => err.config?.url?.includes(rota));
     const isSomenteLeitura = err.response?.data?.codigo === 'SOMENTE_LEITURA';
     if (!isCredentialRequest && !isSomenteLeitura && (err.response?.status === 401 || err.response?.status === 403)) {
       localStorage.removeItem('token');

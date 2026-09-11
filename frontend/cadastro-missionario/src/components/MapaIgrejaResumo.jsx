@@ -36,7 +36,7 @@ const cardsBase = [
   ['Semana Santa', 'semanaSanta', '#0d9488'],
   ['Classe Biblica', 'classeBiblica', '#7c3aed'],
   ['Aventureiros', 'aventureiros', '#0284c7'],
-  ['Duplas Missionarias', 'quantidadeDuplasMissionarias', '#1A3A6B'],
+  ['Duplas Missionárias', 'quantidadeDuplasMissionarias', '#1A3A6B'],
   ['Desbravadores', 'desbravadores', '#dc2626'],
 ];
 

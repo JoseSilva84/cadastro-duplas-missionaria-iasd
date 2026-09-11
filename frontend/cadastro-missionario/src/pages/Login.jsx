@@ -127,7 +127,7 @@ export default function Login() {
             {[
               { label: 'Regiões', valor: estatisticas.regioes, tooltip: 'Regioes: total de regioes missionarias cadastradas no sistema.' },
               { label: 'Distritos', valor: estatisticas.distritos, tooltip: 'Distritos: total de distritos cadastrados em todas as regioes.' },
-              { label: 'Duplas', valor: estatisticas.duplas, tooltip: 'Duplas: total de duplas missionarias cadastradas.' },
+              { label: 'Duplas', valor: estatisticas.duplas, tooltip: 'Duplas: total de duplas missionárias cadastradas.' },
               {
                 label: 'PE + Classe',
                 valor: estatisticas.classes,

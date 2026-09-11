@@ -22,6 +22,13 @@ const validarRedefinicaoAcesso = [
     .withMessage('A nova senha deve ter pelo menos 8 caracteres.'),
 ];
 
+const validarCriacaoContaDupla = [
+  body('token').notEmpty().withMessage('Token de convite obrigatório.'),
+  body('email').trim().isEmail().withMessage('E-mail inválido.'),
+  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
+    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+];
+
 const responderErrosValidacao = (req, res) => {
   const erros = validationResult(req);
   if (erros.isEmpty()) return false;
@@ -77,6 +84,28 @@ const AuthController = {
       res.status(500).json({ erro: 'Erro ao buscar dados do usuário.' });
     }
   },
+
+  // GET /api/auth/validar-token-dupla
+  async validarTokenDupla(req, res) {
+    try {
+      const token = req.query.token;
+      const resultado = await AuthService.validarTokenCadastroDupla(token);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao validar link ou QR Code.' });
+    }
+  },
+
+  // POST /api/auth/criar-conta-dupla
+  async criarContaDupla(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.criarContaDuplaComToken(req.body);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao criar conta da dupla.' });
+    }
+  },
 };
 
 module.exports = {
@@ -84,4 +113,5 @@ module.exports = {
   validarLogin,
   validarAtualizacaoConta,
   validarRedefinicaoAcesso,
+  validarCriacaoContaDupla,
 };

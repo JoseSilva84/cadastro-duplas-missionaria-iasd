@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import api from '../../lib/api';
 import { FotoService } from '../../foto.service';
 import { PERFIS, ehSomenteLeitura, useAuth } from '../../contexts/AuthContext';
@@ -439,7 +440,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igrej
             </p>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-            Duplas Missionarias
+            Duplas Missionárias
           </h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
@@ -565,6 +566,219 @@ function ModalConfirmarExclusaoDupla({ dupla, processando, onClose, onConfirmar 
   );
 }
 
+function ModalQrCodeDupla({ dupla, onClose }) {
+  const [carregando, setCarregando] = useState(true);
+  const [imagemQr, setImagemQr] = useState('');
+  const [link, setLink] = useState('');
+  const [dadosAcesso, setDadosAcesso] = useState(null);
+  const [erro, setErro] = useState('');
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    if (!dupla?.id) return;
+
+    const carregarQrCode = async () => {
+      try {
+        setCarregando(true);
+        setErro('');
+        const { data } = await api.post(`/duplas/${dupla.id}/qrcode-acesso`);
+        const url = `${window.location.origin}/criar-conta-dupla?token=${encodeURIComponent(data.token)}`;
+        const dataUrl = await QRCode.toDataURL(url, {
+          width: 280,
+          margin: 2,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#1A3A6B', light: '#ffffff' },
+        });
+
+        if (!ativo) return;
+        setLink(url);
+        setImagemQr(dataUrl);
+        setDadosAcesso(data);
+      } catch (err) {
+        if (!ativo) return;
+        setErro(err.response?.data?.erro || 'Erro ao gerar QR Code de acesso.');
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    };
+
+    carregarQrCode();
+    return () => {
+      ativo = false;
+    };
+  }, [dupla?.id]);
+
+  if (!dupla) return null;
+
+  const liderNome = dupla.liderNome || 'Membro 1';
+  const membro2Nome = dupla.membro2Nome || 'Membro 2';
+  const igrejaOuDistrito = dupla.igreja?.nome || dupla.liderIgreja || dupla.distrito?.nome || 'Associação Paulistana';
+
+  const copiarLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      setErro('Não foi possível copiar o link.');
+    }
+  };
+
+  const textoWhatsApp = encodeURIComponent(
+    `Olá! Segue o link para vocês criarem o login e a senha de acesso da dupla missionária (${liderNome} e ${membro2Nome}) no sistema PCM:\n\n${link}`
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-scale-in border border-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Topo / Header */}
+        <div className="bg-gradient-to-br from-[#1A3A6B] to-[#244b8a] p-5 text-white relative">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition"
+            title="Fechar"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-base">
+              🔑
+            </span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#C9963A]">
+              Criar Conta da Dupla
+            </span>
+          </div>
+          <h3 className="mt-2 text-lg font-bold" style={{ fontFamily: 'Georgia, serif' }}>
+            {liderNome} + {membro2Nome}
+          </h3>
+          <p className="text-xs text-white/70 mt-0.5">
+            {igrejaOuDistrito}
+          </p>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="p-6">
+          {carregando ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#1A3A6B] border-t-transparent" />
+              <p className="mt-3 text-xs font-semibold text-slate-500">Gerando QR Code de acesso...</p>
+            </div>
+          ) : erro ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+              <p className="text-sm font-semibold text-red-700">{erro}</p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-4 btn-outline text-xs px-4 py-1.5"
+              >
+                Fechar
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Imagem do QR Code */}
+              <div className="flex flex-col items-center">
+                <div className="rounded-2xl border-2 border-slate-100 bg-white p-2.5 shadow-md">
+                  {imagemQr && (
+                    <img
+                      src={imagemQr}
+                      alt="QR Code de Acesso"
+                      className="h-56 w-56 object-contain rounded-xl"
+                    />
+                  )}
+                </div>
+                <p className="mt-2.5 text-center text-xs text-slate-500 max-w-[260px]">
+                  Aponte a câmera do celular para ler o QR Code e abrir a tela de criação de login e senha.
+                </p>
+              </div>
+
+              {/* Status da Conta */}
+              {dadosAcesso?.usuarioExistente ? (
+                <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs text-blue-900">
+                  <span className="font-bold">ℹ️ Conta existente:</span> {dadosAcesso.usuarioExistente.email}
+                  <p className="mt-0.5 text-[11px] text-blue-700">
+                    Ao abrir o link, a dupla poderá redefinir o e-mail ou escolher uma nova senha.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs text-emerald-900">
+                  <span className="font-bold">✨ Novo acesso:</span> A dupla ainda não possui conta.
+                  <p className="mt-0.5 text-[11px] text-emerald-700">
+                    Ao abrir o link, eles criarão o e-mail e a senha que desejarem.
+                  </p>
+                </div>
+              )}
+
+              {/* Bloco de Copiar Link */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-700">
+                  Link direto de convite
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={link}
+                    className="input-field flex-1 text-xs text-slate-600 bg-slate-50 select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={copiarLink}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1A3A6B] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#244b8a] whitespace-nowrap"
+                  >
+                    {copiado ? (
+                      <>
+                        <svg className="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <span>Copiar link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Botão de Enviar no WhatsApp */}
+              <a
+                href={`https://api.whatsapp.com/send?text=${textoWhatsApp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824z" />
+                </svg>
+                <span>Enviar pelo WhatsApp</span>
+              </a>
+
+              <p className="text-center text-[10px] text-slate-400">
+                O link e o QR Code são válidos por 48 horas. Você pode gerar novamente a qualquer momento.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DuplasDireto() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -606,6 +820,7 @@ export default function DuplasDireto() {
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [excluindoId, setExcluindoId] = useState(null);
   const [duplaParaExcluir, setDuplaParaExcluir] = useState(null);
+  const [duplaParaQrCode, setDuplaParaQrCode] = useState(null);
   const [estudoLicaoModal, setEstudoLicaoModal] = useState(null);
   const [licoesRapidas, setLicoesRapidas] = useState({});
   const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
@@ -620,6 +835,15 @@ export default function DuplasDireto() {
   const fecharConfirmacaoExcluir = () => {
     if (excluindoId) return;
     setDuplaParaExcluir(null);
+  };
+
+  const abrirModalQrCode = (duplaAlvo) => {
+    if (!duplaAlvo) return;
+    setDuplaParaQrCode(duplaAlvo);
+  };
+
+  const fecharModalQrCode = () => {
+    setDuplaParaQrCode(null);
   };
 
   const abrirModalLicao = (estudo) => {
@@ -1174,6 +1398,19 @@ export default function DuplasDireto() {
                     {podeAlterar && (
                       <button
                         type="button"
+                        onClick={() => abrirModalQrCode(dupla)}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#1A3A6B]/20 bg-[#1A3A6B]/5 px-2.5 text-xs font-semibold text-[#1A3A6B] transition-all hover:bg-[#1A3A6B]/10 hover:border-[#1A3A6B]/40"
+                        title="Gerar QR Code ou link para a dupla criar conta"
+                      >
+                        <svg className="h-3.5 w-3.5 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        Criar conta
+                      </button>
+                    )}
+                    {podeAlterar && (
+                      <button
+                        type="button"
                         onClick={() => abrirConfirmacaoExcluir(dupla)}
                         disabled={excluindoId === dupla.id}
                         className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-60"
@@ -1350,7 +1587,20 @@ export default function DuplasDireto() {
                     </svg>
                     Fechar
                   </button>
-                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:w-auto xl:items-center">
+                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-4 xl:flex xl:w-auto xl:items-center">
+                  {podeAlterar && (
+                    <button
+                      type="button"
+                      onClick={() => abrirModalQrCode(duplaSelecionada)}
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[#1A3A6B]/20 bg-[#1A3A6B]/5 px-3 py-2 text-xs font-semibold text-[#1A3A6B] transition-all hover:bg-[#1A3A6B]/10 hover:border-[#1A3A6B]/40"
+                      title="Gerar QR Code ou link para a dupla criar conta"
+                    >
+                      <svg className="h-4 w-4 text-[#1A3A6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                      </svg>
+                      Criar conta
+                    </button>
+                  )}
                   {podeAlterar && (
                     <button
                       type="button"
@@ -1675,6 +1925,12 @@ export default function DuplasDireto() {
       onClose={fecharConfirmacaoExcluir}
       onConfirmar={() => excluirDupla()}
     />
+    {duplaParaQrCode && (
+      <ModalQrCodeDupla
+        dupla={duplaParaQrCode}
+        onClose={fecharModalQrCode}
+      />
+    )}
     {estudoLicaoModal && (() => {
       const edicaoLicao = licoesRapidas[estudoLicaoModal.id] || {};
       const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao.serie)?.licoes || [];

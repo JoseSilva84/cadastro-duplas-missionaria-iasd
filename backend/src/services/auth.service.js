@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const prisma = require('../lib/prisma');
 const UsuarioModel = require('../models/usuario.model');
 const UsuarioService = require('./usuario.service');
 const { montarIdentidadeUsuario } = require('./usuarioIdentidade.service');
@@ -185,6 +186,186 @@ const AuthService = {
     }
 
     return { mensagem: 'Login e senha redefinidos com sucesso.' };
+  },
+
+  async criarTokenCadastroDupla(duplaId, usuarioSolicitante) {
+    const DuplaService = require('./dupla.service');
+    const dupla = await DuplaService.buscarPorId(duplaId, usuarioSolicitante);
+    if (!dupla) {
+      throw { status: 404, mensagem: 'Dupla missionária não encontrada.' };
+    }
+
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: { duplaId: Number(dupla.id) },
+      select: { id: true, nome: true, email: true, ativo: true },
+    });
+
+    const token = jwt.sign(
+      {
+        finalidade: 'cadastro-dupla',
+        duplaId: dupla.id,
+        nonce: crypto.randomUUID(),
+      },
+      segredoRedefinicao(),
+      { subject: String(dupla.id), expiresIn: '48h' }
+    );
+    const tokenDecodificado = jwt.decode(token);
+
+    return {
+      token,
+      expiraEm: new Date(tokenDecodificado.exp * 1000).toISOString(),
+      dupla: {
+        id: dupla.id,
+        nome: `${dupla.liderNome || ''} + ${dupla.membro2Nome || ''}`.trim(),
+        liderNome: dupla.liderNome,
+        membro2Nome: dupla.membro2Nome,
+        igrejaNome: dupla.igreja?.nome || dupla.liderIgreja || '',
+        distritoNome: dupla.distrito?.nome || dupla.liderDistrito || '',
+      },
+      usuarioExistente: usuarioExistente ? {
+        id: usuarioExistente.id,
+        email: usuarioExistente.email,
+        nome: usuarioExistente.nome,
+        ativo: usuarioExistente.ativo,
+      } : null,
+    };
+  },
+
+  async validarTokenCadastroDupla(token) {
+    if (!token) {
+      throw { status: 400, mensagem: 'Token de convite obrigatório.' };
+    }
+    let payload;
+    try {
+      payload = jwt.verify(token, segredoRedefinicao());
+    } catch (err) {
+      const expirada = err?.name === 'TokenExpiredError';
+      throw {
+        status: 400,
+        mensagem: expirada ? 'Este link ou QR Code expirou (validade de 48 horas). Solicite um novo ao administrador ou coordenador.' : 'Link ou QR Code inválido.',
+      };
+    }
+
+    if (payload.finalidade !== 'cadastro-dupla' || !payload.duplaId) {
+      throw { status: 400, mensagem: 'QR Code ou link inválido para cadastro de dupla.' };
+    }
+
+    const dupla = await prisma.dupla.findUnique({
+      where: { id: Number(payload.duplaId) },
+      include: {
+        distrito: { select: { id: true, nome: true, regiaoId: true } },
+        igreja: { select: { id: true, nome: true } },
+      },
+    });
+
+    if (!dupla) {
+      throw { status: 404, mensagem: 'Dupla missionária vinculada a este link não foi encontrada.' };
+    }
+
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: { duplaId: Number(dupla.id) },
+      select: { id: true, nome: true, email: true, ativo: true },
+    });
+
+    return {
+      valido: true,
+      dupla: {
+        id: dupla.id,
+        nome: `${dupla.liderNome || ''} + ${dupla.membro2Nome || ''}`.trim(),
+        liderNome: dupla.liderNome,
+        membro2Nome: dupla.membro2Nome,
+        igrejaNome: dupla.igreja?.nome || dupla.liderIgreja || '',
+        distritoNome: dupla.distrito?.nome || dupla.liderDistrito || '',
+      },
+      jaTemConta: Boolean(usuarioExistente && usuarioExistente.ativo),
+      emailAtual: usuarioExistente ? usuarioExistente.email : null,
+    };
+  },
+
+  async criarContaDuplaComToken({ token, email, senha }) {
+    if (!token) {
+      throw { status: 400, mensagem: 'Token de convite obrigatório.' };
+    }
+    let payload;
+    try {
+      payload = jwt.verify(token, segredoRedefinicao());
+    } catch (err) {
+      const expirada = err?.name === 'TokenExpiredError';
+      throw {
+        status: 400,
+        mensagem: expirada ? 'Este link ou QR Code expirou. Solicite um novo ao administrador ou coordenador.' : 'Link ou QR Code inválido.',
+      };
+    }
+
+    if (payload.finalidade !== 'cadastro-dupla' || !payload.duplaId) {
+      throw { status: 400, mensagem: 'QR Code ou link inválido para cadastro de dupla.' };
+    }
+
+    const dupla = await prisma.dupla.findUnique({
+      where: { id: Number(payload.duplaId) },
+      include: {
+        distrito: { select: { id: true, nome: true, regiaoId: true } },
+        igreja: { select: { id: true, nome: true } },
+      },
+    });
+
+    if (!dupla) {
+      throw { status: 404, mensagem: 'Dupla missionária não encontrada.' };
+    }
+
+    const emailNormalizado = normalizarEmail(email);
+    const senhaNormalizada = normalizarSenha(senha);
+    if (!emailNormalizado || !emailNormalizado.includes('@')) {
+      throw { status: 400, mensagem: 'Informe um e-mail válido para a dupla.' };
+    }
+    if (senhaNormalizada.length < 8) {
+      throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+    }
+
+    const nomeDupla = `${dupla.liderNome || ''} + ${dupla.membro2Nome || ''}`.trim() || 'Dupla Missionária';
+
+    // Verifica se o email já pertence a outro usuário que NÃO seja desta dupla
+    const donoDoEmail = await UsuarioModel.findByEmail(emailNormalizado);
+    if (donoDoEmail && Number(donoDoEmail.duplaId) !== Number(dupla.id)) {
+      throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário no sistema.' };
+    }
+
+    const senhaHash = await bcrypt.hash(senhaNormalizada, 10);
+
+    // Verifica se já existe um usuário para esta dupla
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: { duplaId: Number(dupla.id) },
+    });
+
+    if (usuarioExistente) {
+      await UsuarioModel.update(usuarioExistente.id, {
+        nome: nomeDupla,
+        email: emailNormalizado,
+        senha: senhaHash,
+        ativo: true,
+        distritoId: dupla.distritoId,
+        igrejaId: dupla.igrejaId || null,
+        regiaoId: dupla.distrito?.regiaoId || null,
+      });
+    } else {
+      await UsuarioModel.create({
+        nome: nomeDupla,
+        email: emailNormalizado,
+        senha: senhaHash,
+        perfil: 'DUPLA_MISSIONARIA',
+        duplaId: dupla.id,
+        distritoId: dupla.distritoId,
+        igrejaId: dupla.igrejaId || null,
+        regiaoId: dupla.distrito?.regiaoId || null,
+        ativo: true,
+      });
+    }
+
+    return {
+      mensagem: 'Conta da dupla configurada com sucesso!',
+      email: emailNormalizado,
+      duplaNome: nomeDupla,
+    };
   },
 
   async me(usuarioId) {

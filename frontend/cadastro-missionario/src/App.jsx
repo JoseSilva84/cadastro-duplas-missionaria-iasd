@@ -36,6 +36,7 @@ import GestaoUsuarios from './pages/GestaoUsuarios';
 import Alunos from './pages/Alunos';
 import Configuracoes from './pages/Configuracoes';
 import RedefinirAcesso from './pages/RedefinirAcesso';
+import CriarContaDupla from './pages/CriarContaDupla';
 import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
 import AnalisePotenciaisNovoTempo from './pages/AnalisePotenciaisNovoTempo';
 import FiltragemAvancadaNovoTempo from './pages/FiltragemAvancadaNovoTempo';
@@ -146,6 +147,7 @@ function AppRoutes() {
       {/* Rota pública */}
       <Route path="/login" element={<Login />} />
       <Route path="/redefinir-acesso" element={<RedefinirAcesso />} />
+      <Route path="/criar-conta-dupla" element={<CriarContaDupla />} />
 
       {/* Escolha de layout — após login, antes de qualquer coisa */}
       <Route
