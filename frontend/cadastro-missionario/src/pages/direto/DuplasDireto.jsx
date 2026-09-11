@@ -225,6 +225,15 @@ const tipoEstudoRelatorioPath = {
 
 const totalLicoesSerie = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes?.length || 0;
 const podeAlterarDuplas = (usuario) => Boolean(usuario) && !ehSomenteLeitura(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
+const podeGerarContaDupla = (usuario) => {
+  if (!usuario || ehSomenteLeitura(usuario)) return false;
+  return [
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.COORDENADOR_REGIONAL,
+  ].includes(usuario.perfil);
+};
 
 const progressoEstudo = (estudo) => {
   const total = totalLicoesSerie(estudo?.serie);
@@ -799,6 +808,7 @@ export default function DuplasDireto() {
   const filtroEspecialParam = searchParams.get('filtro');
   const { usuario } = useAuth();
   const podeAlterar = podeAlterarDuplas(usuario);
+  const podeCriarConta = podeGerarContaDupla(usuario);
   const [duplas, setDuplas] = useState([]);
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
@@ -1395,7 +1405,7 @@ export default function DuplasDireto() {
                     >
                       {mcfg.emoji && `${mcfg.emoji} `}{mcfg.label}
                     </span>
-                    {podeAlterar && (
+                    {podeCriarConta && (
                       <button
                         type="button"
                         onClick={() => abrirModalQrCode(dupla)}
@@ -1588,7 +1598,7 @@ export default function DuplasDireto() {
                     Fechar
                   </button>
                   <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-4 xl:flex xl:w-auto xl:items-center">
-                  {podeAlterar && (
+                  {podeCriarConta && (
                     <button
                       type="button"
                       onClick={() => abrirModalQrCode(duplaSelecionada)}

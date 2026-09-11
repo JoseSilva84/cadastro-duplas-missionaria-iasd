@@ -46,11 +46,16 @@ router.delete(
   DuplaController.remover
 );
 
-// POST /api/duplas/:id/qrcode-acesso — Gera token/link para a dupla criar login e senha
+// POST /api/duplas/:id/qrcode-acesso — Gera token/link para a dupla criar login e senha (apenas Admin, Pastor Regional e Coordenador Regional)
 router.post(
   '/:id/qrcode-acesso',
   autenticar,
-  bloquear(PERFIS.DUPLA_MISSIONARIA),
+  autorizar(
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+    PERFIS.PASTOR_REGIONAL,
+    PERFIS.COORDENADOR_REGIONAL
+  ),
   DuplaController.gerarQrCodeAcesso
 );
 

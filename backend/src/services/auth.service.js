@@ -189,6 +189,20 @@ const AuthService = {
   },
 
   async criarTokenCadastroDupla(duplaId, usuarioSolicitante) {
+    const { PERFIS } = require('../middlewares/auth');
+    const perfisPermitidos = [
+      PERFIS.SUPER_ADMIN,
+      PERFIS.ADMINISTRADOR,
+      PERFIS.PASTOR_REGIONAL,
+      PERFIS.COORDENADOR_REGIONAL,
+    ];
+    if (!usuarioSolicitante || !perfisPermitidos.includes(usuarioSolicitante.perfil)) {
+      throw {
+        status: 403,
+        mensagem: 'Apenas Administrador, Pastor Regional e Coordenador Regional podem gerar acesso para duplas.',
+      };
+    }
+
     const DuplaService = require('./dupla.service');
     const dupla = await DuplaService.buscarPorId(duplaId, usuarioSolicitante);
     if (!dupla) {
