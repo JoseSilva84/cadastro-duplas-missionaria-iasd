@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import VersiculoHero from '../components/VersiculoHero';
+import InstallPWA from '../components/InstallPWA';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
 
@@ -110,8 +111,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Painel esquerdo — Identidade visual */}
+    <div className="min-h-screen flex flex-col">
+      <InstallPWA />
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* Painel esquerdo — Identidade visual */}
       <div
         className="hidden lg:flex flex-col items-center justify-center w-1/2 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #0f2347 0%, #1A3A6B 55%, #2a5298 100%)' }}
@@ -377,6 +380,7 @@ export default function Login() {
           </p>
         </div>
       </div>
+    </div>
     </div>
   );
 }
