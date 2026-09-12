@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      manifestFilename: 'manifest.json',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'logoiasd.png'],
       manifest: {
         name: 'Programa Capacitação Missionária — Associação Paulistana',

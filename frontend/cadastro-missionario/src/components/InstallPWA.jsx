@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 
 export default function InstallPWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(
+    typeof window !== 'undefined' ? window.__pwaDeferredPrompt : null
+  );
   const [isStandalone, setIsStandalone] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-  const [showIosModal, setShowIosModal] = useState(false);
+  const [deviceType, setDeviceType] = useState('pc'); // 'pc' | 'android' | 'ios'
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('pc');
   const [dismissed, setDismissed] = useState(false);
   const [instaladoSucesso, setInstaladoSucesso] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se já está instalado e rodando em modo standalone (PWA)
+    // 1. Verifica se já está rodando em modo standalone (PWA instalado e aberto)
     const isStandaloneMode =
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true ||
@@ -25,73 +28,99 @@ export default function InstallPWA() {
       setDismissed(true);
     }
 
-    // 3. Detecta iOS (iPhone, iPad, iPod)
+    // 3. Detecta tipo de dispositivo
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isAppleIos =
       /iphone|ipad|ipod/.test(userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/.test(userAgent);
 
     if (isAppleIos) {
-      setIsIos(true);
+      setDeviceType('ios');
+      setActiveTab('ios');
+    } else if (isAndroid) {
+      setDeviceType('android');
+      setActiveTab('android');
+    } else {
+      setDeviceType('pc');
+      setActiveTab('pc');
     }
 
-    // 4. Captura o evento nativo de instalação (Chrome, Edge, Brave, Android)
+    // 4. Captura o evento nativo de instalação caso já esteja disponível
+    if (window.__pwaDeferredPrompt) {
+      setDeferredPrompt(window.__pwaDeferredPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
+      window.__pwaDeferredPrompt = e;
       setDeferredPrompt(e);
+    };
+
+    const handlePromptAvailable = (e) => {
+      if (e.detail) {
+        setDeferredPrompt(e.detail);
+      }
     };
 
     const handleAppInstalled = () => {
       setInstaladoSucesso(true);
       setDeferredPrompt(null);
+      window.__pwaDeferredPrompt = null;
       setTimeout(() => {
         setIsStandalone(true);
       }, 4000);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-available', handlePromptAvailable);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('pwa-prompt-available', handlePromptAvailable);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
-  // Se já estiver rodando como aplicativo instalado, não exibe nada
+  // Se já estiver rodando como aplicativo em tela própria, não exibe o banner
   if (isStandalone) {
     return null;
   }
 
   // Se o usuário dispensou o banner nesta sessão
-  if (dismissed && !showIosModal) {
+  if (dismissed && !showGuideModal) {
     return null;
   }
 
   const handleInstallClick = async () => {
-    // Se for iOS, exibe o modal com instrução passo a passo
-    if (isIos) {
-      setShowIosModal(true);
+    // Se for iOS, abre direto o guia ilustrado (Safari não suporta prompt programático)
+    if (deviceType === 'ios') {
+      setActiveTab('ios');
+      setShowGuideModal(true);
       return;
     }
 
-    // Se tiver o evento deferredPrompt (Chrome, Edge, Android, etc.)
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult?.outcome === 'accepted') {
-        setInstaladoSucesso(true);
+    // Se tiver o evento deferredPrompt capturado (Chrome, Edge, Android, etc.)
+    const promptEvent = deferredPrompt || window.__pwaDeferredPrompt;
+    if (promptEvent) {
+      try {
+        promptEvent.prompt();
+        const choiceResult = await promptEvent.userChoice;
+        if (choiceResult?.outcome === 'accepted') {
+          setInstaladoSucesso(true);
+        }
+        setDeferredPrompt(null);
+        window.__pwaDeferredPrompt = null;
+        return;
+      } catch (err) {
+        console.warn('Erro ao abrir prompt nativo:', err);
       }
-      setDeferredPrompt(null);
-      return;
     }
 
-    // Fallback: se o navegador não disparou o evento ainda ou não suporta diretamente
-    alert(
-      'Para instalar este aplicativo:\n\n' +
-      '• No Chrome/Edge (PC): Clique no ícone de instalação (computador com seta) na barra de endereços ou no menu (⋮) > "Instalar Aplicativo".\n\n' +
-      '• No Celular (Android): Toque no menu (⋮) do navegador e selecione "Instalar aplicativo" ou "Adicionar à tela inicial".'
-    );
+    // Fallback amigável: se o navegador ainda não disparou o evento ou se o app já está instalado
+    setActiveTab(deviceType);
+    setShowGuideModal(true);
   };
 
   const handleDismiss = () => {
@@ -187,14 +216,15 @@ export default function InstallPWA() {
         </div>
       </div>
 
-      {/* Modal especial de Instruções para Usuários do iOS (iPhone / iPad) */}
-      {showIosModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-7 max-w-md w-full border border-gray-100 text-gray-800 relative">
+      {/* Modal Interativo de Ajuda / Instruções de Instalação */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-7 max-w-lg w-full border border-gray-100 text-gray-800 relative max-h-[90vh] overflow-y-auto">
+            {/* Fechar */}
             <button
               type="button"
-              onClick={() => setShowIosModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 rounded-full p-1 cursor-pointer"
+              onClick={() => setShowGuideModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -203,73 +233,206 @@ export default function InstallPWA() {
 
             {/* Cabeçalho */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#0f2347] text-white flex items-center justify-center p-1.5 shadow-md">
+              <div className="w-12 h-12 rounded-2xl bg-[#0f2347] text-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
                 <img src="/pwa-192x192.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#1A3A6B]">Como instalar no iPhone / iPad</h3>
-                <p className="text-xs text-gray-500">Adicione à tela inicial em 3 passos simples</p>
+                <h3 className="text-lg font-bold text-[#1A3A6B]">Como Instalar o Aplicativo</h3>
+                <p className="text-xs text-gray-500">Acesse sem abrir o navegador e em tela cheia</p>
               </div>
             </div>
 
-            {/* Passos */}
-            <div className="space-y-3.5 my-5 text-left text-sm">
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                  1
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    Toque no botão Compartilhar
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                    Procure pelo ícone quadrado com uma seta para cima
-                    <span className="inline-block p-1 bg-gray-200 rounded text-gray-700">
-                      <svg className="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                    </span>
-                    na barra do Safari.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                  2
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    Selecione &quot;Adicionar à Tela de Início&quot;
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Role a lista de opções para baixo até encontrar o item com o ícone de soma (➕).
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    Toque em &quot;Adicionar&quot;
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    No canto superior direito da tela, confirme clicando em Adicionar.
-                  </p>
-                </div>
-              </div>
+            {/* Navegação por Abas (PC, Android, iOS) */}
+            <div className="flex bg-gray-100 p-1 rounded-xl mb-4 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setActiveTab('pc')}
+                className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'pc' ? 'bg-white text-[#1A3A6B] shadow-sm font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <span>💻</span> Computador (PC / Mac)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('android')}
+                className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'android' ? 'bg-white text-[#1A3A6B] shadow-sm font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <span>📱</span> Android
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ios')}
+                className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'ios' ? 'bg-white text-[#1A3A6B] shadow-sm font-bold' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <span>🍏</span> iPhone / iPad
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowIosModal(false)}
-              className="btn-primary w-full py-2.5 text-xs font-bold cursor-pointer"
-            >
-              Entendi!
-            </button>
+            {/* Conteúdo Aba: PC */}
+            {activeTab === 'pc' && (
+              <div className="space-y-3 text-left text-sm">
+                <div className="flex items-start gap-3 p-3 bg-blue-50/60 rounded-2xl border border-blue-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      No Google Chrome ou Edge:
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Clique no menu de <strong>três pontinhos (⋮)</strong> no canto superior direito do navegador.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-blue-50/60 rounded-2xl border border-blue-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Selecione &quot;Salvar e compartilhar&quot; ➔ &quot;Instalar...&quot;
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Clique em <strong>&quot;Instalar Programa Capacitação Missionária&quot;</strong> (ou clique no ícone de computador com seta na barra de endereços, se visível).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-blue-50/60 rounded-2xl border border-blue-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Confirme a Instalação
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Um atalho será criado automaticamente na sua Área de Trabalho e no Menu Iniciar do Windows.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/70 text-xs text-amber-900 mt-2">
+                  <p className="font-semibold flex items-center gap-1.5 text-amber-800">
+                    <span>💡</span> Já instalou antes neste computador?
+                  </p>
+                  <p className="mt-1 text-amber-700 leading-relaxed">
+                    Se você já havia instalado, o Chrome não permite instalar duas vezes. Procure por <strong>&quot;Capacitação Missionária&quot;</strong> na busca do Windows ou digite <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-amber-950">chrome://apps</code> na barra do Chrome para abri-lo diretamente!
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Conteúdo Aba: Android */}
+            {activeTab === 'android' && (
+              <div className="space-y-3 text-left text-sm">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Abra o menu do Chrome
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Toque nos <strong>três pontinhos (⋮)</strong> no topo direito da tela.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Selecione &quot;Instalar aplicativo&quot;
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Em alguns modelos, pode aparecer como <strong>&quot;Adicionar à tela inicial&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Toque em &quot;Instalar&quot;
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      O ícone do app aparecerá junto aos seus outros aplicativos no celular.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Conteúdo Aba: iOS */}
+            {activeTab === 'ios' && (
+              <div className="space-y-3 text-left text-sm">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Toque no botão Compartilhar
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Procure pelo ícone quadrado com uma seta para cima na barra inferior do Safari.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Selecione &quot;Adicionar à Tela de Início&quot;
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Role o menu para baixo até encontrar a opção com o ícone de soma (➕).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-7 h-7 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Confirme em &quot;Adicionar&quot;
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Toque no botão &quot;Adicionar&quot; no canto superior direito para finalizar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Botão de Fechar Modal */}
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#1A3A6B] to-[#0f2347] text-white font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-md"
+              >
+                Entendi!
+              </button>
+            </div>
           </div>
         </div>
       )}
