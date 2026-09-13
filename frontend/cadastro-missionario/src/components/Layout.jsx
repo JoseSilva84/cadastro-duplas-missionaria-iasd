@@ -278,20 +278,20 @@ export default function Layout({ children }) {
            >
              {icons.menu}
            </button>
-           <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
-             {icons.logoIasd}
-             <span className="text-white text-xs sm:text-sm font-bold truncate" style={{ fontFamily: 'Georgia, serif' }}>
-               Duplas Missionárias
-             </span>
-           </div>
-           <div className="w-9 flex-shrink-0" />
-         </header>
+            <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
+              {icons.logoIasd}
+              <span className="text-white text-sm sm:text-base font-black tracking-wider truncate" style={{ fontFamily: 'Georgia, serif' }}>
+                PCM
+              </span>
+            </div>
+            <div className="w-9 flex-shrink-0" />
+          </header>
 
-         <main className="flex-1 overflow-y-auto bg-[#F4F5F7] pb-20 lg:pb-0">
-           <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-             {children || <Outlet />}
-           </div>
-         </main>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4F5F7] pb-20 lg:pb-0">
+            <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto min-w-0 w-full">
+              {children || <Outlet />}
+            </div>
+          </main>
          <BottomNavigation navLinks={navLinksVisiveis} onMenuClick={() => setSidebarAberta(true)} />
        </div>
     </div>

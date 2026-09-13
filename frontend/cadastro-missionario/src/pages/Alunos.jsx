@@ -54,16 +54,16 @@ const BadgeClasse = ({ classe }) => {
   );
 };
 
-const MetricCard = ({ label, valor, detalhe, cor, onClick }) => (
+const MetricCard = ({ label, valor, detalhe, cor, onClick, className = '' }) => (
   <button
     type="button"
     onClick={onClick}
-    className="group card relative overflow-hidden text-left transition-all duration-200 hover:-translate-y-1 hover:ring-1 hover:ring-[#C9963A]/35 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/45"
+    className={`group card relative min-h-24 sm:min-h-28 overflow-hidden text-left p-3.5 sm:p-4 md:p-5 transition-all duration-200 hover:-translate-y-1 hover:ring-1 hover:ring-[#C9963A]/35 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/45 ${className}`}
   >
     <span className="absolute inset-x-0 top-0 h-1 opacity-80 transition-all duration-200 group-hover:h-1.5" style={{ backgroundColor: cor }} />
-    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="mt-2 text-3xl font-bold leading-none" style={{ color: cor }}>{numero(valor)}</p>
-    {detalhe && <p className="mt-3 text-sm font-medium text-gray-500">{detalhe}</p>}
+    <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-400 truncate">{label}</p>
+    <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight" style={{ color: cor }}>{numero(valor)}</p>
+    {detalhe && <p className="mt-2 text-xs sm:text-sm font-medium text-gray-500 line-clamp-1">{detalhe}</p>}
   </button>
 );
 
@@ -287,47 +287,61 @@ export default function Alunos() {
   if (carregando) return <LoadingState mensagem="Carregando alunos..." />;
 
   return (
-    <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in'}>
-      <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8'}>
+    <div className={isDireto ? 'flex flex-col h-full animate-fade-in bg-[#F4F5F7]' : 'w-full animate-fade-in'}>
+      <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-6'}>
         <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className="mb-3" />
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Alunos</p>
+              <p className="text-[#C9963A] text-xs sm:text-sm font-semibold uppercase tracking-wider">Alunos</p>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
               Todos os Alunos
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Alunos de estudos individuais, pontos de estudo e classes bíblicas dentro do seu escopo de acesso.</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Alunos de estudos individuais, pontos de estudo e classes bíblicas dentro do seu escopo de acesso.</p>
           </div>
-          <div className="flex flex-wrap gap-3 xl:justify-end">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {isAdmin && (
-              <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/estudos-geral`)}>
+              <button type="button" className="flex-1 sm:flex-initial text-center btn-outline px-4 py-2 text-xs sm:text-sm" onClick={() => navigate(`${prefix}/relatorios/estudos-geral`)}>
                 Estudos no Geral
               </button>
             )}
-            <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/cadastro/estudos-biblicos`)}>
+            <button type="button" className="flex-1 sm:flex-initial text-center btn-primary px-4 py-2 text-xs sm:text-sm" onClick={() => navigate(`${prefix}/cadastro/estudos-biblicos`)}>
               Novo aluno
             </button>
           </div>
         </div>
       </div>
 
-      <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
+      <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5' : 'space-y-4 sm:space-y-5'}>
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <MetricCard label="Total de alunos" valor={resumo.total} detalhe="Todos os formatos" cor="#1A3A6B" onClick={() => navigate(`${prefix}/relatorios/estudos-cadastrados`)} />
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+          <MetricCard
+            label="Total de alunos"
+            valor={resumo.total}
+            detalhe="Todos os formatos"
+            cor="#1A3A6B"
+            onClick={() => navigate(`${prefix}/relatorios/estudos-cadastrados`)}
+            className="col-span-2 sm:col-span-1 md:col-span-1"
+          />
           <MetricCard label="Individuais" valor={resumo.individuais} detalhe="Estudos individuais" cor="#0284c7" onClick={() => navigate(caminhoRelatorio('UNICO'))} />
           <MetricCard label="Pontos" valor={resumo.pontos} detalhe="Alunos em pontos" cor="#0d9488" onClick={() => navigate(caminhoRelatorio('PONTO'))} />
           <MetricCard label="Classes" valor={resumo.classes} detalhe="Alunos em classes" cor="#7B2D8B" onClick={() => navigate(caminhoRelatorio('CLASSE'))} />
-          <MetricCard label="Classe A" valor={resumo.classeA} detalhe="Prontos para batismo" cor="#047857" onClick={() => { setClasse('A'); setTipo(''); setBusca(''); }} />
+          <MetricCard
+            label="Classe A"
+            valor={resumo.classeA}
+            detalhe="Prontos para batismo"
+            cor="#047857"
+            onClick={() => { setClasse('A'); setTipo(''); setBusca(''); }}
+            className="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1"
+          />
         </div>
 
-        <section className="card">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_220px_auto] lg:items-end">
-            <label>
+        <section className="card p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-[1fr_200px_200px_auto] gap-3 items-end">
+            <label className="sm:col-span-2 md:col-span-1">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Buscar</span>
               <input className="input-field" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Nome, dupla, igreja, distrito..." />
             </label>
@@ -347,22 +361,22 @@ export default function Alunos() {
                 <option value="A">Classe A</option>
                 <option value="B">Classe B</option>
                 <option value="C">Classe C</option>
-                <option value="SEM">Sem classificacao</option>
+                <option value="SEM">Sem classificação</option>
               </select>
             </label>
-            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => { setBusca(''); setTipo(''); setClasse(''); }}>
+            <button type="button" className="btn-outline w-full sm:w-auto px-4 py-2.5 text-sm" onClick={() => { setBusca(''); setTipo(''); setClasse(''); }}>
               Limpar
             </button>
           </div>
         </section>
 
-        <section className="card">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <section className="card p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-[#1A3A6B]">Lista de alunos</h2>
-              <p className="text-sm text-gray-400">Resultado conforme seu nivel de acesso.</p>
+              <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Lista de alunos</h2>
+              <p className="text-xs sm:text-sm text-gray-400">Resultado conforme seu nível de acesso.</p>
             </div>
-            <span className="rounded-lg bg-[#1A3A6B]/10 px-3 py-2 text-sm font-bold text-[#1A3A6B]">{numero(alunosFiltrados.length)} aluno(s)</span>
+            <span className="self-start sm:self-auto rounded-lg bg-[#1A3A6B]/10 px-3 py-1.5 text-xs sm:text-sm font-bold text-[#1A3A6B]">{numero(alunosFiltrados.length)} aluno(s)</span>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
@@ -371,85 +385,138 @@ export default function Alunos() {
               return (
               <article
                 key={aluno.id}
-                className="overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md focus-within:bg-[#F8FAFC] active:bg-[#EEF4FB]"
+                className="overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-within:bg-[#F8FAFC]"
                 style={{
-                  borderColor: bordaClasse || '#f3f4f6',
-                  boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}22, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
+                  borderColor: bordaClasse || '#e5e7eb',
+                  boxShadow: bordaClasse ? `0 0 0 1px ${bordaClasse}33, 0 4px 14px rgba(15, 35, 71, 0.06)` : undefined,
                 }}
               >
-                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[minmax(0,1fr)_8rem] md:items-end xl:grid-cols-[minmax(0,1fr)_9rem] xl:items-center">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(8rem,1fr)_7rem_minmax(8rem,0.85fr)_minmax(12rem,1fr)] lg:items-center xl:grid-cols-[minmax(10rem,1fr)_8.5rem_minmax(9rem,0.9fr)_minmax(11rem,1fr)_minmax(11rem,1fr)]">
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aluno</p>
-                      <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
-                      {aluno.whatsapp && <p className="mt-1 text-xs text-gray-400">{aluno.whatsapp}</p>}
-                      <div className="mt-3 min-w-0 xl:hidden">
-                        <p className="text-[10px] font-bold uppercase leading-tight tracking-widest text-gray-400">Local / dupla</p>
-                        <p className="truncate text-[11px] font-semibold leading-tight text-gray-600">{aluno.igreja}</p>
-                        <p className="truncate text-[10px] leading-tight text-gray-400">{aluno.distrito} - {aluno.regiao}</p>
-                        <p className="truncate text-[10px] leading-tight text-gray-400">{aluno.dupla}</p>
-                      </div>
-                    </div>
+                {/* Visualização Desktop (xl: 1280px+) */}
+                <div className="hidden xl:grid grid-cols-[minmax(12rem,1.2fr)_7rem_minmax(9rem,1fr)_minmax(11rem,1fr)_minmax(12rem,1.2fr)_auto] items-center gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Aluno</p>
+                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                    {aluno.whatsapp && <p className="mt-0.5 text-xs text-gray-400">{aluno.whatsapp}</p>}
+                  </div>
 
-                    <div className="min-w-0">
-                      <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-400">Classe</p>
-                      <BadgeClasse classe={aluno.classificacao} />
-                    </div>
+                  <div className="min-w-0">
+                    <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-gray-400">Classe</p>
+                    <BadgeClasse classe={aluno.classificacao} />
+                  </div>
 
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Origem</p>
-                      <p className="text-sm font-semibold text-gray-700">{aluno.origem}</p>
-                      <p className="text-xs text-gray-400">{getSerieNome(aluno.serie)}</p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Origem</p>
+                    <p className="text-xs font-semibold text-gray-700 truncate">{aluno.origem}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{getSerieNome(aluno.serie)}</p>
+                  </div>
 
-                    <div className="min-w-0">
-                      <div className="md:max-w-28 lg:max-w-32 xl:max-w-none">
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Progresso</p>
-                          <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-gray-100">
-                          <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
-                        </div>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-gray-400">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</span>
-                        {!aluno.encerrado && aluno.statusEstudo === 'EM_ANDAMENTO' && (
-                          <span className="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
-                            Em andamento
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className="mt-3 inline-flex items-center justify-center rounded-lg border border-[#1A3A6B]/25 bg-white px-3 py-2 text-xs font-bold text-[#1A3A6B] shadow-sm transition hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#C9963A]/35 md:mt-2"
-                        onClick={() => abrirAtualizacao(aluno)}
-                      >
-                        Atualizar estudo
-                      </button>
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Progresso</p>
+                      <span className="text-xs font-bold text-gray-600">{aluno.progresso}%</span>
                     </div>
-
-                    <div className="hidden min-w-0 xl:block">
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Local / dupla</p>
-                      <p className="break-words text-sm font-semibold text-gray-700">{aluno.igreja}</p>
-                      <p className="text-xs text-gray-400">{aluno.distrito} - {aluno.regiao}</p>
-                      <p className="mt-1 break-words text-xs text-gray-500">{aluno.dupla}</p>
+                    <div className="h-2 rounded-full bg-gray-100">
+                      <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] text-gray-400 truncate">{getLicaoLabel(aluno.serie, aluno.licaoAtual)}</span>
+                      {!aluno.encerrado && aluno.statusEstudo === 'EM_ANDAMENTO' && (
+                        <span className="inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                          Em andamento
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex md:justify-end md:self-end md:pt-16 lg:pt-20 xl:pt-0">
-                    <div className="w-full space-y-2 md:w-32 xl:w-40">
-                      <button type="button" className="btn-outline w-full px-3 py-2 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
-                        Detalhes
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:border-red-700 hover:bg-red-700 hover:text-white"
-                        onClick={() => abrirEncerramento(aluno)}
-                      >
-                        Encerrar Estudo
-                      </button>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Local / dupla</p>
+                    <p className="break-words text-xs font-semibold text-gray-700">{aluno.igreja}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{aluno.distrito} - {aluno.regiao}</p>
+                    <p className="mt-0.5 break-words text-[11px] text-gray-500 truncate">{aluno.dupla}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-lg border border-[#1A3A6B]/25 bg-white px-3 py-1.5 text-xs font-bold text-[#1A3A6B] shadow-sm transition hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white"
+                      onClick={() => abrirAtualizacao(aluno)}
+                    >
+                      Atualizar
+                    </button>
+                    <button type="button" className="btn-outline px-3 py-1.5 text-xs" onClick={() => navigate(caminhoDetalhes(aluno))}>
+                      Detalhes
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                      onClick={() => abrirEncerramento(aluno)}
+                      title="Encerrar Estudo"
+                    >
+                      Encerrar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Visualização Tablet e Mobile (< xl: até 1279px) */}
+                <div className="xl:hidden p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                        <BadgeClasse classe={aluno.classificacao} />
+                      </div>
+                      {aluno.whatsapp && <p className="mt-0.5 text-xs text-gray-400">{aluno.whatsapp}</p>}
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Estudo</span>
+                      <p className="font-semibold text-gray-800">{aluno.origem}</p>
+                      <p className="text-gray-400 truncate">{getSerieNome(aluno.serie)}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Localização</span>
+                      <p className="font-semibold text-gray-800 truncate">{aluno.igreja}</p>
+                      <p className="text-gray-400 truncate">{aluno.distrito} • {aluno.dupla}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-500">Progresso</span>
+                        <span className="text-gray-400 font-medium">({getLicaoLabel(aluno.serie, aluno.licaoAtual)})</span>
+                      </div>
+                      <span className="font-bold text-[#1A3A6B]">{aluno.progresso}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100">
+                      <div className="h-full rounded-full bg-[#C9963A]" style={{ width: `${aluno.progresso}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      className="flex-1 min-w-[120px] inline-flex items-center justify-center rounded-lg border border-[#1A3A6B]/30 bg-blue-50/50 hover:bg-[#1A3A6B] hover:text-white px-3 py-2 text-xs font-bold text-[#1A3A6B] transition-colors"
+                      onClick={() => abrirAtualizacao(aluno)}
+                    >
+                      Atualizar estudo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline px-3 py-2 text-xs font-semibold"
+                      onClick={() => navigate(caminhoDetalhes(aluno))}
+                    >
+                      Detalhes
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                      onClick={() => abrirEncerramento(aluno)}
+                    >
+                      Encerrar
+                    </button>
                   </div>
                 </div>
               </article>

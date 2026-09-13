@@ -202,11 +202,11 @@ export default function LayoutDireto() {
               <div className="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0">
                 <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-0.5" />
               </div>
-              <div className="hidden sm:block">
-                <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
+              <div>
+                <p className="text-white font-bold text-sm leading-tight tracking-wide" style={{ fontFamily: 'Georgia, serif' }}>
                   PCM
                 </p>
-                <p className="text-[#C9963A] text-[10px] font-medium">Assoc. Paulistana</p>
+                <p className="text-[#C9963A] text-[10px] font-medium hidden sm:block">Assoc. Paulistana</p>
               </div>
             </div>
 
@@ -372,7 +372,7 @@ export default function LayoutDireto() {
       </header>
 
       {/* Conteúdo principal — ocupa todo o resto da tela, sem scroll vertical global */}
-      <main className="direto-main-content flex-1 min-h-0 overflow-y-auto pb-20 lg:pb-0">
+      <main className="direto-main-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
         <Outlet />
       </main>
       <BottomNavigation navLinks={navLinks} onMenuClick={() => setMenuAberto(true)} />

@@ -175,15 +175,15 @@ export default function InstallPWA() {
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#C9963A] to-[#d4a34b] hover:from-[#b8852c] hover:to-[#c9963a] text-slate-950 font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#1A3A6B] hover:text-[#0f2347] font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer border border-white/40"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={2.2}
+                  strokeWidth={2.4}
                   stroke="currentColor"
-                  className="w-4 h-4"
+                  className="w-4 h-4 text-[#1A3A6B]"
                 >
                   <path
                     strokeLinecap="round"

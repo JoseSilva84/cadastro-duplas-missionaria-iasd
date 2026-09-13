@@ -194,11 +194,8 @@ export default function Login() {
           {/* Header mobile */}
           <div className="lg:hidden flex flex-col items-center mb-8 gap-2">
             <Cruz />
-            <h1 className="text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
-              PROGRAMA
-            </h1>
-            <h1 className="text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
-              CAPACITAÇÃO MISSIONÁRIA
+            <h1 className="text-3xl sm:text-4xl font-black text-[#1A3A6B] text-center tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
+              PCM
             </h1>
             <p className="text-[#C9963A] font-semibold text-sm">Associação Paulistana</p>
           </div>
@@ -285,21 +282,21 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setModalChaveAberto(true)}
-                className="mt-1 w-full group relative flex items-center justify-between gap-3 p-3.5 rounded-2xl border-2 border-[#C9963A]/40 bg-gradient-to-r from-amber-50/70 via-white to-amber-50/30 hover:from-amber-100/70 hover:to-amber-50 hover:border-[#C9963A] transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.99]"
+                className="mt-1 w-full group relative flex items-center justify-between gap-3 p-3.5 rounded-2xl border-2 border-[#1A3A6B]/30 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/40 hover:from-blue-100/80 hover:to-blue-50 hover:border-[#1A3A6B] transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9963A] to-[#b0802c] text-white flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform text-lg">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#0f2347] text-white flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform text-lg">
                     ✨
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#0f2347]">Cadastrar Minha Dupla</span>
-                      <span className="text-[10px] bg-[#C9963A]/15 text-[#916719] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
+                      <span className="text-[10px] bg-[#1A3A6B]/15 text-[#1A3A6B] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
                     </div>
                     <p className="text-xs text-gray-500">Auto-cadastro com a chave do pastor</p>
                   </div>
                 </div>
-                <div className="text-[#C9963A] pr-1 group-hover:translate-x-1 transition-transform">
+                <div className="text-[#1A3A6B] pr-1 group-hover:translate-x-1 transition-transform">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -323,7 +320,7 @@ export default function Login() {
                 </button>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#C9963A] flex items-center justify-center text-2xl border border-amber-200 shadow-inner">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1A3A6B] flex items-center justify-center text-2xl border border-blue-200 shadow-inner">
                     🔑
                   </div>
                   <div>
