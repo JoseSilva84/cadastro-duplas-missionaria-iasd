@@ -159,14 +159,17 @@ function AjustarMapa({ pontos }) {
 }
 
 function Mapa({ leads, igrejas, onSelecionarLead }) {
-  const [categoriaAtiva, setCategoriaAtiva] = useState(null);
+  const [categoriasAtivas, setCategoriasAtivas] = useState([]);
+  const temSelecao = categoriasAtivas.length > 0;
   const leadsVisiveis = useMemo(() => {
-    if (!categoriaAtiva) return leads;
-    if (categoriaAtiva === 'igrejas') return [];
-    return leads.filter((lead) => lead.prioridade === categoriaAtiva);
-  }, [categoriaAtiva, leads]);
+    if (!temSelecao) return leads;
+    return leads.filter((lead) => categoriasAtivas.includes(lead.prioridade));
+  }, [categoriasAtivas, leads, temSelecao]);
+  const igrejasVisiveis = useMemo(() => (
+    !temSelecao || categoriasAtivas.includes('igrejas') ? igrejas : []
+  ), [categoriasAtivas, igrejas, temSelecao]);
   const pontosLeads = useMemo(() => leadsVisiveis.filter(coordenadasValidas).slice(0, 300), [leadsVisiveis]);
-  const pontosIgrejas = useMemo(() => igrejas.filter(coordenadasValidas), [igrejas]);
+  const pontosIgrejas = useMemo(() => igrejasVisiveis.filter(coordenadasValidas), [igrejasVisiveis]);
   const pontos = useMemo(() => [...pontosLeads, ...pontosIgrejas], [pontosIgrejas, pontosLeads]);
   const centro = pontos[0] ? [Number(pontos[0].latitude), Number(pontos[0].longitude)] : [-23.5505, -46.6333];
   const exatos = leadsVisiveis.filter((item) => coordenadasValidas(item) && !ehAproximada(item)).length;
@@ -175,7 +178,9 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
     totais[lead.prioridade] = (totais[lead.prioridade] || 0) + 1;
     return totais;
   }, {}), [leads]);
-  const selecionarCategoria = (categoria) => setCategoriaAtiva((atual) => atual === categoria ? null : categoria);
+  const alternarCategoria = (categoria) => setCategoriasAtivas((atuais) => (
+    atuais.includes(categoria) ? atuais.filter((item) => item !== categoria) : [...atuais, categoria]
+  ));
   return (
     <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-lg">
       <div className="flex flex-col gap-4 bg-gradient-to-r from-white to-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -186,10 +191,11 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {
-            const ativo = !categoriaAtiva || categoriaAtiva === chave;
-            return <button type="button" key={chave} aria-pressed={ativo} onClick={() => selecionarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo} {numero(contagensPrioridade[chave])}</button>;
+            const ativo = !temSelecao || categoriasAtivas.includes(chave);
+            return <button type="button" key={chave} aria-pressed={categoriasAtivas.includes(chave)} onClick={() => alternarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo} {numero(contagensPrioridade[chave])}</button>;
           })}
-          <button type="button" aria-pressed={!categoriaAtiva || categoriaAtiva === 'igrejas' || Boolean(PRIORIDADES[categoriaAtiva])} onClick={() => selecionarCategoria('igrejas')} className={`rounded-full border px-3 py-2 text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${categoriaAtiva === 'igrejas' || !categoriaAtiva || PRIORIDADES[categoriaAtiva] ? 'border-emerald-100 bg-white' : 'border-transparent bg-white/50 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" />Igrejas {numero(pontosIgrejas.length)}</button>
+          <button type="button" aria-pressed={categoriasAtivas.includes('igrejas')} onClick={() => alternarCategoria('igrejas')} className={`rounded-full border px-3 py-2 text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${!temSelecao || categoriasAtivas.includes('igrejas') ? 'border-emerald-100 bg-white' : 'border-transparent bg-white/50 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" />Igrejas {numero(igrejas.filter(coordenadasValidas).length)}</button>
+          {temSelecao && <button type="button" onClick={() => setCategoriasAtivas([])} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Mostrar todos</button>}
         </div>
       </div>
       <div className="relative z-0 h-[520px] w-full">
@@ -244,7 +250,7 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         </MapContainer>
       </div>
       <div className="flex flex-col gap-2 border-t border-emerald-100 bg-emerald-50/60 px-5 py-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between">
-        <p>Clique nas cores para filtrar o mapa. As igrejas permanecem visíveis junto aos leads para referência territorial.</p>
+        <p>Clique nas cores para ligar ou desligar categorias. Sem seleção, o mapa mostra quentes, potenciais, mornos, frios e igrejas.</p>
         <a className="btn-outline whitespace-nowrap" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/#map=11/${centro[0]}/${centro[1]}`}>Abrir no OSM</a>
       </div>
     </section>
