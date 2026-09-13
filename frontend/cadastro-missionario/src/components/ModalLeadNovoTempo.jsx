@@ -11,10 +11,36 @@ const PRIORIDADES = {
 };
 
 const normalizar = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const normalizarCampo = (valor) => normalizar(valor).replace(/[^a-z0-9]+/g, '');
 const texto = (valor, fallback = 'Não informado') => valor === null || valor === undefined || valor === '' ? fallback : String(valor);
 const simNao = (valor) => valor ? 'Sim' : 'Não';
 
+const ROTULOS_CAMPOS_TECNICOS = {
+  ml: 'Pontuação do modelo (ML)',
+  sim: 'Similaridade com perfil VIP (SIM)',
+  faixa: 'Faixa de prioridade',
+  r: 'Religião (R)',
+  m: 'Quantidade de materiais (M)',
+  c: 'Dias sem contato (C)',
+  requestdate: 'Data da solicitação',
+  lastcontactdate: 'Data do último contato',
+  g: 'Gênero (G)',
+  addr: 'Endereço completo (ADDR)',
+  desc: 'Descrição ou observações (DESC)',
+  t: 'Possui telefone/WhatsApp (T)',
+  tel: 'Telefone/WhatsApp',
+  em: 'E-mail',
+  d: 'Distrito',
+  end: 'Endereço resumido',
+  n: 'Nome',
+  a: 'Idade',
+  b: 'Bairro',
+  birthdate: 'Data de nascimento',
+};
+
 function coordenadasValidas(item) {
+  if (item?.latitude === null || item?.latitude === undefined || item?.latitude === ''
+    || item?.longitude === null || item?.longitude === undefined || item?.longitude === '') return false;
   const latitude = Number(item?.latitude);
   const longitude = Number(item?.longitude);
   return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
@@ -30,6 +56,52 @@ function dataCurta(valor) {
   if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
   const data = new Date(valor);
   return Number.isNaN(data.getTime()) ? texto(valor) : data.toLocaleDateString('pt-BR');
+}
+
+function tempoDecorrido(dias) {
+  const total = Number(dias);
+  if (!Number.isFinite(total) || total < 0) return 'tempo não informado';
+  if (total < 30) return `${total} dia${total === 1 ? '' : 's'}`;
+  if (total < 365) {
+    const meses = Math.floor(total / 30);
+    const restantes = total % 30;
+    return restantes ? `${meses} ${meses === 1 ? 'mês' : 'meses'} e ${restantes} dia${restantes === 1 ? '' : 's'}` : `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+  }
+  const anos = Math.floor(total / 365);
+  const meses = Math.floor((total % 365) / 30);
+  return meses ? `${anos} ano${anos === 1 ? '' : 's'} e ${meses} ${meses === 1 ? 'mês' : 'meses'}` : `${anos} ano${anos === 1 ? '' : 's'}`;
+}
+
+function similaridade(valor) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return null;
+  return `${Math.round(numero <= 1 ? numero * 100 : numero)}%`;
+}
+
+function valorInformado(valor) {
+  if (valor === null || valor === undefined || valor === '') return false;
+  if (typeof valor !== 'string') return true;
+  return !['n/i', 'ni', 'n i', 'não informado', 'nao informado'].includes(normalizar(valor));
+}
+
+function rotuloCampoTecnico(nome) {
+  return ROTULOS_CAMPOS_TECNICOS[normalizarCampo(nome)] || nome;
+}
+
+function valorCampoTecnico(nome, valor) {
+  const chave = normalizarCampo(nome);
+  if (!valorInformado(valor)) return 'Não informado';
+  if (typeof valor === 'object') return JSON.stringify(valor);
+  if (['g', 'genero', 'gender', 'sexo'].includes(chave)) {
+    const genero = normalizar(valor);
+    if (['m', 'masculino', 'male'].includes(genero)) return 'Masculino';
+    if (['f', 'feminino', 'female'].includes(genero)) return 'Feminino';
+  }
+  if (['t', 'temtelefone', 'hasphone', 'haswhatsapp'].includes(chave)) return simNao(['1', 'true', 'sim', 'yes'].includes(normalizar(valor)) || valor === true);
+  if (['requestdate', 'lastcontactdate', 'birthdate'].includes(chave)) return dataCurta(valor);
+  if (chave === 'c') return `${valor} dia${Number(valor) === 1 ? '' : 's'} sem contato`;
+  if (['ml', 'sim'].includes(chave)) return similaridade(valor) ? `${similaridade(valor)} (${valor})` : valor;
+  return valor;
 }
 
 function Campo({ rotulo, valor }) {
@@ -67,6 +139,8 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
   const igrejasComLocalizacao = igrejasDoDistrito.filter(coordenadasValidas).slice(0, 30);
   const osm = temLocalizacao ? `https://www.openstreetmap.org/?mlat=${lead.latitude}&mlon=${lead.longitude}#map=15/${lead.latitude}/${lead.longitude}` : null;
   const camposExtras = Object.entries(lead.camposAdicionais || {});
+  const numeroWhatsapp = lead.whatsappNumero || String(lead.whatsapp || '').replace(/\D/g, '');
+  const temHistorico = Boolean(lead.observacoes || lead.dataUltimoContato || lead.diasSemContato !== null && lead.diasSemContato !== undefined || lead.estudoAtivo);
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="titulo-modal-lead" className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onFechar(); }}>
@@ -103,24 +177,40 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
                 <Campo rotulo="Data de nascimento" valor={dataCurta(lead.dataNascimento)} />
                 <Campo rotulo="Gênero" valor={lead.genero} />
                 <Campo rotulo="Religião" valor={lead.religiao} />
+                <Campo rotulo="Data da solicitação" valor={dataCurta(lead.dataSolicitacao)} />
                 <Campo rotulo="VIP histórico" valor={simNao(lead.vipHistorico)} />
                 <Campo rotulo="Estudo ativo" valor={simNao(lead.estudoAtivo)} />
                 <Campo rotulo="Material principal" valor={lead.material} />
+                <Campo rotulo="Material recebido" valor={lead.materialRecebido} />
+                <Campo rotulo="Materiais recebidos" valor={lead.materiaisQuantidade} />
+                <Campo rotulo="Pontuação do modelo" valor={similaridade(lead.pontuacaoModelo)} />
+                <Campo rotulo="Similaridade VIP" valor={similaridade(lead.similaridadeVip)} />
+                <Campo rotulo="Faixa" valor={lead.faixa} />
                 <Campo rotulo="Origem" valor={lead.origem} />
                 <Campo rotulo="Status" valor={lead.status} />
                 <Campo rotulo="Canal" valor={lead.canal} />
                 <Campo rotulo="ID" valor={lead.id} />
               </dl>
               {lead.observacoes && <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Observações</h4><p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{lead.observacoes}</p></div>}
-              {!!camposExtras.length && <details className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-bold text-[#1A3A6B]">Demais informações ({camposExtras.length})</summary><dl className="mt-4 grid gap-3 sm:grid-cols-2">{camposExtras.map(([nome, valor]) => <Campo key={nome} rotulo={nome} valor={typeof valor === 'object' ? JSON.stringify(valor) : valor} />)}</dl></details>}
+              {!!camposExtras.length && <details className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-bold text-[#1A3A6B]">Demais informações ({camposExtras.length})</summary><dl className="mt-4 grid gap-3 sm:grid-cols-2">{camposExtras.map(([nome, valor]) => <Campo key={nome} rotulo={rotuloCampoTecnico(nome)} valor={valorCampoTecnico(nome, valor)} />)}</dl></details>}
             </section>
 
             <aside className="space-y-4">
+              <section>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">WhatsApp e acompanhamento</h3>
+                <div className="space-y-3">
+                  {lead.observacoes && <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><strong className="block text-sm text-slate-900">Conversa registrada</strong><p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">{lead.observacoes}</p></div>}
+                  {(lead.dataUltimoContato || lead.diasSemContato !== null && lead.diasSemContato !== undefined) && <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><strong className="block text-sm text-slate-900">Último contato</strong><p className="mt-2 text-sm leading-relaxed text-slate-700">Contato em {dataCurta(lead.dataUltimoContato)}. Decorrido até hoje: {tempoDecorrido(lead.diasSemContato)}{lead.diasSemContato !== null && lead.diasSemContato !== undefined ? ` (${lead.diasSemContato} dias).` : '.'}</p></div>}
+                  {lead.estudoAtivo && <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm"><strong className="block text-sm text-violet-950">Estudo em andamento</strong><p className="mt-2 text-sm leading-relaxed text-violet-800">O material aparece como ativo e deve continuar no acompanhamento.</p></div>}
+                  {!temHistorico && <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">Nenhum acompanhamento foi recebido para este lead.</div>}
+                </div>
+              </section>
+
               <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
                 <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">Resumo operacional</h3>
                 <p className="mt-3 text-sm leading-relaxed text-slate-700">{resumoOperacionalLead(lead)}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {lead.whatsapp && <a href={`https://wa.me/${String(lead.whatsapp).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">Abrir WhatsApp</a>}
+                  {lead.temWhatsapp && numeroWhatsapp && <a href={`https://wa.me/${numeroWhatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">Abrir WhatsApp</a>}
                   {lead.email && <a href={`mailto:${lead.email}`} className="rounded-xl border border-blue-300 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-100">Enviar e-mail</a>}
                 </div>
               </section>
@@ -131,6 +221,7 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
                   <p className="mt-2 font-semibold text-slate-900">{lead.endereco || [lead.bairro, lead.cidade].filter(Boolean).join(' - ') || 'Endereço não informado'}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
                     <span className="rounded-full bg-slate-100 px-3 py-2" style={{ color: corPrioridade }}>{prioridade}</span>
+                    {temLocalizacao && <span className={`rounded-full px-3 py-2 ${ehAproximada(lead) ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}`}>{ehAproximada(lead) ? 'Ponto aproximado' : 'Ponto exato'}</span>}
                     <span className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">Igrejas {igrejasDoDistrito.length}</span>
                     {osm && <a href={osm} target="_blank" rel="noreferrer" className="rounded-full border border-slate-200 px-3 py-2 text-slate-700 hover:bg-slate-50">Abrir no OSM</a>}
                   </div>

@@ -50,6 +50,8 @@ function faixaTempo(dias) {
 }
 
 function coordenadasValidas(item) {
+  if (item?.latitude === null || item?.latitude === undefined || item?.latitude === ''
+    || item?.longitude === null || item?.longitude === undefined || item?.longitude === '') return false;
   const lat = Number(item.latitude);
   const lng = Number(item.longitude);
   return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
@@ -180,7 +182,7 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">Mapa dos leads filtrados</p>
           <h2 className="mt-1 text-2xl font-bold text-[#1A3A6B]">Pontos com leads e igrejas</h2>
-          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas</p>
+          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · exibindo até 300 leads</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {

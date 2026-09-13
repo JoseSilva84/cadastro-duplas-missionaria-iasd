@@ -38,6 +38,30 @@ const normalizarPesquisa = (valor) => String(valor || '')
   .replace(/[\u0300-\u036f]/g, '')
   .toLocaleLowerCase('pt-BR')
   .trim();
+const normalizarCampo = (valor) => normalizarPesquisa(valor).replace(/[^a-z0-9]+/g, '');
+
+const ROTULOS_CAMPOS_TECNICOS = {
+  ml: 'Pontuação do modelo (ML)',
+  sim: 'Similaridade com perfil VIP (SIM)',
+  faixa: 'Faixa de prioridade',
+  r: 'Religião (R)',
+  m: 'Quantidade de materiais (M)',
+  c: 'Dias sem contato (C)',
+  requestdate: 'Data da solicitação',
+  lastcontactdate: 'Data do último contato',
+  g: 'Gênero (G)',
+  addr: 'Endereço completo (ADDR)',
+  desc: 'Descrição ou observações (DESC)',
+  t: 'Possui telefone/WhatsApp (T)',
+  tel: 'Telefone/WhatsApp',
+  em: 'E-mail',
+  d: 'Distrito',
+  end: 'Endereço resumido',
+  n: 'Nome',
+  a: 'Idade',
+  b: 'Bairro',
+  birthdate: 'Data de nascimento',
+};
 
 const CLASSIFICACOES = {
   hot: { rotulo: 'Quente', classe: 'bg-red-100 text-red-700 ring-red-200' },
@@ -62,6 +86,46 @@ const dataHora = (valor) => {
   if (!valor) return 'Não informado';
   const data = new Date(valor);
   return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleString('pt-BR');
+};
+
+const dataCurta = (valor) => {
+  if (!valor) return 'Não informada';
+  const iso = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleDateString('pt-BR');
+};
+
+const valorInformado = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return false;
+  if (typeof valor !== 'string') return true;
+  return !['n/i', 'ni', 'n i', 'não informado', 'nao informado'].includes(normalizarPesquisa(valor));
+};
+
+const simNao = (valor) => valor ? 'Sim' : 'Não';
+
+const percentualTecnico = (valor) => {
+  const numeroValor = Number(valor);
+  if (!Number.isFinite(numeroValor)) return null;
+  return `${Math.round(numeroValor <= 1 ? numeroValor * 100 : numeroValor)}%`;
+};
+
+const rotuloCampoTecnico = (nome) => ROTULOS_CAMPOS_TECNICOS[normalizarCampo(nome)] || nome;
+
+const valorCampoTecnico = (nome, valor) => {
+  const chave = normalizarCampo(nome);
+  if (!valorInformado(valor)) return 'Não informado';
+  if (typeof valor === 'object') return JSON.stringify(valor);
+  if (['g', 'genero', 'gender', 'sexo'].includes(chave)) {
+    const genero = normalizarPesquisa(valor);
+    if (['m', 'masculino', 'male'].includes(genero)) return 'Masculino';
+    if (['f', 'feminino', 'female'].includes(genero)) return 'Feminino';
+  }
+  if (['t', 'temtelefone', 'hasphone', 'haswhatsapp'].includes(chave)) return simNao(['1', 'true', 'sim', 'yes'].includes(normalizarPesquisa(valor)) || valor === true);
+  if (['requestdate', 'lastcontactdate', 'birthdate'].includes(chave)) return dataCurta(valor);
+  if (chave === 'c') return `${valor} dia${Number(valor) === 1 ? '' : 's'} sem contato`;
+  if (['ml', 'sim'].includes(chave)) return percentualTecnico(valor) ? `${percentualTecnico(valor)} (${valor})` : valor;
+  return valor;
 };
 
 const formatarWhatsapp = (valor) => {
@@ -334,7 +398,10 @@ function LeadCard({ lead }) {
         <Campo rotulo="Pontuação" valor={lead.pontuacao ?? 'Não informada'} />
         <Campo rotulo="Estudo ativo" valor={lead.estudoAtivo ? 'Sim' : 'Não'} />
         <Campo rotulo="Nascimento" valor={lead.dataNascimento || 'Não informado'} />
+        <Campo rotulo="Data da solicitação" valor={lead.dataSolicitacao ? dataCurta(lead.dataSolicitacao) : 'Não informada'} />
         <Campo rotulo="Material" valor={lead.material || 'Não informado'} />
+        <Campo rotulo="Pontuação do modelo" valor={percentualTecnico(lead.pontuacaoModelo) || ''} />
+        <Campo rotulo="Similaridade VIP" valor={percentualTecnico(lead.similaridadeVip) || ''} />
         <Campo rotulo="Criado em" valor={dataHora(lead.criadoEm)} />
         <Campo rotulo="Atualizado em" valor={dataHora(lead.atualizadoEm)} />
         <Campo rotulo="Endereço" valor={endereco || 'Não informado'} colSpan="col-span-2 sm:col-span-2 lg:col-span-4" />
@@ -345,7 +412,7 @@ function LeadCard({ lead }) {
         <details className="border-t border-gray-100 px-4 py-3 sm:px-5 sm:py-4">
           <summary className="cursor-pointer text-xs sm:text-sm font-semibold text-[#1A3A6B]">Ver demais informações ({camposExtras.length})</summary>
           <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {camposExtras.map(([nome, valor]) => <Campo key={nome} rotulo={nome} valor={valor} />)}
+            {camposExtras.map(([nome, valor]) => <Campo key={nome} rotulo={rotuloCampoTecnico(nome)} valor={valorCampoTecnico(nome, valor)} />)}
           </dl>
         </details>
       )}

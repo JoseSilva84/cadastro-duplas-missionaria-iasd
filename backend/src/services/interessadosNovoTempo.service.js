@@ -1,5 +1,21 @@
 const API_URL_PADRAO = 'https://backend-leadsnt.sevenflowia.tech';
 const CACHE_TTL_PADRAO = 5 * 60 * 1000;
+const CENTROS_TERRITORIAIS = {
+  'sao-paulo': [-23.55052, -46.63331],
+  osasco: [-23.53288, -46.79178],
+  carapicuiba: [-23.52272, -46.835],
+  barueri: [-23.51056, -46.87611],
+  jandira: [-23.5275, -46.9025],
+  itapevi: [-23.5488, -46.9336],
+  cotia: [-23.6039, -46.9192],
+  ibiuna: [-23.6596, -47.222],
+  mairinque: [-23.5458, -47.1833],
+  'sao-roque': [-23.5292, -47.1353],
+  'santana-de-parnaiba': [-23.4439, -46.9178],
+  aracariguama: [-23.4366, -47.0608],
+  aluminio: [-23.5306, -47.2547],
+  mirandopolis: [-23.6093, -46.6413],
+};
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
@@ -17,6 +33,12 @@ const chaveNormalizada = (valor) => texto(valor)
   .trim();
 
 const chaveCampo = (valor) => chaveNormalizada(valor).replace(/\s+/g, '');
+
+function informado(valor) {
+  if (valor === null || valor === undefined || valor === '') return false;
+  if (typeof valor !== 'string') return true;
+  return !['n i', 'nao informado', 'nao informada', 'sem informacao'].includes(chaveNormalizada(valor));
+}
 
 function fontesDoRegistro(registro) {
   const fontes = [];
@@ -43,7 +65,7 @@ function localizarCampo(registro, aliases) {
   const chaves = new Set(aliases.map(chaveCampo));
   for (const fonte of fontesDoRegistro(registro)) {
     for (const [nome, valor] of Object.entries(fonte)) {
-      if (chaves.has(chaveCampo(nome)) && valor !== null && valor !== undefined && valor !== '') return valor;
+      if (chaves.has(chaveCampo(nome)) && informado(valor)) return valor;
     }
   }
   return '';
@@ -56,7 +78,7 @@ function textoDeCampo(registro, aliases) {
 
 function montarEndereco(registro) {
   const enderecoDireto = localizarCampo(registro, [
-    'address', 'endereco', 'end', 'enderecoCompleto', 'fullAddress', 'formattedAddress',
+    'addr', 'newAddress', 'address', 'endereco', 'enderecoCompleto', 'fullAddress', 'formattedAddress',
     'displayAddress', 'streetAddress', 'localizacao',
   ]);
   if (typeof enderecoDireto !== 'object' && texto(enderecoDireto)) return texto(enderecoDireto);
@@ -76,6 +98,9 @@ function montarEndereco(registro) {
   const localidade = [bairro, cidade, estado].filter(Boolean).join(' - ');
   const composto = [linha, complemento, localidade, cep && `CEP ${cep}`].filter(Boolean).join(' - ');
   if (composto) return composto;
+
+  const enderecoResumido = textoDeCampo(registro, ['end']);
+  if (enderecoResumido) return enderecoResumido;
 
   return textoDeCampo(registro, ['geoDisplayName', 'displayName', 'nomeExibicaoGeografico']);
 }
@@ -232,17 +257,58 @@ function camposAdicionais(registro) {
   const conhecidos = new Set([
     'id', 'n', 'name', 'nome', 't', 'tel', 'phone', 'telefone', 'whatsapp', 'd', 'district', 'distrito',
     'v', 'vip', 'vipHistorico', 'p', 'priority', 'prioridade', 's', 'score', 'e', 'hasActiveStudy',
-    'birthDate', 'dataNascimento', 'address', 'endereco', 'end', 'materialName', 'materialPrincipal',
-    'material', 'tm', 'email', 'em', 'status', 'source', 'origem', 'observations', 'notes', 'observacoes',
-    'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags', 'a', 'idade',
+    'birthDate', 'dataNascimento', 'addr', 'newAddress', 'address', 'endereco', 'end', 'materialName',
+    'materialPrincipal', 'material', 'tm', 'email', 'em', 'status', 'source', 'origem',
+    'description', 'descricao', 'desc', 'observations', 'notes', 'observacoes',
+    'createdAt', 'created_at', 'updatedAt', 'updated_at', 'tags', 'a', 'idade', 'g', 'r',
     'lat', 'lng', 'lon', 'latitude', 'longitude', 'coordinates', 'location', 'geolocation',
-    'geoPrecision', 'geoSource', 'geoDisplayName',
+    'geoPrecision', 'geoSource', 'geoDisplayName', 'geoNotFound',
     'cidade', 'city', 'municipio', 'bairro', 'b', 'neighborhood', 'neighbourhood',
-  ]);
+    'm', 'materialCount', 'materiaisQuantidade', 'c', 'daysSinceLastContact', 'diasSemContato',
+    'lastContactDate', 'lastContactAt', 'ultimoContato', 'dataUltimoContato',
+    'requestDate', 'requestedAt', 'dataSolicitacao', 'dataPedido',
+    'ml', 'machineLearningScore', 'modelScore', 'pontuacaoModelo',
+    'sim', 'similarity', 'similaridadeVip', 'band', 'faixa',
+    'temTelefone', 'hasPhone', 'hasWhatsapp', 'telefoneValido', 'emailValido', 'temEmail',
+    'temDescricao', 'tentativaContato', 'respondeu', 'demonstrouInteresse', 'aceitouVisita', 'participou',
+  ].map(chaveCampo));
 
   return Object.fromEntries(
-    Object.entries(registro || {}).filter(([nome, valor]) => !conhecidos.has(nome) && valor !== null && valor !== '')
+    Object.entries(registro || {}).filter(([nome, valor]) => !conhecidos.has(chaveCampo(nome)) && valor !== null && valor !== '')
   );
+}
+
+function partesEnderecoResumido(registro) {
+  return textoDeCampo(registro, ['end'])
+    .split(/\s+-\s+/)
+    .map((parte) => texto(parte))
+    .filter(Boolean);
+}
+
+function cidadeDoRegistro(registro) {
+  const explicita = textoDeCampo(registro, ['cidade', 'city', 'municipio', 'municipality']);
+  if (explicita) return explicita;
+  const primeiraParte = partesEnderecoResumido(registro)[0] || '';
+  return CENTROS_TERRITORIAIS[slug(primeiraParte)] ? primeiraParte : '';
+}
+
+function bairroDoRegistro(registro, endereco, distrito, cidade) {
+  const explicito = texto(registro?.b || textoDeCampo(registro, [
+    'bairro', 'neighborhood', 'neighbourhood', 'districtNeighborhood',
+  ]));
+  if (explicito) return explicito;
+
+  const partes = partesEnderecoResumido(registro);
+  if (partes.length > 1 && CENTROS_TERRITORIAIS[slug(partes[0])]) return partes[1];
+  return extrairBairroDoEndereco(endereco, distrito, cidade);
+}
+
+function normalizarGenero(valor) {
+  const original = texto(valor);
+  const chave = chaveNormalizada(original);
+  if (['m', 'masculino', 'male'].includes(chave)) return { genero: 'Masculino', generoCodigo: 'M' };
+  if (['f', 'feminino', 'female'].includes(chave)) return { genero: 'Feminino', generoCodigo: 'F' };
+  return { genero: original, generoCodigo: original ? 'N' : '' };
 }
 
 function extrairBairroDoEndereco(endereco, distrito, cidade) {
@@ -268,23 +334,39 @@ function normalizarRegistro(registro) {
   const telefoneInformado = registro?.tel || registro?.whatsapp || registro?.phone || registro?.telefone
     || textoDeCampo(registro, ['telefoneCelular', 'celular', 'mobile', 'phoneNumber', 'numeroWhatsapp']);
   const whatsapp = texto(telefoneInformado || (texto(registro?.t).replace(/\D/g, '').length >= 10 ? registro.t : ''));
+  const whatsappNumero = whatsapp.replace(/\D/g, '');
   const distrito = texto(registro?.d || textoDeCampo(registro, ['distrito', 'district', 'districtName'])) || 'Sem distrito';
   const prioridade = texto(registro?.p || textoDeCampo(registro, ['prioridade', 'priority', 'classification', 'classificacao']));
-  const material = texto(registro?.tm || textoDeCampo(registro, ['materialName', 'materialPrincipal', 'material', 'mainMaterial']));
+  const material = texto(registro?.tm || textoDeCampo(registro, ['materialPrincipal', 'material', 'mainMaterial', 'materialName', 'tm']));
+  const materialRecebido = textoDeCampo(registro, ['materialName', 'receivedMaterial', 'materialRecebido']);
   const email = texto(registro?.em || textoDeCampo(registro, ['email', 'emailAddress']));
-  const bruto = registro?.raw && typeof registro.raw === 'object' ? registro.raw : {};
   const endereco = montarEndereco(registro);
-  const cidade = textoDeCampo(registro, ['cidade', 'city', 'municipio', 'municipality']);
-  const bairro = texto(registro?.b || textoDeCampo(registro, ['bairro', 'neighborhood', 'neighbourhood', 'districtNeighborhood']))
-    || extrairBairroDoEndereco(endereco, distrito, cidade);
-  const temWhatsapp = booleano(registro?.temTelefone ?? registro?.t ?? Boolean(whatsapp));
+  const cidade = cidadeDoRegistro(registro);
+  const bairro = bairroDoRegistro(registro, endereco, distrito, cidade);
+  const indicadorWhatsapp = localizarCampo(registro, ['temTelefone', 'hasPhone', 'hasWhatsapp']);
+  const temWhatsapp = booleano(indicadorWhatsapp === ''
+    ? (registro?.t ?? Boolean(whatsappNumero))
+    : indicadorWhatsapp);
   const { latitude, longitude } = extrairCoordenadas(registro);
   const tags = localizarCampo(registro, ['tags', 'etiquetas']);
+  const descricao = textoDeCampo(registro, ['description', 'descricao', 'desc', 'observations', 'notes', 'observacoes']);
+  const diasSemContato = numeroOuNulo(registro?.c ?? localizarCampo(registro, ['c', 'daysSinceLastContact', 'diasSemContato']));
+  const dataUltimoContato = localizarCampo(registro, [
+    'lastContactDate', 'lastContactAt', 'ultimoContato', 'dataUltimoContato', 'ultimoContatoEm',
+  ]) || null;
+  const dataSolicitacao = localizarCampo(registro, ['requestDate', 'requestedAt', 'dataSolicitacao', 'dataPedido']) || null;
+  const generoNormalizado = normalizarGenero(registro?.g || textoDeCampo(registro, ['g', 'genero', 'gender', 'sexo']));
+  const tentativaContato = booleanoOuNulo(localizarCampo(registro, ['tentativaContato', 'contactAttempted']));
+  const respondeu = booleanoOuNulo(localizarCampo(registro, ['respondeu', 'responded']));
+  const demonstrouInteresse = booleanoOuNulo(localizarCampo(registro, ['demonstrouInteresse', 'showedInterest']));
+  const aceitouVisita = booleanoOuNulo(localizarCampo(registro, ['aceitouVisita', 'acceptedVisit']));
+  const participou = booleanoOuNulo(localizarCampo(registro, ['participou', 'participated']));
 
-  return {
+  const normalizado = {
     id: texto(registro?.id || registro?.uuid || textoDeCampo(registro, ['contactId', 'leadId'])),
     nome: texto(registro?.n || textoDeCampo(registro, ['nome', 'name', 'fullName'])) || `Contato ${whatsapp.slice(-4)}`,
     whatsapp,
+    whatsappNumero,
     email,
     distrito,
     temWhatsapp,
@@ -293,38 +375,72 @@ function normalizarRegistro(registro) {
     prioridade,
     prioridadeRotulo: textoDeCampo(registro, ['priorityLabel', 'prioridadeRotulo', 'classificationLabel']),
     pontuacao: numeroOuNulo(registro?.s ?? localizarCampo(registro, ['score', 'pontuacao'])),
-    genero: texto(registro?.g || textoDeCampo(registro, ['genero', 'gender', 'sexo'])),
-    religiao: texto(registro?.r || textoDeCampo(registro, ['religiao', 'religion'])),
-    idade: numeroOuNulo(registro?.a ?? localizarCampo(registro, ['idade', 'age'])),
-    diasSemContato: numeroOuNulo(registro?.c ?? bruto?.c),
+    genero: generoNormalizado.genero,
+    generoCodigo: generoNormalizado.generoCodigo,
+    religiao: texto(registro?.r || textoDeCampo(registro, ['r', 'religiao', 'religion'])),
+    idade: numeroOuNulo(registro?.a ?? localizarCampo(registro, ['a', 'idade', 'age'])),
+    diasSemContato,
+    dataUltimoContato,
+    dataSolicitacao,
     status: textoDeCampo(registro, ['status', 'situacao']),
     origem: textoDeCampo(registro, ['source', 'origem', 'origin']),
     endereco,
     material,
-    materiaisQuantidade: numeroOuNulo(registro?.m ?? registro?.materiaisQuantidade) || 0,
+    materialRecebido,
+    materiaisQuantidade: numeroOuNulo(registro?.m ?? localizarCampo(registro, ['m', 'materialCount', 'materiaisQuantidade'])) || 0,
     cidade,
     bairro,
     canal: textoDeCampo(registro, ['canal', 'channel']),
-    telefoneValido: booleano(registro?.telefoneValido ?? temWhatsapp),
-    emailValido: booleano(registro?.emailValido ?? Boolean(email)),
-    temDescricao: booleano(registro?.temDescricao ?? Boolean(registro?.descricao || registro?.observacoes)),
-    tentativaContato: booleanoOuNulo(registro?.tentativaContato),
-    respondeu: booleanoOuNulo(registro?.respondeu),
-    demonstrouInteresse: booleanoOuNulo(registro?.demonstrouInteresse),
-    aceitouVisita: booleanoOuNulo(registro?.aceitouVisita),
-    participou: booleanoOuNulo(registro?.participou),
+    telefoneValido: booleano(localizarCampo(registro, ['telefoneValido', 'validPhone']) === ''
+      ? temWhatsapp
+      : localizarCampo(registro, ['telefoneValido', 'validPhone'])),
+    emailValido: booleano(localizarCampo(registro, ['emailValido', 'validEmail']) === ''
+      ? Boolean(email)
+      : localizarCampo(registro, ['emailValido', 'validEmail'])),
+    temDescricao: booleano(localizarCampo(registro, ['temDescricao', 'hasDescription']) === ''
+      ? Boolean(descricao)
+      : localizarCampo(registro, ['temDescricao', 'hasDescription'])),
+    tentativaContato,
+    respondeu,
+    demonstrouInteresse,
+    aceitouVisita,
+    participou,
     dataNascimento: localizarCampo(registro, ['birthDate', 'dataNascimento', 'dataAniversario', 'birthday']) || null,
+    pontuacaoModelo: numeroOuNulo(registro?.ml ?? localizarCampo(registro, ['ml', 'machineLearningScore', 'modelScore', 'pontuacaoModelo'])),
+    similaridadeVip: numeroOuNulo(registro?.sim ?? localizarCampo(registro, ['sim', 'similarity', 'similaridadeVip'])),
+    faixa: texto(registro?.faixa || textoDeCampo(registro, ['faixa', 'band', 'faixaPontuacao'])),
     latitude,
     longitude,
     geoPrecisao: textoDeCampo(registro, ['geoPrecision', 'geoPrecisao']),
     geoOrigem: textoDeCampo(registro, ['geoSource', 'geoOrigem']),
     geoNomeExibicao: textoDeCampo(registro, ['geoDisplayName', 'displayName', 'nomeExibicaoGeografico']),
-    observacoes: textoDeCampo(registro, ['observations', 'notes', 'observacoes', 'descricao']),
+    geoNaoEncontrada: booleano(localizarCampo(registro, ['geoNotFound', 'geoNaoEncontrada'])),
+    observacoes: descricao,
     criadoEm: localizarCampo(registro, ['createdAt', 'created_at', 'criadoEm']) || null,
     atualizadoEm: localizarCampo(registro, ['updatedAt', 'updated_at', 'atualizadoEm']) || null,
     tags: Array.isArray(tags) ? tags : [],
     camposAdicionais: camposAdicionais(registro),
   };
+
+  normalizado.acompanhamento = {
+    ultimoContatoEm: dataUltimoContato,
+    diasSemContato,
+    tentativaContato,
+    respondeu,
+    demonstrouInteresse,
+    aceitouVisita,
+    participou,
+    descricao,
+  };
+  normalizado.geolocalizacao = {
+    latitude,
+    longitude,
+    precisao: normalizado.geoPrecisao,
+    origem: normalizado.geoOrigem,
+    nomeExibicao: normalizado.geoNomeExibicao,
+    naoEncontrada: normalizado.geoNaoEncontrada,
+  };
+  return normalizado;
 }
 
 function completarContato(contato, complemento) {
@@ -335,9 +451,34 @@ function completarContato(contato, complemento) {
     const atualVazio = atual === null || atual === undefined || atual === '' || (Array.isArray(atual) && !atual.length);
     if (atualVazio && valor !== null && valor !== undefined && valor !== '') resultado[campo] = valor;
   });
+  if (texto(complemento.endereco).length > texto(contato.endereco).length) {
+    resultado.endereco = complemento.endereco;
+  }
   resultado.camposAdicionais = {
     ...(complemento.camposAdicionais || {}),
     ...(contato.camposAdicionais || {}),
+  };
+  resultado.acompanhamento = {
+    ...(complemento.acompanhamento || {}),
+    ...(contato.acompanhamento || {}),
+    ultimoContatoEm: resultado.dataUltimoContato,
+    diasSemContato: resultado.diasSemContato,
+    tentativaContato: resultado.tentativaContato,
+    respondeu: resultado.respondeu,
+    demonstrouInteresse: resultado.demonstrouInteresse,
+    aceitouVisita: resultado.aceitouVisita,
+    participou: resultado.participou,
+    descricao: resultado.observacoes,
+  };
+  resultado.geolocalizacao = {
+    ...(complemento.geolocalizacao || {}),
+    ...(contato.geolocalizacao || {}),
+    latitude: resultado.latitude,
+    longitude: resultado.longitude,
+    precisao: resultado.geoPrecisao,
+    origem: resultado.geoOrigem,
+    nomeExibicao: resultado.geoNomeExibicao,
+    naoEncontrada: resultado.geoNaoEncontrada,
   };
   return resultado;
 }
@@ -481,6 +622,133 @@ function extrairTerritorio(dashboard) {
   return { distritosOficiais, igrejas };
 }
 
+function possuiCoordenadas(item) {
+  return coordenada(item?.latitude, -90, 90) !== null
+    && coordenada(item?.longitude, -180, 180) !== null;
+}
+
+function hashEstavel(valor) {
+  let hash = 0;
+  const entrada = texto(valor);
+  for (let indice = 0; indice < entrada.length; indice += 1) {
+    hash = ((hash << 5) - hash + entrada.charCodeAt(indice)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function centroConhecido(...valores) {
+  for (const valor of valores) {
+    const chave = slug(valor);
+    if (CENTROS_TERRITORIAIS[chave]) return CENTROS_TERRITORIAIS[chave];
+    const encontrada = Object.keys(CENTROS_TERRITORIAIS).find((cidade) => (
+      chave === cidade || chave.includes(`-${cidade}-`) || chave.endsWith(`-${cidade}`)
+    ));
+    if (encontrada) return CENTROS_TERRITORIAIS[encontrada];
+  }
+  return null;
+}
+
+function mediaCoordenadas(itens) {
+  const validos = itens.filter(possuiCoordenadas);
+  if (!validos.length) return null;
+  return [
+    validos.reduce((soma, item) => soma + Number(item.latitude), 0) / validos.length,
+    validos.reduce((soma, item) => soma + Number(item.longitude), 0) / validos.length,
+  ];
+}
+
+function pontoAproximado(base, identidade, raioMinimo, variacao) {
+  const hash = hashEstavel(identidade);
+  const angulo = (hash % 360) * (Math.PI / 180);
+  const raio = raioMinimo + (hash % variacao) / 100000;
+  return {
+    latitude: base[0] + Math.sin(angulo) * raio,
+    longitude: base[1] + Math.cos(angulo) * raio,
+  };
+}
+
+function comMetadadosGeograficos(item, latitude, longitude, precisao, origem) {
+  const geolocalizado = {
+    ...item,
+    latitude,
+    longitude,
+    geoPrecisao: item.geoPrecisao || precisao,
+    geoOrigem: item.geoOrigem || origem,
+  };
+  geolocalizado.geolocalizacao = {
+    ...(item.geolocalizacao || {}),
+    latitude,
+    longitude,
+    precisao: geolocalizado.geoPrecisao,
+    origem: geolocalizado.geoOrigem,
+    nomeExibicao: geolocalizado.geoNomeExibicao || '',
+    naoEncontrada: Boolean(geolocalizado.geoNaoEncontrada),
+  };
+  return geolocalizado;
+}
+
+function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
+  const centrosIgrejas = new Map();
+  igrejas.filter(possuiCoordenadas).forEach((igreja) => {
+    const chave = chaveNormalizada(igreja.distrito);
+    const lista = centrosIgrejas.get(chave) || [];
+    lista.push(igreja);
+    centrosIgrejas.set(chave, lista);
+  });
+
+  const contatosGeolocalizados = contatos.map((contato) => {
+    if (possuiCoordenadas(contato)) {
+      return comMetadadosGeograficos(
+        contato,
+        Number(contato.latitude),
+        Number(contato.longitude),
+        'Exato',
+        'api-amigos-nt'
+      );
+    }
+
+    const centroIgreja = mediaCoordenadas(centrosIgrejas.get(chaveNormalizada(contato.distrito)) || []);
+    const base = centroConhecido(contato.cidade, contato.endereco, contato.distrito)
+      || centroIgreja
+      || CENTROS_TERRITORIAIS['sao-paulo'];
+    const ponto = pontoAproximado(
+      base,
+      `${contato.distrito}|${contato.bairro}|${contato.endereco}|${contato.id}`,
+      0.004,
+      900
+    );
+    return comMetadadosGeograficos(contato, ponto.latitude, ponto.longitude, 'Aproximado', 'fallback-territorial');
+  });
+
+  const centrosLeads = new Map();
+  contatosGeolocalizados.forEach((contato) => {
+    const chave = chaveNormalizada(contato.distrito);
+    const lista = centrosLeads.get(chave) || [];
+    lista.push(contato);
+    centrosLeads.set(chave, lista);
+  });
+
+  const igrejasGeolocalizadas = igrejas.map((igreja) => {
+    if (possuiCoordenadas(igreja)) {
+      return comMetadadosGeograficos(
+        igreja,
+        Number(igreja.latitude),
+        Number(igreja.longitude),
+        'Exato',
+        'api-amigos-nt'
+      );
+    }
+    const centroLeads = mediaCoordenadas(centrosLeads.get(chaveNormalizada(igreja.distrito)) || []);
+    const base = centroLeads
+      || centroConhecido(igreja.endereco, igreja.distrito)
+      || CENTROS_TERRITORIAIS['sao-paulo'];
+    const ponto = pontoAproximado(base, `${igreja.distrito}|${igreja.nome}`, 0.002, 450);
+    return comMetadadosGeograficos(igreja, ponto.latitude, ponto.longitude, 'Aproximado', 'fallback-territorial');
+  });
+
+  return { contatos: contatosGeolocalizados, igrejas: igrejasGeolocalizadas };
+}
+
 async function carregarResumo({ ignorarCache = false } = {}) {
   const cfg = configuracao();
   if (!ignorarCache && cacheResumo && Date.now() - cacheResumo.criadoEm < cfg.cacheTtl) return cacheResumo;
@@ -488,12 +756,14 @@ async function carregarResumo({ ignorarCache = false } = {}) {
   const dashboard = await requisitar('/api/dashboard', cfg);
   const contatos = registrosInteressados(dashboard).map(normalizarRegistro);
   const territorio = extrairTerritorio(dashboard);
+  const geolocalizados = aplicarGeolocalizacaoAproximada(contatos, territorio.igrejas);
 
   cacheResumo = {
     criadoEm: Date.now(),
     atualizadoEm: new Date().toISOString(),
-    contatos,
-    ...territorio,
+    contatos: geolocalizados.contatos,
+    distritosOficiais: territorio.distritosOficiais,
+    igrejas: geolocalizados.igrejas,
   };
   return cacheResumo;
 }
@@ -756,6 +1026,7 @@ const InteressadosNovoTempoService = {
       id: contato.id,
       nome: contato.nome,
       whatsapp: contato.whatsapp,
+      whatsappNumero: contato.whatsappNumero,
       email: contato.email,
       distrito: contato.distrito,
       bairro: contato.bairro,
@@ -769,15 +1040,21 @@ const InteressadosNovoTempoService = {
       idade: contato.idade,
       dataNascimento: contato.dataNascimento,
       endereco: contato.endereco,
+      materialRecebido: contato.materialRecebido,
+      materiaisQuantidade: contato.materiaisQuantidade,
       status: contato.status,
       origem: contato.origem,
       canal: contato.canal,
       observacoes: contato.observacoes,
+      dataUltimoContato: contato.dataUltimoContato,
+      dataSolicitacao: contato.dataSolicitacao,
+      pontuacaoModelo: contato.pontuacaoModelo,
+      similaridadeVip: contato.similaridadeVip,
+      faixa: contato.faixa,
       criadoEm: contato.criadoEm,
       atualizadoEm: contato.atualizadoEm,
       tags: contato.tags,
       camposAdicionais: contato.camposAdicionais,
-      materiaisQuantidade: contato.materiaisQuantidade,
       temWhatsapp: contato.temWhatsapp,
       telefoneValido: contato.telefoneValido,
       emailValido: contato.emailValido,
@@ -795,6 +1072,9 @@ const InteressadosNovoTempoService = {
       geoPrecisao: contato.geoPrecisao,
       geoOrigem: contato.geoOrigem,
       geoNomeExibicao: contato.geoNomeExibicao,
+      geoNaoEncontrada: contato.geoNaoEncontrada,
+      acompanhamento: contato.acompanhamento,
+      geolocalizacao: contato.geolocalizacao,
     }));
 
     return {
@@ -890,6 +1170,8 @@ const InteressadosNovoTempoService = {
     analisarContatos,
     analisarDistrito,
     extrairBairroDoEndereco,
+    aplicarGeolocalizacaoAproximada,
+    completarContato,
     obterEscopoTerritorial,
     aplicarEscopoTerritorial,
     validarDistritoNoEscopo,

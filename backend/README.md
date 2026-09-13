@@ -62,6 +62,18 @@ As credenciais habilitam a integração administrativa com o backend dos Amigos 
 
 Nunca coloque credenciais reais em commits.
 
+### Contrato da integração Amigos NT
+
+O PCM lê `GET /api/dashboard` para a base geral e `GET /api/dashboard/district-interest/:distrito` para o recorte distrital. O service converte tanto os nomes extensos quanto o formato compacto do Amigos NT para um único contrato:
+
+- lead e contato: `nome`, `whatsapp`, `whatsappNumero`, `email`, `distrito`, `cidade`, `bairro` e `endereco`;
+- classificação: `prioridade`, `pontuacao`, `vipHistorico`, `similaridadeVip` e `faixa`;
+- estudo: `estudoAtivo`, `material`, `materialRecebido` e `materiaisQuantidade`;
+- acompanhamento: campos planos compatíveis e o objeto `acompanhamento` com último contato, dias sem contato e etapas do funil;
+- mapa: campos planos compatíveis e o objeto `geolocalizacao` com latitude, longitude, precisão, origem e indicação de endereço não encontrado.
+
+Os aliases compactos atuais (`n`, `tel`, `em`, `d`, `addr`, `end`, `a`, `birthDate`, `g`, `r`, `v`, `e`, `tm`, `materialName`, `m`, `desc`, `p`, `s`, `sim`, `faixa`, `c`, `lastContactDate`, `t`, `lat`, `lng` e campos `geo*`) são tratados no backend. Coordenadas recebidas são preservadas; quando elas não existem, o PCM gera um ponto territorial aproximado e o identifica como `Aproximado`/`fallback-territorial`, sem apresentá-lo como endereço exato.
+
 ## Instalação
 
 ```bash
