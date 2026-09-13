@@ -10,4 +10,4 @@
 
 6 Na tela de duplas missionárias, eu quero que apareça o botão das duplas no menu
 (Feito)
-7 Os coordenadores regionais devem ser cadastrados por região e não por distrito e igreja como estão atualmente. No caso, distrito e igreja devem ser opcionais e não mais obrigatórios. (Feito)
+7 Os coordenadores regionais devem ser cadastrados por região e não por distrito e igreja como estão atualmente. No caso, distrito e igreja devem ser opcionais e não mais obrigatórios. (Feito). Ok
