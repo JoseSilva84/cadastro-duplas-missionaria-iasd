@@ -489,6 +489,12 @@ const AuthService = {
     if (!membro2Nome || !membro2Nome.trim()) {
       throw { status: 400, mensagem: 'Nome do Membro 2 (Parceiro) é obrigatório.' };
     }
+    if (!dados.fotoLider) {
+      throw { status: 400, mensagem: 'A foto do Membro 1 (Líder) é obrigatória.' };
+    }
+    if (!dados.fotoMembro2) {
+      throw { status: 400, mensagem: 'A foto do Membro 2 (Parceiro) é obrigatória.' };
+    }
 
     // 4. Anti-Duplicidade de Nomes
     const normalizar = (txt) => String(txt || '')
@@ -565,11 +571,13 @@ const AuthService = {
           igrejaId,
           bairro: dados.bairro?.trim() || 'Não informado',
           tipoProjeto: dados.tipoProjeto || 'ESTUDO_BIBLICO',
+          fotoLider: dados.fotoLider,
+          fotoMembro2: dados.fotoMembro2,
           liderNome: liderNome.trim(),
           liderTelefone: dados.liderTelefone?.trim() || null,
           liderEmail: dados.liderEmail?.trim() || emailNorm,
-          liderIgreja: igreja.nome,
-          liderDistrito: distrito?.nome,
+          liderIgreja: dados.liderIgreja?.trim() || igreja.nome,
+          liderDistrito: dados.liderDistrito?.trim() || distrito?.nome,
           liderDataNascimento: dados.liderDataNascimento ? new Date(dados.liderDataNascimento) : null,
           liderDataBatismo: dados.liderDataBatismo ? new Date(dados.liderDataBatismo) : null,
           liderSexo: dados.liderSexo || null,
@@ -584,14 +592,20 @@ const AuthService = {
           membro2DataBatismo: dados.membro2DataBatismo ? new Date(dados.membro2DataBatismo) : null,
           membro2Sexo: dados.membro2Sexo || null,
           membro2Endereco: dados.membro2Endereco?.trim() || null,
-          status: 'ATIVA',
+          status: ['ATIVA', 'PENDENTE', 'INATIVA'].includes(dados.status) ? dados.status : 'ATIVA',
+          dataInicio: dados.dataInicio ? new Date(dados.dataInicio) : new Date(),
+          pessoasAlcancadas: Math.max(0, Number(dados.pessoasAlcancadas) || 0),
+          metaBatismos: Math.max(0, Number(dados.metaBatismos) || 0),
+          metaEstudosBiblicos: Math.max(0, Number(dados.metaEstudosBiblicos) || 0),
+          batismos: Math.max(0, Number(dados.batismos) || 0),
           classificacaoDupla,
           atividadeDupla: estudoAtualEmAndamento ? 'ATIVA' : 'INATIVA',
           levouPessoaBatismo,
           jaDeuEstudoBiblico,
           estudoAtualEmAndamento,
-          estudoBiblico: estudoAtualEmAndamento ? 'SIM' : 'NÃO',
-          statusEstudoBiblico: estudoAtualEmAndamento ? 'EM_ANDAMENTO' : 'ENCERRADO',
+          estudoBiblico: dados.estudoBiblico?.trim() || null,
+          statusEstudoBiblico: dados.statusEstudoBiblico?.trim() || (estudoAtualEmAndamento ? 'ATIVO' : null),
+          statusEvangelismo: dados.statusEvangelismo?.trim() || null,
           observacoes: dados.observacoes?.trim() || null,
         },
       });

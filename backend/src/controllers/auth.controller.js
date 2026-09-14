@@ -134,6 +134,8 @@ const validarCadastroDuplaComChave = [
   body('chave').notEmpty().withMessage('Chave de acesso obrigatória.'),
   body('liderNome').notEmpty().withMessage('Nome do Membro 1 (Líder) obrigatório.'),
   body('membro2Nome').notEmpty().withMessage('Nome do Membro 2 (Parceiro) obrigatório.'),
+  body('fotoLider').notEmpty().withMessage('Foto do Membro 1 (Líder) obrigatória.'),
+  body('fotoMembro2').notEmpty().withMessage('Foto do Membro 2 (Parceiro) obrigatória.'),
   body('email').trim().isEmail().withMessage('E-mail de acesso inválido.'),
   body('senha').custom((valor) => String(valor || '').trim().length >= 8)
     .withMessage('A senha deve ter pelo menos 8 caracteres.'),

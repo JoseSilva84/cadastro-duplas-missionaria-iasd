@@ -213,6 +213,8 @@ export default function Cadastro() {
           statusEstudoBiblico: d.statusEstudoBiblico || '',
           statusEvangelismo: d.statusEvangelismo || '',
           batismos: d.batismos || 0,
+          metaBatismos: d.metaBatismos || 0,
+          metaEstudosBiblicos: d.metaEstudosBiblicos || 0,
           observacoes: d.observacoes || '',
           dataInicio: d.dataInicio ? new Date(d.dataInicio).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         });

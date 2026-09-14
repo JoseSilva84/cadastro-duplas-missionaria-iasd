@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
+import AvatarUpload from '../components/AvatarUpload';
+import { FotoService } from '../foto.service';
 
 const TIPOS_PROJETO = [
   { value: 'ESTUDO_BIBLICO', label: 'Estudo Bíblico', icon: '📖' },
@@ -14,12 +16,6 @@ const TIPOS_PROJETO = [
 const LockIcon = () => (
   <svg className="w-4 h-4 text-[#C9963A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
@@ -39,20 +35,28 @@ export default function CadastroDuplaComChave() {
     igrejaId: '',
     bairro: '',
     tipoProjeto: 'ESTUDO_BIBLICO',
+    dataInicio: new Date().toISOString().split('T')[0],
+    status: 'ATIVA',
 
     // Membro 1 (Líder)
+    fotoLider: '',
     liderNome: '',
     liderTelefone: '',
     liderEmail: '',
+    liderIgreja: '',
+    liderDistrito: '',
     liderSexo: '',
     liderDataNascimento: '',
     liderDataBatismo: '',
     liderEndereco: '',
 
     // Membro 2 (Parceiro)
+    fotoMembro2: '',
     membro2Nome: '',
     membro2Telefone: '',
     membro2Email: '',
+    membro2Igreja: '',
+    membro2Distrito: '',
     membro2Sexo: '',
     membro2DataNascimento: '',
     membro2DataBatismo: '',
@@ -62,6 +66,16 @@ export default function CadastroDuplaComChave() {
     levouPessoaBatismo: null,
     jaDeuEstudoBiblico: null,
     estudoAtualEmAndamento: null,
+
+    // Acompanhamento e observações
+    estudoBiblico: '',
+    statusEstudoBiblico: '',
+    statusEvangelismo: '',
+    pessoasAlcancadas: 0,
+    metaBatismos: 0,
+    metaEstudosBiblicos: 0,
+    batismos: 0,
+    observacoes: '',
 
     // Seção 5: Acesso
     emailAcesso: '',
@@ -75,14 +89,15 @@ export default function CadastroDuplaComChave() {
   const [distritosRegiao, setDistritosRegiao] = useState([]);
   const [igrejasDistrito, setIgrejasDistrito] = useState([]);
   const [carregandoIgrejas, setCarregandoIgrejas] = useState(false);
+  const [fotoRefs, setFotoRefs] = useState({ fotoLider: '', fotoMembro2: '' });
+  const [fotoCadastroId] = useState(() => (
+    globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`
+  ));
 
-  // Se houver chave na URL, valida automaticamente
-  useEffect(() => {
-    const chaveUrl = searchParams.get('chave');
-    if (chaveUrl && !infoChave) {
-      validarChave(chaveUrl);
-    }
-  }, [searchParams]);
+  const alterarFoto = (campo, valor) => {
+    setForm((prev) => ({ ...prev, [campo]: valor }));
+    setFotoRefs((prev) => ({ ...prev, [campo]: '' }));
+  };
 
   const validarChave = async (chaveParaValidar) => {
     const chaveLimpa = String(chaveParaValidar || chaveInput).trim().toUpperCase();
@@ -99,11 +114,16 @@ export default function CadastroDuplaComChave() {
       setChaveInput(chaveLimpa);
 
       if (dados.tipo === 'DISTRITO') {
+        const igrejaUnica = dados.igrejas?.length === 1 ? dados.igrejas[0] : null;
         setForm((prev) => ({
           ...prev,
           regiaoId: dados.regiao.id,
           distritoId: dados.distrito.id,
-          igrejaId: dados.igrejas?.length === 1 ? String(dados.igrejas[0].id) : '',
+          igrejaId: igrejaUnica ? String(igrejaUnica.id) : '',
+          liderIgreja: igrejaUnica?.nome || '',
+          liderDistrito: dados.distrito.nome,
+          membro2Igreja: igrejaUnica?.nome || '',
+          membro2Distrito: dados.distrito.nome,
         }));
         setIgrejasDistrito(dados.igrejas || []);
       } else if (dados.tipo === 'REGIAO') {
@@ -112,6 +132,10 @@ export default function CadastroDuplaComChave() {
           regiaoId: dados.regiao.id,
           distritoId: '',
           igrejaId: '',
+          liderIgreja: '',
+          liderDistrito: '',
+          membro2Igreja: '',
+          membro2Distrito: '',
         }));
         setDistritosRegiao(dados.distritos || []);
       }
@@ -125,20 +149,43 @@ export default function CadastroDuplaComChave() {
     }
   };
 
+  // Se houver chave na URL, valida automaticamente uma vez ao abrir a página.
+  useEffect(() => {
+    const chaveUrl = searchParams.get('chave');
+    if (chaveUrl && !infoChave) {
+      validarChave(chaveUrl);
+    }
+    // A chave da URL é a origem desta inicialização; as demais mudanças são tratadas pelo formulário.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Quando seleciona um distrito no modo regional
   const handleSelecionarDistrito = async (distId) => {
-    setForm((prev) => ({ ...prev, distritoId: distId, igrejaId: '' }));
+    const distEncontrado = infoChave?.distritos?.find((d) => d.id === Number(distId));
+    setForm((prev) => ({
+      ...prev,
+      distritoId: distId,
+      igrejaId: '',
+      liderIgreja: '',
+      liderDistrito: distEncontrado?.nome || '',
+      membro2Igreja: '',
+      membro2Distrito: distEncontrado?.nome || '',
+    }));
     if (!distId) {
       setIgrejasDistrito([]);
       return;
     }
 
     // Se o infoChave já trouxe as igrejas daquele distrito
-    const distEncontrado = infoChave?.distritos?.find((d) => d.id === Number(distId));
     if (distEncontrado?.igrejas?.length) {
       setIgrejasDistrito(distEncontrado.igrejas);
       if (distEncontrado.igrejas.length === 1) {
-        setForm((prev) => ({ ...prev, igrejaId: String(distEncontrado.igrejas[0].id) }));
+        setForm((prev) => ({
+          ...prev,
+          igrejaId: String(distEncontrado.igrejas[0].id),
+          liderIgreja: distEncontrado.igrejas[0].nome,
+          membro2Igreja: distEncontrado.igrejas[0].nome,
+        }));
       }
       return;
     }
@@ -149,7 +196,12 @@ export default function CadastroDuplaComChave() {
       const res = await api.get(`/igrejas`, { params: { distritoId: distId } });
       setIgrejasDistrito(res.data || []);
       if (res.data?.length === 1) {
-        setForm((prev) => ({ ...prev, igrejaId: String(res.data[0].id) }));
+        setForm((prev) => ({
+          ...prev,
+          igrejaId: String(res.data[0].id),
+          liderIgreja: res.data[0].nome,
+          membro2Igreja: res.data[0].nome,
+        }));
       }
     } catch (err) {
       console.error('Erro ao buscar igrejas do distrito:', err);
@@ -168,6 +220,16 @@ export default function CadastroDuplaComChave() {
 
   const classificacaoAtual = calcularClassificacao();
 
+  const handleSelecionarIgreja = (igrejaId) => {
+    const igreja = igrejasDistrito.find((item) => String(item.id) === String(igrejaId));
+    setForm((prev) => ({
+      ...prev,
+      igrejaId,
+      liderIgreja: igreja?.nome || '',
+      membro2Igreja: igreja?.nome || '',
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -185,6 +247,14 @@ export default function CadastroDuplaComChave() {
     }
     if (!form.membro2Nome.trim()) {
       toast.error('Preencha o nome do Membro 2 (Parceiro).');
+      return;
+    }
+    if (!form.fotoLider) {
+      toast.error('Adicione a foto do Membro 1 (Líder).');
+      return;
+    }
+    if (!form.fotoMembro2) {
+      toast.error('Adicione a foto do Membro 2 (Parceiro).');
       return;
     }
 
@@ -212,6 +282,16 @@ export default function CadastroDuplaComChave() {
 
     setSalvando(true);
     try {
+      const salvarFoto = async (campo, tipo) => {
+        if (fotoRefs[campo]) return fotoRefs[campo];
+        return FotoService.salvarFotoPorReferencia('autocadastro', fotoCadastroId, tipo, form[campo]);
+      };
+      const [fotoLiderRef, fotoMembro2Ref] = await Promise.all([
+        salvarFoto('fotoLider', 'lider'),
+        salvarFoto('fotoMembro2', 'membro2'),
+      ]);
+      setFotoRefs({ fotoLider: fotoLiderRef, fotoMembro2: fotoMembro2Ref });
+
       await api.post('/auth/cadastrar-dupla-com-chave', {
         chave: chaveInput,
         regiaoId: form.regiaoId,
@@ -219,18 +299,26 @@ export default function CadastroDuplaComChave() {
         igrejaId: form.igrejaId,
         bairro: form.bairro,
         tipoProjeto: form.tipoProjeto,
+        dataInicio: form.dataInicio,
+        status: form.status,
 
+        fotoLider: fotoLiderRef,
         liderNome: form.liderNome,
         liderTelefone: form.liderTelefone,
         liderEmail: form.liderEmail || emailAcesso,
+        liderIgreja: form.liderIgreja,
+        liderDistrito: form.liderDistrito,
         liderSexo: form.liderSexo || null,
         liderDataNascimento: form.liderDataNascimento || null,
         liderDataBatismo: form.liderDataBatismo || null,
         liderEndereco: form.liderEndereco || null,
 
+        fotoMembro2: fotoMembro2Ref,
         membro2Nome: form.membro2Nome,
         membro2Telefone: form.membro2Telefone,
         membro2Email: form.membro2Email || null,
+        membro2Igreja: form.membro2Igreja,
+        membro2Distrito: form.membro2Distrito,
         membro2Sexo: form.membro2Sexo || null,
         membro2DataNascimento: form.membro2DataNascimento || null,
         membro2DataBatismo: form.membro2DataBatismo || null,
@@ -240,6 +328,15 @@ export default function CadastroDuplaComChave() {
         jaDeuEstudoBiblico: form.jaDeuEstudoBiblico,
         estudoAtualEmAndamento: form.estudoAtualEmAndamento,
 
+        estudoBiblico: form.estudoBiblico || null,
+        statusEstudoBiblico: form.statusEstudoBiblico || null,
+        statusEvangelismo: form.statusEvangelismo || null,
+        pessoasAlcancadas: Number(form.pessoasAlcancadas) || 0,
+        metaBatismos: Number(form.metaBatismos) || 0,
+        metaEstudosBiblicos: Number(form.metaEstudosBiblicos) || 0,
+        batismos: Number(form.batismos) || 0,
+        observacoes: form.observacoes,
+
         email: emailAcesso,
         senha: form.senhaAcesso,
       });
@@ -247,7 +344,7 @@ export default function CadastroDuplaComChave() {
       setSucessoModal(true);
     } catch (err) {
       console.error('Erro ao cadastrar dupla:', err);
-      const msg = err.response?.data?.erro || 'Erro ao realizar cadastro da dupla.';
+      const msg = err.response?.data?.erro || err.message || 'Erro ao realizar cadastro da dupla.';
       toast.error(msg);
     } finally {
       setSalvando(false);
@@ -437,7 +534,7 @@ export default function CadastroDuplaComChave() {
                     required
                     disabled={!form.distritoId || carregandoIgrejas}
                     value={form.igrejaId}
-                    onChange={(e) => setForm({ ...form, igrejaId: e.target.value })}
+                    onChange={(e) => handleSelecionarIgreja(e.target.value)}
                     className="input-field disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">
@@ -447,6 +544,19 @@ export default function CadastroDuplaComChave() {
                       <option key={ig.id} value={ig.id}>{ig.nome}</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Bairro de Atuação
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Santana, Gonzaga..."
+                    value={form.bairro}
+                    onChange={(e) => setForm({ ...form, bairro: e.target.value })}
+                    className="input-field"
+                  />
                 </div>
 
                 {/* Tipo de Projeto / Atuação */}
@@ -466,6 +576,33 @@ export default function CadastroDuplaComChave() {
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Data de Início
+                  </label>
+                  <input
+                    type="date"
+                    value={form.dataInicio}
+                    onChange={(e) => setForm({ ...form, dataInicio: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    className="input-field"
+                  >
+                    <option value="ATIVA">✅ Ativa</option>
+                    <option value="PENDENTE">⏳ Pendente</option>
+                    <option value="INATIVA">⏸️ Inativa</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -478,6 +615,17 @@ export default function CadastroDuplaComChave() {
                 <div>
                   <h2 className="font-bold text-[#1A3A6B]">Membro 1 — Líder da Dupla</h2>
                   <p className="text-xs text-gray-400">Dados cadastrais do primeiro integrante</p>
+                </div>
+              </div>
+
+              <div className="flex justify-center w-full mb-4">
+                <div>
+                  <AvatarUpload
+                    value={form.fotoLider}
+                    onChange={(valor) => alterarFoto('fotoLider', valor)}
+                    label="Foto do Líder *"
+                  />
+                  <p className="-mt-3 text-center text-[11px] text-gray-400">Imagem obrigatória</p>
                 </div>
               </div>
 
@@ -512,6 +660,41 @@ export default function CadastroDuplaComChave() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="lider@email.com"
+                    value={form.liderEmail}
+                    onChange={(e) => setForm({ ...form, liderEmail: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Igreja</label>
+                  <input
+                    type="text"
+                    placeholder="Igreja do membro 1"
+                    value={form.liderIgreja}
+                    onChange={(e) => setForm({ ...form, liderIgreja: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Distrito</label>
+                  <input
+                    type="text"
+                    placeholder="Distrito do membro 1"
+                    value={form.liderDistrito}
+                    onChange={(e) => setForm({ ...form, liderDistrito: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Data de Nascimento
                   </label>
                   <input
@@ -532,8 +715,8 @@ export default function CadastroDuplaComChave() {
                     className="input-field"
                   >
                     <option value="">Selecione...</option>
-                    <option value="MASCULINO">Masculino</option>
-                    <option value="FEMININO">Feminino</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
                   </select>
                 </div>
 
@@ -545,6 +728,19 @@ export default function CadastroDuplaComChave() {
                     type="date"
                     value={form.liderDataBatismo}
                     onChange={(e) => setForm({ ...form, liderDataBatismo: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Endereço Residencial
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Rua, número, bairro"
+                    value={form.liderEndereco}
+                    onChange={(e) => setForm({ ...form, liderEndereco: e.target.value })}
                     className="input-field"
                   />
                 </div>
@@ -560,6 +756,17 @@ export default function CadastroDuplaComChave() {
                 <div>
                   <h2 className="font-bold text-[#1A3A6B]">Membro 2 — Parceiro da Dupla</h2>
                   <p className="text-xs text-gray-400">Dados cadastrais do segundo integrante</p>
+                </div>
+              </div>
+
+              <div className="flex justify-center w-full mb-4">
+                <div>
+                  <AvatarUpload
+                    value={form.fotoMembro2}
+                    onChange={(valor) => alterarFoto('fotoMembro2', valor)}
+                    label="Foto do Parceiro *"
+                  />
+                  <p className="-mt-3 text-center text-[11px] text-gray-400">Imagem obrigatória</p>
                 </div>
               </div>
 
@@ -594,6 +801,41 @@ export default function CadastroDuplaComChave() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="parceiro@email.com"
+                    value={form.membro2Email}
+                    onChange={(e) => setForm({ ...form, membro2Email: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Igreja</label>
+                  <input
+                    type="text"
+                    placeholder="Igreja do membro 2"
+                    value={form.membro2Igreja}
+                    onChange={(e) => setForm({ ...form, membro2Igreja: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Distrito</label>
+                  <input
+                    type="text"
+                    placeholder="Distrito do membro 2"
+                    value={form.membro2Distrito}
+                    onChange={(e) => setForm({ ...form, membro2Distrito: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Data de Nascimento
                   </label>
                   <input
@@ -614,8 +856,8 @@ export default function CadastroDuplaComChave() {
                     className="input-field"
                   >
                     <option value="">Selecione...</option>
-                    <option value="MASCULINO">Masculino</option>
-                    <option value="FEMININO">Feminino</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
                   </select>
                 </div>
 
@@ -627,6 +869,19 @@ export default function CadastroDuplaComChave() {
                     type="date"
                     value={form.membro2DataBatismo}
                     onChange={(e) => setForm({ ...form, membro2DataBatismo: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Endereço Residencial
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Rua, número, bairro"
+                    value={form.membro2Endereco}
+                    onChange={(e) => setForm({ ...form, membro2Endereco: e.target.value })}
                     className="input-field"
                   />
                 </div>
@@ -751,13 +1006,134 @@ export default function CadastroDuplaComChave() {
               </div>
             </div>
 
-            {/* SEÇÃO 5: Dados de Acesso (Login e Senha da Dupla) */}
+            {/* SEÇÃO 5: Acompanhamento Missionário */}
+            <div className="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
+                <div className="w-8 h-8 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-sm">
+                  5
+                </div>
+                <div>
+                  <h2 className="font-bold text-[#1A3A6B]">Acompanhamento</h2>
+                  <p className="text-xs text-gray-400">Métricas e andamento missionário da dupla</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Estudo Bíblico</label>
+                  <select
+                    value={form.estudoBiblico}
+                    onChange={(e) => setForm({ ...form, estudoBiblico: e.target.value, statusEstudoBiblico: e.target.value ? form.statusEstudoBiblico : '' })}
+                    className="input-field"
+                  >
+                    <option value="">Selecione o estudo</option>
+                    <option value="Ouvindo a Voz de Deus">Ouvindo a Voz de Deus</option>
+                    <option value="Apocalipse - A Resposta">Apocalipse - A Resposta</option>
+                    <option value="Bíblia Fácil">Bíblia Fácil</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Status do Estudo Bíblico</label>
+                  <select
+                    value={form.statusEstudoBiblico}
+                    onChange={(e) => setForm({ ...form, statusEstudoBiblico: e.target.value })}
+                    disabled={!form.estudoBiblico}
+                    className="input-field disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Não iniciado</option>
+                    <option value="ATIVO">Em andamento</option>
+                    <option value="DESATIVADO">Desativado / Pausado</option>
+                    <option value="TERMINADO">Concluído</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Classe Bíblica</label>
+                  <select
+                    value={form.statusEvangelismo}
+                    onChange={(e) => setForm({ ...form, statusEvangelismo: e.target.value })}
+                    className="input-field"
+                  >
+                    <option value="">Não iniciado</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="TERMINADO">Terminado</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Metas de Contatos</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.pessoasAlcancadas}
+                    onChange={(e) => setForm({ ...form, pessoasAlcancadas: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Meta de batismo</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.metaBatismos}
+                    onChange={(e) => setForm({ ...form, metaBatismos: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Meta de estudos bíblicos</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.metaEstudosBiblicos}
+                    onChange={(e) => setForm({ ...form, metaEstudosBiblicos: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Batismos Alcançados no passado</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.batismos}
+                    onChange={(e) => setForm({ ...form, batismos: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SEÇÃO 6: Observações */}
+            <div className="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
+                <div className="w-8 h-8 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-sm">
+                  6
+                </div>
+                <div>
+                  <h2 className="font-bold text-[#1A3A6B]">Observações</h2>
+                  <p className="text-xs text-gray-400">Informações adicionais sobre a dupla (opcional)</p>
+                </div>
+              </div>
+              <textarea
+                value={form.observacoes}
+                onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+                placeholder="Observações sobre a dupla, atividades, histórico..."
+                className="input-field min-h-28 resize-y"
+              />
+            </div>
+
+            {/* SEÇÃO 7: Dados de Acesso (Login e Senha da Dupla) */}
             <div className="bg-white rounded-3xl shadow-sm p-6 border-2 border-[#C9963A]/40 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-100/60 to-transparent rounded-bl-full pointer-events-none" />
 
               <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#C9963A] to-[#b0802c] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                  5
+                  7
                 </div>
                 <div>
                   <h2 className="font-bold text-[#1A3A6B] flex items-center gap-2">
