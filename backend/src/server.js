@@ -22,6 +22,30 @@ const interessadosNovoTempoRoutes = require('./routes/interessadosNovoTempo');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
+
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  const host = req.get('host') || '';
+  const forwardedProto = req.get('x-forwarded-proto');
+  const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  const isSecureRequest = req.secure || forwardedProto === 'https';
+
+  if (isProduction && !isLocalhost && !isSecureRequest) {
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+
+  if (isProduction && isSecureRequest) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  return next();
+});
 
 // Middlewares
 app.use(cors({
