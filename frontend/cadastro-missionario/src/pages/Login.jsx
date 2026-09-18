@@ -9,10 +9,10 @@ import api from '../lib/api';
 // Logo IASD (PNG) — com background azul escuro para visibilidade
 const Cruz = ({ size = 'w-25 h-25' }) => (
   <div
-    className={`${size} flex items-center justify-center rounded-xl`}
+    className={`${size} flex items-center justify-center rounded-2xl shadow-md flex-shrink-0`}
     style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
   >
-    <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-1" />
+    <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain p-1.5" />
   </div>
 );
 
@@ -193,7 +193,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Header mobile */}
           <div className="lg:hidden flex flex-col items-center mb-3 sm:mb-5 gap-1.5 sm:gap-2">
-            <Cruz size="w-21 h-21 sm:w-24 sm:h-24" />
+            <Cruz size="w-[102px] h-[102px] sm:w-[116px] sm:h-[116px]" />
             <h1 className="text-2xl sm:text-3xl font-black text-[#1A3A6B] text-center tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
               PCM
             </h1>
