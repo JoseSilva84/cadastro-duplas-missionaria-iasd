@@ -192,8 +192,8 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center bg-[#F4F5F7] px-4 py-4 sm:px-6 sm:py-8 lg:py-12">
         <div className="w-full max-w-md">
           {/* Header mobile */}
-          <div className="lg:hidden flex flex-col items-center mb-3 sm:mb-6 gap-1 sm:gap-2">
-            <Cruz size="w-16 h-16 sm:w-20 sm:h-20" />
+          <div className="lg:hidden flex flex-col items-center mb-3 sm:mb-5 gap-1.5 sm:gap-2">
+            <Cruz size="w-21 h-21 sm:w-24 sm:h-24" />
             <h1 className="text-2xl sm:text-3xl font-black text-[#1A3A6B] text-center tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
               PCM
             </h1>
@@ -291,8 +291,8 @@ export default function Login() {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs sm:text-sm font-bold text-[#1A3A6B] group-hover:text-[#0f2347]">
-                        <span className="lg:hidden">Cadastrar dupla</span>
-                        <span className="hidden lg:inline">Cadastrar Minha Dupla</span>
+                        <span className="lg:hidden">Cadastrar nova dupla</span>
+                        <span className="hidden lg:inline">Cadastrar Nova Dupla</span>
                       </span>
                       <span className="text-[9px] sm:text-[10px] bg-[#1A3A6B]/15 text-[#1A3A6B] px-1.5 py-0.2 sm:py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
                     </div>

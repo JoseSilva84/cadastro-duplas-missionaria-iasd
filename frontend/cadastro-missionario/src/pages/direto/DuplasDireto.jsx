@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import api from '../../lib/api';
@@ -503,8 +504,8 @@ function ModalConfirmarExclusaoDupla({ dupla, processando, onClose, onConfirmar 
   const liderNome = dupla.liderNome || 'Membro 1';
   const membro2Nome = dupla.membro2Nome || 'Membro 2';
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+  const modalNode = (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
         <div className="bg-gradient-to-br from-red-50 via-white to-amber-50 px-6 pb-5 pt-6 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
@@ -573,6 +574,8 @@ function ModalConfirmarExclusaoDupla({ dupla, processando, onClose, onConfirmar 
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalNode, document.body) : modalNode;
 }
 
 function ModalQrCodeDupla({ dupla, onClose }) {
@@ -638,9 +641,9 @@ function ModalQrCodeDupla({ dupla, onClose }) {
     `Olá! Segue o link para vocês criarem o login e a senha de acesso da dupla missionária (${liderNome} e ${membro2Nome}) no sistema PCM:\n\n${link}`
   );
 
-  return (
+  const modalNode = (
     <div
-      className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -700,12 +703,12 @@ function ModalQrCodeDupla({ dupla, onClose }) {
                     <img
                       src={imagemQr}
                       alt="QR Code de Acesso"
-                      className="h-40 w-40 object-contain rounded-lg"
+                      className="w-40 h-40 object-contain rounded-lg"
                     />
                   )}
                 </div>
-                <p className="mt-1.5 text-center text-[11px] text-slate-500 leading-tight">
-                  Aponte a câmera para ler o QR Code e criar o acesso.
+                <p className="mt-1.5 text-center text-[11px] text-slate-500 max-w-[240px]">
+                  Aponte a câmera para criar a conta da dupla
                 </p>
               </div>
 
@@ -720,22 +723,26 @@ function ModalQrCodeDupla({ dupla, onClose }) {
                 </div>
               )}
 
-              {/* Bloco de Copiar Link Compacto */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                  Link de convite
-                </label>
-                <div className="flex gap-1.5">
+              {/* Botão Copiar Link */}
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Ou compartilhe o link:
+                </span>
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1">
                   <input
                     type="text"
                     readOnly
                     value={link}
-                    className="input-field flex-1 h-8 text-[11px] text-slate-600 bg-slate-50 px-2 select-all"
+                    className="w-full bg-transparent text-[11px] text-slate-600 px-2 outline-none select-all truncate"
                   />
                   <button
                     type="button"
                     onClick={copiarLink}
-                    className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-[#1A3A6B] px-2.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#244b8a] whitespace-nowrap"
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                      copiado
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-[#1A3A6B] text-white hover:bg-[#1A3A6B]/90'
+                    }`}
                   >
                     {copiado ? (
                       <>
@@ -747,7 +754,7 @@ function ModalQrCodeDupla({ dupla, onClose }) {
                     ) : (
                       <>
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         <span>Copiar</span>
                       </>
@@ -778,6 +785,8 @@ function ModalQrCodeDupla({ dupla, onClose }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalNode, document.body) : modalNode;
 }
 
 export default function DuplasDireto() {
@@ -826,6 +835,17 @@ export default function DuplasDireto() {
   const [estudoLicaoModal, setEstudoLicaoModal] = useState(null);
   const [licoesRapidas, setLicoesRapidas] = useState({});
   const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
+
+  useEffect(() => {
+    const algumModalAberto = Boolean(mostraDetalhe || duplaParaExcluir || duplaParaQrCode || estudoLicaoModal || fotoAmpliada);
+    if (algumModalAberto && typeof document !== 'undefined') {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [mostraDetalhe, duplaParaExcluir, duplaParaQrCode, estudoLicaoModal, fotoAmpliada]);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
@@ -1513,18 +1533,18 @@ export default function DuplasDireto() {
       </div>
 
       {/* ===== PAINEL DIREITO: Detalhes da Dupla (Detail) ===== */}
-      {mostraDetalhe && duplaSelecionada && (
+      {mostraDetalhe && duplaSelecionada && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4 backdrop-blur-sm animate-fade-in"
           onClick={() => setMostraDetalhe(false)}
         >
           <div
-            className="h-[min(90vh,920px)] w-full max-w-6xl overflow-hidden rounded-xl bg-[#F8FAFC] shadow-2xl ring-1 ring-black/5"
+            className="h-[min(94vh,920px)] w-full max-w-6xl overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl ring-1 ring-black/5 flex flex-col"
             onClick={(event) => event.stopPropagation()}
           >
           <div
             key={duplaSelecionada.id}
-            className="flex flex-col h-full animate-slide-in-right"
+            className="flex flex-col h-full min-h-0 animate-slide-in-right"
           >
             {/* Cabeçalho do detail */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
@@ -1643,7 +1663,7 @@ export default function DuplasDireto() {
             </div>
 
             {/* Conteúdo do detail — grid vertical, sem scroll horizontal */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 xl:p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 xl:p-6 pb-12 sm:pb-8">
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {/* Card: Membros (Líder + Parceiro lado a lado) */}
                 <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm xl:col-span-2">
@@ -1918,7 +1938,8 @@ export default function DuplasDireto() {
             </div>
           </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
     <ModalConfirmarExclusaoDupla
@@ -1933,12 +1954,12 @@ export default function DuplasDireto() {
         onClose={fecharModalQrCode}
       />
     )}
-    {estudoLicaoModal && (() => {
+    {estudoLicaoModal && typeof document !== 'undefined' && createPortal((() => {
       const edicaoLicao = licoesRapidas[estudoLicaoModal.id] || {};
       const licoesDaSerie = SERIES_ESTUDO.find((serie) => serie.id === edicaoLicao.serie)?.licoes || [];
       return (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={fecharModalLicao}
         >
           <div
@@ -2018,10 +2039,10 @@ export default function DuplasDireto() {
           </div>
         </div>
       );
-    })()}
-    {fotoAmpliada && (
+    })(), document.body)}
+    {fotoAmpliada && typeof document !== 'undefined' && createPortal(
       <div
-        className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
         onClick={() => setFotoAmpliada(null)}
       >
         <div
@@ -2049,7 +2070,8 @@ export default function DuplasDireto() {
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
     )}
     </>
   );

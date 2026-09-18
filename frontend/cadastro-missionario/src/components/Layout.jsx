@@ -278,13 +278,18 @@ export default function Layout({ children }) {
            >
              {icons.menu}
            </button>
-            <div className="flex items-center gap-2 min-w-0 flex-1 justify-center">
-              {icons.logoIasd}
-              <span className="text-white text-sm sm:text-base font-black tracking-wider truncate" style={{ fontFamily: 'Georgia, serif' }}>
+            <div className="flex items-end justify-center gap-2.5 min-w-0 flex-1 pb-0.5">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 flex items-end justify-center flex-shrink-0">
+                <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain object-bottom" />
+              </div>
+              <span
+                className="text-white text-2xl sm:text-[28px] font-black tracking-wider leading-none truncate"
+                style={{ fontFamily: 'Georgia, serif' }}
+              >
                 PCM
               </span>
             </div>
-            <div className="w-9 flex-shrink-0" />
+            <div className="w-12 flex-shrink-0" />
           </header>
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4F5F7] pb-20 lg:pb-0">
