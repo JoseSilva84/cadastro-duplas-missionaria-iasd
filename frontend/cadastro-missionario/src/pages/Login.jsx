@@ -189,49 +189,49 @@ export default function Login() {
       </div>
 
       {/* Painel direito — Formulário de login */}
-      <div className="flex-1 flex items-center justify-center bg-[#F4F5F7] px-6 py-12">
+      <div className="flex-1 flex items-center justify-center bg-[#F4F5F7] px-4 py-4 sm:px-6 sm:py-8 lg:py-12">
         <div className="w-full max-w-md">
           {/* Header mobile */}
-          <div className="lg:hidden flex flex-col items-center mb-8 gap-2">
-            <Cruz />
-            <h1 className="text-3xl sm:text-4xl font-black text-[#1A3A6B] text-center tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
+          <div className="lg:hidden flex flex-col items-center mb-3 sm:mb-6 gap-1 sm:gap-2">
+            <Cruz size="w-16 h-16 sm:w-20 sm:h-20" />
+            <h1 className="text-2xl sm:text-3xl font-black text-[#1A3A6B] text-center tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
               PCM
             </h1>
-            <p className="text-[#C9963A] font-semibold text-sm">Associação Paulistana</p>
+            <p className="text-[#C9963A] font-semibold text-xs sm:text-sm">Associação Paulistana</p>
           </div>
 
           {/* Card de login */}
-          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl p-5 sm:p-7 lg:p-8 border border-gray-100">
+            <div className="mb-4 sm:mb-6 lg:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#1A3A6B] text-center" style={{ fontFamily: 'Georgia, serif' }}>
                 Bem-vindo
               </h2>
-              <p className="text-gray-500 text-sm mt-1 text-center">Entre com suas credenciais para acessar o sistema</p>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1 text-center">Entre com suas credenciais para acessar o sistema</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 lg:space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">E-mail</label>
                 <input
                   type="email"
                   id="email"
                   required
                   placeholder="seu@email.com"
-                  className="input-field"
+                  className="input-field py-2 sm:py-2.5"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Senha</label>
                 <div className="relative">
                   <input
                     type={mostrarSenha ? "text" : "password"}
                     id="senha"
                     required
                     placeholder="••••••••"
-                    className="input-field w-full pr-10"
+                    className="input-field w-full pr-10 py-2 sm:py-2.5"
                     value={form.senha}
                     onChange={(e) => setForm({ ...form, senha: e.target.value })}
                   />
@@ -257,7 +257,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={carregando}
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
+                className="btn-primary w-full flex items-center justify-center gap-2 mt-1 sm:mt-2 py-2.5 text-sm sm:text-base"
               >
                 {carregando ? (
                   <>
@@ -272,32 +272,35 @@ export default function Login() {
             </form>
 
             {/* Separador e Botão de Auto-Cadastro com Chave de Acesso */}
-            <div className="mt-6">
-              <div className="relative flex py-2 items-center">
+            <div className="mt-3.5 sm:mt-5 lg:mt-6">
+              <div className="relative flex py-1 sm:py-2 items-center">
                 <div className="flex-grow border-t border-gray-200"></div>
-                <span className="flex-shrink mx-3 text-xs font-semibold uppercase tracking-wider text-gray-400">ou</span>
+                <span className="flex-shrink mx-3 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400">ou</span>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setModalChaveAberto(true)}
-                className="mt-1 w-full group relative flex items-center justify-between gap-3 p-3.5 rounded-2xl border-2 border-[#1A3A6B]/30 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/40 hover:from-blue-100/80 hover:to-blue-50 hover:border-[#1A3A6B] transition-all duration-300 shadow-sm hover:shadow-md active:scale-[0.99]"
+                className="mt-1 w-full group relative flex items-center justify-between gap-2.5 p-2 sm:p-2.5 lg:p-3.5 rounded-xl sm:rounded-2xl border-2 border-[#1A3A6B]/30 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/40 hover:from-blue-100/80 hover:to-blue-50 hover:border-[#1A3A6B] transition-all duration-300 shadow-xs hover:shadow-md active:scale-[0.99]"
               >
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#0f2347] text-white flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform text-lg">
+                <div className="flex items-center gap-2.5 sm:gap-3 text-left">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#0f2347] text-white flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform text-sm sm:text-base lg:text-lg">
                     ✨
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold text-[#1A3A6B] group-hover:text-[#0f2347]">Cadastrar Minha Dupla</span>
-                      <span className="text-[10px] bg-[#1A3A6B]/15 text-[#1A3A6B] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
+                      <span className="text-xs sm:text-sm font-bold text-[#1A3A6B] group-hover:text-[#0f2347]">
+                        <span className="lg:hidden">Cadastrar dupla</span>
+                        <span className="hidden lg:inline">Cadastrar Minha Dupla</span>
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] bg-[#1A3A6B]/15 text-[#1A3A6B] px-1.5 py-0.2 sm:py-0.5 rounded-full font-bold uppercase tracking-wider">Novo</span>
                     </div>
-                    <p className="text-xs text-gray-500">Auto-cadastro com a chave do pastor</p>
+                    <p className="hidden lg:block text-xs text-gray-500 mt-0.5">Auto-cadastro com a chave do pastor</p>
                   </div>
                 </div>
                 <div className="text-[#1A3A6B] pr-1 group-hover:translate-x-1 transition-transform">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
