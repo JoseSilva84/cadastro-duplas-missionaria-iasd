@@ -57,6 +57,17 @@ const UsuarioController = {
     }
   },
 
+  // GET /api/usuarios/qrcodes-ativacao
+  async listarQrCodesAtivacao(req, res) {
+    try {
+      const origem = req.get('origin') || `${req.protocol}://${req.get('host')}`;
+      const resultado = await AuthService.listarQrCodesAtivacao(req.usuario, origem);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao carregar QR Codes.' });
+    }
+  },
+
   // DELETE /api/usuarios/:id
   // DELETE /api/usuarios/:id
   async desativar(req, res) {

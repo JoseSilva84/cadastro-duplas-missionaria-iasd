@@ -6,6 +6,8 @@ const {
   validarAtualizacaoConta,
   validarRedefinicaoAcesso,
   validarCriacaoContaDupla,
+  validarBuscaDuplaQr,
+  validarAtivacaoQr,
   validarCadastroDuplaComChave,
 } = require('../controllers/auth.controller');
 const { autenticar } = require('../middlewares/auth');
@@ -30,6 +32,11 @@ router.get('/validar-token-dupla', AuthController.validarTokenDupla);
 
 // POST /api/auth/criar-conta-dupla — cria conta da dupla usando QR Code/link
 router.post('/criar-conta-dupla', limitarLogin, validarCriacaoContaDupla, AuthController.criarContaDupla);
+
+// Fluxo público de ativação por QR Code geral
+router.get('/qr-ativacao/info', AuthController.infoQrAtivacao);
+router.post('/qr-ativacao/buscar-dupla', limitarLogin, validarBuscaDuplaQr, AuthController.buscarDuplaQrAtivacao);
+router.post('/qr-ativacao/ativar', limitarLogin, validarAtivacaoQr, AuthController.ativarQrAtivacao);
 
 // GET /api/auth/me — Retorna dados do usuário autenticado
 router.get('/me', autenticar, AuthController.me);

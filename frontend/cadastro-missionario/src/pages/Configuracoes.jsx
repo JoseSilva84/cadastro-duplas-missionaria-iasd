@@ -40,6 +40,10 @@ export default function Configuracoes() {
   const navigate = useNavigate();
   const location = useLocation();
   const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
+  const podeGerenciarQrCodes = !usuario?.somenteLeitura && [
+    PERFIS.SUPER_ADMIN,
+    PERFIS.ADMINISTRADOR,
+  ].includes(usuario?.perfil);
   const podeGerenciarUsuarios = !usuario?.somenteLeitura && [
     PERFIS.SUPER_ADMIN,
     PERFIS.ADMINISTRADOR,
@@ -100,12 +104,9 @@ export default function Configuracoes() {
 
   const copiarConviteWhatsApp = (tipo, nome, chave) => {
     const link = `${window.location.origin}/cadastro-dupla?chave=${encodeURIComponent(chave)}`;
-    let msg = '';
-    if (tipo === 'DISTRITO') {
-      msg = `*PCM — Associação Paulistana*\n\nOlá, duplas missionárias do *Distrito de ${nome}*! 🙏✨\n\nPara cadastrar sua dupla e ter acesso ao sistema de acompanhamento da Associação Paulistana, acessem o link abaixo e usem a nossa chave distrital:\n\n🔑 *Chave de Acesso:* \`${chave}\`\n🔗 *Link Direto:* ${link}\n\nDeus abençoe ricamente o seu ministério!`;
-    } else {
-      msg = `*PCM — Associação Paulistana*\n\nOlá, líderes e duplas da *${nome}*! 🙏✨\n\nPara cadastrar sua dupla missionária no sistema da Associação Paulistana, usem a nossa chave regional:\n\n🔑 *Chave de Acesso:* \`${chave}\`\n🔗 *Link Direto:* ${link}\n\nDeus abençoe o ministério de cada dupla!`;
-    }
+    const msg = tipo === 'DISTRITO'
+      ? `*PCM — Associação Paulistana*\n\nOlá, duplas missionárias do *Distrito de ${nome}*! 🙏✨\n\nPara cadastrar sua dupla e ter acesso ao sistema de acompanhamento da Associação Paulistana, acessem o link abaixo e usem a nossa chave distrital:\n\n🔑 *Chave de Acesso:* \`${chave}\`\n🔗 *Link Direto:* ${link}\n\nDeus abençoe ricamente o seu ministério!`
+      : `*PCM — Associação Paulistana*\n\nOlá, líderes e duplas da *${nome}*! 🙏✨\n\nPara cadastrar sua dupla missionária no sistema da Associação Paulistana, usem a nossa chave regional:\n\n🔑 *Chave de Acesso:* \`${chave}\`\n🔗 *Link Direto:* ${link}\n\nDeus abençoe o ministério de cada dupla!`;
     copiarTexto(msg, 'Mensagem formatada para WhatsApp copiada com sucesso!');
   };
 
@@ -251,6 +252,15 @@ export default function Configuracoes() {
             }`}
           >
             Chaves de acesso
+          </button>
+        )}
+        {podeGerenciarQrCodes && (
+          <button
+            type="button"
+            onClick={() => navigate(location.pathname.startsWith('/direto/') ? '/direto/gestao-qrcodes' : '/gestao-qrcodes')}
+            className="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-gray-400 transition hover:text-gray-600"
+          >
+            Gestão de QR Codes
           </button>
         )}
         {isSuperAdmin && (

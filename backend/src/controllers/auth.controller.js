@@ -29,6 +29,21 @@ const validarCriacaoContaDupla = [
     .withMessage('A senha deve ter pelo menos 8 caracteres.'),
 ];
 
+const validarBuscaDuplaQr = [
+  body('token').notEmpty().withMessage('QR Code de ativação obrigatório.'),
+  body('distritoId').notEmpty().withMessage('Selecione o distrito.'),
+  body('igrejaId').notEmpty().withMessage('Selecione a igreja.'),
+  body('liderNome').notEmpty().withMessage('Informe o nome do líder.'),
+  body('membro2Nome').notEmpty().withMessage('Informe o nome do parceiro.'),
+];
+
+const validarAtivacaoQr = [
+  body('token').notEmpty().withMessage('QR Code de ativação obrigatório.'),
+  body('email').trim().isEmail().withMessage('E-mail inválido.'),
+  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
+    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+];
+
 const responderErrosValidacao = (req, res) => {
   const erros = validationResult(req);
   if (erros.isEmpty()) return false;
@@ -107,6 +122,38 @@ const AuthController = {
     }
   },
 
+  // GET /api/auth/qr-ativacao/info
+  async infoQrAtivacao(req, res) {
+    try {
+      const resultado = await AuthService.obterInfoAtivacaoQr(req.query.token);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao validar QR Code.' });
+    }
+  },
+
+  // POST /api/auth/qr-ativacao/buscar-dupla
+  async buscarDuplaQrAtivacao(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.buscarDuplaParaAtivacao(req.body);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao buscar dupla.' });
+    }
+  },
+
+  // POST /api/auth/qr-ativacao/ativar
+  async ativarQrAtivacao(req, res) {
+    if (responderErrosValidacao(req, res)) return;
+    try {
+      const resultado = await AuthService.ativarAcessoQr(req.body);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao ativar acesso.' });
+    }
+  },
+
   // GET /api/auth/validar-chave-cadastro
   async validarChaveCadastro(req, res) {
     try {
@@ -148,5 +195,7 @@ module.exports = {
   validarAtualizacaoConta,
   validarRedefinicaoAcesso,
   validarCriacaoContaDupla,
+  validarBuscaDuplaQr,
+  validarAtivacaoQr,
   validarCadastroDuplaComChave,
 };

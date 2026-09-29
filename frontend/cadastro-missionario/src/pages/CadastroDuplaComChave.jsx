@@ -27,12 +27,19 @@ export default function CadastroDuplaComChave() {
   const [chaveInput, setChaveInput] = useState(searchParams.get('chave') || '');
   const [validandoChave, setValidandoChave] = useState(false);
   const [infoChave, setInfoChave] = useState(null); // { tipo, distrito, regiao, igrejas, distritos }
+  const prefill = {
+    regiaoId: searchParams.get('regiaoId') || '',
+    distritoId: searchParams.get('distritoId') || '',
+    igrejaId: searchParams.get('igrejaId') || '',
+    liderNome: searchParams.get('liderNome') || '',
+    membro2Nome: searchParams.get('membro2Nome') || '',
+  };
 
   // Formulário
   const [form, setForm] = useState({
-    regiaoId: '',
-    distritoId: '',
-    igrejaId: '',
+    regiaoId: prefill.regiaoId,
+    distritoId: prefill.distritoId,
+    igrejaId: prefill.igrejaId,
     bairro: '',
     tipoProjeto: 'ESTUDO_BIBLICO',
     dataInicio: new Date().toISOString().split('T')[0],
@@ -40,7 +47,7 @@ export default function CadastroDuplaComChave() {
 
     // Membro 1 (Líder)
     fotoLider: '',
-    liderNome: '',
+    liderNome: prefill.liderNome,
     liderTelefone: '',
     liderEmail: '',
     liderIgreja: '',
@@ -52,7 +59,7 @@ export default function CadastroDuplaComChave() {
 
     // Membro 2 (Parceiro)
     fotoMembro2: '',
-    membro2Nome: '',
+    membro2Nome: prefill.membro2Nome,
     membro2Telefone: '',
     membro2Email: '',
     membro2Igreja: '',
@@ -115,29 +122,34 @@ export default function CadastroDuplaComChave() {
 
       if (dados.tipo === 'DISTRITO') {
         const igrejaUnica = dados.igrejas?.length === 1 ? dados.igrejas[0] : null;
+        const igrejaPrefill = dados.igrejas?.find((igreja) => String(igreja.id) === String(prefill.igrejaId));
+        const igrejaSelecionada = igrejaPrefill || igrejaUnica;
         setForm((prev) => ({
           ...prev,
           regiaoId: dados.regiao.id,
           distritoId: dados.distrito.id,
-          igrejaId: igrejaUnica ? String(igrejaUnica.id) : '',
-          liderIgreja: igrejaUnica?.nome || '',
+          igrejaId: igrejaSelecionada ? String(igrejaSelecionada.id) : '',
+          liderIgreja: igrejaSelecionada?.nome || '',
           liderDistrito: dados.distrito.nome,
-          membro2Igreja: igrejaUnica?.nome || '',
+          membro2Igreja: igrejaSelecionada?.nome || '',
           membro2Distrito: dados.distrito.nome,
         }));
         setIgrejasDistrito(dados.igrejas || []);
       } else if (dados.tipo === 'REGIAO') {
+        const distritoPrefill = dados.distritos?.find((d) => String(d.id) === String(prefill.distritoId));
+        const igrejaPrefill = distritoPrefill?.igrejas?.find((igreja) => String(igreja.id) === String(prefill.igrejaId));
         setForm((prev) => ({
           ...prev,
           regiaoId: dados.regiao.id,
-          distritoId: '',
-          igrejaId: '',
-          liderIgreja: '',
-          liderDistrito: '',
-          membro2Igreja: '',
-          membro2Distrito: '',
+          distritoId: distritoPrefill ? String(distritoPrefill.id) : '',
+          igrejaId: igrejaPrefill ? String(igrejaPrefill.id) : '',
+          liderIgreja: igrejaPrefill?.nome || '',
+          liderDistrito: distritoPrefill?.nome || '',
+          membro2Igreja: igrejaPrefill?.nome || '',
+          membro2Distrito: distritoPrefill?.nome || '',
         }));
         setDistritosRegiao(dados.distritos || []);
+        setIgrejasDistrito(distritoPrefill?.igrejas || []);
       }
       toast.success('Chave de acesso validada com sucesso!');
     } catch (err) {

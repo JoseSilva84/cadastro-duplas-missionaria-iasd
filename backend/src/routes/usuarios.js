@@ -21,6 +21,14 @@ router.post(
   UsuarioController.criar
 );
 
+// GET /api/usuarios/qrcodes-ativacao — QR Codes gerais, sem expor Super Admin.
+router.get(
+  '/qrcodes-ativacao',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  UsuarioController.listarQrCodesAtivacao
+);
+
 // PUT /api/usuarios/:id — Restrições de perfil e região são aplicadas no service.
 router.put(
   '/:id',

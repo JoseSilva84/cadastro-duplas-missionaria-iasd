@@ -10,10 +10,143 @@ const { ehSomenteLeitura } = require('../middlewares/auth');
 const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
 const normalizarSenha = (senha) => String(senha ?? '').trim();
 const segredoRedefinicao = () => `${process.env.JWT_SECRET}:redefinir-acesso`;
+const segredoAtivacaoQr = () => `${process.env.JWT_SECRET}:ativacao-qrcode`;
 const versaoDasCredenciais = (usuario) => crypto
   .createHash('sha256')
   .update(`${normalizarEmail(usuario.email)}\0${usuario.senha}`)
   .digest('hex');
+
+const TIPOS_QR_ATIVACAO = {
+  DUPLA_MISSIONARIA: {
+    label: 'Dupla Missionária',
+    descricao: 'Ativa o acesso da dupla existente ou conduz ao cadastro completo de nova dupla.',
+    perfil: 'DUPLA_MISSIONARIA',
+    escopo: 'dupla',
+  },
+  DIRETOR_MISSIONARIO_IGREJA: {
+    label: 'Diretor Missionário da Igreja',
+    descricao: 'Seleciona região, distrito e igreja para ativar o acesso da igreja.',
+    perfil: 'DIRETOR_MISSIONARIO_IGREJA',
+    escopo: 'igreja',
+  },
+  PASTOR_DISTRITAL: {
+    label: 'Pastor Distrital',
+    descricao: 'Seleciona o distrito para ativar o acesso distrital.',
+    perfil: 'PASTOR_DISTRITAL',
+    escopo: 'distrito',
+  },
+  COORDENADOR_REGIONAL: {
+    label: 'Coordenador Regional',
+    descricao: 'Seleciona a região para ativar o acesso do coordenador regional.',
+    perfil: 'COORDENADOR_REGIONAL',
+    escopo: 'regiao',
+  },
+  DEPARTAMENTAL_REGIONAL: {
+    label: 'Departamental Regional',
+    descricao: 'Seleciona a região para ativar o acesso do departamental regional.',
+    perfil: 'PASTOR_REGIONAL',
+    escopo: 'regiao',
+  },
+  PRESIDENTE: {
+    label: 'Presidente',
+    descricao: 'Ativa o acesso geral do presidente.',
+    perfil: 'ADMINISTRADOR',
+    escopo: 'geral',
+    nomePadrao: 'Presidente',
+  },
+  DEPARTAMENTAL_MIPS: {
+    label: 'Departamental MIPs',
+    descricao: 'Ativa o acesso geral do departamental MIPs.',
+    perfil: 'ADMINISTRADOR',
+    escopo: 'geral',
+    nomePadrao: 'Departamental MIPs',
+  },
+};
+
+const TIPOS_QR_PERMITIDOS = Object.keys(TIPOS_QR_ATIVACAO);
+
+const normalizarTexto = (txt) => String(txt || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
+  .replace(/\s+/g, ' ');
+
+const criarTokenAtivacaoQr = (tipo) => jwt.sign(
+  { finalidade: 'ativacao-qrcode', tipo },
+  segredoAtivacaoQr()
+);
+
+const validarTokenAtivacaoQr = (token) => {
+  if (!token) {
+    throw { status: 400, mensagem: 'QR Code de ativação obrigatório.' };
+  }
+  let payload;
+  try {
+    payload = jwt.verify(token, segredoAtivacaoQr());
+  } catch (err) {
+    throw { status: 400, mensagem: 'QR Code de ativação inválido.' };
+  }
+  if (payload.finalidade !== 'ativacao-qrcode' || !TIPOS_QR_ATIVACAO[payload.tipo]) {
+    throw { status: 400, mensagem: 'QR Code de ativação inválido para este sistema.' };
+  }
+  return payload;
+};
+
+const selecionarOpcoesAtivacao = async () => {
+  const regioes = await prisma.regiao.findMany({
+    select: {
+      id: true,
+      nome: true,
+      distritos: {
+        select: {
+          id: true,
+          nome: true,
+          chaveAcesso: true,
+          chaveAtiva: true,
+          igrejas: { select: { id: true, nome: true }, orderBy: { nome: 'asc' } },
+        },
+        orderBy: { nome: 'asc' },
+      },
+    },
+    orderBy: { nome: 'asc' },
+  });
+
+  return {
+    regioes,
+    distritos: regioes.flatMap((regiao) => regiao.distritos.map((distrito) => ({
+      ...distrito,
+      regiaoId: regiao.id,
+      regiao: { id: regiao.id, nome: regiao.nome },
+    }))),
+    igrejas: regioes.flatMap((regiao) => regiao.distritos.flatMap((distrito) => (
+      distrito.igrejas.map((igreja) => ({
+        ...igreja,
+        distritoId: distrito.id,
+        distrito: { id: distrito.id, nome: distrito.nome, regiao: { id: regiao.id, nome: regiao.nome } },
+      }))
+    ))),
+  };
+};
+
+const validarCredenciaisAtivacao = async ({ email, senha }, usuarioIdAtual = null) => {
+  const emailNormalizado = normalizarEmail(email);
+  const senhaNormalizada = normalizarSenha(senha);
+  if (!emailNormalizado || !emailNormalizado.includes('@')) {
+    throw { status: 400, mensagem: 'Informe um e-mail válido para ativar o acesso.' };
+  }
+  if (senhaNormalizada.length < 8) {
+    throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+  }
+  const donoDoEmail = await UsuarioModel.findByEmail(emailNormalizado);
+  if (donoDoEmail && Number(donoDoEmail.id) !== Number(usuarioIdAtual)) {
+    throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário no sistema.' };
+  }
+  return {
+    email: emailNormalizado,
+    senhaHash: await bcrypt.hash(senhaNormalizada, 10),
+  };
+};
 
 const criarSessao = (usuario) => {
   const igrejaId = usuario.igrejaId || usuario.dupla?.igrejaId || null;
@@ -58,6 +191,223 @@ const criarSessao = (usuario) => {
 };
 
 const AuthService = {
+  async listarQrCodesAtivacao(usuarioSolicitante, origem) {
+    const { PERFIS } = require('../middlewares/auth');
+    if (![PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuarioSolicitante?.perfil)) {
+      throw { status: 403, mensagem: 'Apenas administradores podem gerenciar QR Codes gerais.' };
+    }
+
+    const baseUrl = String(origem || process.env.APP_URL || '').replace(/\/$/, '');
+    return TIPOS_QR_PERMITIDOS.map((tipo) => {
+      const config = TIPOS_QR_ATIVACAO[tipo];
+      const token = criarTokenAtivacaoQr(tipo);
+      const path = `/ativar-acesso?token=${encodeURIComponent(token)}`;
+      return {
+        tipo,
+        label: config.label,
+        descricao: config.descricao,
+        escopo: config.escopo,
+        perfil: config.perfil,
+        token,
+        path,
+        url: baseUrl ? `${baseUrl}${path}` : path,
+      };
+    });
+  },
+
+  async obterInfoAtivacaoQr(token) {
+    const payload = validarTokenAtivacaoQr(token);
+    const config = TIPOS_QR_ATIVACAO[payload.tipo];
+    const opcoes = await selecionarOpcoesAtivacao();
+    return {
+      valido: true,
+      tipo: payload.tipo,
+      label: config.label,
+      descricao: config.descricao,
+      escopo: config.escopo,
+      opcoes,
+    };
+  },
+
+  async buscarDuplaParaAtivacao({ token, distritoId, igrejaId, liderNome, membro2Nome }) {
+    const payload = validarTokenAtivacaoQr(token);
+    if (payload.tipo !== 'DUPLA_MISSIONARIA') {
+      throw { status: 400, mensagem: 'Este QR Code não é de dupla missionária.' };
+    }
+
+    const distritoIdNum = Number(distritoId);
+    const igrejaIdNum = Number(igrejaId);
+    const nLider = normalizarTexto(liderNome);
+    const nMembro2 = normalizarTexto(membro2Nome);
+    if (!distritoIdNum || !igrejaIdNum || !nLider || !nMembro2) {
+      throw { status: 400, mensagem: 'Informe distrito, igreja e os nomes dos dois membros da dupla.' };
+    }
+
+    const duplas = await prisma.dupla.findMany({
+      where: { distritoId: distritoIdNum, igrejaId: igrejaIdNum },
+      include: {
+        distrito: { select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true, regiao: { select: { id: true, nome: true } } } },
+        igreja: { select: { id: true, nome: true } },
+        usuarios: { select: { id: true, email: true, ativo: true } },
+      },
+    });
+
+    const dupla = duplas.find((item) => {
+      const dLider = normalizarTexto(item.liderNome);
+      const dMembro2 = normalizarTexto(item.membro2Nome);
+      return (dLider === nLider && dMembro2 === nMembro2) || (dLider === nMembro2 && dMembro2 === nLider);
+    });
+
+    if (!dupla) {
+      const distrito = await prisma.distrito.findUnique({
+        where: { id: distritoIdNum },
+        select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true, regiao: { select: { id: true, nome: true } } },
+      });
+      const igreja = await prisma.igreja.findUnique({ where: { id: igrejaIdNum }, select: { id: true, nome: true } });
+      return {
+        encontrada: false,
+        distrito,
+        igreja,
+        mensagem: 'Não encontramos uma dupla existente com estes nomes. Continue para cadastrar uma nova dupla.',
+      };
+    }
+
+    return {
+      encontrada: true,
+      dupla: {
+        id: dupla.id,
+        liderNome: dupla.liderNome,
+        membro2Nome: dupla.membro2Nome,
+        igreja: dupla.igreja,
+        distrito: dupla.distrito,
+        usuarioExistente: dupla.usuarios?.find((usuario) => usuario.ativo) || dupla.usuarios?.[0] || null,
+      },
+    };
+  },
+
+  async ativarAcessoQr(dados) {
+    const payload = validarTokenAtivacaoQr(dados.token);
+    const config = TIPOS_QR_ATIVACAO[payload.tipo];
+
+    if (payload.tipo === 'DUPLA_MISSIONARIA') {
+      const duplaId = Number(dados.duplaId);
+      if (!duplaId) throw { status: 400, mensagem: 'Selecione a dupla encontrada para ativar o acesso.' };
+      const dupla = await prisma.dupla.findUnique({
+        where: { id: duplaId },
+        include: { distrito: { select: { id: true, nome: true, regiaoId: true } }, igreja: { select: { id: true, nome: true } } },
+      });
+      if (!dupla) throw { status: 404, mensagem: 'Dupla missionária não encontrada.' };
+
+      const usuarioExistente = await prisma.usuario.findFirst({ where: { duplaId } });
+      const credenciais = await validarCredenciaisAtivacao(dados, usuarioExistente?.id);
+      const nomeDupla = `${dupla.liderNome || ''} e ${dupla.membro2Nome || ''}`.trim() || 'Dupla Missionária';
+      if (usuarioExistente) {
+        await UsuarioModel.update(usuarioExistente.id, {
+          nome: nomeDupla,
+          email: credenciais.email,
+          senha: credenciais.senhaHash,
+          ativo: true,
+          perfil: 'DUPLA_MISSIONARIA',
+          duplaId,
+          distritoId: dupla.distritoId,
+          igrejaId: dupla.igrejaId || null,
+          regiaoId: dupla.distrito?.regiaoId || null,
+        });
+      } else {
+        await UsuarioModel.create({
+          nome: nomeDupla,
+          email: credenciais.email,
+          senha: credenciais.senhaHash,
+          perfil: 'DUPLA_MISSIONARIA',
+          duplaId,
+          distritoId: dupla.distritoId,
+          igrejaId: dupla.igrejaId || null,
+          regiaoId: dupla.distrito?.regiaoId || null,
+          ativo: true,
+        });
+      }
+      return { mensagem: 'Acesso da dupla ativado com sucesso.', email: credenciais.email };
+    }
+
+    let escopoWhere = {};
+    let dadosEscopo = {};
+    let nomePadrao = config.nomePadrao || config.label;
+
+    if (config.escopo === 'regiao') {
+      const regiaoId = Number(dados.regiaoId);
+      if (!regiaoId) throw { status: 400, mensagem: 'Selecione a região.' };
+      const regiao = await prisma.regiao.findUnique({ where: { id: regiaoId }, select: { id: true, nome: true } });
+      if (!regiao) throw { status: 404, mensagem: 'Região não encontrada.' };
+      escopoWhere = { regiaoId };
+      dadosEscopo = { regiaoId, distritoId: null, igrejaId: null, duplaId: null };
+      nomePadrao = `${config.label} - ${regiao.nome}`;
+    } else if (config.escopo === 'distrito') {
+      const distritoId = Number(dados.distritoId);
+      if (!distritoId) throw { status: 400, mensagem: 'Selecione o distrito.' };
+      const distrito = await prisma.distrito.findUnique({
+        where: { id: distritoId },
+        select: { id: true, nome: true, regiaoId: true, nomePastor: true },
+      });
+      if (!distrito) throw { status: 404, mensagem: 'Distrito não encontrado.' };
+      escopoWhere = { distritoId };
+      dadosEscopo = { regiaoId: distrito.regiaoId, distritoId, igrejaId: null, duplaId: null };
+      nomePadrao = distrito.nomePastor || `${config.label} - ${distrito.nome}`;
+    } else if (config.escopo === 'igreja') {
+      const igrejaId = Number(dados.igrejaId);
+      if (!igrejaId) throw { status: 400, mensagem: 'Selecione a igreja.' };
+      const igreja = await prisma.igreja.findUnique({
+        where: { id: igrejaId },
+        select: {
+          id: true,
+          nome: true,
+          nomeDiretorMinisterioPessoal: true,
+          distrito: { select: { id: true, regiaoId: true } },
+        },
+      });
+      if (!igreja) throw { status: 404, mensagem: 'Igreja não encontrada.' };
+      escopoWhere = { igrejaId };
+      dadosEscopo = { regiaoId: igreja.distrito?.regiaoId || null, distritoId: igreja.distrito?.id || null, igrejaId, duplaId: null };
+      nomePadrao = igreja.nomeDiretorMinisterioPessoal || `${config.label} - ${igreja.nome}`;
+    } else {
+      escopoWhere = { regiaoId: null, distritoId: null, igrejaId: null, duplaId: null };
+      dadosEscopo = { regiaoId: null, distritoId: null, igrejaId: null, duplaId: null };
+    }
+
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: {
+        perfil: config.perfil,
+        ...escopoWhere,
+        ...(payload.tipo === 'PRESIDENTE' ? { nome: { contains: 'Presidente', mode: 'insensitive' } } : {}),
+        ...(payload.tipo === 'DEPARTAMENTAL_MIPS' ? { nome: { contains: 'MIP', mode: 'insensitive' } } : {}),
+      },
+      orderBy: { id: 'asc' },
+    });
+    const credenciais = await validarCredenciaisAtivacao(dados, usuarioExistente?.id);
+    const nome = String(dados.nome || '').trim() || usuarioExistente?.nome || nomePadrao;
+
+    if (usuarioExistente) {
+      await UsuarioModel.update(usuarioExistente.id, {
+        nome,
+        email: credenciais.email,
+        senha: credenciais.senhaHash,
+        perfil: config.perfil,
+        ativo: true,
+        ...dadosEscopo,
+      });
+    } else {
+      await UsuarioModel.create({
+        nome,
+        email: credenciais.email,
+        senha: credenciais.senhaHash,
+        perfil: config.perfil,
+        ativo: true,
+        ...dadosEscopo,
+      });
+    }
+
+    return { mensagem: 'Acesso ativado com sucesso.', email: credenciais.email, perfil: config.perfil };
+  },
+
   async login(email, senha) {
     const usuario = await UsuarioModel.findByEmail(normalizarEmail(email));
 

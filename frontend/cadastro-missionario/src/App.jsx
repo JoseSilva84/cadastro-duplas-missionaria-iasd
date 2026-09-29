@@ -36,6 +36,8 @@ import GestaoUsuarios from './pages/GestaoUsuarios';
 import Alunos from './pages/Alunos';
 import Configuracoes from './pages/Configuracoes';
 import RedefinirAcesso from './pages/RedefinirAcesso';
+import AtivarAcessoQr from './pages/AtivarAcessoQr';
+import GestaoQrCodes from './pages/GestaoQrCodes';
 import CriarContaDupla from './pages/CriarContaDupla';
 import CadastroDuplaComChave from './pages/CadastroDuplaComChave';
 import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
@@ -93,6 +95,7 @@ function RotaComPerfis({ children, perfisPermitidos, redirectTo = '/regioes' }) 
     '/duplas/nova',
     '/registro-saida',
     '/gestao-usuarios',
+    '/gestao-qrcodes',
     '/configuracoes',
   ].some((rota) => location.pathname.includes(rota)) || location.pathname.endsWith('/editar');
 
@@ -149,6 +152,7 @@ function AppRoutes() {
       {/* Rota pública */}
       <Route path="/login" element={<Login />} />
       <Route path="/redefinir-acesso" element={<RedefinirAcesso />} />
+      <Route path="/ativar-acesso" element={<AtivarAcessoQr />} />
       <Route path="/criar-conta-dupla" element={<CriarContaDupla />} />
       <Route path="/cadastro-dupla" element={<CadastroDuplaComChave />} />
 
@@ -293,6 +297,7 @@ function AppRoutes() {
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><MapaIgreja /></RotaComPerfis>} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><GestaoQrCodes /></RotaComPerfis>} />
 
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
@@ -456,6 +461,7 @@ function AppRoutes() {
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><MapaIgreja /></RotaComPerfis>} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/configuracoes"><GestaoQrCodes /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
         <Route path="registro-saida" element={<RegistroSaida />} />
