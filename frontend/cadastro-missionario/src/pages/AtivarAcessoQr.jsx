@@ -133,11 +133,21 @@ export default function AtivarAcessoQr() {
       });
       setDuplaBusca(data);
       if (data.encontrada) toastSuccess('Dupla encontrada. Agora crie o login e senha.');
+      else if (data.possivel) toastError('Encontramos uma dupla parecida. Confirme se é a sua antes de cadastrar nova.');
     } catch (err) {
       toastError(err.response?.data?.erro || 'Erro ao buscar dupla.');
     } finally {
       setSalvando(false);
     }
+  };
+
+  const confirmarDuplaPossivel = (dupla) => {
+    setDuplaBusca({
+      encontrada: true,
+      confirmadaManualmente: true,
+      dupla,
+    });
+    toastSuccess('Dupla confirmada. Agora crie o login e senha.');
   };
 
   const ativar = async (event) => {
@@ -295,11 +305,46 @@ export default function AtivarAcessoQr() {
 
               {duplaBusca?.encontrada && (
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
-                  Encontramos a dupla <strong>{duplaBusca.dupla.liderNome} e {duplaBusca.dupla.membro2Nome}</strong> em {duplaBusca.dupla.igreja?.nome}. Crie abaixo o novo login e senha.
+                  {duplaBusca.confirmadaManualmente ? 'Dupla confirmada: ' : 'Encontramos a dupla '}
+                  <strong>{duplaBusca.dupla.liderNome} e {duplaBusca.dupla.membro2Nome}</strong> em {duplaBusca.dupla.igreja?.nome}. Crie abaixo o novo login e senha.
                 </div>
               )}
 
-              {duplaBusca && !duplaBusca.encontrada && (
+              {duplaBusca?.possivel && !duplaBusca.encontrada && (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950">
+                  <p className="font-semibold">{duplaBusca.mensagem}</p>
+                  <div className="mt-3 space-y-3">
+                    {duplaBusca.possiveis?.map((dupla) => (
+                      <div key={dupla.id} className="rounded-xl border border-blue-100 bg-white p-3">
+                        <p>
+                          <strong>{dupla.liderNome}</strong> e <strong>{dupla.membro2Nome}</strong>
+                          {dupla.igreja?.nome ? ` — ${dupla.igreja.nome}` : ''}
+                        </p>
+                        <p className="mt-1 text-xs text-blue-700">Semelhança aproximada: {dupla.confianca}%</p>
+                        <button
+                          type="button"
+                          onClick={() => confirmarDuplaPossivel(dupla)}
+                          className="mt-3 rounded-lg bg-[#1A3A6B] px-4 py-2 text-xs font-bold text-white"
+                        >
+                          Sim, sou esta dupla
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-xs text-blue-800">
+                    Se nenhuma opção acima for a dupla correta, revise os nomes ou prossiga para cadastrar uma nova dupla.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cadastrarNovaDupla}
+                    className="mt-3 rounded-lg border border-[#1A3A6B]/30 bg-white px-4 py-2 text-xs font-bold text-[#1A3A6B]"
+                  >
+                    Não é nenhuma destas, cadastrar nova dupla
+                  </button>
+                </div>
+              )}
+
+              {duplaBusca && !duplaBusca.encontrada && !duplaBusca.possivel && (
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
                   <p>{duplaBusca.mensagem}</p>
                   <button

@@ -73,6 +73,65 @@ const normalizarTexto = (txt) => String(txt || '')
   .trim()
   .replace(/\s+/g, ' ');
 
+const tokensNome = (txt) => normalizarTexto(txt)
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .split(' ')
+  .filter((parte) => parte && parte.length > 1 && !['da', 'de', 'di', 'do', 'du', 'das', 'dos', 'e'].includes(parte));
+
+const pontuarNome = (digitado, cadastrado) => {
+  const nomeDigitado = normalizarTexto(digitado).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const nomeCadastrado = normalizarTexto(cadastrado).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!nomeDigitado || !nomeCadastrado) return 0;
+  if (nomeDigitado === nomeCadastrado) return 1;
+
+  const digitadoTokens = tokensNome(digitado);
+  const cadastradoTokens = tokensNome(cadastrado);
+  if (!digitadoTokens.length || !cadastradoTokens.length) return 0;
+
+  const unicosDigitado = [...new Set(digitadoTokens)];
+  const unicosCadastrado = [...new Set(cadastradoTokens)];
+  const emComum = unicosDigitado.filter((token) => unicosCadastrado.includes(token));
+  const coberturaDigitado = emComum.length / unicosDigitado.length;
+  const coberturaCadastrado = emComum.length / unicosCadastrado.length;
+  let score = (coberturaDigitado * 0.65) + (coberturaCadastrado * 0.35);
+
+  const primeiroBate = unicosDigitado[0] === unicosCadastrado[0];
+  const ultimoBate = unicosDigitado[unicosDigitado.length - 1] === unicosCadastrado[unicosCadastrado.length - 1];
+  if (unicosDigitado.length >= 2 && primeiroBate && ultimoBate) {
+    score = Math.max(score, 0.96);
+  } else if (primeiroBate && emComum.length >= 2) {
+    score = Math.max(score, 0.82);
+  }
+
+  return Math.min(score, 1);
+};
+
+const pontuarDupla = (entradaLider, entradaMembro2, dupla) => {
+  const diretoLider = pontuarNome(entradaLider, dupla.liderNome);
+  const diretoMembro = pontuarNome(entradaMembro2, dupla.membro2Nome);
+  const invertidoLider = pontuarNome(entradaLider, dupla.membro2Nome);
+  const invertidoMembro = pontuarNome(entradaMembro2, dupla.liderNome);
+  const direto = (diretoLider + diretoMembro) / 2;
+  const invertido = (invertidoLider + invertidoMembro) / 2;
+
+  if (invertido > direto) {
+    return { score: invertido, liderScore: invertidoLider, membroScore: invertidoMembro, invertida: true };
+  }
+  return { score: direto, liderScore: diretoLider, membroScore: diretoMembro, invertida: false };
+};
+
+const resumoDuplaAtivacao = (dupla, extra = {}) => ({
+  id: dupla.id,
+  liderNome: dupla.liderNome,
+  membro2Nome: dupla.membro2Nome,
+  igreja: dupla.igreja,
+  distrito: dupla.distrito,
+  usuarioExistente: dupla.usuarios?.find((usuario) => usuario.ativo) || dupla.usuarios?.[0] || null,
+  ...extra,
+});
+
 const registroQrAtivacao = async (tipo) => {
   const existente = await prisma.qrCodeAtivacao.findUnique({ where: { tipo } });
   if (existente) return existente;
@@ -285,11 +344,12 @@ const AuthService = {
       },
     });
 
-    const dupla = duplas.find((item) => {
-      const dLider = normalizarTexto(item.liderNome);
-      const dMembro2 = normalizarTexto(item.membro2Nome);
-      return (dLider === nLider && dMembro2 === nMembro2) || (dLider === nMembro2 && dMembro2 === nLider);
-    });
+    const candidatas = duplas
+      .map((item) => ({ dupla: item, ...pontuarDupla(liderNome, membro2Nome, item) }))
+      .filter((item) => item.score >= 0.72 && item.liderScore >= 0.62 && item.membroScore >= 0.62)
+      .sort((a, b) => b.score - a.score);
+
+    const dupla = candidatas.find((item) => item.score >= 0.92 && item.liderScore >= 0.82 && item.membroScore >= 0.82)?.dupla;
 
     if (!dupla) {
       const distrito = await prisma.distrito.findUnique({
@@ -297,6 +357,21 @@ const AuthService = {
         select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true, regiao: { select: { id: true, nome: true } } },
       });
       const igreja = await prisma.igreja.findUnique({ where: { id: igrejaIdNum }, select: { id: true, nome: true } });
+
+      if (candidatas.length) {
+        return {
+          encontrada: false,
+          possivel: true,
+          distrito,
+          igreja,
+          mensagem: 'Encontramos uma dupla muito parecida já cadastrada. Confirme se é esta dupla antes de cadastrar uma nova.',
+          possiveis: candidatas.slice(0, 3).map((item) => resumoDuplaAtivacao(item.dupla, {
+            confianca: Math.round(item.score * 100),
+            nomesInvertidos: item.invertida,
+          })),
+        };
+      }
+
       return {
         encontrada: false,
         distrito,
@@ -307,14 +382,11 @@ const AuthService = {
 
     return {
       encontrada: true,
-      dupla: {
-        id: dupla.id,
-        liderNome: dupla.liderNome,
-        membro2Nome: dupla.membro2Nome,
-        igreja: dupla.igreja,
-        distrito: dupla.distrito,
-        usuarioExistente: dupla.usuarios?.find((usuario) => usuario.ativo) || dupla.usuarios?.[0] || null,
-      },
+      aproximada: !(
+        (normalizarTexto(dupla.liderNome) === nLider && normalizarTexto(dupla.membro2Nome) === nMembro2)
+        || (normalizarTexto(dupla.liderNome) === nMembro2 && normalizarTexto(dupla.membro2Nome) === nLider)
+      ),
+      dupla: resumoDuplaAtivacao(dupla),
     };
   },
 
@@ -902,15 +974,8 @@ const AuthService = {
     }
 
     // 4. Anti-Duplicidade de Nomes
-    const normalizar = (txt) => String(txt || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' ');
-
-    const nLider = normalizar(liderNome);
-    const nMembro2 = normalizar(membro2Nome);
+    const nLider = normalizarTexto(liderNome);
+    const nMembro2 = normalizarTexto(membro2Nome);
 
     if (nLider === nMembro2) {
       throw { status: 400, mensagem: 'O Membro 1 e o Membro 2 não podem ter o mesmo nome.' };
@@ -921,10 +986,13 @@ const AuthService = {
     });
 
     const duplicada = duplasExistentes.find((d) => {
-      const dL = normalizar(d.liderNome);
-      const dM = normalizar(d.membro2Nome);
+      const dL = normalizarTexto(d.liderNome);
+      const dM = normalizarTexto(d.membro2Nome);
       return (dL === nLider && dM === nMembro2) || (dL === nMembro2 && dM === nLider);
-    });
+    }) || duplasExistentes
+      .map((d) => ({ dupla: d, ...pontuarDupla(liderNome, membro2Nome, d) }))
+      .filter((item) => item.score >= 0.92 && item.liderScore >= 0.82 && item.membroScore >= 0.82)
+      .sort((a, b) => b.score - a.score)[0]?.dupla;
 
     if (duplicada) {
       throw {
