@@ -423,7 +423,9 @@ const AuthService = {
       orderBy: { id: 'asc' },
     });
     const credenciais = await validarCredenciaisAtivacao(dados, usuarioExistente?.id);
-    const nome = String(dados.nome || '').trim() || usuarioExistente?.nome || nomePadrao;
+    const nomeInformado = String(dados.nome || '').trim();
+    const fotoPastor = String(dados.fotoPastor || '').trim();
+    const nome = nomeInformado || usuarioExistente?.nome || nomePadrao;
 
     if (usuarioExistente) {
       await UsuarioModel.update(usuarioExistente.id, {
@@ -443,6 +445,19 @@ const AuthService = {
         ativo: true,
         ...dadosEscopo,
       });
+    }
+
+    if (payload.tipo === 'PASTOR_DISTRITAL' && dadosEscopo.distritoId) {
+      const atualizacaoDistrito = {};
+      if (nomeInformado) atualizacaoDistrito.nomePastor = nomeInformado;
+      if (fotoPastor) atualizacaoDistrito.fotoPastor = fotoPastor;
+
+      if (Object.keys(atualizacaoDistrito).length) {
+        await prisma.distrito.update({
+          where: { id: dadosEscopo.distritoId },
+          data: atualizacaoDistrito,
+        });
+      }
     }
 
     return { mensagem: 'Acesso ativado com sucesso.', email: credenciais.email, perfil: config.perfil };

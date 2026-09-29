@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import AvatarUpload from '../components/AvatarUpload';
+import { FotoService } from '../foto.service';
 import api from '../lib/api';
 import { toastError, toastSuccess } from '../lib/toast';
 
@@ -14,6 +16,7 @@ const campoInicial = {
   igrejaId: '',
   liderNome: '',
   membro2Nome: '',
+  fotoPastor: '',
 };
 
 function SelectField({ label, children, ...props }) {
@@ -146,9 +149,14 @@ export default function AtivarAcessoQr() {
     }
     setSalvando(true);
     try {
+      const fotoPastorRef = info.tipo === 'PASTOR_DISTRITAL' && form.fotoPastor
+        ? await FotoService.salvarFotoPorReferencia('distrito', form.distritoId, 'pastor', form.fotoPastor)
+        : '';
+
       await api.post('/auth/qr-ativacao/ativar', {
         token,
         nome: form.nome,
+        fotoPastor: fotoPastorRef || null,
         email: form.email,
         senha: form.senha,
         regiaoId: form.regiaoId,
@@ -307,7 +315,21 @@ export default function AtivarAcessoQr() {
           )}
 
           {info.tipo !== 'DUPLA_MISSIONARIA' && (
-            <TextField label="Nome que aparecerá no sistema" value={form.nome} onChange={(e) => alterar('nome', e.target.value)} placeholder="Opcional: deixe em branco para usar o nome do cargo/local" />
+            <div className={info.tipo === 'PASTOR_DISTRITAL' ? 'grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-end' : ''}>
+              {info.tipo === 'PASTOR_DISTRITAL' && (
+                <AvatarUpload
+                  value={form.fotoPastor}
+                  onChange={(valor) => alterar('fotoPastor', valor)}
+                  label="Foto do Pastor (opcional)"
+                />
+              )}
+              <TextField
+                label={info.tipo === 'PASTOR_DISTRITAL' ? 'Nome do pastor distrital (opcional)' : 'Nome que aparecerá no sistema'}
+                value={form.nome}
+                onChange={(e) => alterar('nome', e.target.value)}
+                placeholder={info.tipo === 'PASTOR_DISTRITAL' ? 'Opcional: deixe em branco para usar o nome já cadastrado' : 'Opcional: deixe em branco para usar o nome do cargo/local'}
+              />
+            </div>
           )}
 
           {requerConfirmacaoSensivel && (
