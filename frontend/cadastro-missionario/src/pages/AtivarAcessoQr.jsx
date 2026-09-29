@@ -8,6 +8,7 @@ const campoInicial = {
   email: '',
   senha: '',
   confirmarSenha: '',
+  confirmacao: '',
   regiaoId: '',
   distritoId: '',
   igrejaId: '',
@@ -78,6 +79,8 @@ export default function AtivarAcessoQr() {
   ), [igrejas, form.distritoId]);
 
   const distritoSelecionado = distritos.find((d) => String(d.id) === String(form.distritoId));
+  const requerConfirmacaoSensivel = ['PRESIDENTE', 'DEPARTAMENTAL_MIPS'].includes(info?.tipo);
+  const textoConfirmacao = info?.tipo === 'PRESIDENTE' ? 'PRESIDENTE' : 'MIPS';
 
   const alterar = (campo, valor) => {
     setForm((atual) => ({
@@ -102,6 +105,10 @@ export default function AtivarAcessoQr() {
     }
     if (form.senha !== form.confirmarSenha) {
       toastError('A confirmação da senha não confere.');
+      return false;
+    }
+    if (requerConfirmacaoSensivel && form.confirmacao.trim().toUpperCase() !== textoConfirmacao) {
+      toastError(`Digite ${textoConfirmacao} para confirmar este acesso geral.`);
       return false;
     }
     return true;
@@ -148,6 +155,7 @@ export default function AtivarAcessoQr() {
         distritoId: form.distritoId,
         igrejaId: form.igrejaId,
         duplaId: duplaBusca?.dupla?.id,
+        confirmacao: form.confirmacao,
       });
       toastSuccess('Acesso ativado com sucesso.');
       navigate(`/login?email=${encodeURIComponent(form.email)}`, { replace: true });
@@ -300,6 +308,23 @@ export default function AtivarAcessoQr() {
 
           {info.tipo !== 'DUPLA_MISSIONARIA' && (
             <TextField label="Nome que aparecerá no sistema" value={form.nome} onChange={(e) => alterar('nome', e.target.value)} placeholder="Opcional: deixe em branco para usar o nome do cargo/local" />
+          )}
+
+          {requerConfirmacaoSensivel && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-900">Confirmação de acesso geral</p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                Este QR Code altera um acesso sensível. Digite <strong>{textoConfirmacao}</strong> para continuar.
+              </p>
+              <input
+                type="text"
+                value={form.confirmacao}
+                onChange={(e) => alterar('confirmacao', e.target.value)}
+                className="input-field mt-3 uppercase"
+                placeholder={textoConfirmacao}
+                required
+              />
+            </div>
           )}
 
           <div className="grid gap-4 border-t border-gray-100 pt-5 sm:grid-cols-2">

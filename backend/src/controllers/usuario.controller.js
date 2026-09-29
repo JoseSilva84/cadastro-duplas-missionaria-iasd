@@ -68,6 +68,16 @@ const UsuarioController = {
     }
   },
 
+  // POST /api/usuarios/qrcodes-ativacao/:tipo/renovar
+  async renovarQrCodeAtivacao(req, res) {
+    try {
+      const resultado = await AuthService.renovarQrCodeAtivacao(req.usuario, req.params.tipo);
+      res.json(resultado);
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao renovar QR Code.' });
+    }
+  },
+
   // DELETE /api/usuarios/:id
   // DELETE /api/usuarios/:id
   async desativar(req, res) {

@@ -64,6 +64,7 @@ const TIPOS_QR_ATIVACAO = {
 };
 
 const TIPOS_QR_PERMITIDOS = Object.keys(TIPOS_QR_ATIVACAO);
+const TIPOS_QR_RENOVAVEIS = ['PRESIDENTE', 'DEPARTAMENTAL_MIPS'];
 
 const normalizarTexto = (txt) => String(txt || '')
   .normalize('NFD')
@@ -72,12 +73,18 @@ const normalizarTexto = (txt) => String(txt || '')
   .trim()
   .replace(/\s+/g, ' ');
 
-const criarTokenAtivacaoQr = (tipo) => jwt.sign(
-  { finalidade: 'ativacao-qrcode', tipo },
+const registroQrAtivacao = async (tipo) => {
+  const existente = await prisma.qrCodeAtivacao.findUnique({ where: { tipo } });
+  if (existente) return existente;
+  return prisma.qrCodeAtivacao.create({ data: { tipo } });
+};
+
+const criarTokenAtivacaoQr = (tipo, versao) => jwt.sign(
+  { finalidade: 'ativacao-qrcode', tipo, versao },
   segredoAtivacaoQr()
 );
 
-const validarTokenAtivacaoQr = (token) => {
+const validarTokenAtivacaoQr = async (token) => {
   if (!token) {
     throw { status: 400, mensagem: 'QR Code de ativação obrigatório.' };
   }
@@ -89,6 +96,10 @@ const validarTokenAtivacaoQr = (token) => {
   }
   if (payload.finalidade !== 'ativacao-qrcode' || !TIPOS_QR_ATIVACAO[payload.tipo]) {
     throw { status: 400, mensagem: 'QR Code de ativação inválido para este sistema.' };
+  }
+  const registro = await registroQrAtivacao(payload.tipo);
+  if (payload.versao !== registro.versao) {
+    throw { status: 400, mensagem: 'Este QR Code foi renovado e não é mais válido. Solicite o QR Code atualizado.' };
   }
   return payload;
 };
@@ -198,9 +209,13 @@ const AuthService = {
     }
 
     const baseUrl = String(origem || process.env.APP_URL || '').replace(/\/$/, '');
+    const registros = await Promise.all(TIPOS_QR_PERMITIDOS.map((tipo) => registroQrAtivacao(tipo)));
+    const registrosPorTipo = Object.fromEntries(registros.map((registro) => [registro.tipo, registro]));
+
     return TIPOS_QR_PERMITIDOS.map((tipo) => {
       const config = TIPOS_QR_ATIVACAO[tipo];
-      const token = criarTokenAtivacaoQr(tipo);
+      const registro = registrosPorTipo[tipo];
+      const token = criarTokenAtivacaoQr(tipo, registro.versao);
       const path = `/ativar-acesso?token=${encodeURIComponent(token)}`;
       return {
         tipo,
@@ -208,6 +223,8 @@ const AuthService = {
         descricao: config.descricao,
         escopo: config.escopo,
         perfil: config.perfil,
+        renovavel: TIPOS_QR_RENOVAVEIS.includes(tipo),
+        atualizadoEm: registro.atualizadoEm,
         token,
         path,
         url: baseUrl ? `${baseUrl}${path}` : path,
@@ -215,8 +232,24 @@ const AuthService = {
     });
   },
 
+  async renovarQrCodeAtivacao(usuarioSolicitante, tipo) {
+    const { PERFIS } = require('../middlewares/auth');
+    if (![PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(usuarioSolicitante?.perfil)) {
+      throw { status: 403, mensagem: 'Apenas administradores podem renovar QR Codes gerais.' };
+    }
+    if (!TIPOS_QR_RENOVAVEIS.includes(tipo)) {
+      throw { status: 400, mensagem: 'Apenas os QR Codes do Presidente e do Departamental MIPs podem ser renovados por segurança.' };
+    }
+    const registro = await registroQrAtivacao(tipo);
+    await prisma.qrCodeAtivacao.update({
+      where: { id: registro.id },
+      data: { versao: crypto.randomUUID() },
+    });
+    return { mensagem: 'QR Code renovado com sucesso.' };
+  },
+
   async obterInfoAtivacaoQr(token) {
-    const payload = validarTokenAtivacaoQr(token);
+    const payload = await validarTokenAtivacaoQr(token);
     const config = TIPOS_QR_ATIVACAO[payload.tipo];
     const opcoes = await selecionarOpcoesAtivacao();
     return {
@@ -230,7 +263,7 @@ const AuthService = {
   },
 
   async buscarDuplaParaAtivacao({ token, distritoId, igrejaId, liderNome, membro2Nome }) {
-    const payload = validarTokenAtivacaoQr(token);
+    const payload = await validarTokenAtivacaoQr(token);
     if (payload.tipo !== 'DUPLA_MISSIONARIA') {
       throw { status: 400, mensagem: 'Este QR Code não é de dupla missionária.' };
     }
@@ -286,8 +319,15 @@ const AuthService = {
   },
 
   async ativarAcessoQr(dados) {
-    const payload = validarTokenAtivacaoQr(dados.token);
+    const payload = await validarTokenAtivacaoQr(dados.token);
     const config = TIPOS_QR_ATIVACAO[payload.tipo];
+
+    if (payload.tipo === 'PRESIDENTE' && String(dados.confirmacao || '').trim().toUpperCase() !== 'PRESIDENTE') {
+      throw { status: 400, mensagem: 'Digite PRESIDENTE para confirmar a ativação deste acesso geral.' };
+    }
+    if (payload.tipo === 'DEPARTAMENTAL_MIPS' && String(dados.confirmacao || '').trim().toUpperCase() !== 'MIPS') {
+      throw { status: 400, mensagem: 'Digite MIPS para confirmar a ativação deste acesso geral.' };
+    }
 
     if (payload.tipo === 'DUPLA_MISSIONARIA') {
       const duplaId = Number(dados.duplaId);

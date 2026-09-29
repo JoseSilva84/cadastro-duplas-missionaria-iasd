@@ -29,6 +29,13 @@ router.get(
   UsuarioController.listarQrCodesAtivacao
 );
 
+router.post(
+  '/qrcodes-ativacao/:tipo/renovar',
+  autenticar,
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR),
+  UsuarioController.renovarQrCodeAtivacao
+);
+
 // PUT /api/usuarios/:id — Restrições de perfil e região são aplicadas no service.
 router.put(
   '/:id',

@@ -12,7 +12,7 @@ const tipoBadge = {
   geral: 'Geral',
 };
 
-function QrCard({ item }) {
+function QrCard({ item, onRenovar }) {
   const [imagem, setImagem] = useState('');
 
   useEffect(() => {
@@ -67,9 +67,14 @@ function QrCard({ item }) {
 
       <div className="mt-4 rounded-xl bg-gray-50 p-3">
         <p className="break-all text-xs font-medium text-gray-500">{item.url}</p>
+        {item.renovavel && item.atualizadoEm && (
+          <p className="mt-2 text-[11px] font-semibold text-amber-700">
+            Renovado em {new Date(item.atualizadoEm).toLocaleString('pt-BR')}
+          </p>
+        )}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className={`mt-4 grid gap-2 ${item.renovavel ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <button
           type="button"
           onClick={copiar}
@@ -85,6 +90,15 @@ function QrCard({ item }) {
         >
           Baixar PNG
         </button>
+        {item.renovavel && (
+          <button
+            type="button"
+            onClick={() => onRenovar(item)}
+            className="h-10 rounded-lg border border-amber-200 bg-amber-50 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+          >
+            Renovar
+          </button>
+        )}
       </div>
     </article>
   );
@@ -110,6 +124,18 @@ export default function GestaoQrCodes() {
     carregar();
   }, [carregar]);
 
+  const renovar = async (item) => {
+    const confirmar = window.confirm(`Renovar o QR Code de ${item.label}?\n\nO QR Code antigo deixará de funcionar e será necessário usar o novo PNG/link.`);
+    if (!confirmar) return;
+    try {
+      await api.post(`/usuarios/qrcodes-ativacao/${item.tipo}/renovar`);
+      toastSuccess('QR Code renovado. O link e a imagem foram atualizados.');
+      await carregar();
+    } catch (err) {
+      toastError(err.response?.data?.erro || 'Erro ao renovar QR Code.');
+    }
+  };
+
   if (carregando) return <LoadingState mensagem="Carregando QR Codes..." />;
 
   return (
@@ -133,7 +159,7 @@ export default function GestaoQrCodes() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {itens.map((item) => (
-          <QrCard key={item.tipo} item={item} />
+          <QrCard key={item.tipo} item={item} onRenovar={renovar} />
         ))}
       </div>
     </div>

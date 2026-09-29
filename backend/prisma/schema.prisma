@@ -74,6 +74,14 @@ enum StatusEstudoBiblico {
   ENCERRADO
 }
 
+model QrCodeAtivacao {
+  id          Int      @id @default(autoincrement())
+  tipo        String   @unique
+  versao      String   @default(uuid())
+  atualizadoEm DateTime @updatedAt
+  criadoEm     DateTime @default(now())
+}
+
 // Usuários do sistema
 model Usuario {
   id        Int      @id @default(autoincrement())
