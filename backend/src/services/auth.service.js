@@ -47,6 +47,13 @@ const TIPOS_QR_ATIVACAO = {
     perfil: 'PASTOR_REGIONAL',
     escopo: 'regiao',
   },
+  DEPARTAMENTAIS: {
+    label: 'Departamentais',
+    descricao: 'Ativa o acesso geral dos departamentais.',
+    perfil: 'ADMINISTRADOR',
+    escopo: 'geral',
+    nomePadrao: 'Departamentais',
+  },
   PRESIDENTE: {
     label: 'Presidente',
     descricao: 'Ativa o acesso geral do presidente.',
@@ -64,7 +71,7 @@ const TIPOS_QR_ATIVACAO = {
 };
 
 const TIPOS_QR_PERMITIDOS = Object.keys(TIPOS_QR_ATIVACAO);
-const TIPOS_QR_RENOVAVEIS = ['PRESIDENTE', 'DEPARTAMENTAL_MIPS'];
+const TIPOS_QR_RENOVAVEIS = ['PRESIDENTE', 'DEPARTAMENTAL_MIPS', 'DEPARTAMENTAIS'];
 
 const normalizarTexto = (txt) => String(txt || '')
   .normalize('NFD')
@@ -400,6 +407,9 @@ const AuthService = {
     if (payload.tipo === 'DEPARTAMENTAL_MIPS' && String(dados.confirmacao || '').trim().toUpperCase() !== 'MIPS') {
       throw { status: 400, mensagem: 'Digite MIPS para confirmar a ativação deste acesso geral.' };
     }
+    if (payload.tipo === 'DEPARTAMENTAIS' && String(dados.confirmacao || '').trim().toUpperCase() !== 'DEPARTAMENTAIS') {
+      throw { status: 400, mensagem: 'Digite DEPARTAMENTAIS para confirmar a ativação deste acesso geral.' };
+    }
 
     if (payload.tipo === 'DUPLA_MISSIONARIA') {
       const duplaId = Number(dados.duplaId);
@@ -491,13 +501,16 @@ const AuthService = {
         ...escopoWhere,
         ...(payload.tipo === 'PRESIDENTE' ? { nome: { contains: 'Presidente', mode: 'insensitive' } } : {}),
         ...(payload.tipo === 'DEPARTAMENTAL_MIPS' ? { nome: { contains: 'MIP', mode: 'insensitive' } } : {}),
+        ...(payload.tipo === 'DEPARTAMENTAIS' ? { nome: { contains: 'Departamentais', mode: 'insensitive' } } : {}),
       },
       orderBy: { id: 'asc' },
     });
     const credenciais = await validarCredenciaisAtivacao(dados, usuarioExistente?.id);
     const nomeInformado = String(dados.nome || '').trim();
     const fotoPastor = String(dados.fotoPastor || '').trim();
+    const fotoPerfil = String(dados.fotoPerfil || '').trim();
     const nome = nomeInformado || usuarioExistente?.nome || nomePadrao;
+    const dadosFotoPerfil = fotoPerfil ? { fotoPerfil } : {};
 
     if (usuarioExistente) {
       await UsuarioModel.update(usuarioExistente.id, {
@@ -506,6 +519,7 @@ const AuthService = {
         senha: credenciais.senhaHash,
         perfil: config.perfil,
         ativo: true,
+        ...dadosFotoPerfil,
         ...dadosEscopo,
       });
     } else {
@@ -515,6 +529,7 @@ const AuthService = {
         senha: credenciais.senhaHash,
         perfil: config.perfil,
         ativo: true,
+        ...dadosFotoPerfil,
         ...dadosEscopo,
       });
     }

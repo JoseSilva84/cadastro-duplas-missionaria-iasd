@@ -88,6 +88,7 @@ model Usuario {
   nome      String
   email     String   @unique
   senha     String
+  fotoPerfil String?
   perfil    Perfil
   ativo     Boolean  @default(true)
   criadoEm DateTime @default(now())

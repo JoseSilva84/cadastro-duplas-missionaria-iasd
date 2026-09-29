@@ -19,10 +19,11 @@ const montarIdentidadeUsuario = (usuario) => {
   };
 
   if (usuario?.perfil === 'PASTOR_REGIONAL') {
-    identidade.nome = usuario.regiao?.nomeConselheiro || usuario.nome;
-    identidade.foto = usuario.regiao?.fotoConselheiro || null;
+    identidade.nome = usuario.nome || usuario.regiao?.nomeConselheiro || '';
+    identidade.foto = usuario.fotoPerfil || usuario.regiao?.fotoConselheiro || null;
     identidade.regiao = usuario.regiao?.nome || null;
   } else if (usuario?.perfil === 'COORDENADOR_REGIONAL') {
+    identidade.foto = usuario.fotoPerfil || null;
     identidade.regiao = usuario.regiao?.nome || null;
   } else if (usuario?.perfil === 'PASTOR_DISTRITAL') {
     identidade.nome = usuario.distrito?.nomePastor || usuario.nome;

@@ -17,6 +17,7 @@ const campoInicial = {
   liderNome: '',
   membro2Nome: '',
   fotoPastor: '',
+  fotoPerfil: '',
 };
 
 function SelectField({ label, children, ...props }) {
@@ -82,8 +83,15 @@ export default function AtivarAcessoQr() {
   ), [igrejas, form.distritoId]);
 
   const distritoSelecionado = distritos.find((d) => String(d.id) === String(form.distritoId));
-  const requerConfirmacaoSensivel = ['PRESIDENTE', 'DEPARTAMENTAL_MIPS'].includes(info?.tipo);
-  const textoConfirmacao = info?.tipo === 'PRESIDENTE' ? 'PRESIDENTE' : 'MIPS';
+  const tiposComFotoPerfil = ['COORDENADOR_REGIONAL', 'DEPARTAMENTAL_REGIONAL'];
+  const tiposSemNome = ['DEPARTAMENTAIS'];
+  const palavrasConfirmacao = {
+    PRESIDENTE: 'PRESIDENTE',
+    DEPARTAMENTAL_MIPS: 'MIPS',
+    DEPARTAMENTAIS: 'DEPARTAMENTAIS',
+  };
+  const requerConfirmacaoSensivel = Boolean(palavrasConfirmacao[info?.tipo]);
+  const textoConfirmacao = palavrasConfirmacao[info?.tipo] || '';
 
   const alterar = (campo, valor) => {
     setForm((atual) => ({
@@ -162,11 +170,15 @@ export default function AtivarAcessoQr() {
       const fotoPastorRef = info.tipo === 'PASTOR_DISTRITAL' && form.fotoPastor
         ? await FotoService.salvarFotoPorReferencia('distrito', form.distritoId, 'pastor', form.fotoPastor)
         : '';
+      const fotoPerfilRef = tiposComFotoPerfil.includes(info.tipo) && form.fotoPerfil
+        ? await FotoService.salvarFotoPorReferencia('usuario', `${info.tipo.toLowerCase()}-${form.regiaoId}`, 'perfil', form.fotoPerfil)
+        : '';
 
       await api.post('/auth/qr-ativacao/ativar', {
         token,
         nome: form.nome,
         fotoPastor: fotoPastorRef || null,
+        fotoPerfil: fotoPerfilRef || null,
         email: form.email,
         senha: form.senha,
         regiaoId: form.regiaoId,
@@ -359,13 +371,20 @@ export default function AtivarAcessoQr() {
             </div>
           )}
 
-          {info.tipo !== 'DUPLA_MISSIONARIA' && (
-            <div className={info.tipo === 'PASTOR_DISTRITAL' ? 'grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-end' : ''}>
+          {info.tipo !== 'DUPLA_MISSIONARIA' && !tiposSemNome.includes(info.tipo) && (
+            <div className={info.tipo === 'PASTOR_DISTRITAL' || tiposComFotoPerfil.includes(info.tipo) ? 'grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-end' : ''}>
               {info.tipo === 'PASTOR_DISTRITAL' && (
                 <AvatarUpload
                   value={form.fotoPastor}
                   onChange={(valor) => alterar('fotoPastor', valor)}
                   label="Foto do Pastor (opcional)"
+                />
+              )}
+              {tiposComFotoPerfil.includes(info.tipo) && (
+                <AvatarUpload
+                  value={form.fotoPerfil}
+                  onChange={(valor) => alterar('fotoPerfil', valor)}
+                  label="Foto (opcional)"
                 />
               )}
               <TextField

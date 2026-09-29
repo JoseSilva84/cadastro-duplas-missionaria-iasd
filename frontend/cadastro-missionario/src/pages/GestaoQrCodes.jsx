@@ -154,7 +154,7 @@ export default function GestaoQrCodes() {
       </div>
 
       <div className="mb-5 rounded-2xl border border-amber-100 bg-amber-50/70 p-4 text-sm leading-relaxed text-amber-900">
-        O QR Code do Super Administrador não é exibido. Presidente e Departamental MIPs têm QR Codes próprios de acesso geral.
+        O QR Code do Super Administrador não é exibido. Presidente, Departamental MIPs e Departamentais têm QR Codes próprios de acesso geral.
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
