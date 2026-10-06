@@ -11,22 +11,22 @@ const validarLogin = [
 const validarAtualizacaoConta = [
   body('email').trim().isEmail().withMessage('E-mail inválido.'),
   body('senhaAtual').notEmpty().withMessage('Informe a senha atual.'),
-  body('novaSenha').optional({ checkFalsy: true }).custom((valor) => String(valor).trim().length >= 8)
-    .withMessage('A nova senha deve ter pelo menos 8 caracteres.'),
+  body('novaSenha').optional({ checkFalsy: true }).custom((valor) => String(valor).trim().length > 0)
+    .withMessage('Informe a nova senha.'),
 ];
 
 const validarRedefinicaoAcesso = [
   body('token').notEmpty().withMessage('Token de redefinição obrigatório.'),
   body('email').trim().isEmail().withMessage('E-mail inválido.'),
-  body('novaSenha').custom((valor) => String(valor || '').trim().length >= 8)
-    .withMessage('A nova senha deve ter pelo menos 8 caracteres.'),
+  body('novaSenha').custom((valor) => String(valor || '').trim().length > 0)
+    .withMessage('Informe a nova senha.'),
 ];
 
 const validarCriacaoContaDupla = [
   body('token').notEmpty().withMessage('Token de convite obrigatório.'),
   body('email').trim().isEmail().withMessage('E-mail inválido.'),
-  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
-    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+  body('senha').custom((valor) => String(valor || '').trim().length > 0)
+    .withMessage('Informe a senha.'),
 ];
 
 const validarBuscaDuplaQr = [
@@ -40,8 +40,8 @@ const validarBuscaDuplaQr = [
 const validarAtivacaoQr = [
   body('token').notEmpty().withMessage('QR Code de ativação obrigatório.'),
   body('email').trim().isEmail().withMessage('E-mail inválido.'),
-  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
-    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+  body('senha').custom((valor) => String(valor || '').trim().length > 0)
+    .withMessage('Informe a senha.'),
 ];
 
 const responderErrosValidacao = (req, res) => {
@@ -184,8 +184,8 @@ const validarCadastroDuplaComChave = [
   body('fotoLider').notEmpty().withMessage('Foto do Membro 1 (Líder) obrigatória.'),
   body('fotoMembro2').notEmpty().withMessage('Foto do Membro 2 (Parceiro) obrigatória.'),
   body('email').trim().isEmail().withMessage('E-mail de acesso inválido.'),
-  body('senha').custom((valor) => String(valor || '').trim().length >= 8)
-    .withMessage('A senha deve ter pelo menos 8 caracteres.'),
+  body('senha').custom((valor) => String(valor || '').trim().length > 0)
+    .withMessage('Informe a senha de acesso.'),
   body('igrejaId').notEmpty().withMessage('Selecione a igreja da dupla.'),
 ];
 

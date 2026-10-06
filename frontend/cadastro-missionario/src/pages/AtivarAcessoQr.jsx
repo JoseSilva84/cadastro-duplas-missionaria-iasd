@@ -110,8 +110,8 @@ export default function AtivarAcessoQr() {
       toastError('Informe um e-mail válido.');
       return false;
     }
-    if (form.senha.length < 8) {
-      toastError('A senha deve ter pelo menos 8 caracteres.');
+    if (!form.senha.trim()) {
+      toastError('Informe a senha.');
       return false;
     }
     if (form.senha !== form.confirmarSenha) {
@@ -416,8 +416,8 @@ export default function AtivarAcessoQr() {
           <div className="grid gap-4 border-t border-gray-100 pt-5 sm:grid-cols-2">
             <TextField label="E-mail de login" type="email" value={form.email} onChange={(e) => alterar('email', e.target.value)} required autoComplete="username" />
             <div className="hidden sm:block" />
-            <TextField label="Senha" type="password" minLength={8} value={form.senha} onChange={(e) => alterar('senha', e.target.value)} required autoComplete="new-password" />
-            <TextField label="Confirmar senha" type="password" minLength={8} value={form.confirmarSenha} onChange={(e) => alterar('confirmarSenha', e.target.value)} required autoComplete="new-password" />
+            <TextField label="Senha" type="password" value={form.senha} onChange={(e) => alterar('senha', e.target.value)} required autoComplete="new-password" />
+            <TextField label="Confirmar senha" type="password" value={form.confirmarSenha} onChange={(e) => alterar('confirmarSenha', e.target.value)} required autoComplete="new-password" />
           </div>
 
           <button

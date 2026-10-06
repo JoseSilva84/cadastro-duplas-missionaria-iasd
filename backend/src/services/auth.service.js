@@ -212,8 +212,8 @@ const validarCredenciaisAtivacao = async ({ email, senha }, usuarioIdAtual = nul
   if (!emailNormalizado || !emailNormalizado.includes('@')) {
     throw { status: 400, mensagem: 'Informe um e-mail válido para ativar o acesso.' };
   }
-  if (senhaNormalizada.length < 8) {
-    throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+  if (!senhaNormalizada) {
+    throw { status: 400, mensagem: 'Informe a senha.' };
   }
   const donoDoEmail = await UsuarioModel.findByEmail(emailNormalizado);
   if (donoDoEmail && Number(donoDoEmail.id) !== Number(usuarioIdAtual)) {
@@ -591,9 +591,6 @@ const AuthService = {
     const alteracoes = { email: emailNormalizado };
     const novaSenhaNormalizada = normalizarSenha(novaSenha);
     if (novaSenhaNormalizada) {
-      if (novaSenhaNormalizada.length < 8) {
-        throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
-      }
       alteracoes.senha = await bcrypt.hash(novaSenhaNormalizada, 10);
     }
 
@@ -654,8 +651,8 @@ const AuthService = {
 
     const emailNormalizado = normalizarEmail(email);
     const senhaNormalizada = normalizarSenha(novaSenha);
-    if (senhaNormalizada.length < 8) {
-      throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
+    if (!senhaNormalizada) {
+      throw { status: 400, mensagem: 'Informe a nova senha.' };
     }
     if (ehSomenteLeitura(usuario) && emailNormalizado !== normalizarEmail(usuario.email)) {
       throw { status: 403, mensagem: 'Este acesso de suporte pode alterar somente a senha.' };
@@ -824,8 +821,8 @@ const AuthService = {
     if (!emailNormalizado || !emailNormalizado.includes('@')) {
       throw { status: 400, mensagem: 'Informe um e-mail válido para a dupla.' };
     }
-    if (senhaNormalizada.length < 8) {
-      throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+    if (!senhaNormalizada) {
+      throw { status: 400, mensagem: 'Informe a senha.' };
     }
 
     const nomeDupla = `${dupla.liderNome || ''} + ${dupla.membro2Nome || ''}`.trim() || 'Dupla Missionária';
@@ -1023,8 +1020,8 @@ const AuthService = {
     if (!emailNorm || !emailNorm.includes('@')) {
       throw { status: 400, mensagem: 'Informe um e-mail válido para o login de acesso da dupla.' };
     }
-    if (senhaNorm.length < 8) {
-      throw { status: 400, mensagem: 'A senha de acesso deve ter no mínimo 8 caracteres.' };
+    if (!senhaNorm) {
+      throw { status: 400, mensagem: 'Informe a senha de acesso da dupla.' };
     }
 
     const emailEmUso = await UsuarioModel.findByEmail(emailNorm);

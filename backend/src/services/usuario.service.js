@@ -254,8 +254,8 @@ const UsuarioService = {
       throw { status: 400, mensagem: 'Este e-mail já está sendo usado por outro usuário.' };
     }
     const senhaNormalizada = String(data.senha || '').trim();
-    if (senhaNormalizada.length < 8) {
-      throw { status: 400, mensagem: 'A senha deve ter pelo menos 8 caracteres.' };
+    if (!senhaNormalizada) {
+      throw { status: 400, mensagem: 'Informe a senha.' };
     }
     const hash = await bcrypt.hash(senhaNormalizada, 10);
 
@@ -360,8 +360,8 @@ const UsuarioService = {
 
     if (data.senha) {
       const senhaNormalizada = String(data.senha).trim();
-      if (senhaNormalizada.length < 8) {
-        throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
+      if (!senhaNormalizada) {
+        throw { status: 400, mensagem: 'Informe a nova senha.' };
       }
       updateData.senha = await bcrypt.hash(senhaNormalizada, 10);
     }
@@ -393,8 +393,8 @@ const UsuarioService = {
       throw { status: 403, mensagem: 'Apenas um Super Administrador pode redefinir esta senha.' };
     }
     const senhaNormalizada = String(senha || '').trim();
-    if (senhaNormalizada.length < 8) {
-      throw { status: 400, mensagem: 'A nova senha deve ter pelo menos 8 caracteres.' };
+    if (!senhaNormalizada) {
+      throw { status: 400, mensagem: 'Informe a nova senha.' };
     }
 
     const hash = await bcrypt.hash(senhaNormalizada, 10);

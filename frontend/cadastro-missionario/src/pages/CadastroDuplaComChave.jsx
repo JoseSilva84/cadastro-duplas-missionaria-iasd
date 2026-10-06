@@ -283,8 +283,8 @@ export default function CadastroDuplaComChave() {
       toast.error('Informe um e-mail válido para o acesso da dupla.');
       return;
     }
-    if (form.senhaAcesso.length < 8) {
-      toast.error('A senha de acesso deve conter no mínimo 8 caracteres.');
+    if (!form.senhaAcesso.trim()) {
+      toast.error('Informe a senha de acesso.');
       return;
     }
     if (form.senhaAcesso !== form.confirmarSenhaAcesso) {
@@ -1187,8 +1187,7 @@ export default function CadastroDuplaComChave() {
                     <input
                       type={mostrarSenha ? 'text' : 'password'}
                       required
-                      minLength={8}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="Digite a senha"
                       value={form.senhaAcesso}
                       onChange={(e) => setForm({ ...form, senhaAcesso: e.target.value })}
                       className="input-field pr-10"
@@ -1220,7 +1219,6 @@ export default function CadastroDuplaComChave() {
                   <input
                     type={mostrarSenha ? 'text' : 'password'}
                     required
-                    minLength={8}
                     placeholder="Repita a nova senha"
                     value={form.confirmarSenhaAcesso}
                     onChange={(e) => setForm({ ...form, confirmarSenhaAcesso: e.target.value })}

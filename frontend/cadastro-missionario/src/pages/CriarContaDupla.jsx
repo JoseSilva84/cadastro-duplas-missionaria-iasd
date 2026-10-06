@@ -67,8 +67,8 @@ export default function CriarContaDupla() {
       return;
     }
 
-    if (form.senha.trim().length < 8) {
-      setErroForm('A senha deve ter no mínimo 8 caracteres.');
+    if (!form.senha.trim()) {
+      setErroForm('Informe a senha.');
       return;
     }
 
@@ -219,10 +219,9 @@ export default function CriarContaDupla() {
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 required
-                minLength={8}
                 value={form.senha}
                 onChange={(e) => setCampo('senha', e.target.value)}
-                placeholder="Mínimo de 8 caracteres"
+                placeholder="Digite a senha"
                 className="input-field w-full text-sm"
                 autoComplete="new-password"
               />
@@ -236,7 +235,6 @@ export default function CriarContaDupla() {
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 required
-                minLength={8}
                 value={form.confirmarSenha}
                 onChange={(e) => setCampo('confirmarSenha', e.target.value)}
                 placeholder="Repita a senha"

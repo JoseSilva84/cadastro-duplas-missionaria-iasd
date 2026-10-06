@@ -227,10 +227,9 @@ function ModalUsuario({ usuario, onClose, onSalvo, regioes, distritos, igrejas, 
             <TextInput
               label={editando ? 'Nova senha' : 'Senha'}
               type="password"
-              placeholder={editando ? 'Deixe em branco para manter' : 'Mínimo 8 caracteres'}
+              placeholder={editando ? 'Deixe em branco para manter' : 'Digite a senha'}
               value={form.senha}
               onChange={(e) => set('senha', e.target.value)}
-              minLength={editando ? undefined : 8}
               required={!editando}
             />
             <SelectInput
@@ -382,8 +381,8 @@ function ModalRedefinirSenha({ usuario, onClose, onSalvo }) {
     event.preventDefault();
     setErro(null);
 
-    if (senha.length < 8) {
-      setErro('A nova senha deve ter pelo menos 8 caracteres.');
+    if (!senha.trim()) {
+      setErro('Informe a nova senha.');
       return;
     }
     if (senha !== confirmacao) {
@@ -435,7 +434,6 @@ function ModalRedefinirSenha({ usuario, onClose, onSalvo }) {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            minLength={8}
             required
           />
           <TextInput
@@ -443,7 +441,6 @@ function ModalRedefinirSenha({ usuario, onClose, onSalvo }) {
             type="password"
             value={confirmacao}
             onChange={(e) => setConfirmacao(e.target.value)}
-            minLength={8}
             required
           />
 

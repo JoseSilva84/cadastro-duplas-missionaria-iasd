@@ -141,10 +141,6 @@ export default function Configuracoes() {
       toastError('Informe sua senha atual.');
       return;
     }
-    if (conta.novaSenha && conta.novaSenha.trim().length < 8) {
-      toastError('A nova senha deve ter pelo menos 8 caracteres.');
-      return;
-    }
     if (conta.novaSenha !== conta.confirmarSenha) {
       toastError('A confirmação da nova senha não confere.');
       return;
@@ -294,12 +290,12 @@ export default function Configuracoes() {
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-gray-700">Nova senha</span>
-              <input type="password" value={conta.novaSenha} onChange={(event) => alterarCampoConta('novaSenha', event.target.value)} minLength={8} autoComplete="new-password" className="input-field" placeholder="Deixe em branco para manter" />
+              <input type="password" value={conta.novaSenha} onChange={(event) => alterarCampoConta('novaSenha', event.target.value)} autoComplete="new-password" className="input-field" placeholder="Deixe em branco para manter" />
             </label>
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-gray-700">Confirmar nova senha</span>
-              <input type="password" value={conta.confirmarSenha} onChange={(event) => alterarCampoConta('confirmarSenha', event.target.value)} minLength={8} autoComplete="new-password" className="input-field" placeholder="Repita a nova senha" />
+              <input type="password" value={conta.confirmarSenha} onChange={(event) => alterarCampoConta('confirmarSenha', event.target.value)} autoComplete="new-password" className="input-field" placeholder="Repita a nova senha" />
             </label>
           </div>
 

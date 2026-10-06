@@ -274,11 +274,6 @@ export default function Cadastro() {
       }
     }
 
-    if (form.senhaAcesso && form.senhaAcesso.length < 8) {
-      toast.error('A senha de acesso deve ter pelo menos 8 caracteres.');
-      return;
-    }
-
     setEnviando(true);
     try {
       const montarPayload = (fotoLiderRef = fotoRefs.fotoLider, fotoMembro2Ref = fotoRefs.fotoMembro2) => ({
@@ -633,12 +628,11 @@ export default function Cadastro() {
                       onChange={(e) => set('emailAcesso', e.target.value)}
                     />
                   </Campo>
-                  <Campo label="Senha de Acesso (mínimo 8 dígitos)" icone="🔑">
+                  <Campo label="Senha de Acesso" icone="🔑">
                     <input
                       type="password"
                       className="input-field"
                       placeholder="Deixe em branco para criar via QR Code"
-                      minLength={8}
                       value={form.senhaAcesso || ''}
                       onChange={(e) => set('senhaAcesso', e.target.value)}
                     />

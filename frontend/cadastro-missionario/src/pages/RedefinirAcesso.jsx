@@ -19,8 +19,8 @@ export default function RedefinirAcesso() {
       setErro('Link de redefinição inválido. Solicite um novo QR Code.');
       return;
     }
-    if (form.novaSenha.trim().length < 8) {
-      setErro('A nova senha deve ter pelo menos 8 caracteres.');
+    if (!form.novaSenha.trim()) {
+      setErro('Informe a nova senha.');
       return;
     }
     if (form.novaSenha !== form.confirmarSenha) {
@@ -76,12 +76,12 @@ export default function RedefinirAcesso() {
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-gray-700">Nova senha</span>
-              <input type="password" value={form.novaSenha} onChange={(event) => setCampo('novaSenha', event.target.value)} minLength={8} required autoComplete="new-password" className="input-field" placeholder="Mínimo de 8 caracteres" />
+              <input type="password" value={form.novaSenha} onChange={(event) => setCampo('novaSenha', event.target.value)} required autoComplete="new-password" className="input-field" placeholder="Digite a nova senha" />
             </label>
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-gray-700">Confirmar nova senha</span>
-              <input type="password" value={form.confirmarSenha} onChange={(event) => setCampo('confirmarSenha', event.target.value)} minLength={8} required autoComplete="new-password" className="input-field" placeholder="Repita a nova senha" />
+              <input type="password" value={form.confirmarSenha} onChange={(event) => setCampo('confirmarSenha', event.target.value)} required autoComplete="new-password" className="input-field" placeholder="Repita a nova senha" />
             </label>
 
             {erro && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>}

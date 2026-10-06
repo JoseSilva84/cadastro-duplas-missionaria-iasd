@@ -184,7 +184,7 @@ const DuplaService = {
     if (data.emailAcesso && data.senhaAcesso) {
       const emailNorm = String(data.emailAcesso).trim().toLowerCase();
       const senhaNorm = String(data.senhaAcesso).trim();
-      if (emailNorm.includes('@') && senhaNorm.length >= 8) {
+      if (emailNorm.includes('@') && senhaNorm) {
         const donoDoEmail = await prisma.usuario.findUnique({ where: { email: emailNorm } });
         if (!donoDoEmail) {
           const bcrypt = require('bcryptjs');
