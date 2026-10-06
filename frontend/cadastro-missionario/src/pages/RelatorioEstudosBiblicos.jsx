@@ -54,6 +54,13 @@ const mesAno = (valor) => {
   return `${String(data.getUTCMonth() + 1).padStart(2, '0')}/${data.getUTCFullYear()}`;
 };
 
+const formatarDataCurta = (valor) => {
+  if (!valor) return 'Sem data';
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return 'Sem data';
+  return data.toLocaleDateString('pt-BR');
+};
+
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const temEstudoNaoRegistrado = (dupla) => (
   (dupla?.estudoAtualEmAndamento === true || dupla?.atividadeDupla === 'ATIVA' || dupla?.statusEstudoBiblico === 'ATIVO')
@@ -121,7 +128,7 @@ const dadosCandidatoComissao = (estudo, participante = null) => ({
   cultoFamiliar: participante ? null : estudo.cultoFamiliar,
 });
 
-const abrirPdf = ({ titulo, estudos, tipoRelatorio }) => {
+const abrirPdf = ({ titulo, estudos }) => {
   const linhas = estudos.map((item) => `
     <tr>
       <td>${['PONTO', 'CLASSE'].includes(item.tipoEstudo) ? item.nomeEstudante : participantesResumo(item)}</td>
@@ -294,6 +301,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const [modalVisitaPastoral, setModalVisitaPastoral] = useState(null);
   const [licoesEditadas, setLicoesEditadas] = useState({});
   const [carregando, setCarregando] = useState(true);
+  const [reabrindoId, setReabrindoId] = useState(null);
   const [filtros, setFiltros] = useState({
     duplaId: '',
     serie: '',
@@ -393,6 +401,23 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     }
   };
 
+  const reabrirEstudo = async (estudo) => {
+    const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
+    if (!window.confirm(`Reabrir o estudo "${nome}" e voltar para Em andamento?`)) return;
+
+    setReabrindoId(estudo.id);
+    try {
+      await api.patch(`/estudos-biblicos/${estudo.id}/reabrir`);
+      toast.success('Estudo reaberto com sucesso.');
+      if (selecionado?.id === estudo.id) setSelecionado(null);
+      carregar();
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao reabrir estudo.');
+    } finally {
+      setReabrindoId(null);
+    }
+  };
+
   const limpar = () => {
     const filtrosLimpos = { duplaId: '', serie: '', licaoAtual: '', cidade: '', nome: '', dataInicio: '', dataFim: '', classificacaoInteressado: '' };
     setFiltros(filtrosLimpos);
@@ -406,6 +431,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const concluidos = resultado.estudos.filter((estudo) => progresso(estudo) >= 100).length;
   const totalEstudantes = resultado.totalEstudantes ?? resultado.estudos.reduce((acc, estudo) => acc + totalEstudantesDoEstudo(estudo), 0);
   const totalDuplasComEstudoNaoRegistrado = duplas.filter(temEstudoNaoRegistrado).length;
+  const podeReabrirEstudo = isEncerrados && !ehSomenteLeitura(usuario);
   const tooltipTotalEstudantes = isPonto
     ? 'Estudos nos pontos: soma dos estudantes/participantes cadastrados em todos os pontos filtrados.'
     : isClasse
@@ -446,7 +472,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     abrirPdfComissao(modalVisitaPastoral.estudo, modalVisitaPastoral.participante, resposta);
     setModalVisitaPastoral(null);
   };
-  const BotoesBatismo = ({ estudo, participante = null, compacto = false }) => {
+  const renderBotoesBatismo = (estudo, participante = null, compacto = false) => {
     if (isEncerrados) return null;
     const classificacao = participante?.classificacaoInteressado || estudo.classificacaoInteressado;
     if (!classificacao) return null;
@@ -708,14 +734,22 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
   const motivosEncerramentoOption = {
     ...chartBase,
-    legend: { bottom: 0, icon: 'circle' },
+    tooltip: {
+      trigger: 'item',
+      formatter: ({ name, value, percent }) => `${name}<br/><strong>${value}</strong> pessoa(s) · ${percent}%`,
+      backgroundColor: '#0f172a',
+      borderWidth: 0,
+      textStyle: { color: '#fff' },
+    },
     series: [{
       name: 'Motivo',
       type: 'pie',
-      radius: ['46%', '72%'],
-      center: ['50%', '43%'],
+      radius: ['58%', '78%'],
+      center: ['50%', '50%'],
+      avoidLabelOverlap: true,
       itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 3 },
-      label: { formatter: '{b}\n{c}', fontWeight: 700 },
+      label: { show: false },
+      labelLine: { show: false },
       data: analisesGraficos.porMotivoEncerramento.map((item) => ({
         name: item.nome,
         value: item.total,
@@ -896,10 +930,39 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
 
         {isEncerrados && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-            <section className="card">
+            <section className="card xl:col-span-1">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
               <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos encerrados por motivo registrado.</p>
-              <EChart option={motivosEncerramentoOption} className="h-80" />
+              <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-1">
+                <EChart option={motivosEncerramentoOption} className="h-56 md:h-64" />
+                <div className="space-y-2">
+                  {analisesGraficos.porMotivoEncerramento.map((item) => {
+                    const percentual = totalEstudantes ? Math.round((item.total / totalEstudantes) * 100) : 0;
+                    return (
+                      <div key={item.nome} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: item.cor }} />
+                              <p className="truncate text-xs font-semibold text-gray-700" title={item.nome}>{item.nome}</p>
+                            </div>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                              <div className="h-full rounded-full" style={{ width: `${percentual}%`, backgroundColor: item.cor }} />
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-[#1A3A6B]">{item.total}</p>
+                            <p className="text-[11px] text-gray-400">{percentual}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {analisesGraficos.porMotivoEncerramento.length === 0 && (
+                    <p className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-4 text-sm text-gray-400">Sem motivos registrados.</p>
+                  )}
+                </div>
+              </div>
             </section>
             <section className="card">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Evolução dos encerramentos</h2>
@@ -912,6 +975,79 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               <EChart option={seriesEncerramentoOption} className="h-80" />
             </section>
           </div>
+        )}
+
+        {isEncerrados && (
+          <section className="card">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Estudos encerrados para revisão</h2>
+                <p className="text-sm text-gray-400">
+                  Confira os estudos encerrados e reabra quando o encerramento tiver sido feito por engano.
+                </p>
+              </div>
+              <span className="inline-flex w-fit rounded-full bg-[#1A3A6B]/10 px-3 py-1 text-xs font-bold text-[#1A3A6B]">
+                {resultado.estudos.length} estudo(s)
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {resultado.estudos.map((estudo) => {
+                const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
+                const motivo = motivoEncerramentoLabel[motivoEncerramentoKey(estudo.motivoEncerramento)] || estudo.motivoEncerramento || 'Nao informado';
+                return (
+                  <div key={estudo.id} className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-base font-bold text-[#1A3A6B]" title={nome}>{nome}</h3>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                            {estudo.tipoEstudo === 'PONTO' ? 'Ponto' : estudo.tipoEstudo === 'CLASSE' ? 'Classe' : 'Individual'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)} · {progresso(estudo)}%
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Dupla: {estudo.dupla?.liderNome || 'Sem líder'} + {estudo.dupla?.membro2Nome || 'Sem parceiro'}
+                          {estudo.dupla?.igreja?.nome ? ` · Igreja: ${estudo.dupla.igreja.nome}` : ''}
+                        </p>
+                        <p className="mt-2 text-xs text-gray-500">
+                          <strong>Motivo:</strong> {motivo}
+                          <span className="mx-2 text-gray-300">•</span>
+                          <strong>Encerrado em:</strong> {formatarDataCurta(estudo.encerradoEm || estudo.atualizadoEm)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                        <button
+                          type="button"
+                          className="btn-outline whitespace-nowrap px-4 py-2 text-sm"
+                          onClick={() => navigate(detalhesPath(estudo))}
+                        >
+                          Ver detalhes
+                        </button>
+                        {podeReabrirEstudo && (
+                          <button
+                            type="button"
+                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                            onClick={() => reabrirEstudo(estudo)}
+                            disabled={reabrindoId === estudo.id}
+                          >
+                            {reabrindoId === estudo.id ? 'Reabrindo...' : 'Reabrir estudo'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {resultado.estudos.length === 0 && (
+                <p className="rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center text-sm text-gray-400">
+                  Nenhum estudo encerrado encontrado nos filtros atuais.
+                </p>
+              )}
+            </div>
+          </section>
         )}
 
         <div className={`grid grid-cols-1 ${isEncerrados ? '' : 'xl:grid-cols-2'} gap-5`}>
@@ -976,7 +1112,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button type="button" className="btn-outline" onClick={limpar}>Limpar</button>
-            <button type="button" className="btn-outline" onClick={() => abrirPdf({ titulo: tituloTela, estudos: resultado.estudos, tipoRelatorio })}>Exportar PDF</button>
+            <button type="button" className="btn-outline" onClick={() => abrirPdf({ titulo: tituloTela, estudos: resultado.estudos })}>Exportar PDF</button>
             <button type="button" className="btn-primary" onClick={() => carregar()}>Filtrar</button>
           </div>
         </div>
@@ -995,7 +1131,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                   <div className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full bg-[#C9963A]" style={{ width: `${progresso(selecionado)}%` }} /></div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && <BotoesBatismo estudo={selecionado} />}
+                  {!['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && renderBotoesBatismo(selecionado)}
                   <button type="button" className="btn-primary px-4 py-2" onClick={() => navigate(detalhesPath(selecionado))}>
                     Ver detalhes
                   </button>
@@ -1012,7 +1148,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                     </div>
                     {participante.classificacaoInteressado && (
                       <div className="mt-2">
-                        <BotoesBatismo estudo={selecionado} participante={participante} compacto />
+                        {renderBotoesBatismo(selecionado, participante, true)}
                       </div>
                     )}
                   </div>
@@ -1022,7 +1158,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             {!isEncerrados && !['PONTO', 'CLASSE'].includes(selecionado.tipoEstudo) && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <ClassificacaoBadge classe={selecionado.classificacaoInteressado} motivo={selecionado.motivoImpedimento} />
-                <BotoesBatismo estudo={selecionado} compacto />
+                {renderBotoesBatismo(selecionado, null, true)}
                 {selecionado.classificacaoInteressado === 'B' && selecionado.motivoImpedimento && (
                   <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
                     Motivo: {selecionado.motivoImpedimento}
@@ -1072,7 +1208,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                                   <span className="text-[10px] font-semibold text-[#1A3A6B]">{participante.nome}</span>
                                   <ClassificacaoBadge classe={participante.classificacaoInteressado} motivo={participante.motivoImpedimento} compacto />
                                   {participante.classificacaoInteressado && (
-                                    <BotoesBatismo estudo={estudo} participante={participante} compacto />
+                                    renderBotoesBatismo(estudo, participante, true)
                                   )}
                                 </div>
                               ))}
@@ -1080,7 +1216,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                           ) : (
                             <div className="flex flex-col items-start gap-1">
                               <ClassificacaoBadge classe={estudo.classificacaoInteressado} motivo={estudo.motivoImpedimento} compacto />
-                              <BotoesBatismo estudo={estudo} compacto />
+                              {renderBotoesBatismo(estudo, null, true)}
                             </div>
                           )}
                         </td>}
@@ -1093,6 +1229,16 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                             <button type="button" className="btn-outline w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => navigate(detalhesPath(estudo))}>Detalhes</button>
                             {!isEncerrados && (
                               <button type="button" className="btn-primary w-full whitespace-nowrap text-xs px-3 py-2" onClick={() => salvarLicao(estudo)}>Salvar lição</button>
+                            )}
+                            {podeReabrirEstudo && (
+                              <button
+                                type="button"
+                                className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
+                                onClick={() => reabrirEstudo(estudo)}
+                                disabled={reabrindoId === estudo.id}
+                              >
+                                {reabrindoId === estudo.id ? 'Reabrindo...' : 'Reabrir'}
+                              </button>
                             )}
                             {podeExcluir && (
                               <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>

@@ -97,6 +97,14 @@ const EstudoBiblicoController = {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao remover estudo biblico.' });
     }
   },
+
+  async reabrir(req, res) {
+    try {
+      res.json(await EstudoBiblicoService.reabrir(req.params.id, req.usuario));
+    } catch (err) {
+      res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao reabrir estudo biblico.' });
+    }
+  },
 };
 
 module.exports = { EstudoBiblicoController, validarEstudoBiblico };

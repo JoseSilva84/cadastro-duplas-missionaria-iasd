@@ -239,6 +239,16 @@ const EstudoBiblicoService = {
     await this.buscarPorId(id, usuario);
     return EstudoBiblicoModel.remove(id);
   },
+
+  async reabrir(id, usuario) {
+    await this.buscarPorId(id, usuario);
+    return EstudoBiblicoModel.update(id, {
+      encerrado: false,
+      statusEstudo: 'EM_ANDAMENTO',
+      motivoEncerramento: null,
+      encerradoEm: null,
+    });
+  },
 };
 
 module.exports = EstudoBiblicoService;

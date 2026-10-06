@@ -8,6 +8,7 @@ router.get('/', autenticar, EstudoBiblicoController.listar);
 router.get('/:id', autenticar, EstudoBiblicoController.buscarPorId);
 router.post('/', autenticar, validarEstudoBiblico, EstudoBiblicoController.criar);
 router.put('/:id', autenticar, validarEstudoBiblico, EstudoBiblicoController.atualizar);
+router.patch('/:id/reabrir', autenticar, EstudoBiblicoController.reabrir);
 router.delete(
   '/:id',
   autenticar,
