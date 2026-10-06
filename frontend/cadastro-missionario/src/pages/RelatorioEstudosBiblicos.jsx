@@ -46,19 +46,14 @@ const motivoEncerramentoCor = {
   'NAO INFORMADO': '#1A3A6B',
 };
 
+const coresMotivosExtras = ['#7c3aed', '#0284c7', '#db2777', '#ea580c', '#16a34a', '#475569', '#0891b2', '#9333ea'];
+
 const motivoEncerramentoKey = (valor) => String(valor || 'Nao informado').toUpperCase();
 
 const mesAno = (valor) => {
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return 'Sem data';
   return `${String(data.getUTCMonth() + 1).padStart(2, '0')}/${data.getUTCFullYear()}`;
-};
-
-const formatarDataCurta = (valor) => {
-  if (!valor) return 'Sem data';
-  const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) return 'Sem data';
-  return data.toLocaleDateString('pt-BR');
 };
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
@@ -302,6 +297,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   const [licoesEditadas, setLicoesEditadas] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [reabrindoId, setReabrindoId] = useState(null);
+  const [confirmacaoAcao, setConfirmacaoAcao] = useState(null);
   const [filtros, setFiltros] = useState({
     duplaId: '',
     serie: '',
@@ -389,8 +385,6 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
 
   const excluirEstudo = async (estudo) => {
-    const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
-    if (!window.confirm(`Excluir ${nome}?`)) return;
     try {
       await api.delete(`/estudos-biblicos/${estudo.id}`);
       toast.success('Registro removido.');
@@ -402,9 +396,6 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
   };
 
   const reabrirEstudo = async (estudo) => {
-    const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
-    if (!window.confirm(`Reabrir o estudo "${nome}" e voltar para Em andamento?`)) return;
-
     setReabrindoId(estudo.id);
     try {
       await api.patch(`/estudos-biblicos/${estudo.id}/reabrir`);
@@ -416,6 +407,19 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
     } finally {
       setReabrindoId(null);
     }
+  };
+
+  const solicitarConfirmacao = (tipo, estudo) => {
+    const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
+    setConfirmacaoAcao({ tipo, estudo, nome });
+  };
+
+  const confirmarAcao = () => {
+    if (!confirmacaoAcao?.estudo) return;
+    const { tipo, estudo } = confirmacaoAcao;
+    setConfirmacaoAcao(null);
+    if (tipo === 'reabrir') reabrirEstudo(estudo);
+    if (tipo === 'excluir') excluirEstudo(estudo);
   };
 
   const limpar = () => {
@@ -556,10 +560,10 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       (item) => motivoEncerramentoKey(item.motivoEncerramento),
       totalEstudantesDoEstudo,
     ))
-      .map(([motivo, total]) => ({
+      .map(([motivo, total], indice) => ({
         nome: motivoEncerramentoLabel[motivo] || motivo,
         total,
-        cor: motivoEncerramentoCor[motivo] || '#64748b',
+        cor: motivoEncerramentoCor[motivo] || coresMotivosExtras[indice % coresMotivosExtras.length],
       }))
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
     const porMesEncerramento = Object.entries(agruparSoma(estudos, (item) => mesAno(item.encerradoEm || item.atualizadoEm || item.criadoEm)))
@@ -741,11 +745,37 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
       borderWidth: 0,
       textStyle: { color: '#fff' },
     },
+    legend: {
+      type: 'scroll',
+      orient: 'vertical',
+      right: 0,
+      top: 'middle',
+      width: '54%',
+      itemWidth: 10,
+      itemHeight: 10,
+      itemGap: 13,
+      pageIconColor: '#1A3A6B',
+      pageIconInactiveColor: '#cbd5e1',
+      pageTextStyle: { color: '#64748b', fontSize: 10 },
+      tooltip: { show: true },
+      formatter: (nome) => {
+        const item = analisesGraficos.porMotivoEncerramento.find((motivo) => motivo.nome === nome);
+        const nomeCurto = nome.length > 23 ? `${nome.slice(0, 22)}…` : nome;
+        return `{motivo|${nomeCurto}} {quantidade|${item?.total || 0}}`;
+      },
+      textStyle: {
+        color: '#475569',
+        rich: {
+          motivo: { width: 132, fontSize: 11, fontWeight: 600, lineHeight: 18 },
+          quantidade: { color: '#1A3A6B', fontSize: 12, fontWeight: 800, align: 'right' },
+        },
+      },
+    },
     series: [{
       name: 'Motivo',
       type: 'pie',
-      radius: ['58%', '78%'],
-      center: ['50%', '50%'],
+      radius: ['43%', '66%'],
+      center: ['25%', '50%'],
       avoidLabelOverlap: true,
       itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 3 },
       label: { show: false },
@@ -755,6 +785,27 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
         value: item.total,
         itemStyle: { color: item.cor },
       })),
+    }],
+    media: [{
+      query: { maxWidth: 420 },
+      option: {
+        legend: {
+          orient: 'horizontal',
+          left: 'center',
+          right: 'auto',
+          top: 'auto',
+          bottom: 0,
+          width: '94%',
+          itemGap: 10,
+          textStyle: {
+            rich: {
+              motivo: { width: 108, fontSize: 10, fontWeight: 600 },
+              quantidade: { color: '#1A3A6B', fontSize: 11, fontWeight: 800 },
+            },
+          },
+        },
+        series: [{ center: ['50%', '38%'], radius: ['38%', '59%'] }],
+      },
     }],
   };
   const seriesEncerramentoOption = {
@@ -933,36 +984,7 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
             <section className="card xl:col-span-1">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Motivos de encerramento</h2>
               <p className="text-sm text-gray-400 mb-3">Distribuição dos estudos encerrados por motivo registrado.</p>
-              <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-1">
-                <EChart option={motivosEncerramentoOption} className="h-56 md:h-64" />
-                <div className="space-y-2">
-                  {analisesGraficos.porMotivoEncerramento.map((item) => {
-                    const percentual = totalEstudantes ? Math.round((item.total / totalEstudantes) * 100) : 0;
-                    return (
-                      <div key={item.nome} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: item.cor }} />
-                              <p className="truncate text-xs font-semibold text-gray-700" title={item.nome}>{item.nome}</p>
-                            </div>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
-                              <div className="h-full rounded-full" style={{ width: `${percentual}%`, backgroundColor: item.cor }} />
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-[#1A3A6B]">{item.total}</p>
-                            <p className="text-[11px] text-gray-400">{percentual}%</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {analisesGraficos.porMotivoEncerramento.length === 0 && (
-                    <p className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-4 text-sm text-gray-400">Sem motivos registrados.</p>
-                  )}
-                </div>
-              </div>
+              <EChart option={motivosEncerramentoOption} className="h-80" />
             </section>
             <section className="card">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Evolução dos encerramentos</h2>
@@ -975,79 +997,6 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               <EChart option={seriesEncerramentoOption} className="h-80" />
             </section>
           </div>
-        )}
-
-        {isEncerrados && (
-          <section className="card">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-[#1A3A6B]">Estudos encerrados para revisão</h2>
-                <p className="text-sm text-gray-400">
-                  Confira os estudos encerrados e reabra quando o encerramento tiver sido feito por engano.
-                </p>
-              </div>
-              <span className="inline-flex w-fit rounded-full bg-[#1A3A6B]/10 px-3 py-1 text-xs font-bold text-[#1A3A6B]">
-                {resultado.estudos.length} estudo(s)
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {resultado.estudos.map((estudo) => {
-                const nome = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) ? estudo.nomeEstudante : participantesResumo(estudo);
-                const motivo = motivoEncerramentoLabel[motivoEncerramentoKey(estudo.motivoEncerramento)] || estudo.motivoEncerramento || 'Nao informado';
-                return (
-                  <div key={estudo.id} className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="truncate text-base font-bold text-[#1A3A6B]" title={nome}>{nome}</h3>
-                          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-500">
-                            {estudo.tipoEstudo === 'PONTO' ? 'Ponto' : estudo.tipoEstudo === 'CLASSE' ? 'Classe' : 'Individual'}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-500">
-                          {getSerieNome(estudo.serie)} · {getLicaoLabel(estudo.serie, estudo.licaoAtual)} · {progresso(estudo)}%
-                        </p>
-                        <p className="mt-1 text-xs text-gray-400">
-                          Dupla: {estudo.dupla?.liderNome || 'Sem líder'} + {estudo.dupla?.membro2Nome || 'Sem parceiro'}
-                          {estudo.dupla?.igreja?.nome ? ` · Igreja: ${estudo.dupla.igreja.nome}` : ''}
-                        </p>
-                        <p className="mt-2 text-xs text-gray-500">
-                          <strong>Motivo:</strong> {motivo}
-                          <span className="mx-2 text-gray-300">•</span>
-                          <strong>Encerrado em:</strong> {formatarDataCurta(estudo.encerradoEm || estudo.atualizadoEm)}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-                        <button
-                          type="button"
-                          className="btn-outline whitespace-nowrap px-4 py-2 text-sm"
-                          onClick={() => navigate(detalhesPath(estudo))}
-                        >
-                          Ver detalhes
-                        </button>
-                        {podeReabrirEstudo && (
-                          <button
-                            type="button"
-                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                            onClick={() => reabrirEstudo(estudo)}
-                            disabled={reabrindoId === estudo.id}
-                          >
-                            {reabrindoId === estudo.id ? 'Reabrindo...' : 'Reabrir estudo'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {resultado.estudos.length === 0 && (
-                <p className="rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center text-sm text-gray-400">
-                  Nenhum estudo encerrado encontrado nos filtros atuais.
-                </p>
-              )}
-            </div>
-          </section>
         )}
 
         <div className={`grid grid-cols-1 ${isEncerrados ? '' : 'xl:grid-cols-2'} gap-5`}>
@@ -1234,14 +1183,14 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
                               <button
                                 type="button"
                                 className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
-                                onClick={() => reabrirEstudo(estudo)}
+                                onClick={() => solicitarConfirmacao('reabrir', estudo)}
                                 disabled={reabrindoId === estudo.id}
                               >
                                 {reabrindoId === estudo.id ? 'Reabrindo...' : 'Reabrir'}
                               </button>
                             )}
                             {podeExcluir && (
-                              <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => excluirEstudo(estudo)}>Excluir</button>
+                              <button type="button" className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => solicitarConfirmacao('excluir', estudo)}>Excluir</button>
                             )}
                           </div>
                         </td>
@@ -1257,6 +1206,45 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           )}
         </div>
       </div>
+      {confirmacaoAcao && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmacaoAcao(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-confirmacao-estudo"
+          >
+            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${confirmacaoAcao.tipo === 'reabrir' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+              <span className="text-2xl" aria-hidden="true">{confirmacaoAcao.tipo === 'reabrir' ? '↻' : '!'}</span>
+            </div>
+            <p className="mt-5 text-xs font-bold uppercase tracking-widest text-[#C9963A]">Confirmação</p>
+            <h3 id="titulo-confirmacao-estudo" className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              {confirmacaoAcao.tipo === 'reabrir' ? 'Reabrir este estudo?' : 'Excluir este estudo?'}
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-gray-500">
+              {confirmacaoAcao.tipo === 'reabrir'
+                ? <>O estudo <strong className="text-gray-700">{confirmacaoAcao.nome}</strong> voltará para <strong className="text-gray-700">Em andamento</strong> e sairá desta lista.</>
+                : <>O registro de <strong className="text-gray-700">{confirmacaoAcao.nome}</strong> será excluído permanentemente.</>}
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-5 py-2.5 text-sm" onClick={() => setConfirmacaoAcao(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition ${confirmacaoAcao.tipo === 'reabrir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+                onClick={confirmarAcao}
+              >
+                {confirmacaoAcao.tipo === 'reabrir' ? 'Sim, reabrir estudo' : 'Sim, excluir estudo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {modalVisitaPastoral && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setModalVisitaPastoral(null)}>
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
