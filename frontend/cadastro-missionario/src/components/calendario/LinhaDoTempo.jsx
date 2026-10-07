@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import {
-  chaveMes, corDaAcao, formatarDiaCurto, moeda, origemDaAcao, periodoTema,
+  chaveMes, DEPARTAMENTOS, formatarDiaCurto, moeda, periodoTema,
 } from '../../lib/calendario';
 
-const ALT_CABECALHO = 66;
-const ALT_TEMA = 68;
-const ALT_ACAO = 68;
-const TOPO_TEMAS = ALT_CABECALHO + 38;
-const FOLGA = 124;
-const MAX_ACOES_MES = 4;
+const ALT_CABECALHO = 64;
+const Y_LINHA_TEMPO = ALT_CABECALHO + 14;
+const ALT_LINHA_TEMPO = 34;
+const Y_TEMAS = Y_LINHA_TEMPO + ALT_LINHA_TEMPO + 8;
+const ALT_TEMA = 62;
+const Y_EVENTOS = Y_TEMAS + ALT_TEMA + 110; // espaço amplo para as setas diagonais curvas subirem
+const ALT_EVENTO = 80;
 
 const IconeSeta = ({ lado }) => (
   <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -21,21 +22,22 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
   meses,
   departamentoFiltro,
   mesFiltro = null,
-  onAbrir,
-  onAbrirMes,
+  onAbrirTema,
+  onAbrirEvento,
 }, ref) {
   const rolagemRef = useRef(null);
   const arrasto = useRef({ ativo: false, x: 0, esquerda: 0, moveu: false });
   const [largura, setLargura] = useState(1000);
   const [arrastando, setArrastando] = useState(false);
   const [destaqueTema, setDestaqueTema] = useState(null);
+  const [destaqueEvento, setDestaqueEvento] = useState(null);
   const [limites, setLimites] = useState({ inicio: true, fim: false });
 
   const qtdMeses = meses.length || 13;
 
   const larguraMes = useMemo(() => {
-    const visiveis = largura >= 1100 ? 5.8 : largura >= 720 ? 3.8 : 2.2;
-    return Math.max(130, Math.floor(largura / visiveis));
+    const visiveis = largura >= 1100 ? 5.6 : largura >= 720 ? 3.6 : 2.2;
+    return Math.max(145, Math.floor(largura / visiveis));
   }, [largura]);
 
   const rolarParaMes = useCallback((indiceMes) => {
@@ -64,7 +66,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
     return () => observador.disconnect();
   }, [atualizarLimites]);
 
-  // Arrastar com o mouse (mãozinha)
+  // Arrastar com a mãozinha (mouse drag)
   useEffect(() => {
     const mover = (e) => {
       const a = arrasto.current;
@@ -107,50 +109,41 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
   const inicioJanela = meses[0]?.key ?? 0;
   const posicao = (data) => (data ? chaveMes(data) - inicioJanela : -1);
 
+  // Mapear temas e eventos nas colunas
   const layout = useMemo(() => {
-    const ocupacaoTema = Array(qtdMeses).fill(0);
+    // 1. Temas centrais
     const temasVisiveis = temas
       .map((t) => ({ t, m: posicao(t.dataInicio) }))
-      .filter(({ m }) => m >= 0 && m < qtdMeses)
-      .map((p) => {
-        const linha = ocupacaoTema[p.m];
-        ocupacaoTema[p.m] += 1;
-        return { ...p, linha };
-      });
+      .filter(({ m }) => m >= 0 && m < qtdMeses);
 
-    const idsVisiveis = new Set(temasVisiveis.map((p) => p.t.id));
-    const linhasTema = Math.max(1, ...ocupacaoTema);
-    const topoAcoes = TOPO_TEMAS + linhasTema * (ALT_TEMA + 14) + FOLGA;
+    const posTema = new Map(temasVisiveis.map((p) => [p.t.id, p]));
 
-    const porMes = Array.from({ length: qtdMeses }, () => []);
+    // 2. Eventos preparatórios (podem ser t.eventos ou inferidos de t.acoes)
+    const ocupacaoPorMes = Array(qtdMeses).fill(0);
+    const todosEventos = [];
+
     temas.forEach((t) => {
-      if (!idsVisiveis.has(t.id)) return;
-      t.acoes.forEach((a) => {
-        const m = posicao(a.data || t.dataInicio);
-        if (m >= 0 && m < qtdMeses) porMes[m].push({ a, t });
+      // Se o tema tem eventos cadastrados
+      const listaEv = t.eventos && t.eventos.length > 0 ? t.eventos : [];
+
+      listaEv.forEach((ev) => {
+        const m = posicao(ev.data || t.dataInicio);
+        if (m >= 0 && m < qtdMeses) {
+          const linha = ocupacaoPorMes[m];
+          ocupacaoPorMes[m] += 1;
+          todosEventos.push({ ev, t, m, linha });
+        }
       });
     });
 
-    const acoes = [];
-    const extras = [];
-    porMes.forEach((lista, m) => {
-      const mostrar = lista.length > MAX_ACOES_MES ? MAX_ACOES_MES - 1 : lista.length;
-      lista.slice(0, mostrar).forEach((item, linha) => acoes.push({ ...item, m, linha }));
-      if (lista.length > mostrar) extras.push({ m, linha: mostrar, itens: lista.slice(mostrar), total: lista.length });
-    });
-    const linhasAcao = Math.max(1, ...porMes.map((l) => Math.min(l.length, MAX_ACOES_MES)));
-    const altura = topoAcoes + linhasAcao * (ALT_ACAO + 12) + 36;
-    return { temasVisiveis, acoes, extras, topoAcoes, altura };
+    const maxLinhasEvento = Math.max(1, ...ocupacaoPorMes);
+    const alturaTotal = Y_EVENTOS + maxLinhasEvento * (ALT_EVENTO + 16) + 40;
+
+    return { temasVisiveis, posTema, todosEventos, maxLinhasEvento, alturaTotal };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [temas, inicioJanela, qtdMeses]);
 
-  const yTema = (linha) => TOPO_TEMAS + linha * (ALT_TEMA + 14);
-  const yAcao = (linha) => layout.topoAcoes + linha * (ALT_ACAO + 12);
-  const posTema = new Map(layout.temasVisiveis.map((p) => [p.t.id, p]));
   const totalLargura = larguraMes * qtdMeses;
-  const contagemPorTema = {};
-  layout.acoes.forEach(({ t }) => { contagemPorTema[t.id] = (contagemPorTema[t.id] || 0) + 1; });
-  const indicePorTema = {};
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_45px_-18px_rgba(26,58,107,0.32)]">
@@ -160,7 +153,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         onClick={() => rolar(-1)}
         disabled={limites.inicio}
         aria-label="Meses anteriores"
-        className="absolute left-2.5 top-[96px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
+        className="absolute left-2.5 top-[110px] z-30 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
       >
         <IconeSeta lado="esq" />
       </button>
@@ -170,14 +163,14 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         onClick={() => rolar(1)}
         disabled={limites.fim}
         aria-label="Próximos meses"
-        className="absolute right-2.5 top-[96px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
+        className="absolute right-2.5 top-[110px] z-30 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
       >
         <IconeSeta lado="dir" />
       </button>
 
       {/* Sombras suaves nas bordas de rolagem */}
-      <div className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white/95 to-transparent transition-opacity duration-300 ${limites.inicio ? 'opacity-0' : 'opacity-100'}`} />
-      <div className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white/95 to-transparent transition-opacity duration-300 ${limites.fim ? 'opacity-0' : 'opacity-100'}`} />
+      <div className={`pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-white/95 to-transparent transition-opacity duration-300 ${limites.inicio ? 'opacity-0' : 'opacity-100'}`} />
+      <div className={`pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-white/95 to-transparent transition-opacity duration-300 ${limites.fim ? 'opacity-0' : 'opacity-100'}`} />
 
       {/* Contêiner com rolagem e mãozinha */}
       <div
@@ -188,8 +181,20 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         className={`overflow-x-auto overflow-y-hidden ${arrastando ? 'cursor-grabbing select-none' : 'cursor-grab'} [scrollbar-width:thin] transition-colors`}
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div className="relative" style={{ width: totalLargura, height: layout.altura }}>
-          {/* Colunas dos meses */}
+        <div className="relative" style={{ width: totalLargura, height: layout.alturaTotal }}>
+          {/* Definições de Marcadores de Setas SVG */}
+          <svg className="absolute pointer-events-none" width="0" height="0">
+            <defs>
+              <marker id="seta-tema-padrao" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1A3A6B" />
+              </marker>
+              <marker id="seta-tema-ouro" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#C9963A" />
+              </marker>
+            </defs>
+          </svg>
+
+          {/* Colunas dos meses no grid */}
           <div className="absolute inset-0 flex">
             {meses.map((m, i) => {
               const ativo = mesFiltro === m.key;
@@ -208,8 +213,8 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
                   style={{ width: larguraMes }}
                 >
                   {m.viradaAno && (
-                    <div className="pointer-events-none absolute left-2 top-[76px] z-10 inline-flex items-center gap-1 rounded-full bg-[#C9963A]/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[#9A6F1F] shadow-xs">
-                      <span>Ano Novo</span>
+                    <div className="pointer-events-none absolute left-2 top-[74px] z-10 inline-flex items-center gap-1 rounded-full bg-[#C9963A]/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[#9A6F1F] shadow-xs">
+                      <span>Novo Ano</span>
                       <strong className="text-[#1A3A6B]">{m.ano}</strong>
                     </div>
                   )}
@@ -258,157 +263,195 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
               );
             })}
           </div>
-          <div className="absolute inset-x-0 h-[3px] bg-gradient-to-r from-[#C9963A] via-[#E3B965] to-[#C9963A]" style={{ top: ALT_CABECALHO }} />
 
-          {/* Rótulos das seções */}
-          <div className="absolute left-3 flex items-center gap-1.5" style={{ top: ALT_CABECALHO + 10 }}>
-            <span className="h-1.5 w-1.5 rounded-full bg-[#C9963A]" />
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#C9963A]">Temas principais da Associação</p>
+          {/* Faixa Horizontal Dourada "LINHA DO TEMPO" (Padrão da Planilha) */}
+          <div
+            className="absolute inset-x-0 flex items-center justify-center shadow-xs"
+            style={{
+              top: Y_LINHA_TEMPO,
+              height: ALT_LINHA_TEMPO,
+              background: 'linear-gradient(90deg, #b4852f 0%, #C9963A 15%, #E3B965 50%, #C9963A 85%, #b4852f 100%)',
+            }}
+          >
+            <span className="text-[11px] font-black uppercase tracking-[0.35em] text-[#1A3A6B] drop-shadow-xs select-none">
+              LINHA DO TEMPO · PLANEJAMENTO INTEGRADO
+            </span>
           </div>
 
-          <div className="absolute left-3 flex items-center gap-1.5" style={{ top: layout.topoAcoes - 24 }}>
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-slate-500">Ações dos Departamentos e Igrejas</p>
+          {/* Rótulo das Atividades e Eventos Preparatórios */}
+          <div className="absolute left-3 flex items-center gap-1.5" style={{ top: Y_EVENTOS - 26 }}>
+            <span className="h-2 w-2 rounded-full bg-[#1A3A6B]" />
+            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.22em] text-[#1A3A6B]">
+              Eventos Preparatórios dos Departamentos (Clique para abrir ações e planejamento)
+            </p>
           </div>
 
-          {/* Linhas e Setas de conexão SVG entre ações e temas */}
-          <svg className="pointer-events-none absolute left-0 top-0" width={totalLargura} height={layout.altura} aria-hidden="true">
-            {layout.acoes.map(({ a, t, m, linha }) => {
-              const ev = posTema.get(t.id);
-              if (!ev) return null;
-              const indice = indicePorTema[t.id] || 0;
-              indicePorTema[t.id] = indice + 1;
-              const n = Math.min(contagemPorTema[t.id], 8);
-              const desvio = (Math.min(indice, 7) - (n - 1) / 2) * 7.5;
+          {/* SETAS DIRECIONAIS SVG (Apontam do Evento subindo até o Tema de destino) */}
+          <svg className="pointer-events-none absolute left-0 top-0" width={totalLargura} height={layout.alturaTotal} aria-hidden="true">
+            {layout.todosEventos.map(({ ev, t, m, linha }) => {
+              const evTema = layout.posTema.get(t.id);
+              if (!evTema) return null;
+
+              // Ponto de partida: topo central do card do evento
               const x1 = m * larguraMes + larguraMes / 2;
-              const y1 = yAcao(linha);
-              const x2 = ev.m * larguraMes + larguraMes / 2 + desvio;
-              const y2 = yTema(ev.linha) + ALT_TEMA;
-              const meio = y1 - (y1 - y2) * 0.55;
+              const y1 = Y_EVENTOS + linha * (ALT_EVENTO + 16);
 
-              // Filtro por departamento ou destaque
-              const atendeDepto = !departamentoFiltro || a.departamento === departamentoFiltro;
-              const atendeDestaque = destaqueTema === null || destaqueTema === t.id;
-              const visivel = atendeDepto && atendeDestaque;
-              const cor = corDaAcao(a);
+              // Ponto de chegada: base central do card do tema na Linha do Tempo
+              const x2 = evTema.m * larguraMes + larguraMes / 2;
+              const y2 = Y_TEMAS + ALT_TEMA;
+
+              // Curvatura Bezier
+              const dy = y1 - y2;
+              const c1Y = y1 - dy * 0.45;
+              const c2Y = y2 + dy * 0.35;
+
+              const ehDestaque = destaqueEvento === ev.id || destaqueTema === t.id;
+              const depto = DEPARTAMENTOS[ev.departamento] || DEPARTAMENTOS.OUTRO;
+              const corSeta = ehDestaque ? '#C9963A' : depto.cor;
 
               return (
-                <g key={a.id} className="transition-all duration-300" opacity={visivel ? 1 : 0.08}>
+                <g key={`seta-${ev.id}`} className="transition-all duration-300" opacity={ehDestaque ? 1 : 0.65}>
                   <path
-                    d={`M${x1} ${y1} C ${x1} ${meio}, ${x2} ${meio}, ${x2} ${y2 + 5}`}
+                    d={`M ${x1} ${y1} C ${x1} ${c1Y}, ${x2} ${c2Y}, ${x2} ${y2 + 4}`}
                     fill="none"
-                    stroke={cor}
-                    strokeOpacity={destaqueTema === t.id ? 0.95 : 0.55}
-                    strokeWidth={destaqueTema === t.id ? 2.6 : 1.75}
+                    stroke={corSeta}
+                    strokeWidth={ehDestaque ? 3.2 : 2.2}
+                    strokeDasharray={ehDestaque ? undefined : '5,3'}
+                    markerEnd={ehDestaque ? 'url(#seta-tema-ouro)' : 'url(#seta-tema-padrao)'}
                   />
-                  <circle cx={x1} cy={y1} r="3.5" fill={cor} />
-                  <path
-                    d={`M${x2 - 5} ${y2 + 8} L${x2} ${y2 + 1} L${x2 + 5} ${y2 + 8}`}
-                    fill="none"
-                    stroke={cor}
-                    strokeOpacity={destaqueTema === t.id ? 0.95 : 0.65}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  <circle cx={x1} cy={y1} r={ehDestaque ? 4.5 : 3.5} fill={corSeta} />
                 </g>
               );
             })}
           </svg>
 
-          {/* Blocos de Temas */}
-          {layout.temasVisiveis.map(({ t, m, linha }) => {
+          {/* BLOCOS DOS TEMAS CENTRAIS (Na Linha do Tempo) */}
+          {layout.temasVisiveis.map(({ t, m }) => {
             const ehDestaque = destaqueTema === t.id;
+            const totalEventos = t.eventos?.length || 0;
+
             return (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => onAbrir(t.id)}
+                onClick={() => onAbrirTema(t)}
                 onMouseEnter={() => setDestaqueTema(t.id)}
                 onMouseLeave={() => setDestaqueTema(null)}
                 onFocus={() => setDestaqueTema(t.id)}
                 onBlur={() => setDestaqueTema(null)}
-                title={`${t.nome} · ${periodoTema(t)} — Clique para detalhes e ações`}
-                className={`group absolute cursor-pointer overflow-hidden rounded-xl border border-[#C9963A]/60 bg-gradient-to-br from-[#FFFDF7] via-[#FFF9EB] to-[#FBEBC1] px-3 py-2 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9963A] ${
-                  ehDestaque ? '-translate-y-1 shadow-xl ring-2 ring-[#C9963A]/80 border-[#C9963A]' : ''
+                title={`${t.nome} · ${periodoTema(t)} — Clique para detalhes e gerenciar tema`}
+                className={`group absolute z-10 cursor-pointer overflow-hidden rounded-xl border-2 bg-gradient-to-b from-[#1A3A6B] to-[#12284a] px-3 py-1.5 text-left text-white shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B965] ${
+                  ehDestaque
+                    ? '-translate-y-1 shadow-2xl border-[#E3B965] ring-2 ring-[#E3B965]/70'
+                    : 'border-[#C9963A]'
                 }`}
                 style={{
-                  left: m * larguraMes + 7,
-                  top: yTema(linha),
-                  width: larguraMes - 14,
+                  left: m * larguraMes + 6,
+                  top: Y_TEMAS,
+                  width: larguraMes - 12,
                   height: ALT_TEMA,
-                  borderLeft: '5.5px solid #C9963A',
                 }}
               >
-                <span className="block text-[13px] font-extrabold leading-snug text-[#1A3A6B] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden group-hover:text-[#9A6F1F] transition-colors">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[#E3B965]">
+                    Tema Oficial
+                  </span>
+                  <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[9px] font-black text-white">
+                    {totalEventos} eventos
+                  </span>
+                </div>
+                <span className="block truncate text-[13px] font-black text-white group-hover:text-[#FFF2C2] transition-colors leading-tight mt-0.5">
                   {t.nome}
                 </span>
-                <span className="mt-1 flex items-center justify-between text-[10.5px] font-semibold text-slate-500">
-                  <span className="truncate">{periodoTema(t)}</span>
-                  <span className="shrink-0 font-bold text-[#C9963A]">({t.acoes.length})</span>
+                <span className="block truncate text-[10px] font-semibold text-slate-300">
+                  {periodoTema(t)}
                 </span>
               </button>
             );
           })}
 
-          {/* Blocos de Ações Missionárias */}
-          {layout.acoes.map(({ a, t, m, linha }) => {
-            const origem = origemDaAcao(a);
-            const cor = corDaAcao(a);
-            const atendeDepto = !departamentoFiltro || a.departamento === departamentoFiltro;
-            const atendeDestaque = destaqueTema === null || destaqueTema === t.id;
-            const ativo = atendeDepto && atendeDestaque;
+          {/* BLOCOS DOS EVENTOS PREPARATÓRIOS (Abaixo da linha, exatamente como na planilha) */}
+          {layout.todosEventos.map(({ ev, t, m, linha }) => {
+            const ehDestaque = destaqueEvento === ev.id || destaqueTema === t.id;
+            const depto = DEPARTAMENTOS[ev.departamento] || DEPARTAMENTOS.OUTRO;
+            const totalAcoes = ev.acoes?.length || ev.totalAcoes || 0;
+            const orcamento = ev.orcamentoTotal || (ev.acoes || []).reduce((s, a) => s + Number(a.valor || 0), 0);
+
+            // Filtragem por departamento
+            const atendeDepto = !departamentoFiltro || ev.departamento === departamentoFiltro;
 
             return (
               <button
-                key={a.id}
+                key={ev.id}
                 type="button"
-                onClick={() => onAbrir(t.id, a.id)}
-                onMouseEnter={() => setDestaqueTema(t.id)}
-                onMouseLeave={() => setDestaqueTema(null)}
-                onFocus={() => setDestaqueTema(t.id)}
-                onBlur={() => setDestaqueTema(null)}
-                title={`${a.nome} — ${origem.cargo} · ${origem.local} → ${t.nome}`}
-                className={`group absolute cursor-pointer overflow-hidden rounded-xl px-3 py-1.5 text-left text-white shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
-                  ativo ? 'scale-100 opacity-100' : 'scale-95 opacity-20'
+                onClick={() => onAbrirEvento(ev, t)}
+                onMouseEnter={() => {
+                  setDestaqueEvento(ev.id);
+                  setDestaqueTema(t.id);
+                }}
+                onMouseLeave={() => {
+                  setDestaqueEvento(null);
+                  setDestaqueTema(null);
+                }}
+                onFocus={() => {
+                  setDestaqueEvento(ev.id);
+                  setDestaqueTema(t.id);
+                }}
+                onBlur={() => {
+                  setDestaqueEvento(null);
+                  setDestaqueTema(null);
+                }}
+                title={`${ev.nome} (Evento de ${t.nome}) — Clique para abrir ações, planejamento e orçamento`}
+                className={`group absolute z-10 cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A3A6B] ${
+                  atendeDepto ? 'opacity-100 scale-100' : 'opacity-25 scale-95'
+                } ${
+                  ehDestaque
+                    ? '-translate-y-1 border-[#C9963A] ring-2 ring-[#C9963A]/70 shadow-xl'
+                    : 'border-slate-200 hover:border-[#1A3A6B]'
                 }`}
                 style={{
-                  left: m * larguraMes + 7,
-                  top: yAcao(linha),
-                  width: larguraMes - 14,
-                  height: ALT_ACAO,
-                  background: `linear-gradient(135deg, ${cor}, ${cor}d6)`,
-                  boxShadow: ativo && destaqueTema === t.id ? `0 8px 22px -6px ${cor}88` : undefined,
+                  left: m * larguraMes + 6,
+                  top: Y_EVENTOS + linha * (ALT_EVENTO + 16),
+                  width: larguraMes - 12,
+                  height: ALT_EVENTO,
+                  background: '#ffffff',
                 }}
               >
-                <span className="block truncate text-[12.5px] font-extrabold leading-tight drop-shadow-sm">
-                  {a.nome}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold opacity-95">
-                  {origem.cargo} · {origem.local}
-                </span>
-                <span className="block truncate text-[9.5px] font-bold opacity-85">
-                  {formatarDiaCurto(a.data)} · {moeda(a.valor)}
-                </span>
+                {/* Linha 1: Cabeçalho com cor do departamento (Nome do Evento) */}
+                <div
+                  className="px-2.5 py-1 text-white flex items-center justify-between"
+                  style={{ backgroundColor: depto.cor }}
+                >
+                  <span className="block truncate text-[11.5px] font-black uppercase tracking-wider drop-shadow-xs">
+                    {ev.nome}
+                  </span>
+                  <span className="text-[9px] font-bold opacity-85">
+                    {formatarDiaCurto(ev.data)}
+                  </span>
+                </div>
+
+                {/* Linha 2 e 3: PLANEJAMENTO e ORÇAMENTO (Padrão Planilha) */}
+                <div className="p-2 space-y-1 bg-white">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-extrabold uppercase tracking-wider text-slate-400">Planejamento</span>
+                    <span className="font-bold text-[#1A3A6B]">
+                      {totalAcoes > 0 ? `${totalAcoes} ação(ões)` : 'Definir ações'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] border-t border-slate-100 pt-1">
+                    <span className="font-extrabold uppercase tracking-wider text-slate-400">Orçamento</span>
+                    <span className="font-black text-[#C9963A]">
+                      {moeda(orcamento)}
+                    </span>
+                  </div>
+                </div>
               </button>
             );
           })}
 
-          {/* Botão de + ações caso exceda o limite visual por mês */}
-          {layout.extras.map(({ m, linha, itens, total }) => (
-            <button
-              key={`mais-${m}`}
-              type="button"
-              onClick={() => onAbrirMes(m, itens)}
-              className="absolute flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white/90 text-xs font-bold text-slate-600 shadow-sm transition hover:scale-105 hover:border-[#C9963A] hover:text-[#C9963A] active:scale-95"
-              style={{ left: m * larguraMes + 7, top: yAcao(linha), width: larguraMes - 14, height: ALT_ACAO }}
-            >
-              +{itens.length} de {total} ações
-            </button>
-          ))}
-
           {layout.temasVisiveis.length === 0 && (
-            <div className="absolute inset-x-0 flex items-center justify-center text-sm font-semibold text-slate-400" style={{ top: TOPO_TEMAS + 24 }}>
+            <div className="absolute inset-x-0 flex items-center justify-center text-sm font-semibold text-slate-400" style={{ top: Y_TEMAS + 20 }}>
               Nenhum tema planejado para os meses deste ciclo.
             </div>
           )}

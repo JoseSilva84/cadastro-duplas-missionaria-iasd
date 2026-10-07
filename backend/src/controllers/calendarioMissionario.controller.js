@@ -12,13 +12,23 @@ const validarTema = [
   body('nome').trim().notEmpty().withMessage('Informe o tema do evento.'),
 ];
 
+const validarEvento = [
+  body('nome').trim().notEmpty().withMessage('Informe o nome do evento.'),
+];
+
+const validarCriarEvento = [
+  body('temaId').isInt().withMessage('Tema obrigatorio.'),
+  ...validarEvento,
+];
+
 const validarAcao = [
   body('nome').trim().notEmpty().withMessage('Informe o nome da acao missionaria.'),
   body('valor').optional({ values: 'falsy' }).isFloat({ min: 0 }).withMessage('Orcamento invalido.'),
 ];
 
 const validarCriarAcao = [
-  body('temaId').isInt().withMessage('Tema obrigatorio.'),
+  body('temaId').optional({ values: 'falsy' }).isInt().withMessage('Tema invalido.'),
+  body('eventoId').optional({ values: 'falsy' }).isInt().withMessage('Evento invalido.'),
   ...validarAcao,
 ];
 
@@ -52,6 +62,13 @@ const CalendarioMissionarioController = {
   atualizarTema: rota((req) => S.atualizarTema(req.usuario, req.params.id, req.body), { mensagem: 'Erro ao atualizar tema.' }),
   excluirTema: rota((req) => S.excluirTema(req.usuario, req.params.id), { mensagem: 'Erro ao excluir tema.' }),
   criarModelo: rota((req) => S.criarModelo(req.usuario, req.body), { status: 201, mensagem: 'Erro ao criar modelo.' }),
+
+  // Eventos do tema
+  criarEvento: rota((req) => S.criarEvento(req.usuario, req.body), { status: 201, mensagem: 'Erro ao criar evento.' }),
+  atualizarEvento: rota((req) => S.atualizarEvento(req.usuario, req.params.id, req.body), { mensagem: 'Erro ao atualizar evento.' }),
+  excluirEvento: rota((req) => S.excluirEvento(req.usuario, req.params.id), { mensagem: 'Erro ao excluir evento.' }),
+
+  // Ações missionárias
   criarAcao: rota((req) => S.criarAcao(req.usuario, req.body), { status: 201, mensagem: 'Erro ao salvar acao.' }),
   atualizarAcao: rota((req) => S.atualizarAcao(req.usuario, req.params.id, req.body), { mensagem: 'Erro ao salvar acao.' }),
   excluirAcao: rota((req) => S.excluirAcao(req.usuario, req.params.id), { mensagem: 'Erro ao excluir acao.' }),
@@ -61,6 +78,8 @@ module.exports = {
   CalendarioMissionarioController,
   validarConsulta,
   validarTema,
+  validarEvento,
+  validarCriarEvento,
   validarAcao,
   validarCriarAcao,
   validarId,

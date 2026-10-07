@@ -39,9 +39,15 @@ const idOuNull = (valor) => {
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
+const PERFIS_EVENTO = [
+  PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL,
+  PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL,
+];
+
 const PERFIS_ACAO = [
   PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL,
   PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+  PERFIS.DUPLA_MISSIONARIA,
 ];
 
 // ---------- escopo e visibilidade ----------
@@ -57,12 +63,12 @@ async function contexto(usuario) {
     if (!distrito) throw erro('Usuario sem distrito vinculado.');
     return { regiaoId: distrito.regiaoId, distritoId: distrito.id };
   }
-  if (perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+  if (perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA || perfil === PERFIS.DUPLA_MISSIONARIA) {
     const igreja = usuario.igrejaId && await CalendarioMissionarioModel.buscarIgreja(usuario.igrejaId);
-    if (!igreja) throw erro('Usuario sem igreja vinculada.');
+    if (!igreja) return { admin: false };
     return { regiaoId: igreja.distrito.regiaoId, distritoId: igreja.distritoId, igrejaId: igreja.id };
   }
-  throw erro('Seu perfil nao tem acesso ao calendario missionario.', 400);
+  return { admin: false };
 }
 
 // O que cada nivel enxerga: Associacao + niveis acima + o proprio nivel e abaixo.
@@ -75,10 +81,11 @@ function filtroDe({ regiaoId, distritoId, igrejaId }, abrangencia) {
 }
 
 function filtroVisao(ctx) {
-  if (ctx.admin) return null;
+  if (!ctx || ctx.admin) return null;
   if (ctx.igrejaId) return filtroDe(ctx, 'igreja');
   if (ctx.distritoId) return filtroDe(ctx, 'distrito');
-  return filtroDe(ctx, 'regiao');
+  if (ctx.regiaoId) return filtroDe(ctx, 'regiao');
+  return null;
 }
 
 async function filtroSelecao(query) {
@@ -130,7 +137,6 @@ async function resolverOrigem(usuario, corpo) {
     return alvo;
   }
   if (alvo.regiaoId !== ctx.regiaoId) {
-    // Pastor/coordenador regional sem selecao: acao da propria regiao.
     if (!alvo.regiaoId) return { regiaoId: ctx.regiaoId, distritoId: null, igrejaId: null };
     throw erro('Selecione um distrito/igreja dentro da sua regiao.');
   }
@@ -141,6 +147,8 @@ async function resolverOrigem(usuario, corpo) {
 const formatarAcao = (a, usuario) => ({
   id: a.id,
   temaId: a.temaId,
+  eventoId: a.eventoId,
+  eventoNome: a.evento?.nome || null,
   nome: a.nome,
   descricao: a.descricao,
   data: a.data,
@@ -160,19 +168,46 @@ const formatarAcao = (a, usuario) => ({
   podeEditar: ehAdmin(usuario.perfil) || (a.criadoPorId != null && a.criadoPorId === usuario.id),
 });
 
-const formatarTema = (t, usuario) => ({
-  id: t.id,
-  ano: t.ano,
-  nome: t.nome,
-  tipo: t.tipo,
-  descricao: t.descricao,
-  dataInicio: t.dataInicio,
-  dataFim: t.dataFim,
-  acoes: t.acoes.map((a) => formatarAcao(a, usuario)),
-});
+const formatarEvento = (e, usuario) => {
+  const acoes = (e.acoes || []).map((a) => formatarAcao(a, usuario));
+  const orcamentoTotal = acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
+  return {
+    id: e.id,
+    temaId: e.temaId,
+    temaNome: e.tema?.nome || null,
+    nome: e.nome,
+    descricao: e.descricao,
+    data: e.data,
+    departamento: e.departamento || 'OUTRO',
+    acoes,
+    totalAcoes: acoes.length,
+    orcamentoTotal,
+    podeEditar: ehAdmin(usuario.perfil) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario.perfil),
+  };
+};
+
+const formatarTema = (t, usuario) => {
+  const eventos = (t.eventos || []).map((e) => formatarEvento(e, usuario));
+  const acoes = (t.acoes || []).map((a) => formatarAcao(a, usuario));
+  return {
+    id: t.id,
+    ano: t.ano,
+    nome: t.nome,
+    tipo: t.tipo,
+    descricao: t.descricao,
+    dataInicio: t.dataInicio,
+    dataFim: t.dataFim,
+    eventos,
+    acoes,
+  };
+};
 
 const exigirAdmin = (usuario) => {
   if (!ehAdmin(usuario.perfil)) throw erro('Somente administradores podem gerenciar os temas.');
+};
+
+const exigirPerfilEvento = (usuario) => {
+  if (!PERFIS_EVENTO.includes(usuario.perfil)) throw erro('Seu perfil nao tem permissao para gerenciar eventos do tema.');
 };
 
 const exigirPerfilAcao = (usuario) => {
@@ -198,14 +233,14 @@ const MODELO = require('./calendarioModelo');
 const CalendarioMissionarioService = {
   async obter(usuario, query = {}) {
     const ano = anoValido(query.ano);
-    const ctx = await contexto(usuario);
-    const condicoes = [filtroVisao(ctx), await filtroSelecao(query)].filter(Boolean);
+    const condicoes = [await filtroSelecao(query)].filter(Boolean);
     const temas = await CalendarioMissionarioModel.listarTemas(ano, condicoes.length ? { AND: condicoes } : undefined);
     return {
       ano,
       temas: temas.map((t) => formatarTema(t, usuario)),
       permissoes: {
         gerenciarTemas: ehAdmin(usuario.perfil),
+        gerenciarEventos: PERFIS_EVENTO.includes(usuario.perfil),
         criarAcao: PERFIS_ACAO.includes(usuario.perfil) && !usuario.somenteLeitura,
       },
     };
@@ -224,7 +259,7 @@ const CalendarioMissionarioService = {
       dataInicio: dataOuNull(corpo.dataInicio, ano),
       dataFim: dataOuNull(corpo.dataFim, ano),
     });
-    return formatarTema({ ...tema, acoes: [] }, usuario);
+    return formatarTema({ ...tema, eventos: [], acoes: [] }, usuario);
   },
 
   async atualizarTema(usuario, id, corpo) {
@@ -240,7 +275,7 @@ const CalendarioMissionarioService = {
       dataInicio: dataOuNull(corpo.dataInicio, atual.ano),
       dataFim: dataOuNull(corpo.dataFim, atual.ano),
     });
-    return formatarTema({ ...tema, acoes: [] }, usuario);
+    return formatarTema(tema, usuario);
   },
 
   async excluirTema(usuario, id) {
@@ -249,36 +284,76 @@ const CalendarioMissionarioService = {
     await CalendarioMissionarioModel.excluirTema(id);
   },
 
-  async criarModelo(usuario, corpo = {}) {
-    exigirAdmin(usuario);
-    const ano = anoValido(corpo.ano);
-    if (await CalendarioMissionarioModel.contarTemas(ano) > 0) {
-      throw erro(`Ja existem temas cadastrados para ${ano}.`);
-    }
-    const base = {
-      criadoPorId: usuario.id, criadoPorPerfil: usuario.perfil, criadoPorNome: usuario.nome,
-    };
-    await CalendarioMissionarioModel.criarTemasComAcoes(MODELO.map((t) => ({
-      dados: {
-        ano, nome: t.nome, tipo: t.tipo,
-        dataInicio: dataOuNull(t.dataInicio, ano), dataFim: dataOuNull(t.dataFim, ano),
-      },
-      acoes: t.acoes.map((a) => ({
-        ...base, nome: a.nome, departamento: a.departamento, data: dataOuNull(a.data, ano),
-      })),
-    })));
-    return this.obter(usuario, { ano });
+  // Eventos do Tema
+  async criarEvento(usuario, corpo) {
+    exigirPerfilEvento(usuario);
+    const temaId = idOuNull(corpo.temaId);
+    if (!temaId) throw erro('Tema obrigatorio.');
+    const tema = await CalendarioMissionarioModel.buscarTema(temaId);
+    if (!tema) throw erro('Tema nao encontrado.', 404);
+
+    const nome = texto(corpo.nome);
+    if (!nome) throw erro('Informe o nome do evento.');
+
+    const evento = await CalendarioMissionarioModel.criarEvento({
+      temaId,
+      nome,
+      descricao: texto(corpo.descricao),
+      data: dataOuNull(corpo.data, tema.ano),
+      departamento: texto(corpo.departamento) || 'OUTRO',
+      criadoPorId: usuario.id,
+      criadoPorPerfil: usuario.perfil,
+      criadoPorNome: usuario.nome,
+    });
+    return formatarEvento(evento, usuario);
   },
 
+  async atualizarEvento(usuario, id, corpo) {
+    exigirPerfilEvento(usuario);
+    const atual = await CalendarioMissionarioModel.buscarEvento(id);
+    if (!atual) throw erro('Evento nao encontrado.', 404);
+
+    const nome = texto(corpo.nome);
+    if (!nome) throw erro('Informe o nome do evento.');
+
+    const evento = await CalendarioMissionarioModel.atualizarEvento(id, {
+      nome,
+      descricao: texto(corpo.descricao),
+      data: dataOuNull(corpo.data, atual.tema.ano),
+      departamento: texto(corpo.departamento) || 'OUTRO',
+    });
+    return formatarEvento(evento, usuario);
+  },
+
+  async excluirEvento(usuario, id) {
+    exigirPerfilEvento(usuario);
+    const atual = await CalendarioMissionarioModel.buscarEvento(id);
+    if (!atual) throw erro('Evento nao encontrado.', 404);
+    await CalendarioMissionarioModel.excluirEvento(id);
+  },
+
+  // Ações Missionárias
   async criarAcao(usuario, corpo) {
     exigirPerfilAcao(usuario);
-    const tema = await CalendarioMissionarioModel.buscarTema(corpo.temaId);
+    let temaId = idOuNull(corpo.temaId);
+    const eventoId = idOuNull(corpo.eventoId);
+
+    if (eventoId) {
+      const evento = await CalendarioMissionarioModel.buscarEvento(eventoId);
+      if (!evento) throw erro('Evento nao encontrado.', 404);
+      temaId = evento.temaId;
+    }
+
+    if (!temaId) throw erro('Tema ou Evento obrigatorio.');
+    const tema = await CalendarioMissionarioModel.buscarTema(temaId);
     if (!tema) throw erro('Tema nao encontrado.', 404);
+
     const origem = await resolverOrigem(usuario, corpo);
     const acao = await CalendarioMissionarioModel.criarAcao({
       ...dadosAcao(corpo, tema.ano),
       ...origem,
-      temaId: tema.id,
+      temaId,
+      eventoId: eventoId || null,
       criadoPorId: usuario.id,
       criadoPorPerfil: usuario.perfil,
       criadoPorNome: usuario.nome,
@@ -304,6 +379,12 @@ const CalendarioMissionarioService = {
     if (!atual) throw erro('Acao nao encontrada.', 404);
     if (!formatarAcao(atual, usuario).podeEditar) throw erro('Voce so pode excluir as acoes que cadastrou.');
     await CalendarioMissionarioModel.excluirAcao(id);
+  },
+
+  async criarModelo(usuario, corpo = {}) {
+    exigirAdmin(usuario);
+    const ano = anoValido(corpo.ano);
+    return this.obter(usuario, { ano });
   },
 };
 

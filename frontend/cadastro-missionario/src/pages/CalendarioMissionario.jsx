@@ -3,6 +3,7 @@ import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import LinhaDoTempo from '../components/calendario/LinhaDoTempo';
 import TemaModal from '../components/calendario/TemaModal';
+import EventoModal from '../components/calendario/EventoModal';
 import { toast } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import {
@@ -39,13 +40,15 @@ export default function CalendarioMissionario() {
   );
 
   const [temas, setTemas] = useState([]);
-  const [permissoes, setPermissoes] = useState({ gerenciarTemas: false, criarAcao: false });
+  const [permissoes, setPermissoes] = useState({ gerenciarTemas: false, gerenciarEventos: false, criarAcao: false });
   const [listas, setListas] = useState({ regioes: [], distritos: [], igrejas: [] });
   const [filtro, setFiltro] = useState({ regiaoId: '', distritoId: '', igrejaId: '' });
   const [departamentoFiltro, setDepartamentoFiltro] = useState(null);
   const [carregando, setCarregando] = useState(true);
-  const [modal, setModal] = useState(null); // { temaId, destaqueId } | { novo: true }
-  const [mes, setMes] = useState(null); // modal de mais itens: { mes, itens }
+
+  // Modais
+  const [modalTema, setModalTema] = useState(null); // { temaId } | { novo: true } | null
+  const [modalEvento, setModalEvento] = useState(null); // { evento, tema, destaqueAcaoId } | null
   const [criandoModelo, setCriandoModelo] = useState(false);
 
   const perfil = usuario?.perfil;
@@ -64,7 +67,7 @@ export default function CalendarioMissionario() {
       Object.entries(filtro).forEach(([k, v]) => { if (v) params[k] = v; });
       const res = await api.get('/calendario-missionario', { params });
       setTemas(res.data.temas || []);
-      setPermissoes(res.data.permissoes || { gerenciarTemas: false, criarAcao: false });
+      setPermissoes(res.data.permissoes || { gerenciarTemas: false, gerenciarEventos: false, criarAcao: false });
     } catch (err) {
       toast.error(err.response?.data?.erro || 'Erro ao carregar o calendário missionário.');
     } finally {
@@ -80,9 +83,36 @@ export default function CalendarioMissionario() {
     [opcaoAno.ano, opcaoAno.modo]
   );
 
-  // Totais gerais
-  const totalAcoes = temas.reduce((s, t) => s + t.acoes.length, 0);
-  const totalValor = temas.reduce((s, t) => s + t.acoes.reduce((x, a) => x + Number(a.valor || 0), 0), 0);
+  // Contagem de ações e orçamento
+  const todosEventos = useMemo(() => {
+    const list = [];
+    temas.forEach((t) => {
+      (t.eventos || []).forEach((ev) => list.push({ ...ev, tema: t }));
+    });
+    return list;
+  }, [temas]);
+
+  const totalAcoes = useMemo(() => {
+    let count = 0;
+    temas.forEach((t) => {
+      count += (t.acoes || []).length;
+      (t.eventos || []).forEach((ev) => {
+        count += (ev.acoes || []).length;
+      });
+    });
+    return count;
+  }, [temas]);
+
+  const totalValor = useMemo(() => {
+    let soma = 0;
+    temas.forEach((t) => {
+      soma += (t.acoes || []).reduce((acc, a) => acc + Number(a.valor || 0), 0);
+      (t.eventos || []).forEach((ev) => {
+        soma += (ev.acoes || []).reduce((acc, a) => acc + Number(a.valor || 0), 0);
+      });
+    });
+    return soma;
+  }, [temas]);
 
   // Próximo evento futuro a partir de hoje
   const proximo = useMemo(() => {
@@ -93,8 +123,8 @@ export default function CalendarioMissionario() {
     if (!futuros.length) return null;
     const t = futuros[0];
     const dias = Math.ceil((new Date(`${dia(t.dataInicio)}T00:00:00`) - new Date(`${hoje}T00:00:00`)) / 86400000);
-    const valorTotal = t.acoes.reduce((acc, a) => acc + Number(a.valor || 0), 0);
-    return { t, dias, qtdAcoes: t.acoes.length, valorTotal };
+    const qtdEv = (t.eventos || []).length;
+    return { t, dias, qtdEv };
   }, [temas]);
 
   // Estatísticas por mês para a régua rápida e botões de mês
@@ -107,11 +137,11 @@ export default function CalendarioMissionario() {
 
       temas.forEach((t) => {
         if (t.dataInicio && chaveMes(t.dataInicio) === m.key) qtdEventos += 1;
-        t.acoes.forEach((a) => {
-          const k = a.data ? chaveMes(a.data) : chaveMes(t.dataInicio);
-          if (k === m.key) {
-            qtdAcoes += 1;
-            orcamento += Number(a.valor || 0);
+        (t.eventos || []).forEach((ev) => {
+          if (ev.data && chaveMes(ev.data) === m.key) {
+            qtdEventos += 1;
+            qtdAcoes += (ev.acoes || []).length;
+            orcamento += (ev.acoes || []).reduce((acc, a) => acc + Number(a.valor || 0), 0);
           }
         });
       });
@@ -131,16 +161,25 @@ export default function CalendarioMissionario() {
     if (mesFiltro === null) return temas;
     return temas.filter((t) => {
       const temaNoMes = t.dataInicio && chaveMes(t.dataInicio) === mesFiltro;
-      const acaoNoMes = t.acoes.some((a) => (a.data ? chaveMes(a.data) : chaveMes(t.dataInicio)) === mesFiltro);
-      return temaNoMes || acaoNoMes;
+      const eventoNoMes = (t.eventos || []).some((ev) => ev.data && chaveMes(ev.data) === mesFiltro);
+      return temaNoMes || eventoNoMes;
     });
   }, [temas, mesFiltro]);
 
-  const temaAberto = modal?.temaId ? temas.find((t) => t.id === modal.temaId) : null;
+  const temaAberto = modalTema?.temaId ? temas.find((t) => t.id === modalTema.temaId) : null;
 
-  const mudou = async (temaId) => {
+  const aoAtualizarDados = async (temaIdAtualizado) => {
     await carregar();
-    setModal(temaId ? { temaId } : null);
+    if (modalTema && temaIdAtualizado) {
+      setModalTema({ temaId: temaIdAtualizado });
+    }
+    if (modalEvento) {
+      // Atualizar o objeto do evento aberto
+      const evAtualizado = todosEventos.find((x) => x.id === modalEvento.evento.id);
+      if (evAtualizado) {
+        setModalEvento((prev) => ({ ...prev, evento: evAtualizado }));
+      }
+    }
   };
 
   const criarModelo = async () => {
@@ -168,6 +207,17 @@ export default function CalendarioMissionario() {
       setMesFiltro(m.key);
       linhaDoTempoRef.current?.rolarParaMes(m.indice);
     }
+  };
+
+  // Abrir evento selecionado
+  const abrirEvento = (ev, tema) => {
+    const temaPai = tema || temas.find((t) => t.id === ev.temaId);
+    setModalEvento({ evento: ev, tema: temaPai });
+  };
+
+  // Abrir tema selecionado
+  const abrirTema = (t) => {
+    setModalTema({ temaId: t.id });
   };
 
   // Mudar ano selecionado
@@ -222,15 +272,15 @@ export default function CalendarioMissionario() {
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#C9963A]">
                 Planejamento Integrado · {opcaoAno.rotulo}
               </p>
-              <span className="rounded-full bg-[#1A3A6B]/10 px-2 py-0.5 text-[10px] font-black text-[#1A3A6B]">
-                Início em Dezembro de 2026
+              <span className="rounded-full bg-[#1A3A6B]/10 px-2.5 py-0.5 text-[10px] font-black text-[#1A3A6B]">
+                Início com Ações ASA em Dezembro de 2026
               </span>
             </div>
             <h1 className="mt-2 text-3xl font-extrabold text-[#1A3A6B] sm:text-4xl" style={{ fontFamily: 'Georgia, serif' }}>
               Calendário Missionário
             </h1>
             <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
-              Planejamento anual oficial com início das ações da ASA em dezembro de 2026, preparando a Semana Santa e os evangelismos de 2027.
+              Temas oficiais na linha do tempo com eventos preparatórios que apontam para o tema. Clique em cada evento para cadastrar ações e planejamento da sua igreja.
             </p>
           </div>
 
@@ -263,7 +313,7 @@ export default function CalendarioMissionario() {
               <button
                 type="button"
                 className="btn-primary px-4 py-2 text-xs font-bold"
-                onClick={() => setModal({ novo: true })}
+                onClick={() => setModalTema({ novo: true })}
               >
                 + Novo Tema
               </button>
@@ -332,12 +382,12 @@ export default function CalendarioMissionario() {
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="col-span-2 lg:col-span-1">
           <Resumo
-            rotulo="Próximo Evento"
+            rotulo="Próximo Tema Central"
             valor={proximo ? proximo.t.nome : '—'}
             detalhe={
               proximo
-                ? `${proximo.dias === 0 ? '🚨 Hoje!' : proximo.dias <= 30 ? `⚠️ Em ${proximo.dias} dias` : `Em ${proximo.dias} dias`} · ${formatarDia(proximo.t.dataInicio)} (${proximo.qtdAcoes} ações)`
-                : 'Nenhum evento futuro agendado'
+                ? `${proximo.dias === 0 ? '🚨 Hoje!' : proximo.dias <= 30 ? `⚠️ Em ${proximo.dias} dias` : `Em ${proximo.dias} dias`} · ${formatarDia(proximo.t.dataInicio)} (${proximo.qtdEv} eventos preparatórios)`
+                : 'Nenhum tema agendado'
             }
             cor="#C9963A"
             destaque={Boolean(proximo && proximo.dias <= 30)}
@@ -398,7 +448,7 @@ export default function CalendarioMissionario() {
             </span>
             <div className="mt-1 flex items-center gap-1">
               <span className={`text-[9.5px] font-extrabold ${mesFiltro === null ? 'text-white/80' : 'text-slate-400'}`}>
-                {totalAcoes} ações
+                {todosEventos.length} eventos
               </span>
             </div>
           </button>
@@ -440,7 +490,7 @@ export default function CalendarioMissionario() {
                   <div className="mt-1 flex items-center gap-1">
                     {m.qtdEventos > 0 && (
                       <span
-                        title={`${m.qtdEventos} tema(s)`}
+                        title={`${m.qtdEventos} evento(s)`}
                         className={`h-2 w-2 rounded-full ${selecionado ? 'bg-[#E3B965]' : 'bg-[#C9963A]'}`}
                       />
                     )}
@@ -461,18 +511,18 @@ export default function CalendarioMissionario() {
         </div>
       </section>
 
-      {/* Linha do Tempo Gráfica Principal */}
+      {/* Linha do Tempo Gráfica Principal com Temas, Eventos e Setas */}
       <section className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-3 shadow-sm sm:p-5">
         <div className="mb-3.5 flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-[#C9963A]" />
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#C9963A]">
-                Linha do Tempo Interativa
+                Linha do Tempo Integrada
               </p>
             </div>
             <h2 className="mt-0.5 text-xl font-black text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Sequência Anual de Atividades ({meses[0]?.nome} {meses[0]?.ano} a {meses[meses.length - 1]?.nome} {meses[meses.length - 1]?.ano})
+              Temas e Eventos Preparatórios ({meses[0]?.nome} {meses[0]?.ano} a {meses[meses.length - 1]?.nome} {meses[meses.length - 1]?.ano})
             </h2>
           </div>
 
@@ -491,8 +541,8 @@ export default function CalendarioMissionario() {
           meses={meses}
           departamentoFiltro={departamentoFiltro}
           mesFiltro={mesFiltro}
-          onAbrir={(temaId, destaqueId) => setModal({ temaId, destaqueId })}
-          onAbrirMes={(m, itens) => setMes({ mes: meses[m], itens })}
+          onAbrirTema={abrirTema}
+          onAbrirEvento={abrirEvento}
         />
 
         {/* Legenda Interativa por Departamentos (Filtro Rápido) */}
@@ -541,7 +591,7 @@ export default function CalendarioMissionario() {
         </div>
       </section>
 
-      {/* Lista e Cards de Temas com Barras de Progresso */}
+      {/* Lista e Cards de Temas Oficiais com Possibilidade de Adicionar Mais Temas */}
       <section className="mt-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -555,7 +605,8 @@ export default function CalendarioMissionario() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2.5">
             {mesFiltro !== null && (
               <button
                 type="button"
@@ -565,39 +616,42 @@ export default function CalendarioMissionario() {
                 Ver todos os temas
               </button>
             )}
-            <span className="text-xs font-bold text-slate-400">{temasExibidos.length} tema(s) exibidos</span>
+
+            {ehAdmin && (
+              <button
+                type="button"
+                className="btn-primary px-3 py-1.5 text-xs font-bold shadow-sm"
+                onClick={() => setModalTema({ novo: true })}
+              >
+                + Adicionar Mais Temas
+              </button>
+            )}
+
+            <span className="text-xs font-bold text-slate-400">{temasExibidos.length} tema(s)</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {temasExibidos.map((t) => {
-            const acoes = t.acoes;
-            const valorTotal = acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
-            const concluidas = acoes.filter((a) => a.status === 'CONCLUIDA').length;
-            const emAndamento = acoes.filter((a) => a.status === 'EM_ANDAMENTO').length;
-            const planejadas = acoes.filter((a) => a.status === 'PLANEJADA').length;
-
-            const total = acoes.length || 1;
-            const pctConcluida = (concluidas / total) * 100;
-            const pctAndamento = (emAndamento / total) * 100;
-            const pctPlanejada = (planejadas / total) * 100;
-
-            const acoesDoMes = mesFiltro !== null
-              ? acoes.filter((a) => (a.data ? chaveMes(a.data) : chaveMes(t.dataInicio)) === mesFiltro)
-              : [];
+            const eventos = t.eventos || [];
+            const valorTotal = eventos.reduce((s, ev) => s + (ev.orcamentoTotal || 0), 0);
+            const totalAcoesTema = eventos.reduce((s, ev) => s + (ev.totalAcoes || 0), 0);
 
             return (
-              <button
+              <div
                 key={t.id}
-                type="button"
-                onClick={() => setModal({ temaId: t.id })}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#C9963A]/30 bg-gradient-to-br from-white via-white to-[#FFF9ED] p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/70 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9963A]"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#C9963A]/30 bg-gradient-to-br from-white via-white to-[#FFF9ED] p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/70 hover:shadow-xl"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-lg font-black text-[#1A3A6B] transition group-hover:text-[#9A6F1F]" style={{ fontFamily: 'Georgia, serif' }}>
+                    <button
+                      type="button"
+                      onClick={() => abrirTema(t)}
+                      className="text-lg font-black text-[#1A3A6B] text-left hover:text-[#9A6F1F] transition-colors"
+                      style={{ fontFamily: 'Georgia, serif' }}
+                    >
                       {t.nome}
-                    </p>
+                    </button>
                     <span className="rounded-full bg-[#1A3A6B]/10 px-2 py-0.5 text-[10px] font-black text-[#1A3A6B]">
                       {periodoTema(t)}
                     </span>
@@ -609,42 +663,53 @@ export default function CalendarioMissionario() {
                     </p>
                   )}
 
-                  {/* Destaque de ações no mês filtrado */}
-                  {mesFiltro !== null && acoesDoMes.length > 0 && (
-                    <div className="mt-2.5 rounded-lg bg-[#C9963A]/15 p-2 text-xs font-bold text-[#9A6F1F]">
-                      ★ {acoesDoMes.length} ação(ões) neste mês ({infoMesAtivo?.nome}/{infoMesAtivo?.ano}):
-                      <ul className="mt-1 font-semibold text-slate-700 list-disc list-inside">
-                        {acoesDoMes.slice(0, 2).map((a) => (
-                          <li key={a.id} className="truncate">{a.nome} ({moeda(a.valor)})</li>
-                        ))}
-                      </ul>
+                  {/* Lista de Eventos Preparatórios vinculados a este tema */}
+                  <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-2.5">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Eventos Preparatórios ({eventos.length}):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {eventos.map((ev) => {
+                        const depto = DEPARTAMENTOS[ev.departamento] || DEPARTAMENTOS.OUTRO;
+                        return (
+                          <button
+                            key={ev.id}
+                            type="button"
+                            onClick={() => abrirEvento(ev, t)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-700 shadow-2xs hover:border-[#C9963A] hover:bg-[#FFFDF7] transition"
+                            title={`Clique para abrir ações de ${ev.nome}`}
+                          >
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: depto.cor }} />
+                            <span>{ev.nome}</span>
+                            <span className="text-[10px] font-normal text-slate-400">
+                              ({ev.totalAcoes || 0})
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {eventos.length === 0 && (
+                        <span className="text-xs text-slate-400 italic">Nenhum evento vinculado</span>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* Barra de Progresso visual */}
-                <div className="mt-4 pt-3 border-t border-slate-100/90 w-full">
-                  <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                    <span className="text-slate-600">{acoes.length} ação(ões)</span>
-                    <span className="font-extrabold text-[#1A3A6B]">{moeda(valorTotal)}</span>
-                  </div>
-
-                  {acoes.length > 0 ? (
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 flex">
-                      <div style={{ width: `${pctConcluida}%` }} className="bg-emerald-500 transition-all" title={`${concluidas} concluída(s)`} />
-                      <div style={{ width: `${pctAndamento}%` }} className="bg-blue-500 transition-all" title={`${emAndamento} em andamento`} />
-                      <div style={{ width: `${pctPlanejada}%` }} className="bg-amber-400 transition-all" title={`${planejadas} planejada(s)`} />
-                    </div>
-                  ) : (
-                    <div className="h-1.5 w-full rounded-full bg-slate-100" />
-                  )}
-
-                  <div className="mt-2 flex items-center justify-between text-[10.5px] font-semibold text-slate-400">
-                    <span>{concluidas > 0 ? `✓ ${concluidas} concluída(s)` : `${planejadas} planejada(s)`}</span>
-                    <span className="font-bold text-[#C9963A] group-hover:underline">Abrir tema →</span>
                   </div>
                 </div>
-              </button>
+
+                {/* Resumo do Tema no rodapé do card */}
+                <div className="mt-4 pt-3 border-t border-slate-100/90 w-full flex items-center justify-between text-xs font-bold">
+                  <div>
+                    <span className="text-slate-500">{totalAcoesTema} ações planejadas</span>
+                    <p className="font-extrabold text-[#1A3A6B]">{moeda(valorTotal)}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => abrirTema(t)}
+                    className="font-extrabold text-[#C9963A] hover:underline"
+                  >
+                    Gerenciar Tema →
+                  </button>
+                </div>
+              </div>
             );
           })}
 
@@ -653,70 +718,42 @@ export default function CalendarioMissionario() {
               {mesFiltro !== null
                 ? `Nenhuma atividade agendada para ${infoMesAtivo?.nomeCompleto || 'o mês selecionado'}.`
                 : ehAdmin
-                ? `Nenhum tema cadastrado para ${opcaoAno.rotulo}. Use o botão "Carregar Modelo ${opcaoAno.ano}" ou crie um novo tema.`
+                ? `Nenhum tema cadastrado para ${opcaoAno.rotulo}. Use o botão "+ Adicionar Mais Temas".`
                 : 'Nenhum tema oficial cadastrado pela liderança ainda.'}
             </p>
           )}
         </div>
       </section>
 
-      {/* Modal Principal do Tema e suas Ações */}
-      {modal && (modal.novo || temaAberto) && (
+      {/* Modal Principal do Tema (Centralizado) */}
+      {modalTema && (
         <TemaModal
-          key={modal.novo ? 'novo' : temaAberto.id}
-          tema={modal.novo ? null : temaAberto}
-          destaqueId={modal.destaqueId}
+          key={modalTema.novo ? 'novo' : temaAberto?.id}
+          tema={modalTema.novo ? null : temaAberto}
           permissoes={permissoes}
           usuario={usuario}
-          listas={listas}
-          onFechar={() => setModal(null)}
-          onMudou={mudou}
+          onFechar={() => setModalTema(null)}
+          onMudou={aoAtualizarDados}
+          onAbrirEvento={(ev, t) => {
+            setModalTema(null);
+            abrirEvento(ev, t);
+          }}
         />
       )}
 
-      {/* Modal de + Ações do Mês */}
-      {mes && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm sm:items-center sm:p-4"
-          onClick={() => setMes(null)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="max-h-[85vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-                Ações em {mes.mes.nome}/{mes.mes.ano}
-              </h3>
-              <button type="button" className="btn-outline px-3 py-1 text-sm" onClick={() => setMes(null)}>
-                Fechar
-              </button>
-            </div>
-            <div className="mt-3 space-y-2">
-              {mes.itens.map(({ a, t }) => {
-                const o = origemDaAcao(a);
-                return (
-                  <button
-                    key={a.id}
-                    type="button"
-                    className="w-full rounded-xl border border-slate-200 p-3 text-left transition hover:border-[#C9963A]/60 hover:shadow-md"
-                    onClick={() => {
-                      setMes(null);
-                      setModal({ temaId: t.id, destaqueId: a.id });
-                    }}
-                  >
-                    <span className="block font-bold text-[#1A3A6B]">{a.nome}</span>
-                    <span className="text-xs text-slate-500">
-                      {o.cargo} · {o.local} → {t.nome} · {moeda(a.valor)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* Modal do Evento e suas Ações (Perfeitamente Centralizado) */}
+      {modalEvento && (
+        <EventoModal
+          key={modalEvento.evento.id}
+          evento={modalEvento.evento}
+          tema={modalEvento.tema}
+          destaqueAcaoId={modalEvento.destaqueAcaoId}
+          permissoes={permissoes}
+          usuario={usuario}
+          listas={listas}
+          onFechar={() => setModalEvento(null)}
+          onMudou={aoAtualizarDados}
+        />
       )}
     </div>
   );

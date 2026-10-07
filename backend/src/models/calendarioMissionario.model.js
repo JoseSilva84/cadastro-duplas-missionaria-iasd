@@ -4,6 +4,7 @@ const includeAcao = {
   regiao: { select: { nome: true } },
   distrito: { select: { nome: true } },
   igreja: { select: { nome: true } },
+  evento: { select: { id: true, nome: true } },
 };
 
 const CalendarioMissionarioModel = {
@@ -12,6 +13,16 @@ const CalendarioMissionarioModel = {
       where: { ano },
       orderBy: [{ dataInicio: 'asc' }, { id: 'asc' }],
       include: {
+        eventos: {
+          orderBy: [{ data: 'asc' }, { id: 'asc' }],
+          include: {
+            acoes: {
+              where: whereAcoes,
+              orderBy: [{ data: 'asc' }, { id: 'asc' }],
+              include: includeAcao,
+            },
+          },
+        },
         acoes: {
           where: whereAcoes,
           orderBy: [{ data: 'asc' }, { id: 'asc' }],
@@ -22,7 +33,16 @@ const CalendarioMissionarioModel = {
   },
 
   buscarTema(id) {
-    return prisma.calendarioTema.findUnique({ where: { id: Number(id) } });
+    return prisma.calendarioTema.findUnique({
+      where: { id: Number(id) },
+      include: {
+        eventos: {
+          orderBy: [{ data: 'asc' }, { id: 'asc' }],
+          include: { acoes: { include: includeAcao } },
+        },
+        acoes: { include: includeAcao },
+      },
+    });
   },
 
   contarTemas(ano) {
@@ -41,13 +61,30 @@ const CalendarioMissionarioModel = {
     return prisma.calendarioTema.delete({ where: { id: Number(id) } });
   },
 
-  // Modelo inicial: temas com acoes da Associacao (sem origem regional/local).
-  criarTemasComAcoes(temas) {
-    return prisma.$transaction(temas.map((tema) => prisma.calendarioTema.create({
-      data: { ...tema.dados, acoes: { create: tema.acoes } },
-    })));
+  // Eventos de um tema (marcos preparatórios como Ações ASA, Feira de Saúde, etc.)
+  buscarEvento(id) {
+    return prisma.calendarioEvento.findUnique({
+      where: { id: Number(id) },
+      include: {
+        tema: true,
+        acoes: { include: includeAcao, orderBy: [{ data: 'asc' }, { id: 'asc' }] },
+      },
+    });
   },
 
+  criarEvento(data) {
+    return prisma.calendarioEvento.create({ data, include: { tema: true } });
+  },
+
+  atualizarEvento(id, data) {
+    return prisma.calendarioEvento.update({ where: { id: Number(id) }, data, include: { tema: true } });
+  },
+
+  excluirEvento(id) {
+    return prisma.calendarioEvento.delete({ where: { id: Number(id) } });
+  },
+
+  // Ações Missionárias
   buscarAcao(id) {
     return prisma.calendarioAcaoMissionaria.findUnique({ where: { id: Number(id) }, include: includeAcao });
   },
