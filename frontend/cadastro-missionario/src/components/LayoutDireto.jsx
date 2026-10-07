@@ -61,6 +61,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
     </svg>
   ),
+  calendario: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+    </svg>
+  ),
   relatorios: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -174,6 +179,7 @@ export default function LayoutDireto() {
     { to: '/direto/interessados-nt', label: 'Interessados NT', shortLabel: 'Int. NT', icon: icons.interessadosNt },
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
+    { to: '/direto/calendario-missionario', label: 'Calendário Missionário', shortLabel: 'Calend.', icon: icons.calendario },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
     { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },
@@ -185,6 +191,7 @@ export default function LayoutDireto() {
     ...(podeVerInteressadosNt ? [{ to: '/direto/interessados-nt', label: 'Interessados NT', shortLabel: 'Int. NT', icon: icons.interessadosNt }] : []),
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
+    { to: '/direto/calendario-missionario', label: 'Calendário Missionário', shortLabel: 'Calend.', icon: icons.calendario },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ];
 

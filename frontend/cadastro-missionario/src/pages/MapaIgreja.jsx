@@ -5,8 +5,6 @@ import LoadingState from '../components/LoadingState';
 import EChart from '../components/EChart';
 import MapaIgrejaResumo, { somarMapasIgreja } from '../components/MapaIgrejaResumo';
 import { toast } from '../lib/toast';
-import CalendarioMissionario from '../components/CalendarioMissionario';
-import { useAuth, ehSomenteLeitura } from '../contexts/AuthContext';
 
 const cores = ['#1A3A6B', '#0d9488', '#7c3aed', '#ea580c', '#dc2626', '#C9963A'];
 
@@ -37,7 +35,6 @@ const LinhaLideranca = ({ label, valor }) => (
 );
 
 const MapaCard = ({ mapa, onEditar, onExcluir, excluindo }) => {
-  const { usuario } = useAuth();
   const igreja = mapa.igreja || {};
   const indicadores = [
     ['Pequeno Grupo', mapa.quantidadePequenosGrupos, '#C9963A'],
@@ -109,7 +106,6 @@ const MapaCard = ({ mapa, onEditar, onExcluir, excluindo }) => {
           )}
         </div>
       </div>
-      <CalendarioMissionario igrejaId={mapa.igrejaId} editavel={!ehSomenteLeitura(usuario)} />
     </section>
   );
 };

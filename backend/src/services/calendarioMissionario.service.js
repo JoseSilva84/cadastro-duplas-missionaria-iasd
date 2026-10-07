@@ -19,12 +19,14 @@ const dataOuNull = (valor, ano) => {
   if (Number.isNaN(data.getTime())) {
     throw { status: 400, mensagem: 'Informe datas validas no calendario missionario.' };
   }
-  if (data.getUTCFullYear() !== ano) {
-    throw { status: 400, mensagem: `As datas do calendario devem estar em ${ano}.` };
+  // O planejamento de um ano comeca em dezembro do ano anterior.
+  const inicio = Date.UTC(ano - 1, 11, 1);
+  const fim = Date.UTC(ano, 11, 31, 23, 59, 59);
+  if (data.getTime() < inicio || data.getTime() > fim) {
+    throw { status: 400, mensagem: `As datas do calendario devem estar entre dezembro de ${ano - 1} e dezembro de ${ano}.` };
   }
   return data;
 };
-
 const anoValido = (valor) => {
   const ano = Number(valor);
   if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) {
