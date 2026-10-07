@@ -170,6 +170,7 @@ export default function LayoutDireto() {
       { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
       { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
     ] },
+    { to: '/direto/calendario-missionario', label: 'Calendário Missionário', shortLabel: 'Calend.', icon: icons.calendario },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : isDiretorMissionario ? [
     { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },

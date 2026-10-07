@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Páginas
 import Login from './pages/Login';
@@ -297,7 +298,8 @@ function AppRoutes() {
           }
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><MapaIgreja /></RotaComPerfis>} />
-        <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL]}><CalendarioMissionario /></RotaComPerfis>} />
+        <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA]}><CalendarioMissionario /></RotaComPerfis>} />
+        <Route path="calendario_missionario" element={<Navigate to="/calendario-missionario" replace />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><GestaoQrCodes /></RotaComPerfis>} />
 
@@ -462,7 +464,8 @@ function AppRoutes() {
           }
         />
         <Route path="mapa-igreja" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><MapaIgreja /></RotaComPerfis>} />
-        <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL]} redirectTo="/direto/distritos"><CalendarioMissionario /></RotaComPerfis>} />
+        <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA]} redirectTo="/direto/distritos"><CalendarioMissionario /></RotaComPerfis>} />
+        <Route path="calendario_missionario" element={<Navigate to="/direto/calendario-missionario" replace />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/configuracoes"><GestaoQrCodes /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
@@ -535,7 +538,9 @@ function App() {
             },
           }}
         />
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
   );

@@ -10,7 +10,6 @@ const msgErro = (err, padrao) => err.response?.data?.erro || padrao;
 export default function TemaModal({
   tema,
   permissoes,
-  usuario,
   onFechar,
   onMudou,
   onAbrirEvento,

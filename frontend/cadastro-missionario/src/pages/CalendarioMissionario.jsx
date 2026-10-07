@@ -7,7 +7,7 @@ import EventoModal from '../components/calendario/EventoModal';
 import { toast } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import {
-  ANO_CALENDARIO, ANOS_DISPONIVEIS, DEPARTAMENTOS, STATUS_ACAO, calcularJanela, chaveMes, dia, formatarDia, moeda, origemDaAcao, periodoTema,
+  ANOS_DISPONIVEIS, DEPARTAMENTOS, calcularJanela, chaveMes, dia, formatarDia, moeda, periodoTema,
 } from '../lib/calendario';
 
 const lista = (res) => (Array.isArray(res?.data) ? res.data : []);
@@ -21,7 +21,7 @@ const Resumo = ({ rotulo, valor, detalhe, cor, destaque = false }) => (
   >
     <span className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: cor }} />
     <p className="pl-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-400">{rotulo}</p>
-    <p className="mt-1 break-words pl-2 text-2xl font-black leading-tight text-slate-900" style={{ color }}>{valor}</p>
+    <p className="mt-1 break-words pl-2 text-2xl font-black leading-tight text-slate-900" style={{ color: cor }}>{valor}</p>
     {detalhe && <p className="mt-1 pl-2 text-xs font-semibold text-slate-500">{detalhe}</p>}
   </article>
 );

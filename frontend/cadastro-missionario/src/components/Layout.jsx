@@ -141,6 +141,7 @@ export default function Layout({ children }) {
           { to: isDireto ? '/direto/relatorios/pontos-estudo' : '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: isDireto ? '/direto/relatorios/classes-biblicas' : '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
         ] }] : []),
+        { to: isDireto ? '/direto/calendario-missionario' : '/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario },
         { to: isDireto ? '/direto/configuracoes' : '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ]
     : isDireto
@@ -223,7 +224,7 @@ export default function Layout({ children }) {
             : []),
         ] }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
-        ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil)) ? [{ to: '/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
+        ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil)) ? [{ to: '/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
         { to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ];
 
