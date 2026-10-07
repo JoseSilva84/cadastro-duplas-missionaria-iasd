@@ -17,6 +17,7 @@ const evangelismosRoutes = require('./routes/evangelismos');
 const acompanhamentosRoutes = require('./routes/acompanhamentos');
 const escolaSabatinaRoutes = require('./routes/escolaSabatina');
 const mapaIgrejaRoutes = require('./routes/mapaIgreja');
+const calendarioMissionarioRoutes = require('./routes/calendarioMissionario');
 const configuracaoRoutes = require('./routes/configuracoes');
 const interessadosNovoTempoRoutes = require('./routes/interessadosNovoTempo');
 
@@ -73,6 +74,7 @@ app.use('/api/evangelismos', evangelismosRoutes);
 app.use('/api/acompanhamentos', acompanhamentosRoutes);
 app.use('/api/escola-sabatina', escolaSabatinaRoutes);
 app.use('/api/mapa-igreja', mapaIgrejaRoutes);
+app.use('/api/calendario-missionario', calendarioMissionarioRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/configuracoes', configuracaoRoutes);
