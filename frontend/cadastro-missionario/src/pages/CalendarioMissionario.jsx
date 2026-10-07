@@ -1,393 +1,246 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import LinhaDoTempo from '../components/calendario/LinhaDoTempo';
+import TemaModal from '../components/calendario/TemaModal';
 import { toast } from '../lib/toast';
-import { useAuth, PERFIS, ehSomenteLeitura } from '../contexts/AuthContext';
+import { useAuth, PERFIS } from '../contexts/AuthContext';
 import {
-  ANO_CALENDARIO, DATA_MAX, DATA_MIN, DEPARTAMENTOS, INICIO_LINHA_TEMPO, criarModelo2027,
-} from '../lib/calendarioModelo2027';
+  ANO_CALENDARIO, DEPARTAMENTOS, calcularJanela, dia, formatarDia, moeda, origemDaAcao, periodoTema,
+} from '../lib/calendario';
 
-const NOMES_MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const MESES = Array.from({ length: 12 }, (_, i) => {
-  const total = INICIO_LINHA_TEMPO.mes - 1 + i;
-  return { nome: NOMES_MES[total % 12], ano: INICIO_LINHA_TEMPO.ano + Math.floor(total / 12) };
-});
+const lista = (res) => (Array.isArray(res?.data) ? res.data : []);
 
-const moeda = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const dia = (v) => (v ? String(v).slice(0, 10) : '');
-const formatarDia = (v) => (v ? dia(v).split('-').reverse().join('/') : 'Sem data');
-const indiceMes = (v) => {
-  if (!v) return 0;
-  const [a, m] = dia(v).split('-').map(Number);
-  const i = (a - INICIO_LINHA_TEMPO.ano) * 12 + (m - INICIO_LINHA_TEMPO.mes);
-  return Math.min(Math.max(i, 0), 11);
-};
-const corAcao = (a) => (DEPARTAMENTOS[a.departamento] || DEPARTAMENTOS.OUTRO).cor;
+const Resumo = ({ rotulo, valor, detalhe, cor }) => (
+  <article className="group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg" style={{ borderColor: `${cor}30` }}>
+    <span className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: cor }} />
+    <p className="pl-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{rotulo}</p>
+    <p className="mt-1 break-words pl-2 text-2xl font-bold leading-tight" style={{ color: cor }}>{valor}</p>
+    {detalhe && <p className="mt-0.5 pl-2 text-xs text-slate-400">{detalhe}</p>}
+  </article>
+);
 
-let contador = 0;
-const chave = () => `k${Date.now()}-${contador += 1}`;
-
-const normalizar = (eventos) => eventos.map((e) => ({
-  ...e,
-  _k: chave(),
-  dataInicio: dia(e.dataInicio),
-  dataFim: dia(e.dataFim),
-  acoes: (e.acoes || []).map((a) => ({
-    ...a,
-    _k: chave(),
-    data: dia(a.data),
-    responsavel: a.responsavel || '',
-    planejamento: a.planejamento || '',
-    // O formulario usa um unico valor de orcamento por acao.
-    valor: (a.orcamento || []).reduce((s, o) => s + Number(o.quantidade || 0) * Number(o.valorUnit || 0), 0),
-  })),
-}));
-
-const paraApi = (eventos) => eventos.map((e) => ({
-  nome: e.nome,
-  tipo: e.tipo,
-  dataInicio: e.dataInicio || null,
-  dataFim: e.dataFim || null,
-  acoes: e.acoes.map((a) => ({
-    nome: a.nome,
-    departamento: a.departamento,
-    responsavel: a.responsavel,
-    data: a.data || null,
-    planejamento: a.planejamento,
-    status: a.status || 'PLANEJADA',
-    orcamento: Number(a.valor) > 0 ? [{ descricao: 'Orçamento', quantidade: 1, valorUnit: Number(a.valor) }] : [],
-  })),
-}));
-
-const totalEvento = (e) => e.acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
-
-// ---------- Linha do tempo (grafico) ----------
-const LARG_MES = 128;
-const ALT_EVENTO = 58;
-const ALT_ACAO = 50;
-const TOPO_EVENTOS = 56;
-const FOLGA = 96;
-
-function LinhaDoTempo({ eventos, onEvento }) {
-  const layout = useMemo(() => {
-    const ocupacaoEv = Array(12).fill(0);
-    const evPos = eventos.map((e) => {
-      const m = indiceMes(e.dataInicio);
-      const linha = ocupacaoEv[m]; ocupacaoEv[m] += 1;
-      return { e, m, linha };
-    });
-    const linhasEv = Math.max(1, ...ocupacaoEv);
-    const topoAcoes = TOPO_EVENTOS + linhasEv * (ALT_EVENTO + 10) + FOLGA;
-
-    const ocupacaoAc = Array(12).fill(0);
-    const acPos = [];
-    eventos.forEach((e, ei) => e.acoes.forEach((a) => {
-      const m = indiceMes(a.data || e.dataInicio);
-      const linha = ocupacaoAc[m]; ocupacaoAc[m] += 1;
-      acPos.push({ a, e, ei, m, linha });
-    }));
-    const linhasAc = Math.max(1, ...ocupacaoAc);
-    const altura = topoAcoes + linhasAc * (ALT_ACAO + 8) + 16;
-    return { evPos, acPos, topoAcoes, altura };
-  }, [eventos]);
-
-  const yEv = (linha) => TOPO_EVENTOS + linha * (ALT_EVENTO + 10);
-  const yAc = (linha) => layout.topoAcoes + linha * (ALT_ACAO + 8);
-  const evPorObjeto = new Map(layout.evPos.map((p) => [p.e._k, p]));
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-slate-100 bg-white">
-      <div className="relative" style={{ width: LARG_MES * 12, height: layout.altura }}>
-        {/* colunas dos meses */}
-        <div className="absolute inset-0 flex">
-          {MESES.map((m, i) => (
-            <div key={`${m.nome}-${m.ano}`} className={`h-full border-r-2 border-slate-800/80 ${i % 2 ? 'bg-slate-50' : 'bg-white'}`} style={{ width: LARG_MES }} />
-          ))}
-        </div>
-        {/* faixa "linha do tempo" */}
-        <div className="absolute left-0 right-0 flex bg-[#FFC000]" style={{ top: 0, height: 36 }}>
-          {MESES.map((m) => (
-            <div key={`${m.nome}-${m.ano}`} className="flex flex-col items-center justify-center border-r-2 border-slate-800/80 text-xs font-bold uppercase text-slate-900" style={{ width: LARG_MES }}>
-              {m.nome}<span className="text-[10px] font-semibold opacity-70">{m.ano}</span>
-            </div>
-          ))}
-        </div>
-        <p className="absolute left-2 text-[10px] font-bold uppercase tracking-widest text-slate-400" style={{ top: 38 }}>Eventos</p>
-        <p className="absolute left-2 text-[10px] font-bold uppercase tracking-widest text-slate-400" style={{ top: layout.topoAcoes - 16 }}>Ações (planejamento e orçamento)</p>
-
-        {/* setas das acoes para o evento */}
-        <svg className="pointer-events-none absolute left-0 top-0" width={LARG_MES * 12} height={layout.altura}>
-          <defs>
-            <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L10 5L0 10z" fill="#1A3A6B" />
-            </marker>
-          </defs>
-          {layout.acPos.map(({ a, e, m, linha }) => {
-            const ev = evPorObjeto.get(e._k);
-            if (!ev) return null;
-            const x1 = m * LARG_MES + LARG_MES / 2;
-            const y1 = yAc(linha);
-            const x2 = ev.m * LARG_MES + LARG_MES / 2;
-            const y2 = yEv(ev.linha) + ALT_EVENTO;
-            const meio = (y1 + y2) / 2;
-            return <path key={a._k} d={`M${x1} ${y1} C ${x1} ${meio}, ${x2} ${meio}, ${x2} ${y2 + 2}`} fill="none" stroke="#1A3A6B" strokeOpacity="0.55" strokeWidth="1.6" markerEnd="url(#seta)" />;
-          })}
-        </svg>
-
-        {/* eventos */}
-        {layout.evPos.map(({ e, m, linha }) => (
-          <button key={e._k} type="button" onClick={() => onEvento(e._k)} title={`${e.nome} — ${formatarDia(e.dataInicio)}`}
-            className="absolute overflow-hidden rounded-md border-2 border-[#C9963A] bg-[#FFE08A] px-2 text-left text-[13px] font-extrabold leading-tight text-[#1A3A6B] shadow transition hover:-translate-y-0.5 hover:shadow-lg"
-            style={{ left: m * LARG_MES + 6, top: yEv(linha), width: LARG_MES - 12, height: ALT_EVENTO }}>
-            {e.nome}
-            <span className="block text-[10px] font-semibold text-slate-600">{formatarDia(e.dataInicio)} · {moeda(totalEvento(e))}</span>
-          </button>
-        ))}
-
-        {/* acoes */}
-        {layout.acPos.map(({ a, e, m, linha }) => (
-          <button key={a._k} type="button" onClick={() => onEvento(e._k, a._k)} title={`${a.nome} → ${e.nome}`}
-            className="absolute overflow-hidden rounded-md px-2 text-left text-[12px] font-bold leading-tight text-white shadow transition hover:-translate-y-0.5 hover:shadow-lg"
-            style={{ left: m * LARG_MES + 6, top: yAc(linha), width: LARG_MES - 12, height: ALT_ACAO, backgroundColor: corAcao(a) }}>
-            {a.nome}
-            <span className="block text-[10px] font-semibold opacity-90">{a.data ? formatarDia(a.data).slice(0, 5) : ''} · {moeda(a.valor)}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Modal do evento ----------
-function EventoModal({ inicial, destaqueK, editavel, novo, onFechar, onSalvar, onExcluir, salvando }) {
-  const [form, setForm] = useState(inicial);
-  const setEv = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
-  const setAc = (k, campo, valor) => setForm((f) => ({ ...f, acoes: f.acoes.map((a) => (a._k === k ? { ...a, [campo]: valor } : a)) }));
-  const novaAcao = () => setForm((f) => ({
-    ...f, acoes: [...f.acoes, { _k: chave(), nome: '', departamento: 'OUTRO', responsavel: '', data: '', planejamento: '', status: 'PLANEJADA', valor: '' }],
-  }));
-
-  useEffect(() => {
-    if (destaqueK) document.getElementById(`acao-${destaqueK}`)?.scrollIntoView({ block: 'center' });
-  }, [destaqueK]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3" onClick={onFechar} role="dialog" aria-modal="true">
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Evento do calendário</p>
-            <input className="input-field mt-1 text-lg font-bold" value={form.nome} disabled={!editavel} placeholder="Nome do evento" onChange={(e) => setEv('nome', e.target.value)} />
-            <div className="mt-2 flex flex-wrap gap-2">
-              <label className="text-xs font-bold text-slate-500">Início
-                <input type="date" className="input-field mt-1" disabled={!editavel} min={DATA_MIN} max={DATA_MAX} value={form.dataInicio} onChange={(e) => setEv('dataInicio', e.target.value)} />
-              </label>
-              <label className="text-xs font-bold text-slate-500">Fim
-                <input type="date" className="input-field mt-1" disabled={!editavel} min={DATA_MIN} max={DATA_MAX} value={form.dataFim} onChange={(e) => setEv('dataFim', e.target.value)} />
-              </label>
-            </div>
-          </div>
-          <button type="button" className="btn-outline px-3 py-1 text-sm" onClick={onFechar}>Fechar</button>
-        </div>
-
-        <div className="flex-1 space-y-3 overflow-y-auto p-5">
-          <p className="text-sm font-bold text-[#1A3A6B]">Ações missionárias de {form.nome || 'este evento'}</p>
-          {form.acoes.map((a) => (
-            <div key={a._k} id={`acao-${a._k}`} className={`rounded-xl border bg-slate-50 p-3 ${a._k === destaqueK ? 'ring-2 ring-[#C9963A]' : ''}`} style={{ borderLeft: `5px solid ${corAcao(a)}` }}>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_190px]">
-                <label className="text-xs font-bold text-slate-500">Ação missionária
-                  <input className="input-field mt-1" disabled={!editavel} value={a.nome} placeholder="Ex.: Feira de Saúde" onChange={(e) => setAc(a._k, 'nome', e.target.value)} />
-                </label>
-                <label className="text-xs font-bold text-slate-500">Departamento
-                  <select className="input-field mt-1" disabled={!editavel} value={a.departamento || 'OUTRO'} onChange={(e) => setAc(a._k, 'departamento', e.target.value)}>
-                    {Object.entries(DEPARTAMENTOS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}
-                  </select>
-                </label>
-              </div>
-              <label className="mt-3 block text-xs font-bold text-slate-500">Descrição do que será feito
-                <textarea className="input-field mt-1 min-h-[72px]" disabled={!editavel} value={a.planejamento} placeholder="Planejamento: público, local, equipe, materiais..." onChange={(e) => setAc(a._k, 'planejamento', e.target.value)} />
-              </label>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-                <label className="text-xs font-bold text-slate-500">Data
-                  <input type="date" className="input-field mt-1" disabled={!editavel} min={DATA_MIN} max={DATA_MAX} value={a.data} onChange={(e) => setAc(a._k, 'data', e.target.value)} />
-                </label>
-                <label className="text-xs font-bold text-slate-500">Orçamento (R$)
-                  <input type="number" min="0" step="0.01" className="input-field mt-1" disabled={!editavel} value={a.valor} placeholder="0,00" onChange={(e) => setAc(a._k, 'valor', e.target.value)} />
-                </label>
-                <label className="text-xs font-bold text-slate-500">Responsável
-                  <input className="input-field mt-1" disabled={!editavel} value={a.responsavel} onChange={(e) => setAc(a._k, 'responsavel', e.target.value)} />
-                </label>
-                {editavel && (
-                  <button type="button" className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600" onClick={() => setForm((f) => ({ ...f, acoes: f.acoes.filter((x) => x._k !== a._k) }))}>Remover</button>
-                )}
-              </div>
-            </div>
-          ))}
-          {form.acoes.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-400">Nenhuma ação neste evento ainda.</p>}
-          {editavel && <button type="button" className="btn-outline px-3 py-2 text-sm" onClick={novaAcao}>+ Adicionar ação</button>}
-        </div>
-
-        <div className="flex flex-col gap-2 border-t border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-bold text-[#1A3A6B]">Total do evento: {moeda(totalEvento(form))}</p>
-          {editavel && (
-            <div className="flex gap-2">
-              {!novo && <button type="button" className="rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-600" onClick={onExcluir}>Excluir evento</button>}
-              <button type="button" className="btn-primary px-5 py-2 text-sm disabled:opacity-50" disabled={salvando} onClick={() => onSalvar(form)}>{salvando ? 'Salvando...' : 'Salvar'}</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------- Pagina ----------
 export default function CalendarioMissionario() {
   const { usuario } = useAuth();
-  const location = useLocation();
-  const [igrejas, setIgrejas] = useState([]);
-  const [igrejaId, setIgrejaId] = useState('');
-  const [eventos, setEventos] = useState([]);
+  const [temas, setTemas] = useState([]);
+  const [permissoes, setPermissoes] = useState({ gerenciarTemas: false, criarAcao: false });
+  const [listas, setListas] = useState({ regioes: [], distritos: [], igrejas: [] });
+  const [filtro, setFiltro] = useState({ regiaoId: '', distritoId: '', igrejaId: '' });
   const [carregando, setCarregando] = useState(true);
-  const [carregandoCal, setCarregandoCal] = useState(false);
-  const [salvando, setSalvando] = useState(false);
-  const [modal, setModal] = useState(null); // { evento, destaqueK, novo }
+  const [modal, setModal] = useState(null); // { temaId, destaqueId } | { novo: true }
+  const [mes, setMes] = useState(null); // { itens }
+  const [criandoModelo, setCriandoModelo] = useState(false);
 
-  const editavel = !ehSomenteLeitura(usuario)
-    && [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil);
-
-  useEffect(() => {
-    api.get('/igrejas').then((res) => {
-      const lista = Array.isArray(res.data) ? res.data : [];
-      setIgrejas(lista);
-      const url = new URLSearchParams(location.search).get('igrejaId');
-      const inicial = lista.find((i) => String(i.id) === String(url)) || lista[0];
-      if (inicial) setIgrejaId(String(inicial.id));
-    }).catch(() => toast.error('Erro ao carregar igrejas.')).finally(() => setCarregando(false));
-  }, [location.search]);
+  const perfil = usuario?.perfil;
+  const ehAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(perfil);
+  const ehRegional = [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(perfil);
 
   useEffect(() => {
-    if (!igrejaId) return;
-    setCarregandoCal(true);
-    api.get('/calendario-missionario', { params: { igrejaId, ano: ANO_CALENDARIO } })
-      .then((res) => setEventos(normalizar(res.data.eventos || [])))
-      .catch(() => toast.error('Erro ao carregar o calendário missionário.'))
-      .finally(() => setCarregandoCal(false));
-  }, [igrejaId]);
+    Promise.all([api.get('/regioes'), api.get('/distritos'), api.get('/igrejas')])
+      .then(([r, d, i]) => setListas({ regioes: lista(r), distritos: lista(d), igrejas: lista(i) }))
+      .catch(() => toast.error('Erro ao carregar regiões, distritos e igrejas.'));
+  }, []);
 
-  const ordenados = useMemo(() => [...eventos].sort((a, b) => (a.dataInicio || '9').localeCompare(b.dataInicio || '9')), [eventos]);
-  const totalAcoes = eventos.reduce((s, e) => s + e.acoes.length, 0);
-  const totalAno = eventos.reduce((s, e) => s + totalEvento(e), 0);
-  const igreja = igrejas.find((i) => String(i.id) === String(igrejaId));
-
-  const persistir = async (lista) => {
-    setSalvando(true);
+  const carregar = useCallback(async () => {
     try {
-      const res = await api.put('/calendario-missionario', { igrejaId: Number(igrejaId), ano: ANO_CALENDARIO, eventos: paraApi(lista) });
-      setEventos(normalizar(res.data.eventos || []));
-      toast.success('Calendário missionário salvo.');
-      return true;
+      const params = { ano: ANO_CALENDARIO };
+      Object.entries(filtro).forEach(([k, v]) => { if (v) params[k] = v; });
+      const res = await api.get('/calendario-missionario', { params });
+      setTemas(res.data.temas || []);
+      setPermissoes(res.data.permissoes || { gerenciarTemas: false, criarAcao: false });
     } catch (err) {
-      const erros = err.response?.data?.erros;
-      toast.error(erros ? erros.map((e) => e.msg).join(', ') : err.response?.data?.erro || 'Erro ao salvar o calendário.');
-      return false;
+      toast.error(err.response?.data?.erro || 'Erro ao carregar o calendário missionário.');
     } finally {
-      setSalvando(false);
+      setCarregando(false);
+    }
+  }, [filtro]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  const meses = useMemo(() => calcularJanela(temas), [temas]);
+  const totalAcoes = temas.reduce((s, t) => s + t.acoes.length, 0);
+  const totalValor = temas.reduce((s, t) => s + t.acoes.reduce((x, a) => x + Number(a.valor || 0), 0), 0);
+
+  const proximo = useMemo(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const futuros = temas.filter((t) => t.dataInicio && dia(t.dataInicio) >= hoje).sort((a, b) => dia(a.dataInicio).localeCompare(dia(b.dataInicio)));
+    if (!futuros.length) return null;
+    const t = futuros[0];
+    const dias = Math.ceil((new Date(`${dia(t.dataInicio)}T00:00:00`) - new Date(`${hoje}T00:00:00`)) / 86400000);
+    return { t, dias };
+  }, [temas]);
+
+  const temaAberto = modal?.temaId ? temas.find((t) => t.id === modal.temaId) : null;
+
+  const mudou = async (temaId) => {
+    await carregar();
+    setModal(temaId ? { temaId } : null);
+  };
+
+  const criarModelo = async () => {
+    setCriandoModelo(true);
+    try {
+      await api.post('/calendario-missionario/temas/modelo', { ano: ANO_CALENDARIO });
+      toast.success('Modelo 2027 carregado.');
+      await carregar();
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao carregar o modelo.');
+    } finally {
+      setCriandoModelo(false);
     }
   };
 
-  const abrirEvento = (eventoK, acaoK) => {
-    const evento = eventos.find((e) => e._k === eventoK);
-    if (evento) setModal({ evento, destaqueK: acaoK || null, novo: false });
-  };
-  const abrirNovo = () => setModal({
-    evento: { _k: chave(), nome: '', tipo: 'OUTRO', dataInicio: '', dataFim: '', acoes: [] }, destaqueK: null, novo: true,
+  // filtros em cascata
+  const regioes = listas.regioes;
+  const distritos = listas.distritos.filter((d) => !filtro.regiaoId || String(d.regiaoId) === String(filtro.regiaoId));
+  const igrejas = listas.igrejas.filter((i) => !filtro.distritoId
+    ? (!filtro.regiaoId || distritos.some((d) => d.id === i.distritoId))
+    : String(i.distritoId) === String(filtro.distritoId));
+  const mostrarRegiao = (ehAdmin || ehRegional) && regioes.length > 1;
+  const mostrarDistrito = listas.distritos.length > 1;
+  const mostrarIgreja = listas.igrejas.length > 1;
+  const temFiltro = mostrarRegiao || mostrarDistrito || mostrarIgreja;
+
+  const mudarFiltro = (campo, valor) => setFiltro((f) => {
+    if (campo === 'regiaoId') return { regiaoId: valor, distritoId: '', igrejaId: '' };
+    if (campo === 'distritoId') return { ...f, distritoId: valor, igrejaId: '' };
+    return { ...f, [campo]: valor };
   });
-
-  const salvarEvento = async (form) => {
-    if (!form.nome.trim()) { toast.error('Informe o nome do evento.'); return; }
-    if (form.acoes.some((a) => !a.nome.trim())) { toast.error('Preencha o nome de todas as ações ou remova as vazias.'); return; }
-    const existe = eventos.some((e) => e._k === form._k);
-    const lista = existe ? eventos.map((e) => (e._k === form._k ? form : e)) : [...eventos, form];
-    if (await persistir(lista)) setModal(null);
-  };
-
-  const excluirEvento = async () => {
-    if (!window.confirm(`Excluir o evento "${modal.evento.nome}" e todas as suas ações?`)) return;
-    if (await persistir(eventos.filter((e) => e._k !== modal.evento._k))) setModal(null);
-  };
 
   if (carregando) return <LoadingState mensagem="Carregando Calendário Missionário..." />;
 
+  const seletor = (rotulo, campo, opcoes, todos) => (
+    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+      {rotulo}
+      <select className="input-field mt-1 min-w-[170px]" value={filtro[campo]} onChange={(e) => mudarFiltro(campo, e.target.value)}>
+        <option value="">{todos}</option>
+        {opcoes.map((o) => <option key={o.id} value={o.id}>{o.nome}</option>)}
+      </select>
+    </label>
+  );
+
   return (
     <div className="animate-fade-in-up">
-      <div className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* cabecalho */}
+      <section className="relative overflow-hidden rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm sm:p-6">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#C9963A]/10 blur-2xl" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Planejamento integrado {ANO_CALENDARIO}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#C9963A]">Planejamento integrado {ANO_CALENDARIO}</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1A3A6B] sm:text-4xl" style={{ fontFamily: 'Georgia, serif' }}>Calendário Missionário</h1>
-            <p className="mt-1 text-sm text-slate-400">Linha do tempo dos eventos e ações, com planejamento e orçamento. Clique em um item para abrir.</p>
+            <p className="mt-1 max-w-xl text-sm text-slate-500">Os temas dos eventos são definidos pela Associação. Toque em um tema para ver as ações e cadastrar a sua.</p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            {igrejas.length > 1 && (
-              <label className="text-xs font-bold text-slate-500">Igreja
-                <select className="input-field mt-1 min-w-[220px]" value={igrejaId} onChange={(e) => setIgrejaId(e.target.value)}>
-                  {igrejas.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
-                </select>
-              </label>
-            )}
-            {editavel && igrejaId && <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={abrirNovo}>+ Novo evento</button>}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {[['Eventos', eventos.length, '#C9963A'], ['Ações', totalAcoes, '#0d9488'], ['Orçamento total', moeda(totalAno), '#1A3A6B']].map(([label, valor, cor]) => (
-          <article key={label} className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: `${cor}35` }}>
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
-            <p className="mt-1 text-2xl font-bold" style={{ color: cor }}>{valor}</p>
-          </article>
-        ))}
-      </div>
-
-      {!igreja ? (
-        <p className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-400">Nenhuma igreja disponível no seu escopo.</p>
-      ) : (
-        <section className="mt-5 rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Linha do tempo · {igreja.nome}</h2>
-            {editavel && eventos.length === 0 && !carregandoCal && (
-              <button type="button" className="btn-outline px-3 py-2 text-sm disabled:opacity-50" disabled={salvando} onClick={() => persistir(normalizar(criarModelo2027()))}>Criar calendário com o modelo 2027</button>
-            )}
-          </div>
-
-          {carregandoCal ? <p className="text-sm text-slate-400">Carregando...</p> : (
-            <>
-              <LinhaDoTempo eventos={ordenados} onEvento={abrirEvento} />
-              <p className="mt-2 text-xs text-slate-400">Role para o lado para ver todos os meses. As setas ligam cada ação ao seu evento.</p>
-
-              <h3 className="mt-5 text-sm font-bold uppercase tracking-widest text-[#C9963A]">Eventos</h3>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {ordenados.map((e) => (
-                  <button key={e._k} type="button" onClick={() => abrirEvento(e._k)} className="rounded-xl border border-[#C9963A]/40 bg-[#FFF8E1] p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md">
-                    <span className="block font-bold text-[#1A3A6B]">{e.nome}</span>
-                    <span className="mt-1 flex justify-between text-xs text-slate-500">
-                      <span>{formatarDia(e.dataInicio)} · {e.acoes.length} ação(ões)</span>
-                      <span className="font-bold">{moeda(totalEvento(e))}</span>
-                    </span>
-                  </button>
-                ))}
-                {eventos.length === 0 && <p className="text-sm text-slate-400">Nenhum evento cadastrado.</p>}
-              </div>
-            </>
+          {ehAdmin && (
+            <div className="flex flex-wrap gap-2">
+              {temas.length === 0 && !filtro.regiaoId && !filtro.distritoId && !filtro.igrejaId && (
+                <button type="button" className="btn-outline px-4 py-2 text-sm disabled:opacity-60" disabled={criandoModelo} onClick={criarModelo}>{criandoModelo ? 'Carregando...' : 'Carregar modelo 2027'}</button>
+              )}
+              <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => setModal({ novo: true })}>+ Novo tema</button>
+            </div>
           )}
-        </section>
+        </div>
+
+        {temFiltro && (
+          <div className="relative mt-5 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+            <p className="w-full text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 sm:w-auto sm:pb-3">Visualizar</p>
+            {mostrarRegiao && seletor('Região', 'regiaoId', regioes, 'Todas as regiões')}
+            {mostrarDistrito && seletor('Distrito', 'distritoId', distritos, 'Todos os distritos')}
+            {mostrarIgreja && seletor('Igreja', 'igrejaId', igrejas, 'Todas as igrejas')}
+            {(filtro.regiaoId || filtro.distritoId || filtro.igrejaId) && (
+              <button type="button" className="pb-2.5 text-sm font-bold text-[#C9963A] hover:underline" onClick={() => setFiltro({ regiaoId: '', distritoId: '', igrejaId: '' })}>Limpar filtros</button>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* resumo */}
+      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="col-span-2 lg:col-span-1">
+          <Resumo rotulo="Próximo evento" valor={proximo ? proximo.t.nome : '—'} detalhe={proximo ? `${proximo.dias === 0 ? 'Hoje' : `em ${proximo.dias} dia(s)`} · ${formatarDia(proximo.t.dataInicio)}` : 'Sem eventos futuros'} cor="#C9963A" />
+        </div>
+        <Resumo rotulo="Temas" valor={temas.length} cor="#1A3A6B" />
+        <Resumo rotulo="Ações" valor={totalAcoes} cor="#0f766e" />
+        <Resumo rotulo="Orçamento" valor={moeda(totalValor)} cor="#a21caf" />
+      </div>
+
+      {/* linha do tempo */}
+      <section className="mt-5 rounded-2xl border border-[#1A3A6B]/10 bg-white p-3 shadow-sm sm:p-5">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#C9963A]">Linha do tempo</p>
+            <h2 className="text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Do próximo mês em diante</h2>
+          </div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-1.5V4a1.5 1.5 0 0 1 3 0v7m0-5.5a1.5 1.5 0 0 1 3 0V12m0-3a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-4.8-2.4L4.4 15a1.6 1.6 0 0 1 2.4-2L8 14.5" /></svg>
+            Arraste para navegar pelos meses
+          </p>
+        </div>
+
+        <LinhaDoTempo temas={temas} meses={meses}
+          onAbrir={(temaId, destaqueId) => setModal({ temaId, destaqueId })}
+          onAbrirMes={(m, itens) => setMes({ mes: meses[m], itens })} />
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+          {Object.values(DEPARTAMENTOS).map((d) => (
+            <span key={d.label} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.cor }} />{d.label}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* lista de temas */}
+      <section className="mt-5">
+        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#C9963A]">Temas dos eventos</h3>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {temas.map((t) => {
+            const valor = t.acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
+            return (
+              <button key={t.id} type="button" onClick={() => setModal({ temaId: t.id })}
+                className="group rounded-2xl border border-[#C9963A]/30 bg-gradient-to-br from-white to-[#FFF8E6] p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#C9963A]/70 hover:shadow-xl">
+                <p className="text-lg font-bold text-[#1A3A6B] transition group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>{t.nome}</p>
+                <p className="mt-0.5 text-sm text-slate-500">{periodoTema(t)}</p>
+                <div className="mt-3 flex items-center justify-between text-xs font-bold">
+                  <span className="rounded-full bg-[#1A3A6B]/10 px-2.5 py-1 text-[#1A3A6B]">{t.acoes.length} ação(ões)</span>
+                  <span className="text-slate-600">{moeda(valor)}</span>
+                </div>
+              </button>
+            );
+          })}
+          {temas.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-400 sm:col-span-2 xl:col-span-3">
+              {ehAdmin ? 'Nenhum tema cadastrado. Use “Carregar modelo 2027” ou “+ Novo tema”.' : 'Nenhum tema cadastrado ainda.'}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {modal && (modal.novo || temaAberto) && (
+        <TemaModal key={modal.novo ? 'novo' : temaAberto.id} tema={modal.novo ? null : temaAberto} destaqueId={modal.destaqueId}
+          permissoes={permissoes} usuario={usuario} listas={listas} onFechar={() => setModal(null)} onMudou={mudou} />
       )}
 
-      {modal && (
-        <EventoModal key={modal.evento._k} inicial={modal.evento} destaqueK={modal.destaqueK} novo={modal.novo} editavel={editavel}
-          salvando={salvando} onFechar={() => setModal(null)} onSalvar={salvarEvento} onExcluir={excluirEvento} />
+      {mes && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setMes(null)} role="dialog" aria-modal="true">
+          <div className="max-h-[85vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Mais ações · {mes.mes.nome}/{mes.mes.ano}</h3>
+              <button type="button" className="btn-outline px-3 py-1 text-sm" onClick={() => setMes(null)}>Fechar</button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {mes.itens.map(({ a, t }) => {
+                const o = origemDaAcao(a);
+                return (
+                  <button key={a.id} type="button" className="w-full rounded-xl border border-slate-200 p-3 text-left transition hover:border-[#C9963A]/60 hover:shadow-md"
+                    onClick={() => { setMes(null); setModal({ temaId: t.id, destaqueId: a.id }); }}>
+                    <span className="block font-bold text-[#1A3A6B]">{a.nome}</span>
+                    <span className="text-xs text-slate-500">{o.cargo} · {o.local} → {t.nome} · {moeda(a.valor)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

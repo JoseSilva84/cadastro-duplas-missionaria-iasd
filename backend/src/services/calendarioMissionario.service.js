@@ -1,114 +1,309 @@
 const CalendarioMissionarioModel = require('../models/calendarioMissionario.model');
-const { validarIgreja } = require('./escopo.service');
+const { PERFIS, ehAdmin } = require('../middlewares/auth');
 
+const ANO_PADRAO = 2027;
 const STATUS = ['PLANEJADA', 'EM_ANDAMENTO', 'CONCLUIDA'];
 
+const erro = (mensagem, status = 400) => ({ status, mensagem });
+
 const texto = (valor) => {
-  const normalizado = String(valor || '').trim();
+  const normalizado = String(valor ?? '').trim();
   return normalizado || null;
 };
 
-const numeroNaoNegativo = (valor, padrao = 0) => {
-  const n = Number(valor);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : padrao;
-};
-
-const dataOuNull = (valor, ano) => {
-  if (!valor) return null;
-  const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) {
-    throw { status: 400, mensagem: 'Informe datas validas no calendario missionario.' };
-  }
-  // O planejamento de um ano comeca em dezembro do ano anterior.
-  const inicio = Date.UTC(ano - 1, 11, 1);
-  const fim = Date.UTC(ano, 11, 31, 23, 59, 59);
-  if (data.getTime() < inicio || data.getTime() > fim) {
-    throw { status: 400, mensagem: `As datas do calendario devem estar entre dezembro de ${ano - 1} e dezembro de ${ano}.` };
-  }
-  return data;
-};
 const anoValido = (valor) => {
-  const ano = Number(valor);
-  if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) {
-    throw { status: 400, mensagem: 'Informe um ano valido.' };
-  }
+  const ano = Number(valor || ANO_PADRAO);
+  if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) throw erro('Informe um ano valido.');
   return ano;
 };
 
-const normalizarEventos = (eventos, ano) => {
-  if (!Array.isArray(eventos)) throw { status: 400, mensagem: 'Eventos deve ser uma lista.' };
-  return eventos
-    .filter((evento) => texto(evento?.nome))
-    .map((evento) => ({
-      nome: texto(evento.nome),
-      tipo: texto(evento.tipo),
-      dataInicio: dataOuNull(evento.dataInicio, ano),
-      dataFim: dataOuNull(evento.dataFim, ano),
-      acoes: (Array.isArray(evento.acoes) ? evento.acoes : [])
-        .filter((acao) => texto(acao?.nome))
-        .map((acao) => ({
-          nome: texto(acao.nome),
-          departamento: texto(acao.departamento),
-          responsavel: texto(acao.responsavel),
-          data: dataOuNull(acao.data, ano),
-          planejamento: texto(acao.planejamento),
-          status: STATUS.includes(acao.status) ? acao.status : 'PLANEJADA',
-          orcamento: (Array.isArray(acao.orcamento) ? acao.orcamento : [])
-            .filter((item) => texto(item?.descricao))
-            .map((item) => ({
-              descricao: texto(item.descricao),
-              quantidade: numeroNaoNegativo(item.quantidade, 1),
-              valorUnit: numeroNaoNegativo(item.valorUnit, 0),
-            })),
-        })),
-    }));
+// O planejamento de um ano comeca em dezembro do ano anterior.
+const dataOuNull = (valor, ano) => {
+  if (!valor) return null;
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) throw erro('Informe uma data valida.');
+  if (data.getTime() < Date.UTC(ano - 1, 11, 1) || data.getTime() > Date.UTC(ano, 11, 31, 23, 59, 59)) {
+    throw erro(`As datas devem estar entre dezembro de ${ano - 1} e dezembro de ${ano}.`);
+  }
+  return data;
 };
 
-const formatar = (calendario, igrejaId, ano) => ({
-  igrejaId,
-  ano,
-  eventos: (calendario?.eventos || []).map((evento) => ({
-    id: evento.id,
-    nome: evento.nome,
-    tipo: evento.tipo,
-    dataInicio: evento.dataInicio,
-    dataFim: evento.dataFim,
-    acoes: evento.acoes.map((acao) => ({
-      id: acao.id,
-      nome: acao.nome,
-      departamento: acao.departamento,
-      responsavel: acao.responsavel,
-      data: acao.data,
-      planejamento: acao.planejamento,
-      status: acao.status,
-      orcamento: acao.orcamento.map((item) => ({
-        id: item.id,
-        descricao: item.descricao,
-        quantidade: Number(item.quantidade),
-        valorUnit: Number(item.valorUnit),
-      })),
-    })),
-  })),
+const valorValido = (valor) => {
+  const n = Number(valor || 0);
+  if (!Number.isFinite(n) || n < 0) throw erro('O orcamento deve ser um valor positivo.');
+  return Math.round(n * 100) / 100;
+};
+
+const idOuNull = (valor) => {
+  const n = Number(valor);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+const PERFIS_ACAO = [
+  PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL,
+  PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+];
+
+// ---------- escopo e visibilidade ----------
+async function contexto(usuario) {
+  const perfil = usuario.perfil;
+  if (ehAdmin(perfil)) return { admin: true };
+  if (perfil === PERFIS.PASTOR_REGIONAL || perfil === PERFIS.COORDENADOR_REGIONAL) {
+    if (!usuario.regiaoId) throw erro('Usuario sem regiao vinculada.');
+    return { regiaoId: Number(usuario.regiaoId) };
+  }
+  if (perfil === PERFIS.PASTOR_DISTRITAL) {
+    const distrito = usuario.distritoId && await CalendarioMissionarioModel.buscarDistrito(usuario.distritoId);
+    if (!distrito) throw erro('Usuario sem distrito vinculado.');
+    return { regiaoId: distrito.regiaoId, distritoId: distrito.id };
+  }
+  if (perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    const igreja = usuario.igrejaId && await CalendarioMissionarioModel.buscarIgreja(usuario.igrejaId);
+    if (!igreja) throw erro('Usuario sem igreja vinculada.');
+    return { regiaoId: igreja.distrito.regiaoId, distritoId: igreja.distritoId, igrejaId: igreja.id };
+  }
+  throw erro('Seu perfil nao tem acesso ao calendario missionario.', 400);
+}
+
+// O que cada nivel enxerga: Associacao + niveis acima + o proprio nivel e abaixo.
+function filtroDe({ regiaoId, distritoId, igrejaId }, abrangencia) {
+  const ou = [{ regiaoId: null }];
+  if (regiaoId) ou.push(abrangencia === 'regiao' ? { regiaoId } : { regiaoId, distritoId: null });
+  if (distritoId) ou.push(abrangencia === 'distrito' ? { distritoId } : { distritoId, igrejaId: null });
+  if (igrejaId) ou.push({ igrejaId });
+  return { OR: ou };
+}
+
+function filtroVisao(ctx) {
+  if (ctx.admin) return null;
+  if (ctx.igrejaId) return filtroDe(ctx, 'igreja');
+  if (ctx.distritoId) return filtroDe(ctx, 'distrito');
+  return filtroDe(ctx, 'regiao');
+}
+
+async function filtroSelecao(query) {
+  const igrejaId = idOuNull(query.igrejaId);
+  const distritoId = idOuNull(query.distritoId);
+  const regiaoId = idOuNull(query.regiaoId);
+  if (igrejaId) {
+    const igreja = await CalendarioMissionarioModel.buscarIgreja(igrejaId);
+    if (!igreja) throw erro('Igreja nao encontrada.', 404);
+    return filtroDe({ regiaoId: igreja.distrito.regiaoId, distritoId: igreja.distritoId, igrejaId }, 'igreja');
+  }
+  if (distritoId) {
+    const distrito = await CalendarioMissionarioModel.buscarDistrito(distritoId);
+    if (!distrito) throw erro('Distrito nao encontrado.', 404);
+    return filtroDe({ regiaoId: distrito.regiaoId, distritoId }, 'distrito');
+  }
+  if (regiaoId) return filtroDe({ regiaoId }, 'regiao');
+  return null;
+}
+
+// Define onde a acao "mora" (Associacao, regiao, distrito ou igreja) conforme o perfil.
+async function resolverOrigem(usuario, corpo) {
+  const ctx = await contexto(usuario);
+  const igrejaId = idOuNull(corpo.igrejaId);
+  const distritoId = idOuNull(corpo.distritoId);
+  const regiaoId = idOuNull(corpo.regiaoId);
+
+  if (ctx.igrejaId) return { regiaoId: ctx.regiaoId, distritoId: ctx.distritoId, igrejaId: ctx.igrejaId };
+
+  let alvo = {};
+  if (igrejaId) {
+    const igreja = await CalendarioMissionarioModel.buscarIgreja(igrejaId);
+    if (!igreja) throw erro('Igreja nao encontrada.', 404);
+    alvo = { regiaoId: igreja.distrito.regiaoId, distritoId: igreja.distritoId, igrejaId };
+  } else if (distritoId) {
+    const distrito = await CalendarioMissionarioModel.buscarDistrito(distritoId);
+    if (!distrito) throw erro('Distrito nao encontrado.', 404);
+    alvo = { regiaoId: distrito.regiaoId, distritoId, igrejaId: null };
+  } else if (regiaoId) {
+    alvo = { regiaoId, distritoId: null, igrejaId: null };
+  } else {
+    alvo = { regiaoId: null, distritoId: null, igrejaId: null };
+  }
+
+  if (ctx.admin) return alvo;
+  if (ctx.distritoId) {
+    if (!alvo.distritoId) return { regiaoId: ctx.regiaoId, distritoId: ctx.distritoId, igrejaId: null };
+    if (alvo.distritoId !== ctx.distritoId) throw erro('Selecione um distrito/igreja dentro do seu distrito.');
+    return alvo;
+  }
+  if (alvo.regiaoId !== ctx.regiaoId) {
+    // Pastor/coordenador regional sem selecao: acao da propria regiao.
+    if (!alvo.regiaoId) return { regiaoId: ctx.regiaoId, distritoId: null, igrejaId: null };
+    throw erro('Selecione um distrito/igreja dentro da sua regiao.');
+  }
+  return alvo;
+}
+
+// ---------- serializacao ----------
+const formatarAcao = (a, usuario) => ({
+  id: a.id,
+  temaId: a.temaId,
+  nome: a.nome,
+  descricao: a.descricao,
+  data: a.data,
+  valor: Number(a.valor),
+  responsavel: a.responsavel,
+  departamento: a.departamento,
+  status: a.status,
+  regiaoId: a.regiaoId,
+  distritoId: a.distritoId,
+  igrejaId: a.igrejaId,
+  regiaoNome: a.regiao?.nome || null,
+  distritoNome: a.distrito?.nome || null,
+  igrejaNome: a.igreja?.nome || null,
+  criadoPorId: a.criadoPorId,
+  criadoPorPerfil: a.criadoPorPerfil,
+  criadoPorNome: a.criadoPorNome,
+  podeEditar: ehAdmin(usuario.perfil) || (a.criadoPorId != null && a.criadoPorId === usuario.id),
 });
+
+const formatarTema = (t, usuario) => ({
+  id: t.id,
+  ano: t.ano,
+  nome: t.nome,
+  tipo: t.tipo,
+  descricao: t.descricao,
+  dataInicio: t.dataInicio,
+  dataFim: t.dataFim,
+  acoes: t.acoes.map((a) => formatarAcao(a, usuario)),
+});
+
+const exigirAdmin = (usuario) => {
+  if (!ehAdmin(usuario.perfil)) throw erro('Somente administradores podem gerenciar os temas.');
+};
+
+const exigirPerfilAcao = (usuario) => {
+  if (!PERFIS_ACAO.includes(usuario.perfil)) throw erro('Seu perfil nao pode cadastrar acoes no calendario.');
+};
+
+const dadosAcao = (corpo, ano) => {
+  const nome = texto(corpo.nome);
+  if (!nome) throw erro('Informe o nome da acao missionaria.');
+  return {
+    nome,
+    descricao: texto(corpo.descricao),
+    data: dataOuNull(corpo.data, ano),
+    valor: valorValido(corpo.valor),
+    responsavel: texto(corpo.responsavel),
+    departamento: texto(corpo.departamento),
+    status: STATUS.includes(corpo.status) ? corpo.status : 'PLANEJADA',
+  };
+};
+
+const MODELO = require('./calendarioModelo');
 
 const CalendarioMissionarioService = {
   async obter(usuario, query = {}) {
-    const igrejaId = Number(query.igrejaId);
-    if (!igrejaId) throw { status: 400, mensagem: 'Igreja obrigatoria.' };
-    const ano = anoValido(query.ano || 2027);
-    await validarIgreja(usuario, igrejaId);
-    const calendario = await CalendarioMissionarioModel.buscar(igrejaId, ano);
-    return formatar(calendario, igrejaId, ano);
+    const ano = anoValido(query.ano);
+    const ctx = await contexto(usuario);
+    const condicoes = [filtroVisao(ctx), await filtroSelecao(query)].filter(Boolean);
+    const temas = await CalendarioMissionarioModel.listarTemas(ano, condicoes.length ? { AND: condicoes } : undefined);
+    return {
+      ano,
+      temas: temas.map((t) => formatarTema(t, usuario)),
+      permissoes: {
+        gerenciarTemas: ehAdmin(usuario.perfil),
+        criarAcao: PERFIS_ACAO.includes(usuario.perfil) && !usuario.somenteLeitura,
+      },
+    };
   },
 
-  async salvar(usuario, data = {}) {
-    const igrejaId = Number(data.igrejaId);
-    if (!igrejaId) throw { status: 400, mensagem: 'Igreja obrigatoria.' };
-    const ano = anoValido(data.ano || 2027);
-    await validarIgreja(usuario, igrejaId);
-    const eventos = normalizarEventos(data.eventos, ano);
-    const calendario = await CalendarioMissionarioModel.substituir(igrejaId, ano, eventos);
-    return formatar(calendario, igrejaId, ano);
+  async criarTema(usuario, corpo) {
+    exigirAdmin(usuario);
+    const ano = anoValido(corpo.ano);
+    const nome = texto(corpo.nome);
+    if (!nome) throw erro('Informe o tema do evento.');
+    const tema = await CalendarioMissionarioModel.criarTema({
+      ano,
+      nome,
+      tipo: texto(corpo.tipo),
+      descricao: texto(corpo.descricao),
+      dataInicio: dataOuNull(corpo.dataInicio, ano),
+      dataFim: dataOuNull(corpo.dataFim, ano),
+    });
+    return formatarTema({ ...tema, acoes: [] }, usuario);
+  },
+
+  async atualizarTema(usuario, id, corpo) {
+    exigirAdmin(usuario);
+    const atual = await CalendarioMissionarioModel.buscarTema(id);
+    if (!atual) throw erro('Tema nao encontrado.', 404);
+    const nome = texto(corpo.nome);
+    if (!nome) throw erro('Informe o tema do evento.');
+    const tema = await CalendarioMissionarioModel.atualizarTema(id, {
+      nome,
+      tipo: texto(corpo.tipo),
+      descricao: texto(corpo.descricao),
+      dataInicio: dataOuNull(corpo.dataInicio, atual.ano),
+      dataFim: dataOuNull(corpo.dataFim, atual.ano),
+    });
+    return formatarTema({ ...tema, acoes: [] }, usuario);
+  },
+
+  async excluirTema(usuario, id) {
+    exigirAdmin(usuario);
+    if (!await CalendarioMissionarioModel.buscarTema(id)) throw erro('Tema nao encontrado.', 404);
+    await CalendarioMissionarioModel.excluirTema(id);
+  },
+
+  async criarModelo(usuario, corpo = {}) {
+    exigirAdmin(usuario);
+    const ano = anoValido(corpo.ano);
+    if (await CalendarioMissionarioModel.contarTemas(ano) > 0) {
+      throw erro(`Ja existem temas cadastrados para ${ano}.`);
+    }
+    const base = {
+      criadoPorId: usuario.id, criadoPorPerfil: usuario.perfil, criadoPorNome: usuario.nome,
+    };
+    await CalendarioMissionarioModel.criarTemasComAcoes(MODELO.map((t) => ({
+      dados: {
+        ano, nome: t.nome, tipo: t.tipo,
+        dataInicio: dataOuNull(t.dataInicio, ano), dataFim: dataOuNull(t.dataFim, ano),
+      },
+      acoes: t.acoes.map((a) => ({
+        ...base, nome: a.nome, departamento: a.departamento, data: dataOuNull(a.data, ano),
+      })),
+    })));
+    return this.obter(usuario, { ano });
+  },
+
+  async criarAcao(usuario, corpo) {
+    exigirPerfilAcao(usuario);
+    const tema = await CalendarioMissionarioModel.buscarTema(corpo.temaId);
+    if (!tema) throw erro('Tema nao encontrado.', 404);
+    const origem = await resolverOrigem(usuario, corpo);
+    const acao = await CalendarioMissionarioModel.criarAcao({
+      ...dadosAcao(corpo, tema.ano),
+      ...origem,
+      temaId: tema.id,
+      criadoPorId: usuario.id,
+      criadoPorPerfil: usuario.perfil,
+      criadoPorNome: usuario.nome,
+    });
+    return formatarAcao(acao, usuario);
+  },
+
+  async atualizarAcao(usuario, id, corpo) {
+    exigirPerfilAcao(usuario);
+    const atual = await CalendarioMissionarioModel.buscarAcao(id);
+    if (!atual) throw erro('Acao nao encontrada.', 404);
+    if (!formatarAcao(atual, usuario).podeEditar) throw erro('Voce so pode editar as acoes que cadastrou.');
+    const tema = await CalendarioMissionarioModel.buscarTema(atual.temaId);
+    const mudouOrigem = ['regiaoId', 'distritoId', 'igrejaId'].some((c) => corpo[c] !== undefined);
+    const origem = mudouOrigem ? await resolverOrigem(usuario, corpo) : {};
+    const acao = await CalendarioMissionarioModel.atualizarAcao(id, { ...dadosAcao(corpo, tema.ano), ...origem });
+    return formatarAcao(acao, usuario);
+  },
+
+  async excluirAcao(usuario, id) {
+    exigirPerfilAcao(usuario);
+    const atual = await CalendarioMissionarioModel.buscarAcao(id);
+    if (!atual) throw erro('Acao nao encontrada.', 404);
+    if (!formatarAcao(atual, usuario).podeEditar) throw erro('Voce so pode excluir as acoes que cadastrou.');
+    await CalendarioMissionarioModel.excluirAcao(id);
   },
 };
 

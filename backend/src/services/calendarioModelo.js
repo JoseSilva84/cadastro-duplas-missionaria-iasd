@@ -1,29 +1,9 @@
-// Modelo padrao do Calendario Missionario 2027, lido da planilha
-// "Planejamento Integrado dos Departamentos - 2027".
-// A linha do tempo da planilha tem 12 blocos de 4 colunas, comecando em
-// dezembro do ano anterior (Dez/26 ... Nov/27). As datas abaixo seguem a
-// coluna de cada item na planilha e podem ser ajustadas pela igreja.
+// Modelo inicial do Calendario Missionario 2027 (planilha "Planejamento Integrado
+// dos Departamentos"). A linha do tempo comeca em dezembro do ano anterior.
+// Os temas ficam sob controle do admin; as acoes abaixo entram como acoes da Associacao.
+const acao = (nome, departamento, data) => ({ nome, departamento, data });
 
-export const ANO_CALENDARIO = 2027;
-export const INICIO_LINHA_TEMPO = { ano: 2026, mes: 12 }; // Dez/2026
-export const DATA_MIN = '2026-12-01';
-export const DATA_MAX = '2027-11-30';
-
-export const DEPARTAMENTOS = {
-  ASA: { label: 'ASA', cor: '#2563eb' },
-  MINISTERIO_PESSOAL: { label: 'Ministério Pessoal', cor: '#c026d3' },
-  SAUDE: { label: 'Saúde', cor: '#0d9488' },
-  MULHERES: { label: 'Ministério da Mulher', cor: '#16a34a' },
-  JOVENS: { label: 'Jovens', cor: '#0284c7' },
-  DESBRAVADORES: { label: 'Desbravadores', cor: '#ca8a04' },
-  OUTRO: { label: 'Outro', cor: '#64748b' },
-};
-
-const acao = (nome, departamento, data) => ({
-  nome, departamento, responsavel: '', data, planejamento: '', status: 'PLANEJADA', orcamento: [],
-});
-
-export const criarModelo2027 = () => [
+module.exports = [
   {
     nome: 'Semana Santa', tipo: 'SEMANA_SANTA', dataInicio: '2027-03-21', dataFim: '2027-03-27',
     acoes: [
