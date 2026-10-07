@@ -1,8 +1,15 @@
 // Constantes e utilitarios do Calendario Missionario (geral).
 
 export const ANO_CALENDARIO = 2027;
-export const DATA_MIN = '2026-12-01';
-export const DATA_MAX = '2027-12-31';
+export const DATA_MIN = '2025-01-01';
+export const DATA_MAX = '2030-12-31';
+
+export const ANOS_DISPONIVEIS = [
+  { id: 'ciclo_2027', ano: 2027, modo: 'ciclo', rotulo: 'Ciclo 2026 / 2027 (Oficial)', descricao: 'Dez/2026 a Dez/2027' },
+  { id: 'ano_2027', ano: 2027, modo: 'civil', rotulo: '2027', descricao: 'Jan a Dez/2027' },
+  { id: 'ano_2026', ano: 2026, modo: 'civil', rotulo: '2026', descricao: 'Jan a Dez/2026' },
+  { id: 'ciclo_2028', ano: 2028, modo: 'ciclo', rotulo: 'Ciclo 2027 / 2028', descricao: 'Dez/2027 a Dez/2028' },
+];
 
 export const DEPARTAMENTOS = {
   ASA: { label: 'ASA', cor: '#2563eb' },
@@ -30,6 +37,10 @@ export const PERFIL_LABEL = {
 };
 
 export const NOMES_MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+export const NOMES_MES_COMPLETO = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 export const corDaAcao = (acao) => (DEPARTAMENTOS[acao.departamento] || DEPARTAMENTOS.OUTRO).cor;
 
@@ -50,23 +61,63 @@ export const chaveMes = (v) => {
   return a * 12 + (m - 1);
 };
 
-// A linha do tempo sempre comeca no proximo mes com atividade a partir do mes seguinte ao atual.
-export function calcularJanela(temas, hoje = new Date()) {
-  const proxima = hoje.getFullYear() * 12 + hoje.getMonth() + 1;
-  let inicio = null;
-  const considerar = (data) => {
-    if (!data) return;
-    const k = chaveMes(data);
-    if (k >= proxima && (inicio === null || k < inicio)) inicio = k;
-  };
-  temas.forEach((t) => {
-    considerar(t.dataInicio);
-    t.acoes.forEach((a) => considerar(a.data));
-  });
-  const base = inicio ?? proxima;
+// Gera os meses da linha do tempo.
+// No ciclo missionario oficial (modo 'ciclo', padrao), inicia em Dezembro do ano anterior
+// (ex: Dezembro de 2026 para o ciclo 2027) e vai ate Dezembro do ano do ciclo (13 meses no total).
+export function calcularJanela(anoOuOpcoes = 2027, modoPadrao = 'ciclo') {
+  let anoCiclo = 2027;
+  let modo = modoPadrao;
+
+  if (typeof anoOuOpcoes === 'number') {
+    anoCiclo = anoOuOpcoes;
+  } else if (typeof anoOuOpcoes === 'string' && !isNaN(Number(anoOuOpcoes))) {
+    anoCiclo = Number(anoOuOpcoes);
+  } else if (anoOuOpcoes && typeof anoOuOpcoes === 'object') {
+    if (anoOuOpcoes.ano) anoCiclo = Number(anoOuOpcoes.ano);
+    if (anoOuOpcoes.modo) modo = anoOuOpcoes.modo;
+  }
+
+  if (modo === 'ciclo') {
+    const chaveInicio = (anoCiclo - 1) * 12 + 11; // Dezembro do ano anterior (ex: Dez/2026)
+    const totalMeses = 13; // Dez (ano anterior) até Dez (ano atual)
+    return Array.from({ length: totalMeses }, (_, i) => {
+      const k = chaveInicio + i;
+      const ano = Math.floor(k / 12);
+      const mesIndex = k % 12;
+      const viradaAno = i > 0 && ano !== Math.floor((k - 1) / 12);
+      return {
+        key: k,
+        indice: i,
+        mesIndex,
+        nome: NOMES_MES[mesIndex],
+        nomeCompleto: NOMES_MES_COMPLETO[mesIndex],
+        ano,
+        viradaAno,
+        anoAnterior: viradaAno ? Math.floor((k - 1) / 12) : null,
+        rotuloCurto: `${NOMES_MES[mesIndex]}/${String(ano).slice(2)}`,
+        rotuloCompleto: `${NOMES_MES_COMPLETO[mesIndex]} de ${ano}`,
+      };
+    });
+  }
+
+  // Modo ano civil normal (12 meses: Jan a Dez)
+  const chaveInicio = anoCiclo * 12;
   return Array.from({ length: 12 }, (_, i) => {
-    const k = base + i;
-    return { key: k, nome: NOMES_MES[k % 12], ano: Math.floor(k / 12) };
+    const k = chaveInicio + i;
+    const ano = Math.floor(k / 12);
+    const mesIndex = k % 12;
+    return {
+      key: k,
+      indice: i,
+      mesIndex,
+      nome: NOMES_MES[mesIndex],
+      nomeCompleto: NOMES_MES_COMPLETO[mesIndex],
+      ano,
+      viradaAno: false,
+      anoAnterior: null,
+      rotuloCurto: `${NOMES_MES[mesIndex]}/${String(ano).slice(2)}`,
+      rotuloCompleto: `${NOMES_MES_COMPLETO[mesIndex]} de ${ano}`,
+    };
   });
 }
 

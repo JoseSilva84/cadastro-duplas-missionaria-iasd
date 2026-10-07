@@ -3,10 +3,10 @@ import {
   chaveMes, corDaAcao, formatarDiaCurto, moeda, origemDaAcao, periodoTema,
 } from '../../lib/calendario';
 
-const ALT_CABECALHO = 62;
+const ALT_CABECALHO = 66;
 const ALT_TEMA = 68;
 const ALT_ACAO = 68;
-const TOPO_TEMAS = ALT_CABECALHO + 36;
+const TOPO_TEMAS = ALT_CABECALHO + 38;
 const FOLGA = 124;
 const MAX_ACOES_MES = 4;
 
@@ -20,6 +20,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
   temas,
   meses,
   departamentoFiltro,
+  mesFiltro = null,
   onAbrir,
   onAbrirMes,
 }, ref) {
@@ -30,16 +31,19 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
   const [destaqueTema, setDestaqueTema] = useState(null);
   const [limites, setLimites] = useState({ inicio: true, fim: false });
 
+  const qtdMeses = meses.length || 13;
+
   const larguraMes = useMemo(() => {
-    const visiveis = largura >= 1100 ? 6 : largura >= 720 ? 4 : 2.3;
-    return Math.max(120, Math.floor(largura / visiveis));
+    const visiveis = largura >= 1100 ? 5.8 : largura >= 720 ? 3.8 : 2.2;
+    return Math.max(130, Math.floor(largura / visiveis));
   }, [largura]);
 
   const rolarParaMes = useCallback((indiceMes) => {
     const el = rolagemRef.current;
-    if (!el || indiceMes < 0 || indiceMes >= 12) return;
-    el.scrollTo({ left: indiceMes * larguraMes, behavior: 'smooth' });
-  }, [larguraMes]);
+    if (!el || indiceMes < 0 || indiceMes >= qtdMeses) return;
+    const deslocamento = Math.max(0, indiceMes * larguraMes - (el.clientWidth - larguraMes) / 2);
+    el.scrollTo({ left: deslocamento, behavior: 'smooth' });
+  }, [larguraMes, qtdMeses]);
 
   useImperativeHandle(ref, () => ({
     rolarParaMes,
@@ -67,7 +71,9 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
       if (!a.ativo) return;
       const delta = e.clientX - a.x;
       if (Math.abs(delta) > 5) a.moveu = true;
-      rolagemRef.current.scrollLeft = a.esquerda - delta;
+      if (rolagemRef.current) {
+        rolagemRef.current.scrollLeft = a.esquerda - delta;
+      }
     };
     const soltar = () => {
       if (!arrasto.current.ativo) return;
@@ -77,7 +83,10 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
     };
     window.addEventListener('mousemove', mover);
     window.addEventListener('mouseup', soltar);
-    return () => { window.removeEventListener('mousemove', mover); window.removeEventListener('mouseup', soltar); };
+    return () => {
+      window.removeEventListener('mousemove', mover);
+      window.removeEventListener('mouseup', soltar);
+    };
   }, []);
 
   const iniciarArrasto = (e) => {
@@ -87,30 +96,38 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
   };
 
   const bloquearCliqueAposArrasto = (e) => {
-    if (arrasto.current.moveu) { e.preventDefault(); e.stopPropagation(); }
+    if (arrasto.current.moveu) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const rolar = (sentido) => rolagemRef.current?.scrollBy({ left: sentido * larguraMes * 3, behavior: 'smooth' });
 
-  const inicioJanela = meses[0].key;
+  const inicioJanela = meses[0]?.key ?? 0;
   const posicao = (data) => (data ? chaveMes(data) - inicioJanela : -1);
 
   const layout = useMemo(() => {
-    const ocupacaoTema = Array(12).fill(0);
+    const ocupacaoTema = Array(qtdMeses).fill(0);
     const temasVisiveis = temas
       .map((t) => ({ t, m: posicao(t.dataInicio) }))
-      .filter(({ m }) => m >= 0 && m < 12)
-      .map((p) => { const linha = ocupacaoTema[p.m]; ocupacaoTema[p.m] += 1; return { ...p, linha }; });
+      .filter(({ m }) => m >= 0 && m < qtdMeses)
+      .map((p) => {
+        const linha = ocupacaoTema[p.m];
+        ocupacaoTema[p.m] += 1;
+        return { ...p, linha };
+      });
+
     const idsVisiveis = new Set(temasVisiveis.map((p) => p.t.id));
     const linhasTema = Math.max(1, ...ocupacaoTema);
     const topoAcoes = TOPO_TEMAS + linhasTema * (ALT_TEMA + 14) + FOLGA;
 
-    const porMes = Array.from({ length: 12 }, () => []);
+    const porMes = Array.from({ length: qtdMeses }, () => []);
     temas.forEach((t) => {
       if (!idsVisiveis.has(t.id)) return;
       t.acoes.forEach((a) => {
         const m = posicao(a.data || t.dataInicio);
-        if (m >= 0 && m < 12) porMes[m].push({ a, t });
+        if (m >= 0 && m < qtdMeses) porMes[m].push({ a, t });
       });
     });
 
@@ -122,15 +139,15 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
       if (lista.length > mostrar) extras.push({ m, linha: mostrar, itens: lista.slice(mostrar), total: lista.length });
     });
     const linhasAcao = Math.max(1, ...porMes.map((l) => Math.min(l.length, MAX_ACOES_MES)));
-    const altura = topoAcoes + linhasAcao * (ALT_ACAO + 12) + 32;
+    const altura = topoAcoes + linhasAcao * (ALT_ACAO + 12) + 36;
     return { temasVisiveis, acoes, extras, topoAcoes, altura };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [temas, inicioJanela]);
+  }, [temas, inicioJanela, qtdMeses]);
 
   const yTema = (linha) => TOPO_TEMAS + linha * (ALT_TEMA + 14);
   const yAcao = (linha) => layout.topoAcoes + linha * (ALT_ACAO + 12);
   const posTema = new Map(layout.temasVisiveis.map((p) => [p.t.id, p]));
-  const totalLargura = larguraMes * 12;
+  const totalLargura = larguraMes * qtdMeses;
   const contagemPorTema = {};
   layout.acoes.forEach(({ t }) => { contagemPorTema[t.id] = (contagemPorTema[t.id] || 0) + 1; });
   const indicePorTema = {};
@@ -143,7 +160,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         onClick={() => rolar(-1)}
         disabled={limites.inicio}
         aria-label="Meses anteriores"
-        className="absolute left-2.5 top-[92px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
+        className="absolute left-2.5 top-[96px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
       >
         <IconeSeta lado="esq" />
       </button>
@@ -153,7 +170,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         onClick={() => rolar(1)}
         disabled={limites.fim}
         aria-label="Próximos meses"
-        className="absolute right-2.5 top-[92px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
+        className="absolute right-2.5 top-[96px] z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-[#1A3A6B] shadow-xl backdrop-blur transition hover:scale-110 hover:bg-[#1A3A6B] hover:text-white disabled:pointer-events-none disabled:opacity-0 active:scale-95"
       >
         <IconeSeta lado="dir" />
       </button>
@@ -174,30 +191,72 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
         <div className="relative" style={{ width: totalLargura, height: layout.altura }}>
           {/* Colunas dos meses */}
           <div className="absolute inset-0 flex">
-            {meses.map((m, i) => (
-              <div
-                key={m.key}
-                className={`h-full border-r border-slate-200/70 transition-colors ${i % 2 ? 'bg-slate-50/50' : 'bg-white'}`}
-                style={{ width: larguraMes }}
-              />
-            ))}
+            {meses.map((m, i) => {
+              const ativo = mesFiltro === m.key;
+              return (
+                <div
+                  key={m.key}
+                  className={`relative h-full border-r border-slate-200/70 transition-colors ${
+                    m.viradaAno ? 'border-l-[3px] border-l-[#C9963A]' : ''
+                  } ${
+                    ativo
+                      ? 'bg-amber-50/60 ring-2 ring-inset ring-[#C9963A]/50'
+                      : i % 2
+                      ? 'bg-slate-50/50'
+                      : 'bg-white'
+                  }`}
+                  style={{ width: larguraMes }}
+                >
+                  {m.viradaAno && (
+                    <div className="pointer-events-none absolute left-2 top-[76px] z-10 inline-flex items-center gap-1 rounded-full bg-[#C9963A]/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[#9A6F1F] shadow-xs">
+                      <span>Ano Novo</span>
+                      <strong className="text-[#1A3A6B]">{m.ano}</strong>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Cabeçalho elegante dos 12 meses */}
+          {/* Cabeçalho elegante dos meses com transição de ano */}
           <div className="absolute inset-x-0 top-0 flex bg-gradient-to-b from-[#1A3A6B] via-[#16335e] to-[#112749]" style={{ height: ALT_CABECALHO }}>
-            {meses.map((m, i) => (
-              <div
-                key={m.key}
-                className="relative flex flex-col items-center justify-center border-r border-white/10"
-                style={{ width: larguraMes }}
-              >
-                <span className="text-sm font-extrabold uppercase tracking-[0.24em] text-white drop-shadow-sm">{m.nome}</span>
-                <span className="mt-0.5 text-[11px] font-bold tracking-widest text-[#E3B965]">{m.ano}</span>
-                {i === 0 && (
-                  <span className="absolute -bottom-px left-1/2 h-[3.5px] w-12 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#C9963A] to-[#F7D488] shadow-sm" />
-                )}
-              </div>
-            ))}
+            {meses.map((m, i) => {
+              const ativo = mesFiltro === m.key;
+              return (
+                <div
+                  key={m.key}
+                  className={`relative flex flex-col items-center justify-center border-r transition-colors ${
+                    m.viradaAno ? 'border-l-[3px] border-l-[#E3B965] bg-white/10' : 'border-white/10'
+                  } ${ativo ? 'bg-[#C9963A]/30' : ''}`}
+                  style={{ width: larguraMes }}
+                >
+                  {/* Marcador em destaque da Virada de Ano */}
+                  {m.viradaAno && (
+                    <div className="pointer-events-none absolute -top-2.5 left-0 z-30 -translate-x-1/2">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-gradient-to-r from-[#C9963A] via-[#E3B965] to-[#C9963A] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-[#1A3A6B] shadow-md ring-2 ring-[#C9963A]/40">
+                        <span>{m.anoAnterior}</span>
+                        <span className="text-white">➔</span>
+                        <span className="text-white drop-shadow-sm">{m.ano}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  <span className="text-sm font-extrabold uppercase tracking-[0.24em] text-white drop-shadow-sm">
+                    {m.nome}
+                  </span>
+                  <span className={`mt-0.5 text-[11px] font-bold tracking-widest ${m.viradaAno ? 'text-[#FFF2C2] font-black' : 'text-[#E3B965]'}`}>
+                    {m.ano}
+                  </span>
+
+                  {i === 0 && (
+                    <span className="absolute -bottom-px left-1/2 h-[3.5px] w-12 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#C9963A] to-[#F7D488] shadow-sm" />
+                  )}
+                  {ativo && (
+                    <span className="absolute bottom-0 inset-x-0 h-[3.5px] bg-[#E3B965] shadow-md" />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="absolute inset-x-0 h-[3px] bg-gradient-to-r from-[#C9963A] via-[#E3B965] to-[#C9963A]" style={{ top: ALT_CABECALHO }} />
 
@@ -350,7 +409,7 @@ const LinhaDoTempo = forwardRef(function LinhaDoTempo({
 
           {layout.temasVisiveis.length === 0 && (
             <div className="absolute inset-x-0 flex items-center justify-center text-sm font-semibold text-slate-400" style={{ top: TOPO_TEMAS + 24 }}>
-              Nenhum tema planejado nos próximos 12 meses.
+              Nenhum tema planejado para os meses deste ciclo.
             </div>
           )}
         </div>

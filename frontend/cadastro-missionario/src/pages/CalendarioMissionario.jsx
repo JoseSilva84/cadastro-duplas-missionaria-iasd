@@ -6,7 +6,7 @@ import TemaModal from '../components/calendario/TemaModal';
 import { toast } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import {
-  ANO_CALENDARIO, DEPARTAMENTOS, STATUS_ACAO, calcularJanela, chaveMes, dia, formatarDia, moeda, origemDaAcao, periodoTema,
+  ANO_CALENDARIO, ANOS_DISPONIVEIS, DEPARTAMENTOS, STATUS_ACAO, calcularJanela, chaveMes, dia, formatarDia, moeda, origemDaAcao, periodoTema,
 } from '../lib/calendario';
 
 const lista = (res) => (Array.isArray(res?.data) ? res.data : []);
@@ -29,6 +29,15 @@ export default function CalendarioMissionario() {
   const { usuario } = useAuth();
   const linhaDoTempoRef = useRef(null);
 
+  // Estados de ano e ciclo (padrão: Ciclo 2026/2027 começando em Dezembro/2026)
+  const [opcaoAnoId, setOpcaoAnoId] = useState('ciclo_2027');
+  const [mesFiltro, setMesFiltro] = useState(null); // key numérica do mês ou null
+
+  const opcaoAno = useMemo(
+    () => ANOS_DISPONIVEIS.find((a) => a.id === opcaoAnoId) || ANOS_DISPONIVEIS[0],
+    [opcaoAnoId]
+  );
+
   const [temas, setTemas] = useState([]);
   const [permissoes, setPermissoes] = useState({ gerenciarTemas: false, criarAcao: false });
   const [listas, setListas] = useState({ regioes: [], distritos: [], igrejas: [] });
@@ -36,9 +45,8 @@ export default function CalendarioMissionario() {
   const [departamentoFiltro, setDepartamentoFiltro] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [modal, setModal] = useState(null); // { temaId, destaqueId } | { novo: true }
-  const [mes, setMes] = useState(null); // { itens }
+  const [mes, setMes] = useState(null); // modal de mais itens: { mes, itens }
   const [criandoModelo, setCriandoModelo] = useState(false);
-  const [mesAtivo, setMesAtivo] = useState(null);
 
   const perfil = usuario?.perfil;
   const ehAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(perfil);
@@ -52,7 +60,7 @@ export default function CalendarioMissionario() {
 
   const carregar = useCallback(async () => {
     try {
-      const params = { ano: ANO_CALENDARIO };
+      const params = { ano: opcaoAno.ano };
       Object.entries(filtro).forEach(([k, v]) => { if (v) params[k] = v; });
       const res = await api.get('/calendario-missionario', { params });
       setTemas(res.data.temas || []);
@@ -62,15 +70,21 @@ export default function CalendarioMissionario() {
     } finally {
       setCarregando(false);
     }
-  }, [filtro]);
+  }, [opcaoAno.ano, filtro]);
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const meses = useMemo(() => calcularJanela(temas), [temas]);
+  // Meses calculados da linha do tempo: 13 meses no ciclo oficial (Dez/2026 a Dez/2027)
+  const meses = useMemo(
+    () => calcularJanela(opcaoAno.ano, opcaoAno.modo),
+    [opcaoAno.ano, opcaoAno.modo]
+  );
+
+  // Totais gerais
   const totalAcoes = temas.reduce((s, t) => s + t.acoes.length, 0);
   const totalValor = temas.reduce((s, t) => s + t.acoes.reduce((x, a) => x + Number(a.valor || 0), 0), 0);
 
-  // Próximo evento a partir de hoje
+  // Próximo evento futuro a partir de hoje
   const proximo = useMemo(() => {
     const hoje = new Date().toISOString().slice(0, 10);
     const futuros = temas
@@ -83,7 +97,7 @@ export default function CalendarioMissionario() {
     return { t, dias, qtdAcoes: t.acoes.length, valorTotal };
   }, [temas]);
 
-  // Totais por mês para a régua rápida e mini gráfico
+  // Estatísticas por mês para a régua rápida e botões de mês
   const estatisticasMeses = useMemo(() => {
     if (!meses.length) return [];
     return meses.map((m) => {
@@ -106,6 +120,22 @@ export default function CalendarioMissionario() {
     });
   }, [meses, temas]);
 
+  // Dados do mês selecionado quando o filtro de mês está ativo
+  const infoMesAtivo = useMemo(() => {
+    if (mesFiltro === null) return null;
+    return estatisticasMeses.find((m) => m.key === mesFiltro) || null;
+  }, [mesFiltro, estatisticasMeses]);
+
+  // Temas filtrados pelo mês caso o usuário queira foco no mês
+  const temasExibidos = useMemo(() => {
+    if (mesFiltro === null) return temas;
+    return temas.filter((t) => {
+      const temaNoMes = t.dataInicio && chaveMes(t.dataInicio) === mesFiltro;
+      const acaoNoMes = t.acoes.some((a) => (a.data ? chaveMes(a.data) : chaveMes(t.dataInicio)) === mesFiltro);
+      return temaNoMes || acaoNoMes;
+    });
+  }, [temas, mesFiltro]);
+
   const temaAberto = modal?.temaId ? temas.find((t) => t.id === modal.temaId) : null;
 
   const mudou = async (temaId) => {
@@ -116,8 +146,8 @@ export default function CalendarioMissionario() {
   const criarModelo = async () => {
     setCriandoModelo(true);
     try {
-      await api.post('/calendario-missionario/temas/modelo', { ano: ANO_CALENDARIO });
-      toast.success('Modelo 2027 carregado com sucesso!');
+      await api.post('/calendario-missionario/temas/modelo', { ano: opcaoAno.ano });
+      toast.success(`Modelo ${opcaoAno.ano} carregado com sucesso!`);
       await carregar();
     } catch (err) {
       toast.error(err.response?.data?.erro || 'Erro ao carregar o modelo.');
@@ -130,10 +160,20 @@ export default function CalendarioMissionario() {
     window.print();
   };
 
-  // Navegar até o mês
-  const irParaMes = (indice) => {
-    setMesAtivo(indice);
-    linhaDoTempoRef.current?.rolarParaMes(indice);
+  // Selecionar mês e navegar até ele na linha do tempo
+  const selecionarMes = (m) => {
+    if (m === null || mesFiltro === m.key) {
+      setMesFiltro(null);
+    } else {
+      setMesFiltro(m.key);
+      linhaDoTempoRef.current?.rolarParaMes(m.indice);
+    }
+  };
+
+  // Mudar ano selecionado
+  const mudarOpcaoAno = (id) => {
+    setOpcaoAnoId(id);
+    setMesFiltro(null);
   };
 
   // Filtros em cascata
@@ -172,25 +212,29 @@ export default function CalendarioMissionario() {
 
   return (
     <div className="animate-fade-in-up space-y-5 print:p-0 print:m-0">
-      {/* Cabeçalho Superior */}
+      {/* Cabeçalho Superior com Controles de Ano e Ações */}
       <section className="relative overflow-hidden rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm sm:p-6 print:border-none print:shadow-none">
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#C9963A]/10 blur-2xl" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-[#C9963A]" />
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#C9963A]">
-                Planejamento Integrado {ANO_CALENDARIO}
+                Planejamento Integrado · {opcaoAno.rotulo}
               </p>
+              <span className="rounded-full bg-[#1A3A6B]/10 px-2 py-0.5 text-[10px] font-black text-[#1A3A6B]">
+                Início em Dezembro de 2026
+              </span>
             </div>
             <h1 className="mt-2 text-3xl font-extrabold text-[#1A3A6B] sm:text-4xl" style={{ fontFamily: 'Georgia, serif' }}>
               Calendário Missionário
             </h1>
-            <p className="mt-1 max-w-xl text-sm font-medium text-slate-500">
-              Temas centrais estabelecidos pela liderança com ações locais, regionais e distritais de cada ministério.
+            <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
+              Planejamento anual oficial com início das ações da ASA em dezembro de 2026, preparando a Semana Santa e os evangelismos de 2027.
             </p>
           </div>
 
+          {/* Botões de Ação no Topo */}
           <div className="flex flex-wrap items-center gap-2.5 print:hidden">
             <button
               type="button"
@@ -211,7 +255,7 @@ export default function CalendarioMissionario() {
                 disabled={criandoModelo}
                 onClick={criarModelo}
               >
-                {criandoModelo ? 'Carregando...' : 'Carregar Modelo 2027'}
+                {criandoModelo ? 'Carregando...' : `Carregar Modelo ${opcaoAno.ano}`}
               </button>
             )}
 
@@ -227,9 +271,44 @@ export default function CalendarioMissionario() {
           </div>
         </div>
 
-        {/* Filtros em cascata */}
+        {/* Barra de Seleção de ANO */}
+        <div className="mt-5 border-t border-slate-100 pt-4 print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#1A3A6B] mr-1">
+                Ano do Calendário:
+              </span>
+              {ANOS_DISPONIVEIS.map((op) => {
+                const ativo = opcaoAnoId === op.id;
+                return (
+                  <button
+                    key={op.id}
+                    type="button"
+                    onClick={() => mudarOpcaoAno(op.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-black transition-all ${
+                      ativo
+                        ? 'border border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md'
+                        : 'border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
+                    }`}
+                  >
+                    <span>{op.rotulo}</span>
+                    {ativo && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#E3B965]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <span className="text-xs font-medium text-slate-400">
+              Mostrando {meses.length} meses ({meses[0]?.nome}/{meses[0]?.ano} a {meses[meses.length - 1]?.nome}/{meses[meses.length - 1]?.ano})
+            </span>
+          </div>
+        </div>
+
+        {/* Filtros em cascata (Região, Distrito, Igreja) */}
         {temFiltro && (
-          <div className="relative mt-5 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 print:hidden">
+          <div className="relative mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 print:hidden">
             <p className="w-full text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-400 sm:w-auto sm:pb-3">
               Filtrar Escopo:
             </p>
@@ -242,7 +321,7 @@ export default function CalendarioMissionario() {
                 className="pb-2.5 text-xs font-extrabold text-[#C9963A] hover:underline"
                 onClick={() => setFiltro({ regiaoId: '', distritoId: '', igrejaId: '' })}
               >
-                Limpar filtros
+                Limpar filtros de escopo
               </button>
             )}
           </div>
@@ -265,56 +344,118 @@ export default function CalendarioMissionario() {
           />
         </div>
         <Resumo rotulo="Temas Oficiais" valor={temas.length} detalhe="Definidos pela liderança" cor="#1A3A6B" />
-        <Resumo rotulo="Ações Planejadas" valor={totalAcoes} detalhe="Nos departamentos e igrejas" cor="#0f766e" />
-        <Resumo rotulo="Orçamento Total" valor={moeda(totalValor)} detalhe="Investimento previsto" cor="#a21caf" />
+        <Resumo
+          rotulo={infoMesAtivo ? `Ações (${infoMesAtivo.nome}/${infoMesAtivo.ano})` : 'Ações Planejadas'}
+          valor={infoMesAtivo ? infoMesAtivo.qtdAcoes : totalAcoes}
+          detalhe={infoMesAtivo ? `${totalAcoes} ações no ano todo` : 'Nos departamentos e igrejas'}
+          cor="#0f766e"
+        />
+        <Resumo
+          rotulo={infoMesAtivo ? `Orçamento (${infoMesAtivo.nome}/${infoMesAtivo.ano})` : 'Orçamento Total'}
+          valor={moeda(infoMesAtivo ? infoMesAtivo.orcamento : totalValor)}
+          detalhe={infoMesAtivo ? `${moeda(totalValor)} no ano todo` : 'Investimento previsto'}
+          cor="#a21caf"
+        />
       </div>
 
-      {/* Régua Rápida dos 12 Meses (Mini-mapa) */}
+      {/* Régua de Navegação e Filtro por MÊS (com demarcação 2026 ➔ 2027) */}
       <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm print:hidden">
-        <div className="mb-2.5 flex items-center justify-between">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1A3A6B]">
-            Navegação Rápida pelos Meses
-          </p>
-          <span className="text-[11px] font-semibold text-slate-400">Toque no mês para rolar</span>
+        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#1A3A6B]" />
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1A3A6B]">
+              Seletor de Mês e Sequência do Calendário
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            {mesFiltro !== null && (
+              <button
+                type="button"
+                onClick={() => selecionarMes(null)}
+                className="font-extrabold text-[#C9963A] hover:underline"
+              >
+                ✕ Limpar seleção de mês (ver todos)
+              </button>
+            )}
+            <span className="font-semibold text-slate-400">Toque para selecionar e rolar</span>
+          </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-          {estatisticasMeses.map((m, idx) => {
-            const temAtividades = m.qtdEventos > 0 || m.qtdAcoes > 0;
-            const selecionado = mesAtivo === idx;
-            return (
-              <button
-                key={m.key}
-                type="button"
-                onClick={() => irParaMes(idx)}
-                className={`group flex min-w-[76px] flex-1 flex-col items-center justify-center rounded-xl border p-2 text-center transition-all duration-200 ${
-                  selecionado
-                    ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md'
-                    : temAtividades
-                    ? 'border-[#C9963A]/40 bg-[#FFFDF7] text-slate-800 hover:border-[#C9963A] hover:shadow-sm'
-                    : 'border-slate-100 bg-slate-50/60 text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <span className="text-xs font-black uppercase tracking-wider">{m.nome}</span>
-                <span className={`text-[10px] font-bold ${selecionado ? 'text-[#E3B965]' : 'text-slate-400'}`}>
-                  {m.ano}
-                </span>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+          {/* Botão "Todos os Meses" */}
+          <button
+            type="button"
+            onClick={() => selecionarMes(null)}
+            className={`group flex min-w-[84px] shrink-0 flex-col items-center justify-center rounded-xl border p-2 text-center transition-all duration-200 ${
+              mesFiltro === null
+                ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md'
+                : 'border-slate-200 bg-slate-50/80 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <span className="text-xs font-black uppercase tracking-wider">Todos</span>
+            <span className={`text-[10px] font-bold ${mesFiltro === null ? 'text-[#E3B965]' : 'text-slate-400'}`}>
+              Geral
+            </span>
+            <div className="mt-1 flex items-center gap-1">
+              <span className={`text-[9.5px] font-extrabold ${mesFiltro === null ? 'text-white/80' : 'text-slate-400'}`}>
+                {totalAcoes} ações
+              </span>
+            </div>
+          </button>
 
-                <div className="mt-1 flex items-center gap-1">
-                  {m.qtdEventos > 0 && (
-                    <span
-                      title={`${m.qtdEventos} tema(s)`}
-                      className={`h-2 w-2 rounded-full ${selecionado ? 'bg-[#E3B965]' : 'bg-[#C9963A]'}`}
-                    />
-                  )}
-                  {m.qtdAcoes > 0 && (
-                    <span
-                      title={`${m.qtdAcoes} ação(ões)`}
-                      className={`h-2 w-2 rounded-full ${selecionado ? 'bg-emerald-300' : 'bg-emerald-600'}`}
-                    />
-                  )}
-                </div>
-              </button>
+          {/* Botões individuais de cada mês do ciclo com a virada de ano */}
+          {estatisticasMeses.map((m) => {
+            const temAtividades = m.qtdEventos > 0 || m.qtdAcoes > 0;
+            const selecionado = mesFiltro === m.key;
+
+            return (
+              <div key={m.key} className="flex shrink-0 items-center gap-1.5">
+                {/* Demarcação visual da virada de ano */}
+                {m.viradaAno && (
+                  <div className="flex flex-col items-center justify-center px-1">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#C9963A]/40 bg-gradient-to-r from-[#1A3A6B] to-[#13294d] px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider text-[#E3B965] shadow-sm">
+                      <span>{m.anoAnterior}</span>
+                      <span className="text-white">➔</span>
+                      <span className="text-white">{m.ano}</span>
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => selecionarMes(m)}
+                  className={`group flex min-w-[78px] flex-col items-center justify-center rounded-xl border p-2 text-center transition-all duration-200 ${
+                    selecionado
+                      ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-md scale-105 ring-2 ring-[#C9963A]'
+                      : temAtividades
+                      ? 'border-[#C9963A]/50 bg-[#FFFDF7] text-slate-800 hover:border-[#C9963A] hover:shadow-sm'
+                      : 'border-slate-100 bg-slate-50/60 text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="text-xs font-black uppercase tracking-wider">{m.nome}</span>
+                  <span className={`text-[10px] font-bold ${selecionado ? 'text-[#E3B965]' : 'text-slate-400'}`}>
+                    {m.ano}
+                  </span>
+
+                  <div className="mt-1 flex items-center gap-1">
+                    {m.qtdEventos > 0 && (
+                      <span
+                        title={`${m.qtdEventos} tema(s)`}
+                        className={`h-2 w-2 rounded-full ${selecionado ? 'bg-[#E3B965]' : 'bg-[#C9963A]'}`}
+                      />
+                    )}
+                    {m.qtdAcoes > 0 && (
+                      <span
+                        title={`${m.qtdAcoes} ação(ões)`}
+                        className={`h-2 w-2 rounded-full ${selecionado ? 'bg-emerald-300' : 'bg-emerald-600'}`}
+                      />
+                    )}
+                    {!temAtividades && (
+                      <span className="text-[9px] text-slate-300">—</span>
+                    )}
+                  </div>
+                </button>
+              </div>
             );
           })}
         </div>
@@ -331,7 +472,7 @@ export default function CalendarioMissionario() {
               </p>
             </div>
             <h2 className="mt-0.5 text-xl font-black text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Sequência Anual de Atividades
+              Sequência Anual de Atividades ({meses[0]?.nome} {meses[0]?.ano} a {meses[meses.length - 1]?.nome} {meses[meses.length - 1]?.ano})
             </h2>
           </div>
 
@@ -349,6 +490,7 @@ export default function CalendarioMissionario() {
           temas={temas}
           meses={meses}
           departamentoFiltro={departamentoFiltro}
+          mesFiltro={mesFiltro}
           onAbrir={(temaId, destaqueId) => setModal({ temaId, destaqueId })}
           onAbrirMes={(m, itens) => setMes({ mes: meses[m], itens })}
         />
@@ -401,18 +543,34 @@ export default function CalendarioMissionario() {
 
       {/* Lista e Cards de Temas com Barras de Progresso */}
       <section className="mt-5 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#C9963A]" />
             <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#C9963A]">
               Detalhamento dos Temas Oficiais
             </h3>
+            {infoMesAtivo && (
+              <span className="rounded-full bg-[#C9963A]/15 px-2.5 py-0.5 text-[10px] font-black text-[#9A6F1F]">
+                Focando: {infoMesAtivo.nomeCompleto} de {infoMesAtivo.ano}
+              </span>
+            )}
           </div>
-          <span className="text-xs font-bold text-slate-400">{temas.length} tema(s) cadastrados</span>
+          <div className="flex items-center gap-2">
+            {mesFiltro !== null && (
+              <button
+                type="button"
+                onClick={() => selecionarMes(null)}
+                className="text-xs font-bold text-[#1A3A6B] hover:underline"
+              >
+                Ver todos os temas
+              </button>
+            )}
+            <span className="text-xs font-bold text-slate-400">{temasExibidos.length} tema(s) exibidos</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
-          {temas.map((t) => {
+          {temasExibidos.map((t) => {
             const acoes = t.acoes;
             const valorTotal = acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
             const concluidas = acoes.filter((a) => a.status === 'CONCLUIDA').length;
@@ -423,6 +581,10 @@ export default function CalendarioMissionario() {
             const pctConcluida = (concluidas / total) * 100;
             const pctAndamento = (emAndamento / total) * 100;
             const pctPlanejada = (planejadas / total) * 100;
+
+            const acoesDoMes = mesFiltro !== null
+              ? acoes.filter((a) => (a.data ? chaveMes(a.data) : chaveMes(t.dataInicio)) === mesFiltro)
+              : [];
 
             return (
               <button
@@ -445,6 +607,18 @@ export default function CalendarioMissionario() {
                     <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-500">
                       {t.descricao}
                     </p>
+                  )}
+
+                  {/* Destaque de ações no mês filtrado */}
+                  {mesFiltro !== null && acoesDoMes.length > 0 && (
+                    <div className="mt-2.5 rounded-lg bg-[#C9963A]/15 p-2 text-xs font-bold text-[#9A6F1F]">
+                      ★ {acoesDoMes.length} ação(ões) neste mês ({infoMesAtivo?.nome}/{infoMesAtivo?.ano}):
+                      <ul className="mt-1 font-semibold text-slate-700 list-disc list-inside">
+                        {acoesDoMes.slice(0, 2).map((a) => (
+                          <li key={a.id} className="truncate">{a.nome} ({moeda(a.valor)})</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
 
@@ -474,10 +648,12 @@ export default function CalendarioMissionario() {
             );
           })}
 
-          {temas.length === 0 && (
+          {temasExibidos.length === 0 && (
             <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-400 sm:col-span-2 xl:col-span-3">
-              {ehAdmin
-                ? 'Nenhum tema cadastrado ainda. Use o botão "Carregar Modelo 2027" ou crie um novo tema.'
+              {mesFiltro !== null
+                ? `Nenhuma atividade agendada para ${infoMesAtivo?.nomeCompleto || 'o mês selecionado'}.`
+                : ehAdmin
+                ? `Nenhum tema cadastrado para ${opcaoAno.rotulo}. Use o botão "Carregar Modelo ${opcaoAno.ano}" ou crie um novo tema.`
                 : 'Nenhum tema oficial cadastrado pela liderança ainda.'}
             </p>
           )}
