@@ -120,6 +120,8 @@ export default function EstudanteDashboard() {
   const [salvando, setSalvando] = useState(false);
   const [secaoEditando, setSecaoEditando] = useState('');
   const [salvandoDados, setSalvandoDados] = useState(false);
+  const [duplasDisponiveis, setDuplasDisponiveis] = useState([]);
+  const [duplaEditId, setDuplaEditId] = useState('');
   const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
   const [serieSelecionada, setSerieSelecionada] = useState('');
   const [licoesSelecionadas, setLicoesSelecionadas] = useState([]);
@@ -278,6 +280,39 @@ export default function EstudanteDashboard() {
   const cancelarEdicao = () => {
     setForm(montarForm(estudo));
     setSecaoEditando('');
+  };
+  const abrirEdicaoDupla = async () => {
+    setForm(montarForm(estudo));
+    setDuplaEditId(String(estudo.duplaId || estudo.dupla?.id || ''));
+    setDuplasDisponiveis(estudo.dupla ? [estudo.dupla] : []);
+    setSecaoEditando('dupla');
+    try {
+      const { data } = await api.get('/duplas');
+      const lista = Array.isArray(data) ? data : (data?.duplas || data?.dados || []);
+      if (estudo.dupla && !lista.some((d) => Number(d.id) === Number(estudo.dupla.id))) lista.unshift(estudo.dupla);
+      setDuplasDisponiveis(lista);
+    } catch {
+      toast.error('Erro ao carregar a lista de duplas.');
+    }
+  };
+  const salvarDupla = async () => {
+    if (!duplaEditId) {
+      toast.error('Selecione a dupla responsável.');
+      return;
+    }
+    setSalvandoDados(true);
+    try {
+      const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, { ...montarPayload(montarForm(estudo)), duplaId: Number(duplaEditId) });
+      setEstudo(data);
+      setForm(montarForm(data));
+      setSecaoEditando('');
+      toast.success('Dupla responsável atualizada.');
+    } catch (err) {
+      const erros = err.response?.data?.erros;
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : (err.response?.data?.erro || 'Erro ao atualizar dupla responsável.'));
+    } finally {
+      setSalvandoDados(false);
+    }
   };
   const abrirModalLicao = () => {
     setSerieSelecionada(estudo.serie || '');
@@ -695,15 +730,33 @@ export default function EstudanteDashboard() {
         <div className="card">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-bold text-[#1A3A6B]">Dupla responsável</h2>
-            <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={() => abrirEdicao('jornada')}>
-              Editar
-            </button>
+            {secaoEditando !== 'dupla' && (
+              <button type="button" className="rounded-lg border border-[#1A3A6B]/20 px-3 py-1.5 text-xs font-semibold text-[#1A3A6B] hover:border-[#1A3A6B] hover:bg-[#1A3A6B] hover:text-white" onClick={abrirEdicaoDupla}>
+                Editar
+              </button>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Info label="Dupla" valor={`${estudo.dupla?.liderNome || ''} + ${estudo.dupla?.membro2Nome || ''}`} />
-            <Info label="Bairro" valor={estudo.dupla?.bairro} />
-            <Info label="Distrito" valor={estudo.dupla?.distrito?.nome} />
-          </div>
+          {secaoEditando === 'dupla' ? (
+            <div className="space-y-3">
+              <label className="block">
+                <span className="block text-xs text-gray-400 mb-1">Dupla responsável</span>
+                <select className="input-field" value={duplaEditId} onChange={(e) => setDuplaEditId(e.target.value)}>
+                  {duplasDisponiveis.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {`${d.liderNome || ''} + ${d.membro2Nome || ''}${d.bairro ? ` - ${d.bairro}` : ''}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <InlineActions onCancel={cancelarEdicao} onSave={salvarDupla} saving={salvandoDados} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Info label="Dupla" valor={`${estudo.dupla?.liderNome || ''} + ${estudo.dupla?.membro2Nome || ''}`} />
+              <Info label="Bairro" valor={estudo.dupla?.bairro} />
+              <Info label="Distrito" valor={estudo.dupla?.distrito?.nome} />
+            </div>
+          )}
         </div>
       </div>
 
