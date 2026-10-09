@@ -170,7 +170,7 @@ export default function DashboardEscopo() {
         <div className="mt-3 grid grid-cols-1 gap-4 xl:grid-cols-3">
           <Ranking titulo="Mais estudos" itens={rankings.estudos} campo="estudos" cor="#0284c7" />
           <Ranking titulo="Mais visitação" itens={rankings.visitas} campo="visitas" cor="#7c3aed" />
-          <Ranking titulo="Mais batismos" itens={rankings.batismos} campo="batismos" cor="#0d9488" />
+          <Ranking titulo="Mais experiência de batismos" itens={rankings.batismos} campo="batismos" cor="#0d9488" />
         </div>
       </section>
     </div>

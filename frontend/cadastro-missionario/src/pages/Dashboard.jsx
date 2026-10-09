@@ -374,7 +374,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <RankingList title="Mais estudos" items={dashboardDuplas.topEstudos} valueKey="estudos" valueLabel="estudos" color="#0284c7" onItemClick={abrirDupla} />
           <RankingList title="Mais visitação" items={dashboardDuplas.topVisitas} valueKey="visitas" valueLabel="visitas" color="#7c3aed" onItemClick={abrirDupla} />
-          <RankingList title="Mais batismos" items={dashboardDuplas.topBatismos} valueKey="batismos" valueLabel="batismos" color="#0d9488" onItemClick={abrirDupla} />
+          <RankingList title="Mais experiência de batismos" items={dashboardDuplas.topBatismos} valueKey="batismos" valueLabel="batismos" color="#0d9488" onItemClick={abrirDupla} />
         </div>
       </Section>
 
