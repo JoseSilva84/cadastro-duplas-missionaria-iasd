@@ -103,20 +103,18 @@ const MedalIcon = ({ className = 'w-5 h-5' }) => (
 function MetricCard({ label, value, detail, color, icon, onClick }) {
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="min-h-12 text-xs font-bold uppercase leading-4 tracking-widest text-gray-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
-        </div>
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center self-start rounded-xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
-          {icon}
-        </div>
+      <div className="min-w-0 pr-16">
+        <p className="min-h-12 text-xs font-bold uppercase leading-4 tracking-widest text-gray-400">{label}</p>
+        <p className="mt-2 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
+      </div>
+      <div className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
+        {icon}
       </div>
       {detail && <p className="mt-4 text-sm font-medium text-gray-500 leading-snug">{detail}</p>}
     </>
   );
 
-  const classes = 'smart-tooltip group rounded-xl border border-white bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-xl hover:shadow-[#1A3A6B]/10 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30';
+  const classes = 'smart-tooltip group relative rounded-xl border border-white bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-xl hover:shadow-[#1A3A6B]/10 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30';
 
   if (onClick) {
     return (
