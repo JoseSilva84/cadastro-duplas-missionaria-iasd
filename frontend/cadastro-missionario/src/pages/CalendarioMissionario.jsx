@@ -10,7 +10,7 @@ import { toast } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
 import { imprimirCalendarioCompleto } from '../lib/imprimirCalendario';
 import {
-  ANOS_DISPONIVEIS, DEPARTAMENTOS, calcularJanela, chaveMes, dia, formatarDia, moeda, periodoTema,
+  ANOS_DISPONIVEIS, ANOS_PARA_SELECAO, DEPARTAMENTOS, calcularJanela, chaveMes, dia, formatarDia, moeda, periodoTema,
 } from '../lib/calendario';
 
 const lista = (res) => (Array.isArray(res?.data) ? res.data : []);
@@ -37,10 +37,20 @@ export default function CalendarioMissionario() {
   const [opcaoAnoId, setOpcaoAnoId] = useState('ciclo_2027');
   const [mesFiltro, setMesFiltro] = useState(null); // key numérica do mês ou null
 
-  const opcaoAno = useMemo(
-    () => ANOS_DISPONIVEIS.find((a) => a.id === opcaoAnoId) || ANOS_DISPONIVEIS[0],
-    [opcaoAnoId]
-  );
+  const opcaoAno = useMemo(() => {
+    const opcaoFixa = ANOS_DISPONIVEIS.find((opcao) => opcao.id === opcaoAnoId);
+    if (opcaoFixa) return opcaoFixa;
+
+    const anoPersonalizado = Number(String(opcaoAnoId).replace('ano_', ''));
+    if (!ANOS_PARA_SELECAO.includes(anoPersonalizado)) return ANOS_DISPONIVEIS[0];
+    return {
+      id: `ano_${anoPersonalizado}`,
+      ano: anoPersonalizado,
+      modo: 'civil',
+      rotulo: String(anoPersonalizado),
+      descricao: `Jan a Dez/${anoPersonalizado}`,
+    };
+  }, [opcaoAnoId]);
 
   const [temas, setTemas] = useState([]);
   const [permissoes, setPermissoes] = useState({ gerenciarTemas: false, gerenciarEventos: false, criarAcao: false });
@@ -276,10 +286,10 @@ export default function CalendarioMissionario() {
   }
 
   const seletor = (rotulo, campo, opcoes, todos) => (
-    <label key={campo} className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+    <label key={campo} className="block w-full text-[11px] font-extrabold uppercase tracking-wider text-slate-500 sm:w-[210px]">
       {rotulo}
       <select
-        className="input-field mt-1 min-w-[170px]"
+        className="input-field mt-1 w-full min-w-0"
         value={filtro[campo]}
         onChange={(e) => mudarFiltro(campo, e.target.value)}
       >
@@ -302,7 +312,9 @@ export default function CalendarioMissionario() {
                 Planejamento Integrado · {opcaoAno.rotulo}
               </p>
               <span className="rounded-full bg-[#1A3A6B]/10 px-2.5 py-0.5 text-[10px] font-black text-[#1A3A6B]">
-                Início com Ações ASA em Dezembro de 2026
+                {opcaoAno.modo === 'ciclo'
+                  ? `Início com Ações ASA em Dezembro de ${opcaoAno.ano - 1}`
+                  : `Ano civil · Janeiro a Dezembro de ${opcaoAno.ano}`}
               </span>
             </div>
             <h1 className="mt-2 text-3xl font-extrabold text-[#1A3A6B] sm:text-4xl" style={{ fontFamily: 'Georgia, serif' }}>
@@ -391,6 +403,19 @@ export default function CalendarioMissionario() {
                   </button>
                 );
               })}
+              <label className="relative">
+                <span className="sr-only">Escolher outro ano do calendário</span>
+                <select
+                  className="h-[34px] min-w-[145px] rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 outline-none transition hover:border-slate-300 focus:border-[#1A3A6B] focus:ring-2 focus:ring-[#1A3A6B]/10"
+                  value={opcaoAno.modo === 'civil' ? String(opcaoAno.ano) : ''}
+                  onChange={(event) => {
+                    if (event.target.value) mudarOpcaoAno(`ano_${event.target.value}`);
+                  }}
+                >
+                  <option value="">Escolher ano...</option>
+                  {ANOS_PARA_SELECAO.map((ano) => <option key={ano} value={ano}>{ano}</option>)}
+                </select>
+              </label>
             </div>
 
             <span className="text-xs font-medium text-slate-400">
@@ -401,8 +426,8 @@ export default function CalendarioMissionario() {
 
         {/* Filtros em cascata (Região, Distrito, Igreja) */}
         {temFiltro && (
-          <div className="relative mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 print:hidden">
-            <p className="w-full text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-400 sm:w-auto sm:pb-3">
+          <div className="relative mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 print:hidden sm:flex-row sm:flex-wrap sm:items-end xl:flex-nowrap">
+            <p className="shrink-0 pb-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-400">
               Filtrar Escopo:
             </p>
             {mostrarRegiao && seletor('Região', 'regiaoId', regioes, 'Todas as regiões')}

@@ -11,6 +11,11 @@ export const ANOS_DISPONIVEIS = [
   { id: 'ciclo_2028', ano: 2028, modo: 'ciclo', rotulo: 'Ciclo 2027 / 2028', descricao: 'Dez/2027 a Dez/2028' },
 ];
 
+export const ANOS_PARA_SELECAO = Array.from(
+  { length: Number(DATA_MAX.slice(0, 4)) - Number(DATA_MIN.slice(0, 4)) + 1 },
+  (_, indice) => Number(DATA_MIN.slice(0, 4)) + indice
+);
+
 export const DEPARTAMENTOS = {
   ASA: { label: 'ASA', cor: '#2563eb' },
   MINISTERIO_PESSOAL: { label: 'Ministério Pessoal', cor: '#a21caf' },
