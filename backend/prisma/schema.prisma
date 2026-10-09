@@ -531,6 +531,17 @@ model CalendarioPermissao {
   distritoId      Int?
   podeVisualizar  Boolean  @default(true)
   podeEditar      Boolean  @default(false)
+  podeCriarTema   Boolean  @default(false)
+  podeEditarTema  Boolean  @default(false)
+  podeExcluirTema Boolean  @default(false)
+  podeCriarEvento Boolean  @default(false)
+  podeEditarEvento Boolean @default(false)
+  podeExcluirEvento Boolean @default(false)
+  podeCriarAcao   Boolean  @default(false)
+  podeEditarAcao  Boolean  @default(false)
+  podeExcluirAcao Boolean  @default(false)
+  podeEditarPlanejamento Boolean @default(false)
+  podeEditarOrcamento Boolean @default(false)
   criadoPorId     Int?
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt

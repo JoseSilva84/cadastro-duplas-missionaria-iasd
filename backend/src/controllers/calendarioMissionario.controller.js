@@ -34,18 +34,33 @@ const validarCriarAcao = [
 
 const validarId = [param('id').isInt().withMessage('Id invalido.')];
 
+const perfisCalendario = [
+  'PASTOR_REGIONAL',
+  'COORDENADOR_REGIONAL',
+  'PASTOR_DISTRITAL',
+  'DIRETOR_MISSIONARIO_IGREJA',
+  'DUPLA_MISSIONARIA',
+];
+
+const camposPermissaoCalendario = [
+  'podeVisualizar', 'podeCriarTema', 'podeEditarTema', 'podeExcluirTema',
+  'podeCriarEvento', 'podeEditarEvento', 'podeExcluirEvento',
+  'podeCriarAcao', 'podeEditarAcao', 'podeExcluirAcao',
+  'podeEditarPlanejamento', 'podeEditarOrcamento',
+];
+
 const validarPermissao = [
-  body('perfil').isIn([
-    'PASTOR_REGIONAL',
-    'COORDENADOR_REGIONAL',
-    'PASTOR_DISTRITAL',
-    'DIRETOR_MISSIONARIO_IGREJA',
-    'DUPLA_MISSIONARIA',
-  ]).withMessage('Perfil invalido.'),
-  body('regiaoId').isInt({ min: 1 }).withMessage('Regiao obrigatoria.'),
+  body('perfil').optional().isIn(perfisCalendario).withMessage('Perfil invalido.'),
+  body('perfis').optional().isArray({ min: 1 }).withMessage('Selecione ao menos um nivel de acesso.'),
+  body('perfis.*').optional().isIn(perfisCalendario).withMessage('Nivel de acesso invalido.'),
+  body('abrangencia').optional().isIn(['REGIAO', 'DISTRITO']).withMessage('Abrangencia invalida.'),
+  body('regiaoId').optional().isInt({ min: 1 }).withMessage('Regiao invalida.'),
+  body('regiaoIds').optional().isArray({ min: 1 }).withMessage('Selecione ao menos uma regiao.'),
+  body('regiaoIds.*').optional().isInt({ min: 1 }).withMessage('Regiao invalida.'),
   body('distritoId').optional({ values: 'null' }).isInt({ min: 1 }).withMessage('Distrito invalido.'),
-  body('podeVisualizar').isBoolean().withMessage('Permissao de visualizacao invalida.'),
-  body('podeEditar').isBoolean().withMessage('Permissao de edicao invalida.'),
+  body('distritoIds').optional().isArray({ min: 1 }).withMessage('Selecione ao menos um distrito.'),
+  body('distritoIds.*').optional().isInt({ min: 1 }).withMessage('Distrito invalido.'),
+  ...camposPermissaoCalendario.map((campo) => body(campo).isBoolean().withMessage(`Permissao ${campo} invalida.`)),
 ];
 
 const responderErro = (res, err, mensagem) => {

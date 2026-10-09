@@ -11,16 +11,91 @@ const PERFIS = [
   'DUPLA_MISSIONARIA',
 ];
 
+const GRUPOS_PERMISSOES = [
+  {
+    titulo: 'Temas oficiais',
+    descricao: 'Os temas são gerais e aparecem para todos que visualizam o calendário.',
+    itens: [
+      ['podeCriarTema', 'Adicionar tema'],
+      ['podeEditarTema', 'Editar tema'],
+      ['podeExcluirTema', 'Excluir tema'],
+    ],
+  },
+  {
+    titulo: 'Eventos preparatórios',
+    descricao: 'Ex.: Ações ASA, Feira de Saúde e outros eventos ligados ao tema.',
+    itens: [
+      ['podeCriarEvento', 'Adicionar evento'],
+      ['podeEditarEvento', 'Editar evento'],
+      ['podeExcluirEvento', 'Excluir evento'],
+    ],
+  },
+  {
+    titulo: 'Ações missionárias',
+    descricao: 'Define o que o perfil poderá fazer com as ações do próprio acesso.',
+    itens: [
+      ['podeCriarAcao', 'Adicionar ação'],
+      ['podeEditarAcao', 'Editar dados da ação'],
+      ['podeExcluirAcao', 'Excluir ação'],
+    ],
+  },
+  {
+    titulo: 'Conteúdo das ações',
+    descricao: 'Controle separado para as informações mais sensíveis do planejamento.',
+    itens: [
+      ['podeEditarPlanejamento', 'Editar planejamento'],
+      ['podeEditarOrcamento', 'Editar orçamento'],
+    ],
+  },
+];
+
+const CAMPOS_EDICAO = GRUPOS_PERMISSOES.flatMap((grupo) => grupo.itens.map(([campo]) => campo));
+const ROTULO_PERMISSAO = Object.fromEntries(
+  GRUPOS_PERMISSOES.flatMap((grupo) => grupo.itens.map(([campo, rotulo]) => [campo, rotulo]))
+);
+
 const novoFormulario = (regiaoId = '') => ({
-  perfil: 'PASTOR_REGIONAL',
+  perfis: ['PASTOR_REGIONAL'],
   abrangencia: 'REGIAO',
-  regiaoId: regiaoId ? String(regiaoId) : '',
-  distritoId: '',
+  regiaoIds: regiaoId ? [String(regiaoId)] : [],
+  distritoIds: [],
   podeVisualizar: true,
-  podeEditar: false,
+  ...Object.fromEntries(CAMPOS_EDICAO.map((campo) => [campo, false])),
 });
 
-const Toggle = ({ ativo, onChange, titulo, descricao, cor = 'emerald' }) => (
+const SelecaoMultipla = ({ titulo, opcoes, selecionados, onChange, vazio = 'Nenhuma opção disponível.' }) => (
+  <fieldset>
+    <legend className="text-xs font-bold text-slate-600">{titulo}</legend>
+    <div className="mt-1.5 flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+      {opcoes.map((opcao) => {
+        const valor = String(opcao.valor);
+        const ativo = selecionados.includes(valor);
+        return (
+          <label
+            key={valor}
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition ${
+              ativo ? 'border-[#1A3A6B] bg-[#1A3A6B] text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-[#1A3A6B]/40'
+            }`}
+          >
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={ativo}
+              onChange={() => onChange(ativo ? selecionados.filter((item) => item !== valor) : [...selecionados, valor])}
+            />
+            <span className={`flex h-4 w-4 items-center justify-center rounded border text-[10px] ${ativo ? 'border-white/70 bg-white/15' : 'border-slate-300'}`}>
+              {ativo ? '✓' : ''}
+            </span>
+            {opcao.rotulo}
+          </label>
+        );
+      })}
+      {!opcoes.length && <p className="p-2 text-xs text-slate-400">{vazio}</p>}
+    </div>
+  </fieldset>
+);
+
+const Toggle = ({ ativo, onChange, titulo, descricao, destaque = false }) => (
   <button
     type="button"
     role="switch"
@@ -28,15 +103,15 @@ const Toggle = ({ ativo, onChange, titulo, descricao, cor = 'emerald' }) => (
     onClick={() => onChange(!ativo)}
     className={`flex w-full items-center justify-between gap-4 rounded-xl border p-3 text-left transition ${
       ativo
-        ? cor === 'blue' ? 'border-blue-200 bg-blue-50' : 'border-emerald-200 bg-emerald-50'
+        ? destaque ? 'border-blue-200 bg-blue-50' : 'border-emerald-200 bg-emerald-50'
         : 'border-slate-200 bg-slate-50'
     }`}
   >
     <span>
       <span className="block text-sm font-bold text-[#1A3A6B]">{titulo}</span>
-      <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{descricao}</span>
+      {descricao && <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{descricao}</span>}
     </span>
-    <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${ativo ? (cor === 'blue' ? 'bg-blue-600' : 'bg-emerald-600') : 'bg-slate-300'}`}>
+    <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${ativo ? (destaque ? 'bg-blue-600' : 'bg-emerald-600') : 'bg-slate-300'}`}>
       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${ativo ? 'left-6' : 'left-1'}`} />
     </span>
   </button>
@@ -51,8 +126,8 @@ export default function PermissoesCalendarioModal({ listas, onFechar }) {
   const [excluindo, setExcluindo] = useState(false);
 
   const distritos = useMemo(() => listas.distritos.filter(
-    (distrito) => String(distrito.regiaoId) === String(form.regiaoId)
-  ), [listas.distritos, form.regiaoId]);
+    (distrito) => form.regiaoIds.includes(String(distrito.regiaoId))
+  ), [listas.distritos, form.regiaoIds]);
 
   const carregar = async () => {
     setCarregando(true);
@@ -60,7 +135,7 @@ export default function PermissoesCalendarioModal({ listas, onFechar }) {
       const { data } = await api.get('/calendario-missionario/permissoes');
       setRegras(Array.isArray(data) ? data : []);
     } catch (err) {
-      toast.error(err.response?.data?.erro || 'Erro ao carregar as permissões do calendário.');
+      toast.error(err.response?.data?.erro || 'Erro ao listar permissões do calendário.');
     } finally {
       setCarregando(false);
     }
@@ -79,31 +154,40 @@ export default function PermissoesCalendarioModal({ listas, onFechar }) {
     };
   }, [onFechar]);
 
-  const alterar = (campo, valor) => setForm((atual) => {
-    if (campo === 'regiaoId') return { ...atual, regiaoId: valor, distritoId: '' };
-    if (campo === 'abrangencia') return { ...atual, abrangencia: valor, distritoId: '' };
-    if (campo === 'podeVisualizar' && !valor) return { ...atual, podeVisualizar: false, podeEditar: false };
-    if (campo === 'podeEditar' && valor) return { ...atual, podeVisualizar: true, podeEditar: true };
+  const alterarRegioes = (regiaoIds) => setForm((atual) => {
+    const idsDistritosValidos = new Set(
+      listas.distritos.filter((distrito) => regiaoIds.includes(String(distrito.regiaoId))).map((distrito) => String(distrito.id))
+    );
+    return { ...atual, regiaoIds, distritoIds: atual.distritoIds.filter((id) => idsDistritosValidos.has(id)) };
+  });
+
+  const alterarPermissao = (campo, valor) => setForm((atual) => {
+    if (campo === 'podeVisualizar' && !valor) {
+      return { ...atual, podeVisualizar: false, ...Object.fromEntries(CAMPOS_EDICAO.map((chave) => [chave, false])) };
+    }
+    if (campo !== 'podeVisualizar' && valor) return { ...atual, podeVisualizar: true, [campo]: true };
     return { ...atual, [campo]: valor };
   });
 
   const salvar = async () => {
-    if (!form.regiaoId) { toast.error('Selecione a região.'); return; }
-    if (form.abrangencia === 'DISTRITO' && !form.distritoId) { toast.error('Selecione o distrito.'); return; }
+    if (!form.perfis.length) { toast.error('Selecione ao menos um nível de acesso.'); return; }
+    if (!form.regiaoIds.length) { toast.error('Selecione ao menos uma região.'); return; }
+    if (form.abrangencia === 'DISTRITO' && !form.distritoIds.length) { toast.error('Selecione ao menos um distrito.'); return; }
     setSalvando(true);
     try {
-      await api.post('/calendario-missionario/permissoes', {
-        perfil: form.perfil,
-        regiaoId: Number(form.regiaoId),
-        distritoId: form.abrangencia === 'DISTRITO' ? Number(form.distritoId) : null,
-        podeVisualizar: form.podeVisualizar,
-        podeEditar: form.podeEditar,
+      const { data } = await api.post('/calendario-missionario/permissoes', {
+        ...Object.fromEntries(['podeVisualizar', ...CAMPOS_EDICAO].map((campo) => [campo, form[campo]])),
+        perfis: form.perfis,
+        abrangencia: form.abrangencia,
+        regiaoIds: form.regiaoIds.map(Number),
+        ...(form.abrangencia === 'DISTRITO' ? { distritoIds: form.distritoIds.map(Number) } : {}),
       });
-      toast.success('Permissão do calendário salva.');
-      setForm(novoFormulario(form.regiaoId));
+      const quantidade = Array.isArray(data) ? data.length : 1;
+      toast.success(`${quantidade} permissão(ões) salva(s) com sucesso.`);
+      setForm(novoFormulario(form.regiaoIds[0]));
       await carregar();
     } catch (err) {
-      toast.error(err.response?.data?.erro || 'Erro ao salvar a permissão.');
+      toast.error(err.response?.data?.erro || 'Erro ao salvar as permissões.');
     } finally {
       setSalvando(false);
     }
@@ -126,82 +210,101 @@ export default function PermissoesCalendarioModal({ listas, onFechar }) {
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-6" onClick={onFechar}>
-      <div className="relative my-auto flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="titulo-permissoes-calendario">
+      <div className="relative my-auto flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="titulo-permissoes-calendario">
         <div className="bg-gradient-to-br from-[#1A3A6B] to-[#112749] px-5 py-5 text-white sm:px-6">
           <button type="button" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl hover:bg-white/20" onClick={onFechar} aria-label="Fechar">×</button>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#E3B965]">Controle de acesso</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#E3B965]">Controle detalhado de acesso</p>
           <h2 id="titulo-permissoes-calendario" className="mt-1 pr-12 text-2xl font-black" style={{ fontFamily: 'Georgia, serif' }}>Permissões do Calendário Missionário</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/75">Escolha o perfil e aplique a regra em toda uma região ou somente em um distrito. Uma regra distrital prevalece sobre a regra regional.</p>
+          <p className="mt-2 max-w-4xl text-sm leading-relaxed text-white/75">Selecione vários níveis e regiões para aplicar a mesma regra de uma só vez. Regras de distrito continuam prevalecendo sobre regras da região.</p>
         </div>
 
-        <div className="grid flex-1 gap-5 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <h3 className="text-base font-black text-[#1A3A6B]">Conceder ou alterar uma permissão</h3>
-            <p className="mt-1 text-xs text-slate-500">Salvar novamente o mesmo perfil e local atualiza a regra existente.</p>
+        <div className="grid flex-1 gap-5 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+          <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div>
+              <h3 className="text-base font-black text-[#1A3A6B]">Conceder ou alterar permissões</h3>
+              <p className="mt-1 text-xs text-slate-500">A combinação de perfil e local que já existir será atualizada.</p>
+            </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-xs font-bold text-slate-600 sm:col-span-2">Nível de acesso
-                <select className="input-field mt-1" value={form.perfil} onChange={(event) => alterar('perfil', event.target.value)}>
-                  {PERFIS.map((perfil) => <option key={perfil} value={perfil}>{PERFIL_LABEL[perfil] || perfil}</option>)}
-                </select>
-              </label>
+            <SelecaoMultipla
+              titulo="Níveis de acesso — selecione um ou mais"
+              opcoes={PERFIS.map((perfil) => ({ valor: perfil, rotulo: PERFIL_LABEL[perfil] || perfil }))}
+              selecionados={form.perfis}
+              onChange={(perfis) => setForm((atual) => ({ ...atual, perfis }))}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
               <label className="text-xs font-bold text-slate-600">Aplicar em
-                <select className="input-field mt-1" value={form.abrangencia} onChange={(event) => alterar('abrangencia', event.target.value)}>
-                  <option value="REGIAO">Toda a região</option>
-                  <option value="DISTRITO">Distrito específico</option>
+                <select className="input-field mt-1" value={form.abrangencia} onChange={(event) => setForm((atual) => ({ ...atual, abrangencia: event.target.value, distritoIds: [] }))}>
+                  <option value="REGIAO">Regiões inteiras</option>
+                  <option value="DISTRITO">Distritos específicos</option>
                 </select>
               </label>
-              <label className="text-xs font-bold text-slate-600">Região
-                <select className="input-field mt-1" value={form.regiaoId} onChange={(event) => alterar('regiaoId', event.target.value)}>
-                  <option value="">Selecione...</option>
-                  {listas.regioes.map((regiao) => <option key={regiao.id} value={regiao.id}>{regiao.nome}</option>)}
-                </select>
-              </label>
-              {form.abrangencia === 'DISTRITO' && (
-                <label className="text-xs font-bold text-slate-600 sm:col-span-2">Distrito
-                  <select className="input-field mt-1" value={form.distritoId} onChange={(event) => alterar('distritoId', event.target.value)} disabled={!form.regiaoId}>
-                    <option value="">Selecione o distrito...</option>
-                    {distritos.map((distrito) => <option key={distrito.id} value={distrito.id}>{distrito.nome}</option>)}
-                  </select>
-                </label>
-              )}
+              <SelecaoMultipla
+                titulo="Regiões — selecione uma ou mais"
+                opcoes={listas.regioes.map((regiao) => ({ valor: regiao.id, rotulo: regiao.nome }))}
+                selecionados={form.regiaoIds}
+                onChange={alterarRegioes}
+              />
             </div>
 
-            <div className="mt-4 space-y-3">
-              <Toggle ativo={form.podeVisualizar} onChange={(valor) => alterar('podeVisualizar', valor)} titulo="Pode visualizar o calendário" descricao="Permite abrir o calendário e consultar temas, eventos e ações do próprio escopo." cor="blue" />
-              <Toggle ativo={form.podeEditar} onChange={(valor) => alterar('podeEditar', valor)} titulo="Pode editar o calendário" descricao="Permite cadastrar e alterar as próprias ações. Perfis de liderança também poderão gerenciar eventos." />
+            {form.abrangencia === 'DISTRITO' && (
+              <SelecaoMultipla
+                titulo="Distritos específicos — selecione um ou mais"
+                opcoes={distritos.map((distrito) => ({ valor: distrito.id, rotulo: distrito.nome }))}
+                selecionados={form.distritoIds}
+                onChange={(distritoIds) => setForm((atual) => ({ ...atual, distritoIds }))}
+                vazio="Selecione primeiro uma ou mais regiões."
+              />
+            )}
+
+            <Toggle ativo={form.podeVisualizar} onChange={(valor) => alterarPermissao('podeVisualizar', valor)} titulo="Pode visualizar o calendário" descricao="Sem esta opção, o perfil não consegue abrir o calendário naquele local." destaque />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {GRUPOS_PERMISSOES.map((grupo) => (
+                <div key={grupo.titulo} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <p className="text-sm font-black text-[#1A3A6B]">{grupo.titulo}</p>
+                  <p className="mt-0.5 min-h-8 text-[11px] leading-relaxed text-slate-500">{grupo.descricao}</p>
+                  <div className="mt-2 space-y-2">
+                    {grupo.itens.map(([campo, rotulo]) => (
+                      <Toggle key={campo} ativo={form[campo]} onChange={(valor) => alterarPermissao(campo, valor)} titulo={rotulo} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <button type="button" className="btn-primary mt-5 w-full px-5 py-2.5 text-sm disabled:opacity-60" disabled={salvando} onClick={salvar}>
-              {salvando ? 'Salvando...' : 'Salvar permissão'}
+            <button type="button" className="btn-primary w-full px-5 py-2.5 text-sm disabled:opacity-60" disabled={salvando} onClick={salvar}>
+              {salvando ? 'Salvando...' : 'Salvar permissões selecionadas'}
             </button>
           </section>
 
           <section className="min-w-0">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-black text-[#1A3A6B]">Regras configuradas</h3>
-                <p className="text-xs text-slate-500">{regras.length} regra(s) personalizada(s)</p>
-              </div>
+            <div>
+              <h3 className="text-base font-black text-[#1A3A6B]">Regras configuradas</h3>
+              <p className="text-xs text-slate-500">{regras.length} regra(s) personalizada(s)</p>
             </div>
 
             <div className="mt-3 space-y-2.5">
               {carregando && <p className="rounded-xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-400">Carregando permissões...</p>}
-              {!carregando && regras.map((regra) => (
-                <article key={regra.id} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-black text-[#1A3A6B]">{PERFIL_LABEL[regra.perfil] || regra.perfil}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{regra.distrito ? `Distrito ${regra.distrito.nome}` : `Região ${regra.regiao?.nome || ''}`}</p>
+              {!carregando && regras.map((regra) => {
+                const ativas = CAMPOS_EDICAO.filter((campo) => regra[campo]);
+                return (
+                  <article key={regra.id} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-black text-[#1A3A6B]">{PERFIL_LABEL[regra.perfil] || regra.perfil}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{regra.distrito ? `Distrito ${regra.distrito.nome}` : `Região ${regra.regiao?.nome || ''}`}</p>
+                      </div>
+                      <button type="button" className="shrink-0 text-xs font-bold text-red-600 hover:underline" onClick={() => setExcluirAlvo(regra)}>Remover</button>
                     </div>
-                    <button type="button" className="shrink-0 text-xs font-bold text-red-600 hover:underline" onClick={() => setExcluirAlvo(regra)}>Remover</button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${regra.podeVisualizar ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{regra.podeVisualizar ? 'Pode visualizar' : 'Sem visualização'}</span>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${regra.podeEditar ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{regra.podeEditar ? 'Pode editar' : 'Somente consulta'}</span>
-                  </div>
-                </article>
-              ))}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${regra.podeVisualizar ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{regra.podeVisualizar ? 'Pode visualizar' : 'Sem visualização'}</span>
+                      {ativas.map((campo) => <span key={campo} className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">{ROTULO_PERMISSAO[campo]}</span>)}
+                      {regra.podeVisualizar && !ativas.length && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">Somente consulta</span>}
+                    </div>
+                  </article>
+                );
+              })}
               {!carregando && regras.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-400">Nenhuma regra personalizada. Os acessos atuais continuam seguindo o padrão do sistema.</p>}
             </div>
           </section>

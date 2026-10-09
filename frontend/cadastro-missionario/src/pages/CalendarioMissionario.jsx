@@ -352,7 +352,7 @@ export default function CalendarioMissionario() {
               </button>
             )}
 
-            {ehAdmin && (
+            {permissoes.criarTema && (
               <button
                 type="button"
                 className="btn-primary px-4 py-2 text-xs font-bold"

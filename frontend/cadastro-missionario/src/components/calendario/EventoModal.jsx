@@ -26,7 +26,7 @@ const acaoVazia = () => ({
 });
 
 // Formulário de cadastro/edição de uma ação missionária
-function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancelar, onExcluida }) {
+function AcaoForm({ inicial, evento, temaId, usuario, listas, permissoes, onSalvo, onCancelar, onExcluida }) {
   const [form, setForm] = useState(() => ({
     ...inicial,
     data: dia(inicial.data) || dia(evento?.data) || '',
@@ -40,6 +40,12 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
   }));
   const [salvando, setSalvando] = useState(false);
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
+  const nova = !inicial.id;
+  const podeEditarDados = nova ? permissoes.criarAcao : inicial.podeEditarDados;
+  const podeEditarPlanejamento = nova ? permissoes.editarPlanejamento : inicial.podeEditarPlanejamento;
+  const podeEditarOrcamento = nova ? permissoes.editarOrcamento : inicial.podeEditarOrcamento;
+  const podeExcluir = !nova && inicial.podeExcluir;
+  const podeSalvar = podeEditarDados || podeEditarPlanejamento || podeEditarOrcamento;
 
   const perfil = usuario?.perfil;
   const ehAdmin = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR].includes(perfil);
@@ -117,6 +123,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
       <Campo label="Ação Missionária *">
         <input
           className="input-field"
+          disabled={!podeEditarDados}
           value={form.nome}
           onChange={(e) => set('nome', e.target.value)}
           placeholder="Ex.: Distribuição de Cestas Básicas e Pesquisas Bíblicas"
@@ -127,6 +134,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
       <Campo label="Planejamento e Descrição detalhada">
         <textarea
           className="input-field min-h-[140px] resize-y leading-relaxed"
+          disabled={!podeEditarPlanejamento}
           value={form.descricao}
           onChange={(e) => set('descricao', e.target.value)}
           placeholder="Descreva o planejamento: objetivo, público-alvo, como a igreja/distrito vai atuar, equipes, materiais necessários, divulgação, metas..."
@@ -138,6 +146,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
           <input
             type="date"
             className="input-field"
+            disabled={!podeEditarDados}
             min={DATA_MIN}
             max={DATA_MAX}
             value={form.data}
@@ -152,6 +161,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
             min="0"
             step="0.01"
             className="input-field"
+            disabled={!podeEditarOrcamento}
             value={form.valor}
             onChange={(e) => set('valor', e.target.value)}
             placeholder="0,00"
@@ -161,6 +171,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
         <Campo label="Responsável">
           <input
             className="input-field"
+            disabled={!podeEditarDados}
             value={form.responsavel}
             onChange={(e) => set('responsavel', e.target.value)}
             placeholder="Nome do líder"
@@ -170,6 +181,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
         <Campo label="Departamento">
           <select
             className="input-field"
+            disabled={!podeEditarDados}
             value={form.departamento}
             onChange={(e) => set('departamento', e.target.value)}
           >
@@ -183,6 +195,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
       <Campo label="Situação" className="sm:max-w-xs">
         <select
           className="input-field"
+          disabled={!podeEditarDados}
           value={form.status}
           onChange={(e) => set('status', e.target.value)}
         >
@@ -210,7 +223,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
                 <select
                   className="input-field"
                   value={ehRegional ? regiaoFixa : form.regiaoId}
-                  disabled={ehRegional}
+                  disabled={ehRegional || !podeEditarDados}
                   onChange={(e) => aoMudarRegiao(e.target.value)}
                 >
                   {!ehRegional && <option value="">Todas / Associação</option>}
@@ -225,7 +238,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
               <select
                 className="input-field"
                 value={ehDistrital ? String(usuario.distritoId || '') : form.distritoId}
-                disabled={ehDistrital}
+                disabled={ehDistrital || !podeEditarDados}
                 onChange={(e) => aoMudarDistrito(e.target.value)}
               >
                 {!ehDistrital && <option value="">{ehRegional ? 'Toda a região' : 'Todos'}</option>}
@@ -238,6 +251,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
             <Campo label="Igreja">
               <select
                 className="input-field"
+                disabled={!podeEditarDados}
                 value={form.igrejaId}
                 onChange={(e) => set('igrejaId', e.target.value)}
               >
@@ -253,7 +267,7 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between pt-2">
         <div className="flex gap-2">
-          {form.id && (
+          {podeExcluir && (
             <button
               type="button"
               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50"
@@ -266,14 +280,16 @@ function AcaoForm({ inicial, evento, temaId, usuario, listas, onSalvo, onCancela
             Cancelar
           </button>
         </div>
-        <button
-          type="button"
-          className="btn-primary px-6 py-2 text-sm disabled:opacity-60"
-          disabled={salvando}
-          onClick={salvar}
-        >
-          {salvando ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Salvar ação missionária'}
-        </button>
+        {podeSalvar && (
+          <button
+            type="button"
+            className="btn-primary px-6 py-2 text-sm disabled:opacity-60"
+            disabled={salvando}
+            onClick={salvar}
+          >
+            {salvando ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Salvar ação missionária'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -318,9 +334,47 @@ export default function EventoModal({
   onMudou,
 }) {
   const [aberta, setAberta] = useState(destaqueAcaoId || null);
+  const [editandoEvento, setEditandoEvento] = useState(false);
+  const [salvandoEvento, setSalvandoEvento] = useState(false);
+  const [eventoForm, setEventoForm] = useState(() => ({
+    nome: evento?.nome || '',
+    descricao: evento?.descricao || '',
+    data: dia(evento?.data) || '',
+    departamento: evento?.departamento || 'OUTRO',
+  }));
   const acoes = evento?.acoes || [];
   const orcamentoTotal = acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
   const depto = DEPARTAMENTOS[evento?.departamento] || DEPARTAMENTOS.OUTRO;
+
+  const salvarEvento = async () => {
+    if (!eventoForm.nome.trim()) { toast.error('Informe o nome do evento.'); return; }
+    setSalvandoEvento(true);
+    try {
+      await api.put(`/calendario-missionario/eventos/${evento.id}`, {
+        ...eventoForm,
+        data: eventoForm.data || null,
+      });
+      toast.success('Evento atualizado.');
+      onMudou();
+      onFechar();
+    } catch (err) {
+      toast.error(msgErro(err, 'Erro ao atualizar o evento.'));
+    } finally {
+      setSalvandoEvento(false);
+    }
+  };
+
+  const excluirEvento = async () => {
+    if (!window.confirm(`Excluir o evento "${evento.nome}" e as ações vinculadas a ele?`)) return;
+    try {
+      await api.delete(`/calendario-missionario/eventos/${evento.id}`);
+      toast.success('Evento excluído.');
+      onMudou();
+      onFechar();
+    } catch (err) {
+      toast.error(msgErro(err, 'Erro ao excluir o evento.'));
+    }
+  };
 
   useEffect(() => {
     const teclas = (e) => { if (e.key === 'Escape') onFechar(); };
@@ -378,14 +432,36 @@ export default function EventoModal({
             )}
           </div>
 
-          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl" style={{ fontFamily: 'Georgia, serif' }}>
-            {evento?.nome}
-          </h2>
-
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-white/80 font-medium">
-            <span>Data de referência: <strong>{formatarDia(evento?.data)}</strong></span>
-            {evento?.descricao && <span>· {evento.descricao}</span>}
-          </div>
+          {editandoEvento ? (
+            <div className="mt-3 space-y-3 pr-10">
+              <input className="w-full rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xl font-black text-white outline-none" value={eventoForm.nome} onChange={(e) => setEventoForm((atual) => ({ ...atual, nome: e.target.value }))} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input type="date" min={DATA_MIN} max={DATA_MAX} className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none [color-scheme:dark]" value={eventoForm.data} onChange={(e) => setEventoForm((atual) => ({ ...atual, data: e.target.value }))} />
+                <select className="rounded-lg border border-white/20 bg-[#1A3A6B] px-3 py-2 text-sm text-white outline-none" value={eventoForm.departamento} onChange={(e) => setEventoForm((atual) => ({ ...atual, departamento: e.target.value }))}>
+                  {Object.entries(DEPARTAMENTOS).map(([chave, item]) => <option key={chave} value={chave}>{item.label}</option>)}
+                </select>
+              </div>
+              <textarea className="min-h-20 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none" value={eventoForm.descricao} onChange={(e) => setEventoForm((atual) => ({ ...atual, descricao: e.target.value }))} placeholder="Orientações do evento" />
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="rounded-lg bg-[#C9963A] px-4 py-2 text-xs font-black text-white disabled:opacity-60" disabled={salvandoEvento} onClick={salvarEvento}>{salvandoEvento ? 'Salvando...' : 'Salvar evento'}</button>
+                <button type="button" className="rounded-lg border border-white/30 px-4 py-2 text-xs font-bold text-white" onClick={() => setEditandoEvento(false)}>Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl" style={{ fontFamily: 'Georgia, serif' }}>{evento?.nome}</h2>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs font-medium text-white/80">
+                <span>Data de referência: <strong>{formatarDia(evento?.data)}</strong></span>
+                {evento?.descricao && <span>· {evento.descricao}</span>}
+              </div>
+              {(permissoes.editarEvento || permissoes.excluirEvento) && (
+                <div className="mt-3 flex gap-2">
+                  {permissoes.editarEvento && <button type="button" className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/10" onClick={() => setEditandoEvento(true)}>Editar evento</button>}
+                  {permissoes.excluirEvento && <button type="button" className="rounded-lg border border-red-300/40 px-3 py-1.5 text-xs font-bold text-red-100 hover:bg-red-500/20" onClick={excluirEvento}>Excluir evento</button>}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Corpo com lista de ações e formulário */}
@@ -419,6 +495,7 @@ export default function EventoModal({
               temaId={tema?.id || evento?.temaId}
               usuario={usuario}
               listas={listas}
+              permissoes={permissoes}
               onSalvo={(a) => {
                 setAberta(a.id);
                 onMudou();
@@ -465,13 +542,14 @@ export default function EventoModal({
                 </button>
 
                 {aberto && (
-                  a.podeEditar && permissoes.criarAcao ? (
+                  (a.podeEditar || a.podeExcluir) ? (
                     <AcaoForm
                       inicial={a}
                       evento={evento}
                       temaId={tema?.id || evento?.temaId}
                       usuario={usuario}
                       listas={listas}
+                      permissoes={permissoes}
                       onSalvo={() => onMudou()}
                       onCancelar={() => setAberta(null)}
                       onExcluida={() => {

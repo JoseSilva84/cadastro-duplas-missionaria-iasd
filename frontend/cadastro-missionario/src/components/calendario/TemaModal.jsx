@@ -108,8 +108,8 @@ export default function TemaModal({
     }
   };
 
-  const editarTema = permissoes.gerenciarTemas;
-  const podeAdicionarEvento = permissoes.gerenciarTemas || permissoes.gerenciarEventos;
+  const editarTema = novo ? permissoes.criarTema : permissoes.editarTema;
+  const podeAdicionarEvento = permissoes.criarEvento;
 
   return (
     <div
@@ -189,7 +189,7 @@ export default function TemaModal({
                 >
                   {salvandoTema ? 'Salvando...' : novo ? 'Criar Tema' : 'Salvar Alterações'}
                 </button>
-                {!novo && (
+                {!novo && permissoes.excluirTema && (
                   <button
                     type="button"
                     className="rounded-xl border border-red-300/40 px-4 py-2 text-xs font-bold text-red-200 transition hover:bg-red-500/20"
@@ -210,6 +210,15 @@ export default function TemaModal({
                 <p className="mt-3 whitespace-pre-wrap rounded-xl bg-white/10 p-3 text-xs leading-relaxed text-white/90">
                   {tema.descricao}
                 </p>
+              )}
+              {permissoes.excluirTema && (
+                <button
+                  type="button"
+                  className="mt-3 rounded-xl border border-red-300/40 px-4 py-2 text-xs font-bold text-red-200 transition hover:bg-red-500/20"
+                  onClick={excluirTema}
+                >
+                  Excluir Tema
+                </button>
               )}
             </div>
           )}

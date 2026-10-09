@@ -12,6 +12,10 @@ const permissaoComLocal = async (id) => {
     SELECT
       cp."id", cp."chave", cp."perfil"::text AS "perfil",
       cp."regiaoId", cp."distritoId", cp."podeVisualizar", cp."podeEditar",
+      cp."podeCriarTema", cp."podeEditarTema", cp."podeExcluirTema",
+      cp."podeCriarEvento", cp."podeEditarEvento", cp."podeExcluirEvento",
+      cp."podeCriarAcao", cp."podeEditarAcao", cp."podeExcluirAcao",
+      cp."podeEditarPlanejamento", cp."podeEditarOrcamento",
       cp."criadoPorId", cp."criadoEm", cp."atualizadoEm",
       json_build_object('id', r."id", 'nome', r."nome") AS "regiao",
       CASE
@@ -143,6 +147,10 @@ const CalendarioMissionarioModel = {
       SELECT
         cp."id", cp."chave", cp."perfil"::text AS "perfil",
         cp."regiaoId", cp."distritoId", cp."podeVisualizar", cp."podeEditar",
+        cp."podeCriarTema", cp."podeEditarTema", cp."podeExcluirTema",
+        cp."podeCriarEvento", cp."podeEditarEvento", cp."podeExcluirEvento",
+        cp."podeCriarAcao", cp."podeEditarAcao", cp."podeExcluirAcao",
+        cp."podeEditarPlanejamento", cp."podeEditarOrcamento",
         cp."criadoPorId", cp."criadoEm", cp."atualizadoEm",
         json_build_object('id', r."id", 'nome', r."nome") AS "regiao",
         CASE
@@ -160,7 +168,12 @@ const CalendarioMissionarioModel = {
     return prisma.$queryRaw`
       SELECT
         "id", "chave", "perfil"::text AS "perfil", "regiaoId", "distritoId",
-        "podeVisualizar", "podeEditar", "criadoPorId", "criadoEm", "atualizadoEm"
+        "podeVisualizar", "podeEditar",
+        "podeCriarTema", "podeEditarTema", "podeExcluirTema",
+        "podeCriarEvento", "podeEditarEvento", "podeExcluirEvento",
+        "podeCriarAcao", "podeEditarAcao", "podeExcluirAcao",
+        "podeEditarPlanejamento", "podeEditarOrcamento",
+        "criadoPorId", "criadoEm", "atualizadoEm"
       FROM "CalendarioPermissao"
       WHERE "chave" = ${chave}
       LIMIT 1
@@ -171,10 +184,18 @@ const CalendarioMissionarioModel = {
     const [registro] = await prisma.$queryRaw`
       INSERT INTO "CalendarioPermissao" (
         "chave", "perfil", "regiaoId", "distritoId", "podeVisualizar",
-        "podeEditar", "criadoPorId", "criadoEm", "atualizadoEm"
+        "podeEditar", "podeCriarTema", "podeEditarTema", "podeExcluirTema",
+        "podeCriarEvento", "podeEditarEvento", "podeExcluirEvento",
+        "podeCriarAcao", "podeEditarAcao", "podeExcluirAcao",
+        "podeEditarPlanejamento", "podeEditarOrcamento",
+        "criadoPorId", "criadoEm", "atualizadoEm"
       ) VALUES (
         ${chave}, CAST(${data.perfil} AS "Perfil"), ${data.regiaoId}, ${data.distritoId},
-        ${data.podeVisualizar}, ${data.podeEditar}, ${data.criadoPorId},
+        ${data.podeVisualizar}, ${data.podeEditar},
+        ${data.podeCriarTema}, ${data.podeEditarTema}, ${data.podeExcluirTema},
+        ${data.podeCriarEvento}, ${data.podeEditarEvento}, ${data.podeExcluirEvento},
+        ${data.podeCriarAcao}, ${data.podeEditarAcao}, ${data.podeExcluirAcao},
+        ${data.podeEditarPlanejamento}, ${data.podeEditarOrcamento}, ${data.criadoPorId},
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       )
       ON CONFLICT ("chave") DO UPDATE SET
@@ -183,6 +204,17 @@ const CalendarioMissionarioModel = {
         "distritoId" = EXCLUDED."distritoId",
         "podeVisualizar" = EXCLUDED."podeVisualizar",
         "podeEditar" = EXCLUDED."podeEditar",
+        "podeCriarTema" = EXCLUDED."podeCriarTema",
+        "podeEditarTema" = EXCLUDED."podeEditarTema",
+        "podeExcluirTema" = EXCLUDED."podeExcluirTema",
+        "podeCriarEvento" = EXCLUDED."podeCriarEvento",
+        "podeEditarEvento" = EXCLUDED."podeEditarEvento",
+        "podeExcluirEvento" = EXCLUDED."podeExcluirEvento",
+        "podeCriarAcao" = EXCLUDED."podeCriarAcao",
+        "podeEditarAcao" = EXCLUDED."podeEditarAcao",
+        "podeExcluirAcao" = EXCLUDED."podeExcluirAcao",
+        "podeEditarPlanejamento" = EXCLUDED."podeEditarPlanejamento",
+        "podeEditarOrcamento" = EXCLUDED."podeEditarOrcamento",
         "criadoPorId" = EXCLUDED."criadoPorId",
         "atualizadoEm" = CURRENT_TIMESTAMP
       RETURNING "id"

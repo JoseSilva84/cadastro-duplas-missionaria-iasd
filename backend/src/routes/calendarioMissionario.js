@@ -16,14 +16,6 @@ const router = express.Router();
 
 const soAdmin = autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR);
 
-const podeGerenciarEvento = autorizar(
-  PERFIS.SUPER_ADMIN,
-  PERFIS.ADMINISTRADOR,
-  PERFIS.PASTOR_REGIONAL,
-  PERFIS.COORDENADOR_REGIONAL,
-  PERFIS.PASTOR_DISTRITAL
-);
-
 const podeCadastrarAcao = autorizar(
   PERFIS.SUPER_ADMIN,
   PERFIS.ADMINISTRADOR,
@@ -41,16 +33,16 @@ router.get('/permissoes', autenticar, soAdmin, C.listarPermissoes);
 router.post('/permissoes', autenticar, soAdmin, validarPermissao, C.salvarPermissao);
 router.delete('/permissoes/:id', autenticar, soAdmin, validarId, C.excluirPermissao);
 
-// Temas: somente administradores
+// O service aplica a permissao detalhada configurada para cada operacao.
 router.post('/temas/modelo', autenticar, soAdmin, C.criarModelo);
-router.post('/temas', autenticar, soAdmin, validarTema, C.criarTema);
-router.put('/temas/:id', autenticar, soAdmin, validarId, validarTema, C.atualizarTema);
-router.delete('/temas/:id', autenticar, soAdmin, validarId, C.excluirTema);
+router.post('/temas', autenticar, podeCadastrarAcao, validarTema, C.criarTema);
+router.put('/temas/:id', autenticar, podeCadastrarAcao, validarId, validarTema, C.atualizarTema);
+router.delete('/temas/:id', autenticar, podeCadastrarAcao, validarId, C.excluirTema);
 
-// Eventos do tema: administradores e pastores
-router.post('/eventos', autenticar, podeGerenciarEvento, validarCriarEvento, C.criarEvento);
-router.put('/eventos/:id', autenticar, podeGerenciarEvento, validarId, validarEvento, C.atualizarEvento);
-router.delete('/eventos/:id', autenticar, podeGerenciarEvento, validarId, C.excluirEvento);
+// Eventos do tema
+router.post('/eventos', autenticar, podeCadastrarAcao, validarCriarEvento, C.criarEvento);
+router.put('/eventos/:id', autenticar, podeCadastrarAcao, validarId, validarEvento, C.atualizarEvento);
+router.delete('/eventos/:id', autenticar, podeCadastrarAcao, validarId, C.excluirEvento);
 
 // Acoes missionarias: cada nivel/login cadastra as suas para o evento
 router.post('/acoes', autenticar, podeCadastrarAcao, validarCriarAcao, C.criarAcao);
