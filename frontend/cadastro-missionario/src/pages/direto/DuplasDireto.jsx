@@ -131,6 +131,7 @@ const atividadeConfig = {
 const indicadorConfig = {
   estudos: { label: 'Estudos', cor: '#0f766e', bg: '#ccfbf1', border: '#99f6e4' },
   visitacoes: { label: 'Visitações', cor: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
+  batismos: { label: 'Batismos', cor: '#0f766e', bg: '#ecfdf5', border: '#99f6e4' },
 };
 
 const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
@@ -346,6 +347,15 @@ const IndicadorBadge = ({ tipo, valor, compact = false }) => {
   return (
     <Chip config={config} compact={compact}>
       {config.label} {valor}
+    </Chip>
+  );
+};
+
+const BatismosBadge = ({ valor, compact = false }) => {
+  if (!valor) return null;
+  return (
+    <Chip config={indicadorConfig.batismos} compact={compact} title="Pessoas de estudos encerrados com motivo Batismo.">
+      💧 {valor} {valor === 1 ? 'batismo' : 'batismos'}
     </Chip>
   );
 };
@@ -1343,6 +1353,7 @@ export default function DuplasDireto() {
             const mcfg = medalhaConfig[dupla._medalha];
             const classCfg = classeConfig[getClassificacaoDuplaDisplay(dupla)];
             const borderColor = classCfg?.cor || mcfg.cor;
+            const batismosDaDupla = totalBatismosEncerrados(dupla.estudosBiblicos);
 
             return (
               <div
@@ -1370,6 +1381,7 @@ export default function DuplasDireto() {
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <ClassificacaoAtividadeBadge dupla={dupla} compact />
                         <EstudoSituacaoBadge dupla={dupla} compact />
+                        <BatismosBadge valor={batismosDaDupla} compact />
                       </div>
                     </div>
                   </button>
