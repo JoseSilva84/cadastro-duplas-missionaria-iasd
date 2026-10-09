@@ -12,7 +12,7 @@ router.patch('/:id/reabrir', autenticar, EstudoBiblicoController.reabrir);
 router.delete(
   '/:id',
   autenticar,
-  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA),
+  autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.COORDENADOR_REGIONAL),
   EstudoBiblicoController.remover
 );
 

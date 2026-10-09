@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
 import LoadingState from '../components/LoadingState';
@@ -122,6 +123,13 @@ export default function EstudanteDashboard() {
   const [salvandoDados, setSalvandoDados] = useState(false);
   const [duplasDisponiveis, setDuplasDisponiveis] = useState([]);
   const [duplaEditId, setDuplaEditId] = useState('');
+  const [bairroEdit, setBairroEdit] = useState('');
+  const [distritoEditId, setDistritoEditId] = useState('');
+  const [distritosDisponiveis, setDistritosDisponiveis] = useState([]);
+  const [excluindo, setExcluindo] = useState(false);
+  const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeExcluir = ['SUPER_ADMIN', 'ADMINISTRADOR', 'DIRETOR_MISSIONARIO_IGREJA', 'COORDENADOR_REGIONAL'].includes(usuario?.perfil);
   const [modalLicaoAberto, setModalLicaoAberto] = useState(false);
   const [serieSelecionada, setSerieSelecionada] = useState('');
   const [licoesSelecionadas, setLicoesSelecionadas] = useState([]);
@@ -284,16 +292,27 @@ export default function EstudanteDashboard() {
   const abrirEdicaoDupla = async () => {
     setForm(montarForm(estudo));
     setDuplaEditId(String(estudo.duplaId || estudo.dupla?.id || ''));
+    setBairroEdit(estudo.dupla?.bairro || '');
+    setDistritoEditId(String(estudo.dupla?.distritoId || estudo.dupla?.distrito?.id || ''));
     setDuplasDisponiveis(estudo.dupla ? [estudo.dupla] : []);
     setSecaoEditando('dupla');
     try {
-      const { data } = await api.get('/duplas');
-      const lista = Array.isArray(data) ? data : (data?.duplas || data?.dados || []);
+      const [resDuplas, resDistritos] = await Promise.all([api.get('/duplas'), api.get('/distritos')]);
+      const dados = resDuplas.data;
+      const lista = Array.isArray(dados) ? [...dados] : [...(dados?.duplas || dados?.dados || [])];
       if (estudo.dupla && !lista.some((d) => Number(d.id) === Number(estudo.dupla.id))) lista.unshift(estudo.dupla);
       setDuplasDisponiveis(lista);
+      const dist = resDistritos.data;
+      setDistritosDisponiveis(Array.isArray(dist) ? dist : (dist?.distritos || dist?.dados || []));
     } catch {
-      toast.error('Erro ao carregar a lista de duplas.');
+      toast.error('Erro ao carregar a lista de duplas/distritos.');
     }
+  };
+  const selecionarDuplaEdicao = (valor) => {
+    setDuplaEditId(valor);
+    const escolhida = duplasDisponiveis.find((d) => String(d.id) === String(valor));
+    setBairroEdit(escolhida?.bairro || '');
+    setDistritoEditId(String(escolhida?.distritoId || escolhida?.distrito?.id || ''));
   };
   const salvarDupla = async () => {
     if (!duplaEditId) {
@@ -302,7 +321,20 @@ export default function EstudanteDashboard() {
     }
     setSalvandoDados(true);
     try {
-      const { data } = await api.put(`/estudos-biblicos/${estudo.id}`, { ...montarPayload(montarForm(estudo)), duplaId: Number(duplaEditId) });
+      const escolhida = duplasDisponiveis.find((d) => String(d.id) === String(duplaEditId));
+      const bairroOriginal = escolhida?.bairro || '';
+      const distritoOriginal = String(escolhida?.distritoId || escolhida?.distrito?.id || '');
+      const mudouBairroOuDistrito = bairroEdit.trim() !== bairroOriginal || String(distritoEditId) !== distritoOriginal;
+      if (mudouBairroOuDistrito) {
+        const { data: duplaCompleta } = await api.get(`/duplas/${duplaEditId}`);
+        await api.put(`/duplas/${duplaEditId}`, {
+          ...duplaCompleta,
+          bairro: bairroEdit.trim() || duplaCompleta.bairro,
+          distritoId: distritoEditId ? Number(distritoEditId) : duplaCompleta.distritoId,
+        });
+      }
+      await api.put(`/estudos-biblicos/${estudo.id}`, { ...montarPayload(montarForm(estudo)), duplaId: Number(duplaEditId) });
+      const { data } = await api.get(`/estudos-biblicos/${estudo.id}`);
       setEstudo(data);
       setForm(montarForm(data));
       setSecaoEditando('');
@@ -312,6 +344,19 @@ export default function EstudanteDashboard() {
       toast.error(erros ? erros.map((e) => e.msg).join(', ') : (err.response?.data?.erro || 'Erro ao atualizar dupla responsável.'));
     } finally {
       setSalvandoDados(false);
+    }
+  };
+  const excluirEstudo = async () => {
+    const nome = estudo.nomeEstudante || 'este estudante';
+    if (!window.confirm(`Tem certeza que deseja excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    setExcluindo(true);
+    try {
+      await api.delete(`/estudos-biblicos/${estudo.id}`);
+      toast.success('Estudante excluído.');
+      navigate(baseRelatorio, { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao excluir estudante.');
+      setExcluindo(false);
     }
   };
   const abrirModalLicao = () => {
@@ -371,6 +416,16 @@ export default function EstudanteDashboard() {
             >
               {secaoEditando ? 'Fechar edicao' : 'Editar dados'}
             </button>
+            {podeExcluir && (
+              <button
+                type="button"
+                className="w-full rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-600 hover:text-white transition-colors disabled:opacity-60"
+                onClick={excluirEstudo}
+                disabled={excluindo}
+              >
+                {excluindo ? 'Excluindo...' : 'Excluir dados'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -738,16 +793,32 @@ export default function EstudanteDashboard() {
           </div>
           {secaoEditando === 'dupla' ? (
             <div className="space-y-3">
-              <label className="block">
-                <span className="block text-xs text-gray-400 mb-1">Dupla responsável</span>
-                <select className="input-field" value={duplaEditId} onChange={(e) => setDuplaEditId(e.target.value)}>
-                  {duplasDisponiveis.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {`${d.liderNome || ''} + ${d.membro2Nome || ''}${d.bairro ? ` - ${d.bairro}` : ''}`}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <label className="block">
+                  <span className="block text-xs text-gray-400 mb-1">Dupla</span>
+                  <select className="input-field" value={duplaEditId} onChange={(e) => selecionarDuplaEdicao(e.target.value)}>
+                    {duplasDisponiveis.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {`${d.liderNome || ''} + ${d.membro2Nome || ''}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 mb-1">Bairro</span>
+                  <input className="input-field" value={bairroEdit} onChange={(e) => setBairroEdit(e.target.value)} />
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 mb-1">Distrito</span>
+                  <select className="input-field" value={distritoEditId} onChange={(e) => setDistritoEditId(e.target.value)}>
+                    <option value="">Selecione</option>
+                    {distritosDisponiveis.map((d) => (
+                      <option key={d.id} value={d.id}>{d.nome}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <p className="text-xs text-gray-400">Alterar bairro ou distrito atualiza o cadastro da dupla selecionada.</p>
               <InlineActions onCancel={cancelarEdicao} onSave={salvarDupla} saving={salvandoDados} />
             </div>
           ) : (
