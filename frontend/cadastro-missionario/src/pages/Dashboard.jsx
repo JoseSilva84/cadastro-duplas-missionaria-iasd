@@ -103,12 +103,12 @@ const MedalIcon = ({ className = 'w-5 h-5' }) => (
 function MetricCard({ label, value, detail, color, icon, onClick }) {
   const content = (
     <>
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="min-h-12 text-xs font-bold uppercase leading-4 tracking-widest text-gray-400">{label}</p>
           <p className="mt-2 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
         </div>
-        <div className="h-12 w-12 flex-shrink-0 rounded-xl text-white shadow-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center self-start rounded-xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
           {icon}
         </div>
       </div>
@@ -120,14 +120,14 @@ function MetricCard({ label, value, detail, color, icon, onClick }) {
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={`${classes} w-full`} data-tooltip={`${label}: abrir lista relacionada.`}>
+      <button type="button" onClick={onClick} className={`${classes} h-full w-full`} data-tooltip={`${label}: abrir lista relacionada.`}>
         {content}
       </button>
     );
   }
 
   return (
-    <div className={classes} tabIndex={0} data-tooltip={`${label}: resumo consolidado do painel.`}>
+    <div className={`${classes} h-full`} tabIndex={0} data-tooltip={`${label}: resumo consolidado do painel.`}>
       {content}
     </div>
   );
