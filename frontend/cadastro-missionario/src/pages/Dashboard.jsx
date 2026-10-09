@@ -260,6 +260,7 @@ export default function Dashboard() {
   const totalDuplas = dashboardDuplas.totalDuplas || duplas.length;
   const valorIndicador = (nome) => indicadores.find((item) => item.nome === nome)?.valor || 0;
   const batismosConfirmados = useMemo(() => totalBatismosEncerrados(estudosEncerrados), [estudosEncerrados]);
+  const experienciaBatismos = valorIndicador('Batismos');
 
   const medalhas = useMemo(() => {
     const base = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
@@ -307,11 +308,13 @@ export default function Dashboard() {
       </div>
 
       <Section eyebrow="Resumo principal" title="Indicadores essenciais">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Estudos em andamento" value={totalEstudosCadastrados} detail="Somente estudos não encerrados" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
-          <MetricCard label="Assistência/Regional" value={comVisitacao} detail="Resumo das assistências/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
+          <MetricCard label="Estudos encerrados" value={estudosEncerrados.length} detail="Registros concluídos" color="#b91c1c" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-encerrados')} />
           <MetricCard label="Batismos" value={batismosConfirmados} detail="Estudos encerrados com batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
+          <MetricCard label="Experiência de batismos" value={experienciaBatismos} detail="Histórico informado pelas duplas" color="#C9963A" icon={<WaterIcon />} onClick={() => abrir('/duplas')} />
+          <MetricCard label="Assistência/Regional" value={comVisitacao} detail="Resumo das assistências/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
         </div>
       </Section>
 

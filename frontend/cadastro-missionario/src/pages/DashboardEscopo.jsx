@@ -15,6 +15,15 @@ const quantidadeEstudos = (dupla) => (
     : dupla?._count?.estudosBiblicos ?? 0
 );
 const quantidadeVisitas = (dupla) => dupla?._count?.acompanhamentos ?? 0;
+const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
+const totalBatismosConfirmados = (estudos = []) => estudos
+  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
+  .reduce((total, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
+      return total + estudo.participantes.length;
+    }
+    return total + 1;
+  }, 0);
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -67,6 +76,7 @@ export default function DashboardEscopo() {
   const [resumo, setResumo] = useState(null);
   const [duplas, setDuplas] = useState([]);
   const [totalEstudos, setTotalEstudos] = useState(0);
+  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
@@ -74,11 +84,13 @@ export default function DashboardEscopo() {
     Promise.all([
       api.get('/relatorios/resumo'),
       api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'false' } }),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       api.get('/duplas'),
     ])
-      .then(([resumoResposta, estudosResposta, duplasResposta]) => {
+      .then(([resumoResposta, estudosResposta, encerradosResposta, duplasResposta]) => {
         setResumo(resumoResposta.data);
         setTotalEstudos(Number(estudosResposta.data?.total || 0));
+        setEstudosEncerrados(Array.isArray(encerradosResposta.data?.estudos) ? encerradosResposta.data.estudos : []);
         setDuplas(Array.isArray(duplasResposta.data) ? duplasResposta.data : []);
       })
       .catch((err) => setErro(err.response?.data?.erro || 'Não foi possível carregar o dashboard do seu escopo.'))
@@ -95,6 +107,10 @@ export default function DashboardEscopo() {
     const ordenar = (campo) => [...base].sort((a, b) => b[campo] - a[campo] || a.liderNome.localeCompare(b.liderNome));
     return { estudos: ordenar('estudos'), visitas: ordenar('visitas'), batismos: ordenar('batismos') };
   }, [duplas]);
+  const batismosConfirmados = useMemo(
+    () => totalBatismosConfirmados(estudosEncerrados),
+    [estudosEncerrados]
+  );
 
   if (carregando) return <LoadingState mensagem="Carregando dashboard..." />;
 
@@ -130,11 +146,13 @@ export default function DashboardEscopo() {
         </div>
       </section>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <CardIndicador titulo="Total de duplas" valor={totalDuplas} detalhe="Dentro do seu nível de acesso" cor="#1A3A6B" />
         <CardIndicador titulo="Estudos em andamento" valor={totalEstudos} detalhe="Somente estudos não encerrados" cor="#0284c7" />
-        <CardIndicador titulo="Batismos" valor={resumo?.totalBatismos} detalhe="Experiência de Batismo no passado" cor="#0d9488" />
-        <CardIndicador titulo="Metas de contatos" valor={resumo?.totalPessoasAlcancadas} detalhe="Pessoas alcançadas no escopo" cor="#7B2D8B" />
+        <CardIndicador titulo="Estudos encerrados" valor={estudosEncerrados.length} detalhe="Registros concluídos no escopo" cor="#b91c1c" />
+        <CardIndicador titulo="Batismos" valor={batismosConfirmados} detalhe="Pessoas em estudos encerrados com batismo" cor="#0d9488" />
+        <CardIndicador titulo="Experiência de batismos" valor={resumo?.totalBatismos} detalhe="Histórico informado pelas duplas" cor="#C9963A" />
+        <CardIndicador titulo="Contatos alcançados" valor={resumo?.totalPessoasAlcancadas} detalhe="Pessoas alcançadas no escopo" cor="#7B2D8B" />
       </section>
 
       <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
