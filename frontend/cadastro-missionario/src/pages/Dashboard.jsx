@@ -313,7 +313,7 @@ export default function Dashboard() {
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Registros de estudos" value={totalEstudosCadastrados} detail="Individuais, pontos e classes" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
           <MetricCard label="Assistência/Regional" value={comVisitacao} detail="Resumo das assistências/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
-          <MetricCard label="Batismos" value={batismosConfirmados} detail="Encerramentos marcados como batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
+          <MetricCard label="Batismos" value={batismosConfirmados} detail="Estudos encerrados com batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
         </div>
       </Section>
 

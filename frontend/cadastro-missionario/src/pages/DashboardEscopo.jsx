@@ -126,7 +126,7 @@ export default function DashboardEscopo() {
       <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CardIndicador titulo="Total de duplas" valor={totalDuplas} detalhe="Dentro do seu nível de acesso" cor="#1A3A6B" />
         <CardIndicador titulo="Estudos cadastrados" valor={totalEstudos} detalhe="Estudos, pontos e classes" cor="#0284c7" />
-        <CardIndicador titulo="Batismos" valor={resumo?.totalBatismos} detalhe="Registrados pelas duplas do escopo" cor="#0d9488" />
+        <CardIndicador titulo="Batismos" valor={resumo?.totalBatismos} detalhe="Experiência anterior de Batismo" cor="#0d9488" />
         <CardIndicador titulo="Metas de contatos" valor={resumo?.totalPessoasAlcancadas} detalhe="Pessoas alcançadas no escopo" cor="#7B2D8B" />
       </section>
 
