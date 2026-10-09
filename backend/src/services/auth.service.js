@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const UsuarioModel = require('../models/usuario.model');
 const UsuarioService = require('./usuario.service');
+const AuditoriaService = require('./auditoria.service');
 const { montarIdentidadeUsuario } = require('./usuarioIdentidade.service');
 const { ehSomenteLeitura } = require('../middlewares/auth');
 
@@ -225,9 +226,10 @@ const validarCredenciaisAtivacao = async ({ email, senha }, usuarioIdAtual = nul
   };
 };
 
-const criarSessao = (usuario) => {
+const criarSessao = async (usuario, metadados = {}) => {
   const igrejaId = usuario.igrejaId || usuario.dupla?.igrejaId || null;
   const somenteLeitura = ehSomenteLeitura(usuario);
+  const sessaoAuditoria = await AuditoriaService.criarSessao(usuario, metadados);
 
   const token = jwt.sign(
     {
@@ -240,6 +242,7 @@ const criarSessao = (usuario) => {
       duplaId: usuario.duplaId,
       igrejaId,
       somenteLeitura,
+      sessaoId: sessaoAuditoria.id,
       versaoCredenciais: versaoDasCredenciais(usuario),
     },
     process.env.JWT_SECRET,
@@ -248,6 +251,7 @@ const criarSessao = (usuario) => {
 
   return {
     token,
+    sessaoId: sessaoAuditoria.id,
     usuario: {
       id: usuario.id,
       nome: usuario.nome,
@@ -550,7 +554,7 @@ const AuthService = {
     return { mensagem: 'Acesso ativado com sucesso.', email: credenciais.email, perfil: config.perfil };
   },
 
-  async login(email, senha) {
+  async login(email, senha, metadados = {}) {
     const usuario = await UsuarioModel.findByEmail(normalizarEmail(email));
 
     if (!usuario || !usuario.ativo) {
@@ -565,10 +569,10 @@ const AuthService = {
       throw { status: 401, mensagem: 'Credenciais inválidas ou usuário inativo.' };
     }
 
-    return criarSessao(usuario);
+    return criarSessao(usuario, metadados);
   },
 
-  async atualizarConta(usuarioId, { email, senhaAtual, novaSenha }) {
+  async atualizarConta(usuarioId, { email, senhaAtual, novaSenha }, metadados = {}) {
     const usuario = await UsuarioModel.findByIdComSenha(usuarioId);
     if (!usuario || !usuario.ativo) {
       throw { status: 404, mensagem: 'Usuário não encontrado ou inativo.' };
@@ -604,7 +608,7 @@ const AuthService = {
     }
 
     const atualizado = await UsuarioModel.findByEmail(emailNormalizado);
-    return criarSessao(atualizado);
+    return criarSessao(atualizado, metadados);
   },
 
   async criarTokenRedefinicao(usuarioId, usuarioSolicitante) {

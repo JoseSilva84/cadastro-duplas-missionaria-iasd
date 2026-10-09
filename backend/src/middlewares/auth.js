@@ -103,6 +103,7 @@ const autenticar = async (req, res, next) => {
       igrejaId: usuario.igrejaId || usuario.dupla?.igrejaId || null,
       somenteLeitura: ehSomenteLeitura(usuario),
     };
+    req.sessaoId = decoded.sessaoId || null;
 
     const alteracaoDaPropriaConta = req.method === 'PATCH'
       && req.baseUrl === '/api/auth'

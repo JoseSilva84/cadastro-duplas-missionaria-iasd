@@ -77,6 +77,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
+  auditoria: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0a2 2 0 002 2h2a2 2 0 002-2m-4 0a2 2 0 012-2h2a2 2 0 012 2m-5 7h.01M12 12h4m-8 4h.01M12 16h4" />
+    </svg>
+  ),
 };
 
 const destinoAvancado = () => '/dashboard';
@@ -87,8 +92,8 @@ export default function LayoutDireto() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -98,6 +103,7 @@ export default function LayoutDireto() {
   };
 
   const isAdmin = ehAdmin(usuario);
+  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
@@ -181,6 +187,7 @@ export default function LayoutDireto() {
     { type: 'dropdown', key: 'cadastro', label: 'Cadastro', shortLabel: 'Cad.', icon: icons.cadastro, items: cadastroItemsVisiveis },
     { type: 'dropdown', key: 'relatorios', label: 'Relatórios', shortLabel: 'Rel.', icon: icons.relatorios, items: relatorioItemsVisiveis },
     { to: '/direto/calendario-missionario', label: 'Calendário Missionário', shortLabel: 'Calend.', icon: icons.calendario },
+    ...(isSuperAdmin ? [{ to: '/direto/auditoria', label: 'Auditoria e Logs', shortLabel: 'Logs', icon: icons.auditoria }] : []),
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ] : [
     { to: '/direto/dashboard', label: 'Dashboard', shortLabel: 'Dash.', icon: icons.dashboard },

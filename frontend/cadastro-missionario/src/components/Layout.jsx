@@ -66,6 +66,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
+  auditoria: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0a2 2 0 002 2h2a2 2 0 002-2m-4 0a2 2 0 012-2h2a2 2 0 012 2m-5 7h.01M12 12h4m-8 4h.01M12 16h4" />
+    </svg>
+  ),
   logout: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -98,12 +103,13 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [sidebarAberta, setSidebarAberta] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
   const isAdmin = ehAdmin(usuario); // SUPER_ADMIN + ADMINISTRADOR
+  const isSuperAdmin = usuario?.perfil === PERFIS.SUPER_ADMIN;
   const isSomenteLeitura = ehSomenteLeitura(usuario);
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
@@ -184,6 +190,7 @@ export default function Layout({ children }) {
         ] }] : []),
         ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil)) ? [{ to: '/direto/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
+        ...(isSuperAdmin ? [{ to: '/direto/auditoria', label: 'Auditoria e Logs', icon: icons.auditoria }] : []),
         { to: '/direto/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ]
     : [
@@ -225,6 +232,7 @@ export default function Layout({ children }) {
         ] }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil)) ? [{ to: '/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
+        ...(isSuperAdmin ? [{ to: '/auditoria', label: 'Auditoria e Logs', icon: icons.auditoria }] : []),
         { to: '/configuracoes', label: 'Configurações', icon: icons.configuracoes },
       ];
 

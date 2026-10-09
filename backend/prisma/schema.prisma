@@ -86,6 +86,8 @@ model QrCodeAtivacao {
 model Usuario {
   acoesCalendario CalendarioAcaoMissionaria[]
   permissoesCalendarioCriadas CalendarioPermissao[]
+  sessoesAuditoria AuditoriaSessao[]
+  logsAuditoria AuditoriaLog[]
   id        Int      @id @default(autoincrement())
   nome      String
   email     String   @unique
@@ -108,6 +110,67 @@ model Usuario {
   acompanhamentos AcompanhamentoDupla[]
   escolasSabatinaCriadas EscolaSabatinaCadastro[]
   mapasIgrejaCriados MapaIgreja[]
+}
+
+// Sessões persistentes para medir acessos e tempo de utilização do sistema.
+model AuditoriaSessao {
+  id                 String   @id @default(uuid())
+  usuarioId          Int?
+  usuarioNome        String
+  usuarioEmail       String
+  perfil             String
+  inicioEm           DateTime @default(now())
+  ultimaAtividadeEm  DateTime @default(now())
+  fimEm              DateTime?
+  duracaoSegundos    Int      @default(0)
+  status             String   @default("ATIVA")
+  ip                 String?
+  userAgent          String?
+  navegador          String?
+  sistemaOperacional String?
+  dispositivo        String?
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
+
+  usuario Usuario?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  logs    AuditoriaLog[]
+
+  @@index([usuarioId, inicioEm])
+  @@index([status, ultimaAtividadeEm])
+  @@index([inicioEm])
+}
+
+// Trilha de auditoria: consultas, alterações, autenticação, erros e desempenho.
+model AuditoriaLog {
+  id              String   @id @default(uuid())
+  sessaoId        String?
+  usuarioId       Int?
+  usuarioNome     String?
+  usuarioEmail    String?
+  perfil          String?
+  categoria       String
+  acao            String
+  descricao       String
+  recurso         String?
+  entidadeId      String?
+  metodo          String?
+  rota            String?
+  statusHttp      Int?
+  sucesso         Boolean  @default(true)
+  duracaoMs       Int?
+  ip              String?
+  origem          String   @default("BACKEND")
+  detalhes        Json?
+  criadoEm        DateTime @default(now())
+
+  sessao AuditoriaSessao? @relation(fields: [sessaoId], references: [id], onDelete: SetNull)
+  usuario Usuario?        @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([criadoEm])
+  @@index([usuarioId, criadoEm])
+  @@index([sessaoId, criadoEm])
+  @@index([categoria, sucesso, criadoEm])
+  @@index([recurso, criadoEm])
 }
 
 // Regiões da Associação Paulistana

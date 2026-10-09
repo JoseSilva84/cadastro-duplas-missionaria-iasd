@@ -1,4 +1,5 @@
 import React from 'react';
+import api from '../lib/api';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,6 +13,12 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary capturou um erro não tratado:', error, errorInfo);
+    api.post('/auditoria/cliente', {
+      tipo: 'ERRO_FRONTEND',
+      pagina: window.location.pathname,
+      descricao: error?.message || 'Erro crítico ao renderizar a página.',
+      detalhes: { erro: error?.stack, componentes: errorInfo?.componentStack },
+    }).catch(() => {});
   }
 
   handleReload = () => {

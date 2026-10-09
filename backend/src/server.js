@@ -20,6 +20,8 @@ const mapaIgrejaRoutes = require('./routes/mapaIgreja');
 const calendarioMissionarioRoutes = require('./routes/calendarioMissionario');
 const configuracaoRoutes = require('./routes/configuracoes');
 const interessadosNovoTempoRoutes = require('./routes/interessadosNovoTempo');
+const auditoriaRoutes = require('./routes/auditoria');
+const { auditarRequisicao } = require('./middlewares/auditoria');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,6 +64,7 @@ app.use(cors({
   exposedHeaders: ['Content-Disposition'],
 }));
 app.use(express.json({ limit: '50mb' }));
+app.use(auditarRequisicao);
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
@@ -79,6 +82,7 @@ app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/configuracoes', configuracaoRoutes);
 app.use('/api/interessados-nt', interessadosNovoTempoRoutes);
+app.use('/api/auditoria', auditoriaRoutes);
 
 const publicDir = path.join(__dirname, '..', 'public');
 const indexHtml = path.join(publicDir, 'index.html');

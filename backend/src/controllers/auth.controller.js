@@ -1,6 +1,12 @@
 // Controller de Autenticação — Entrada e saída HTTP
 const { body, validationResult } = require('express-validator');
 const AuthService = require('../services/auth.service');
+const AuditoriaService = require('../services/auditoria.service');
+
+const metadadosAcesso = (req) => ({
+  ip: req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress,
+  userAgent: req.get('user-agent'),
+});
 
 // Validações do login
 const validarLogin = [
@@ -59,9 +65,10 @@ const AuthController = {
     const { email, senha } = req.body;
 
     try {
-      const resultado = await AuthService.login(email, senha);
+      const resultado = await AuthService.login(email, senha, metadadosAcesso(req));
       res.json(resultado);
     } catch (err) {
+      await AuditoriaService.registrarTentativaLogin(email, metadadosAcesso(req), err);
       const status = err.status || 500;
       const mensagem = err.mensagem || 'Erro interno do servidor.';
       res.status(status).json({ erro: mensagem });
@@ -72,7 +79,7 @@ const AuthController = {
   async atualizarConta(req, res) {
     if (responderErrosValidacao(req, res)) return;
     try {
-      const resultado = await AuthService.atualizarConta(req.usuario.id, req.body);
+      const resultado = await AuthService.atualizarConta(req.usuario.id, req.body, metadadosAcesso(req));
       res.json(resultado);
     } catch (err) {
       res.status(err.status || 500).json({ erro: err.mensagem || 'Erro ao atualizar a conta.' });

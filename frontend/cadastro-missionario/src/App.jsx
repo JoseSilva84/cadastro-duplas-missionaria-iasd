@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
+import MonitorAuditoria from './components/MonitorAuditoria';
 
 // Páginas
 import Login from './pages/Login';
@@ -45,6 +46,7 @@ import CadastroDuplaComChave from './pages/CadastroDuplaComChave';
 import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
 import AnalisePotenciaisNovoTempo from './pages/AnalisePotenciaisNovoTempo';
 import FiltragemAvancadaNovoTempo from './pages/FiltragemAvancadaNovoTempo';
+import AuditoriaLogs from './pages/AuditoriaLogs';
 
 // Modelo Direto
 import LayoutDireto from './components/LayoutDireto';
@@ -301,6 +303,7 @@ function AppRoutes() {
         <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA]}><CalendarioMissionario /></RotaComPerfis>} />
         <Route path="calendario_missionario" element={<Navigate to="/calendario-missionario" replace />} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="auditoria" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]} redirectTo="/dashboard"><AuditoriaLogs /></RotaComPerfis>} />
         <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><GestaoQrCodes /></RotaComPerfis>} />
 
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Cadastro /></RotaComPerfis>} />
@@ -467,6 +470,7 @@ function AppRoutes() {
         <Route path="calendario-missionario" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA]} redirectTo="/direto/distritos"><CalendarioMissionario /></RotaComPerfis>} />
         <Route path="calendario_missionario" element={<Navigate to="/direto/calendario-missionario" replace />} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="auditoria" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN]} redirectTo="/direto/dashboard"><AuditoriaLogs /></RotaComPerfis>} />
         <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/configuracoes"><GestaoQrCodes /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
@@ -527,6 +531,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <MonitorAuditoria />
         <Toaster
           position="top-right"
           richColors

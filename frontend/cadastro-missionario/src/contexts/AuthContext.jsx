@@ -112,12 +112,18 @@ export function AuthProvider({ children }) {
   };
 
   // Realiza logout
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('layout');
-    setUsuario(null);
-    setLayoutState(null);
+  const logout = async () => {
+    try {
+      await api.post('/auditoria/logout');
+    } catch {
+      // A limpeza local precisa acontecer mesmo se a conexão estiver indisponível.
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+      localStorage.removeItem('layout');
+      setUsuario(null);
+      setLayoutState(null);
+    }
   };
 
   // Define o layout e persiste
