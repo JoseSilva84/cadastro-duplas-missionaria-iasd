@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import LinhaDoTempo from '../components/calendario/LinhaDoTempo';
@@ -768,7 +769,7 @@ export default function CalendarioMissionario() {
       </section>
 
       {/* Modal Principal do Tema (Centralizado) */}
-      {modalTema && (
+      {modalTema && createPortal(
         <TemaModal
           key={modalTema.novo ? 'novo' : temaAberto?.id}
           tema={modalTema.novo ? null : temaAberto}
@@ -780,11 +781,12 @@ export default function CalendarioMissionario() {
             setModalTema(null);
             abrirEvento(ev, t);
           }}
-        />
+        />,
+        document.body
       )}
 
       {/* Modal do Evento e suas Ações (Perfeitamente Centralizado) */}
-      {modalEvento && (
+      {modalEvento && createPortal(
         <EventoModal
           key={modalEvento.evento.id}
           evento={modalEvento.evento}
@@ -795,11 +797,13 @@ export default function CalendarioMissionario() {
           listas={listas}
           onFechar={() => setModalEvento(null)}
           onMudou={aoAtualizarDados}
-        />
+        />,
+        document.body
       )}
 
-      {modalPermissoes && (
-        <PermissoesCalendarioModal listas={listas} onFechar={() => setModalPermissoes(false)} />
+      {modalPermissoes && createPortal(
+        <PermissoesCalendarioModal listas={listas} onFechar={() => setModalPermissoes(false)} />,
+        document.body
       )}
     </div>
   );

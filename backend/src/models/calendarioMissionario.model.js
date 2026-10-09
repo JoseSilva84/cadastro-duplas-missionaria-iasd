@@ -7,6 +7,26 @@ const includeAcao = {
   evento: { select: { id: true, nome: true } },
 };
 
+const permissaoComLocal = async (id) => {
+  const [registro] = await prisma.$queryRaw`
+    SELECT
+      cp."id", cp."chave", cp."perfil"::text AS "perfil",
+      cp."regiaoId", cp."distritoId", cp."podeVisualizar", cp."podeEditar",
+      cp."criadoPorId", cp."criadoEm", cp."atualizadoEm",
+      json_build_object('id', r."id", 'nome', r."nome") AS "regiao",
+      CASE
+        WHEN d."id" IS NULL THEN NULL
+        ELSE json_build_object('id', d."id", 'nome', d."nome")
+      END AS "distrito"
+    FROM "CalendarioPermissao" cp
+    INNER JOIN "Regiao" r ON r."id" = cp."regiaoId"
+    LEFT JOIN "Distrito" d ON d."id" = cp."distritoId"
+    WHERE cp."id" = ${Number(id)}
+    LIMIT 1
+  `;
+  return registro || null;
+};
+
 const CalendarioMissionarioModel = {
   listarTemas(ano, whereAcoes) {
     return prisma.calendarioTema.findMany({
@@ -117,33 +137,64 @@ const CalendarioMissionarioModel = {
   },
 
   listarPermissoes() {
-    return prisma.calendarioPermissao.findMany({
-      orderBy: [{ regiaoId: 'asc' }, { distritoId: 'asc' }, { perfil: 'asc' }],
-      include: {
-        regiao: { select: { id: true, nome: true } },
-        distrito: { select: { id: true, nome: true } },
-      },
-    });
+    // A consulta direta continua funcionando mesmo quando o container ainda
+    // esta com uma versao anterior do Prisma Client em cache.
+    return prisma.$queryRaw`
+      SELECT
+        cp."id", cp."chave", cp."perfil"::text AS "perfil",
+        cp."regiaoId", cp."distritoId", cp."podeVisualizar", cp."podeEditar",
+        cp."criadoPorId", cp."criadoEm", cp."atualizadoEm",
+        json_build_object('id', r."id", 'nome', r."nome") AS "regiao",
+        CASE
+          WHEN d."id" IS NULL THEN NULL
+          ELSE json_build_object('id', d."id", 'nome', d."nome")
+        END AS "distrito"
+      FROM "CalendarioPermissao" cp
+      INNER JOIN "Regiao" r ON r."id" = cp."regiaoId"
+      LEFT JOIN "Distrito" d ON d."id" = cp."distritoId"
+      ORDER BY r."nome" ASC, d."nome" ASC NULLS FIRST, cp."perfil" ASC
+    `;
   },
 
   buscarPermissaoPorChave(chave) {
-    return prisma.calendarioPermissao.findUnique({ where: { chave } });
+    return prisma.$queryRaw`
+      SELECT
+        "id", "chave", "perfil"::text AS "perfil", "regiaoId", "distritoId",
+        "podeVisualizar", "podeEditar", "criadoPorId", "criadoEm", "atualizadoEm"
+      FROM "CalendarioPermissao"
+      WHERE "chave" = ${chave}
+      LIMIT 1
+    `.then((registros) => registros[0] || null);
   },
 
-  salvarPermissao(chave, data) {
-    return prisma.calendarioPermissao.upsert({
-      where: { chave },
-      create: { chave, ...data },
-      update: data,
-      include: {
-        regiao: { select: { id: true, nome: true } },
-        distrito: { select: { id: true, nome: true } },
-      },
-    });
+  async salvarPermissao(chave, data) {
+    const [registro] = await prisma.$queryRaw`
+      INSERT INTO "CalendarioPermissao" (
+        "chave", "perfil", "regiaoId", "distritoId", "podeVisualizar",
+        "podeEditar", "criadoPorId", "criadoEm", "atualizadoEm"
+      ) VALUES (
+        ${chave}, CAST(${data.perfil} AS "Perfil"), ${data.regiaoId}, ${data.distritoId},
+        ${data.podeVisualizar}, ${data.podeEditar}, ${data.criadoPorId},
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+      ON CONFLICT ("chave") DO UPDATE SET
+        "perfil" = EXCLUDED."perfil",
+        "regiaoId" = EXCLUDED."regiaoId",
+        "distritoId" = EXCLUDED."distritoId",
+        "podeVisualizar" = EXCLUDED."podeVisualizar",
+        "podeEditar" = EXCLUDED."podeEditar",
+        "criadoPorId" = EXCLUDED."criadoPorId",
+        "atualizadoEm" = CURRENT_TIMESTAMP
+      RETURNING "id"
+    `;
+    return permissaoComLocal(registro.id);
   },
 
   excluirPermissao(id) {
-    return prisma.calendarioPermissao.delete({ where: { id: Number(id) } });
+    return prisma.$executeRaw`
+      DELETE FROM "CalendarioPermissao"
+      WHERE "id" = ${Number(id)}
+    `;
   },
 };
 
