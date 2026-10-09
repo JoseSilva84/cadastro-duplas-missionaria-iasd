@@ -7,6 +7,7 @@ const {
   validarCriarEvento,
   validarAcao,
   validarCriarAcao,
+  validarPermissao,
   validarId,
 } = require('../controllers/calendarioMissionario.controller');
 const { autenticar, autorizar, PERFIS } = require('../middlewares/auth');
@@ -34,6 +35,11 @@ const podeCadastrarAcao = autorizar(
 );
 
 router.get('/', autenticar, validarConsulta, C.obter);
+
+// Regras de visualizacao e edicao por regiao/distrito
+router.get('/permissoes', autenticar, soAdmin, C.listarPermissoes);
+router.post('/permissoes', autenticar, soAdmin, validarPermissao, C.salvarPermissao);
+router.delete('/permissoes/:id', autenticar, soAdmin, validarId, C.excluirPermissao);
 
 // Temas: somente administradores
 router.post('/temas/modelo', autenticar, soAdmin, C.criarModelo);

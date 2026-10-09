@@ -34,6 +34,7 @@ export const PERFIL_LABEL = {
   COORDENADOR_REGIONAL: 'Coordenador Regional',
   PASTOR_DISTRITAL: 'Pastor Distrital',
   DIRETOR_MISSIONARIO_IGREJA: 'Diretor Missionário',
+  DUPLA_MISSIONARIA: 'Dupla Missionária',
 };
 
 export const NOMES_MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];

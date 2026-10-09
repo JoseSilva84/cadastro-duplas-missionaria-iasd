@@ -50,6 +50,18 @@ const PERFIS_ACAO = [
   PERFIS.DUPLA_MISSIONARIA,
 ];
 
+const PERFIS_CONFIGURAVEIS = [
+  PERFIS.PASTOR_REGIONAL,
+  PERFIS.COORDENADOR_REGIONAL,
+  PERFIS.PASTOR_DISTRITAL,
+  PERFIS.DIRETOR_MISSIONARIO_IGREJA,
+  PERFIS.DUPLA_MISSIONARIA,
+];
+
+const chavePermissao = (perfil, regiaoId, distritoId = null) => (
+  `${perfil}:${distritoId ? `D:${distritoId}` : `R:${regiaoId}`}`
+);
+
 // ---------- escopo e visibilidade ----------
 async function contexto(usuario) {
   const perfil = usuario.perfil;
@@ -65,10 +77,10 @@ async function contexto(usuario) {
   }
   if (perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA || perfil === PERFIS.DUPLA_MISSIONARIA) {
     const igreja = usuario.igrejaId && await CalendarioMissionarioModel.buscarIgreja(usuario.igrejaId);
-    if (!igreja) return { admin: false };
+    if (!igreja) throw erro('Usuario sem igreja vinculada.', 403);
     return { regiaoId: igreja.distrito.regiaoId, distritoId: igreja.distritoId, igrejaId: igreja.id };
   }
-  return { admin: false };
+  throw erro('Seu perfil nao possui acesso ao calendario.', 403);
 }
 
 // O que cada nivel enxerga: Associacao + niveis acima + o proprio nivel e abaixo.
@@ -86,6 +98,32 @@ function filtroVisao(ctx) {
   if (ctx.distritoId) return filtroDe(ctx, 'distrito');
   if (ctx.regiaoId) return filtroDe(ctx, 'regiao');
   return null;
+}
+
+async function permissaoEfetiva(usuario, ctxRecebido = null) {
+  if (ehAdmin(usuario.perfil)) {
+    return { podeVisualizar: true, podeEditar: true, regra: null };
+  }
+
+  const padrao = {
+    podeVisualizar: PERFIS_ACAO.includes(usuario.perfil),
+    podeEditar: PERFIS_ACAO.includes(usuario.perfil) && !usuario.somenteLeitura,
+    regra: null,
+  };
+  const ctx = ctxRecebido || await contexto(usuario);
+  if (!ctx.regiaoId || !PERFIS_CONFIGURAVEIS.includes(usuario.perfil)) return padrao;
+
+  if (ctx.distritoId) {
+    const distrital = await CalendarioMissionarioModel.buscarPermissaoPorChave(
+      chavePermissao(usuario.perfil, ctx.regiaoId, ctx.distritoId)
+    );
+    if (distrital) return { ...distrital, regra: 'DISTRITO' };
+  }
+
+  const regional = await CalendarioMissionarioModel.buscarPermissaoPorChave(
+    chavePermissao(usuario.perfil, ctx.regiaoId)
+  );
+  return regional ? { ...regional, regra: 'REGIAO' } : padrao;
 }
 
 async function filtroSelecao(query) {
@@ -144,7 +182,7 @@ async function resolverOrigem(usuario, corpo) {
 }
 
 // ---------- serializacao ----------
-const formatarAcao = (a, usuario) => ({
+const formatarAcao = (a, usuario, acesso = { podeEditar: true }) => ({
   id: a.id,
   temaId: a.temaId,
   eventoId: a.eventoId,
@@ -165,11 +203,13 @@ const formatarAcao = (a, usuario) => ({
   criadoPorId: a.criadoPorId,
   criadoPorPerfil: a.criadoPorPerfil,
   criadoPorNome: a.criadoPorNome,
-  podeEditar: ehAdmin(usuario.perfil) || (a.criadoPorId != null && a.criadoPorId === usuario.id),
+  podeEditar: ehAdmin(usuario.perfil) || (
+    acesso.podeEditar && a.criadoPorId != null && a.criadoPorId === usuario.id
+  ),
 });
 
-const formatarEvento = (e, usuario) => {
-  const acoes = (e.acoes || []).map((a) => formatarAcao(a, usuario));
+const formatarEvento = (e, usuario, acesso) => {
+  const acoes = (e.acoes || []).map((a) => formatarAcao(a, usuario, acesso));
   const orcamentoTotal = acoes.reduce((s, a) => s + Number(a.valor || 0), 0);
   return {
     id: e.id,
@@ -182,13 +222,15 @@ const formatarEvento = (e, usuario) => {
     acoes,
     totalAcoes: acoes.length,
     orcamentoTotal,
-    podeEditar: ehAdmin(usuario.perfil) || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario.perfil),
+    podeEditar: ehAdmin(usuario.perfil) || (
+      acesso.podeEditar && PERFIS_EVENTO.includes(usuario.perfil)
+    ),
   };
 };
 
-const formatarTema = (t, usuario) => {
-  const eventos = (t.eventos || []).map((e) => formatarEvento(e, usuario));
-  const acoes = (t.acoes || []).map((a) => formatarAcao(a, usuario));
+const formatarTema = (t, usuario, acesso = { podeEditar: true }) => {
+  const eventos = (t.eventos || []).map((e) => formatarEvento(e, usuario, acesso));
+  const acoes = (t.acoes || []).map((a) => formatarAcao(a, usuario, acesso));
   return {
     id: t.id,
     ano: t.ano,
@@ -206,12 +248,17 @@ const exigirAdmin = (usuario) => {
   if (!ehAdmin(usuario.perfil)) throw erro('Somente administradores podem gerenciar os temas.');
 };
 
-const exigirPerfilEvento = (usuario) => {
+const exigirPerfilEvento = async (usuario) => {
   if (!PERFIS_EVENTO.includes(usuario.perfil)) throw erro('Seu perfil nao tem permissao para gerenciar eventos do tema.');
+  const acesso = await permissaoEfetiva(usuario);
+  if (!acesso.podeEditar) throw erro('A edicao do calendario nao esta liberada para o seu perfil neste local.', 403);
 };
 
-const exigirPerfilAcao = (usuario) => {
+const exigirPerfilAcao = async (usuario) => {
   if (!PERFIS_ACAO.includes(usuario.perfil)) throw erro('Seu perfil nao pode cadastrar acoes no calendario.');
+  const acesso = await permissaoEfetiva(usuario);
+  if (!acesso.podeEditar) throw erro('A edicao do calendario nao esta liberada para o seu perfil neste local.', 403);
+  return acesso;
 };
 
 const dadosAcao = (corpo, ano) => {
@@ -233,15 +280,21 @@ const MODELO = require('./calendarioModelo');
 const CalendarioMissionarioService = {
   async obter(usuario, query = {}) {
     const ano = anoValido(query.ano);
-    const condicoes = [await filtroSelecao(query)].filter(Boolean);
+    const ctx = await contexto(usuario);
+    const acesso = await permissaoEfetiva(usuario, ctx);
+    if (!acesso.podeVisualizar) throw erro('O calendario missionario nao esta liberado para o seu perfil neste local.', 403);
+    const condicoes = [filtroVisao(ctx), await filtroSelecao(query)].filter(Boolean);
     const temas = await CalendarioMissionarioModel.listarTemas(ano, condicoes.length ? { AND: condicoes } : undefined);
     return {
       ano,
-      temas: temas.map((t) => formatarTema(t, usuario)),
+      temas: temas.map((t) => formatarTema(t, usuario, acesso)),
       permissoes: {
         gerenciarTemas: ehAdmin(usuario.perfil),
-        gerenciarEventos: PERFIS_EVENTO.includes(usuario.perfil),
-        criarAcao: PERFIS_ACAO.includes(usuario.perfil) && !usuario.somenteLeitura,
+        gerenciarEventos: acesso.podeEditar && PERFIS_EVENTO.includes(usuario.perfil) && !usuario.somenteLeitura,
+        criarAcao: acesso.podeEditar && PERFIS_ACAO.includes(usuario.perfil) && !usuario.somenteLeitura,
+        visualizar: acesso.podeVisualizar,
+        editar: acesso.podeEditar && !usuario.somenteLeitura,
+        regraAplicada: acesso.regra || null,
       },
     };
   },
@@ -286,7 +339,7 @@ const CalendarioMissionarioService = {
 
   // Eventos do Tema
   async criarEvento(usuario, corpo) {
-    exigirPerfilEvento(usuario);
+    await exigirPerfilEvento(usuario);
     const temaId = idOuNull(corpo.temaId);
     if (!temaId) throw erro('Tema obrigatorio.');
     const tema = await CalendarioMissionarioModel.buscarTema(temaId);
@@ -305,11 +358,11 @@ const CalendarioMissionarioService = {
       criadoPorPerfil: usuario.perfil,
       criadoPorNome: usuario.nome,
     });
-    return formatarEvento(evento, usuario);
+    return formatarEvento(evento, usuario, { podeEditar: true });
   },
 
   async atualizarEvento(usuario, id, corpo) {
-    exigirPerfilEvento(usuario);
+    await exigirPerfilEvento(usuario);
     const atual = await CalendarioMissionarioModel.buscarEvento(id);
     if (!atual) throw erro('Evento nao encontrado.', 404);
 
@@ -322,11 +375,11 @@ const CalendarioMissionarioService = {
       data: dataOuNull(corpo.data, atual.tema.ano),
       departamento: texto(corpo.departamento) || 'OUTRO',
     });
-    return formatarEvento(evento, usuario);
+    return formatarEvento(evento, usuario, { podeEditar: true });
   },
 
   async excluirEvento(usuario, id) {
-    exigirPerfilEvento(usuario);
+    await exigirPerfilEvento(usuario);
     const atual = await CalendarioMissionarioModel.buscarEvento(id);
     if (!atual) throw erro('Evento nao encontrado.', 404);
     await CalendarioMissionarioModel.excluirEvento(id);
@@ -334,7 +387,7 @@ const CalendarioMissionarioService = {
 
   // Ações Missionárias
   async criarAcao(usuario, corpo) {
-    exigirPerfilAcao(usuario);
+    await exigirPerfilAcao(usuario);
     let temaId = idOuNull(corpo.temaId);
     const eventoId = idOuNull(corpo.eventoId);
 
@@ -358,27 +411,66 @@ const CalendarioMissionarioService = {
       criadoPorPerfil: usuario.perfil,
       criadoPorNome: usuario.nome,
     });
-    return formatarAcao(acao, usuario);
+    return formatarAcao(acao, usuario, { podeEditar: true });
   },
 
   async atualizarAcao(usuario, id, corpo) {
-    exigirPerfilAcao(usuario);
+    const acesso = await exigirPerfilAcao(usuario);
     const atual = await CalendarioMissionarioModel.buscarAcao(id);
     if (!atual) throw erro('Acao nao encontrada.', 404);
-    if (!formatarAcao(atual, usuario).podeEditar) throw erro('Voce so pode editar as acoes que cadastrou.');
+    if (!formatarAcao(atual, usuario, acesso).podeEditar) throw erro('Voce so pode editar as acoes que cadastrou.');
     const tema = await CalendarioMissionarioModel.buscarTema(atual.temaId);
     const mudouOrigem = ['regiaoId', 'distritoId', 'igrejaId'].some((c) => corpo[c] !== undefined);
     const origem = mudouOrigem ? await resolverOrigem(usuario, corpo) : {};
     const acao = await CalendarioMissionarioModel.atualizarAcao(id, { ...dadosAcao(corpo, tema.ano), ...origem });
-    return formatarAcao(acao, usuario);
+    return formatarAcao(acao, usuario, acesso);
   },
 
   async excluirAcao(usuario, id) {
-    exigirPerfilAcao(usuario);
+    const acesso = await exigirPerfilAcao(usuario);
     const atual = await CalendarioMissionarioModel.buscarAcao(id);
     if (!atual) throw erro('Acao nao encontrada.', 404);
-    if (!formatarAcao(atual, usuario).podeEditar) throw erro('Voce so pode excluir as acoes que cadastrou.');
+    if (!formatarAcao(atual, usuario, acesso).podeEditar) throw erro('Voce so pode excluir as acoes que cadastrou.');
     await CalendarioMissionarioModel.excluirAcao(id);
+  },
+
+  // Permissoes de acesso por regiao/distrito
+  async listarPermissoes(usuario) {
+    exigirAdmin(usuario);
+    return CalendarioMissionarioModel.listarPermissoes();
+  },
+
+  async salvarPermissao(usuario, corpo) {
+    exigirAdmin(usuario);
+    if (!PERFIS_CONFIGURAVEIS.includes(corpo.perfil)) throw erro('Selecione um perfil valido.');
+
+    const regiaoId = idOuNull(corpo.regiaoId);
+    const distritoId = idOuNull(corpo.distritoId);
+    if (!regiaoId) throw erro('Selecione a regiao da permissao.');
+    if (!await CalendarioMissionarioModel.buscarRegiao(regiaoId)) throw erro('Regiao nao encontrada.', 404);
+
+    if (distritoId) {
+      const distrito = await CalendarioMissionarioModel.buscarDistrito(distritoId);
+      if (!distrito) throw erro('Distrito nao encontrado.', 404);
+      if (Number(distrito.regiaoId) !== regiaoId) throw erro('O distrito selecionado nao pertence a esta regiao.');
+    }
+
+    const podeVisualizar = corpo.podeVisualizar !== false;
+    const podeEditar = podeVisualizar && corpo.podeEditar === true;
+    const chave = chavePermissao(corpo.perfil, regiaoId, distritoId);
+    return CalendarioMissionarioModel.salvarPermissao(chave, {
+      perfil: corpo.perfil,
+      regiaoId,
+      distritoId,
+      podeVisualizar,
+      podeEditar,
+      criadoPorId: usuario.id,
+    });
+  },
+
+  async excluirPermissao(usuario, id) {
+    exigirAdmin(usuario);
+    await CalendarioMissionarioModel.excluirPermissao(id);
   },
 
   async criarModelo(usuario, corpo = {}) {

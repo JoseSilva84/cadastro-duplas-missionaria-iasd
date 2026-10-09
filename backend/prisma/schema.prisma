@@ -85,6 +85,7 @@ model QrCodeAtivacao {
 // Usuários do sistema
 model Usuario {
   acoesCalendario CalendarioAcaoMissionaria[]
+  permissoesCalendarioCriadas CalendarioPermissao[]
   id        Int      @id @default(autoincrement())
   nome      String
   email     String   @unique
@@ -112,6 +113,7 @@ model Usuario {
 // Regiões da Associação Paulistana
 model Regiao {
   acoesCalendario CalendarioAcaoMissionaria[]
+  permissoesCalendario CalendarioPermissao[]
   id        Int      @id @default(autoincrement())
   nome      String   @unique
   descricao String?
@@ -135,6 +137,7 @@ model Regiao {
 // Distritos dentro de cada região
 model Distrito {
   acoesCalendario CalendarioAcaoMissionaria[]
+  permissoesCalendario CalendarioPermissao[]
   id        Int      @id @default(autoincrement())
   nome      String
   regiaoId  Int
@@ -516,4 +519,27 @@ model CalendarioAcaoMissionaria {
   @@index([temaId])
   @@index([eventoId])
   @@index([regiaoId, distritoId, igrejaId])
+}
+
+// Regras de acesso ao Calendario Missionario por perfil e escopo territorial.
+// Uma regra distrital prevalece sobre a regra da regiao.
+model CalendarioPermissao {
+  id              Int      @id @default(autoincrement())
+  chave           String   @unique
+  perfil          Perfil
+  regiaoId        Int
+  distritoId      Int?
+  podeVisualizar  Boolean  @default(true)
+  podeEditar      Boolean  @default(false)
+  criadoPorId     Int?
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  regiao    Regiao    @relation(fields: [regiaoId], references: [id], onDelete: Cascade)
+  distrito  Distrito? @relation(fields: [distritoId], references: [id], onDelete: Cascade)
+  criadoPor Usuario?  @relation(fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([perfil, regiaoId, distritoId])
+  @@index([regiaoId])
+  @@index([distritoId])
 }

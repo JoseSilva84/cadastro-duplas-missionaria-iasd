@@ -34,6 +34,20 @@ const validarCriarAcao = [
 
 const validarId = [param('id').isInt().withMessage('Id invalido.')];
 
+const validarPermissao = [
+  body('perfil').isIn([
+    'PASTOR_REGIONAL',
+    'COORDENADOR_REGIONAL',
+    'PASTOR_DISTRITAL',
+    'DIRETOR_MISSIONARIO_IGREJA',
+    'DUPLA_MISSIONARIA',
+  ]).withMessage('Perfil invalido.'),
+  body('regiaoId').isInt({ min: 1 }).withMessage('Regiao obrigatoria.'),
+  body('distritoId').optional({ values: 'null' }).isInt({ min: 1 }).withMessage('Distrito invalido.'),
+  body('podeVisualizar').isBoolean().withMessage('Permissao de visualizacao invalida.'),
+  body('podeEditar').isBoolean().withMessage('Permissao de edicao invalida.'),
+];
+
 const responderErro = (res, err, mensagem) => {
   const status = err.status || 500;
   if (status === 500) console.error(err);
@@ -72,6 +86,11 @@ const CalendarioMissionarioController = {
   criarAcao: rota((req) => S.criarAcao(req.usuario, req.body), { status: 201, mensagem: 'Erro ao salvar acao.' }),
   atualizarAcao: rota((req) => S.atualizarAcao(req.usuario, req.params.id, req.body), { mensagem: 'Erro ao salvar acao.' }),
   excluirAcao: rota((req) => S.excluirAcao(req.usuario, req.params.id), { mensagem: 'Erro ao excluir acao.' }),
+
+  // Permissoes do calendario
+  listarPermissoes: rota((req) => S.listarPermissoes(req.usuario), { mensagem: 'Erro ao listar permissoes do calendario.' }),
+  salvarPermissao: rota((req) => S.salvarPermissao(req.usuario, req.body), { status: 201, mensagem: 'Erro ao salvar permissao do calendario.' }),
+  excluirPermissao: rota((req) => S.excluirPermissao(req.usuario, req.params.id), { mensagem: 'Erro ao excluir permissao do calendario.' }),
 };
 
 module.exports = {
@@ -82,5 +101,6 @@ module.exports = {
   validarCriarEvento,
   validarAcao,
   validarCriarAcao,
+  validarPermissao,
   validarId,
 };

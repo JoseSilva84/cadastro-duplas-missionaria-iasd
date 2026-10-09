@@ -111,6 +111,40 @@ const CalendarioMissionarioModel = {
   buscarDistrito(id) {
     return prisma.distrito.findUnique({ where: { id: Number(id) }, select: { id: true, regiaoId: true } });
   },
+
+  buscarRegiao(id) {
+    return prisma.regiao.findUnique({ where: { id: Number(id) }, select: { id: true, nome: true } });
+  },
+
+  listarPermissoes() {
+    return prisma.calendarioPermissao.findMany({
+      orderBy: [{ regiaoId: 'asc' }, { distritoId: 'asc' }, { perfil: 'asc' }],
+      include: {
+        regiao: { select: { id: true, nome: true } },
+        distrito: { select: { id: true, nome: true } },
+      },
+    });
+  },
+
+  buscarPermissaoPorChave(chave) {
+    return prisma.calendarioPermissao.findUnique({ where: { chave } });
+  },
+
+  salvarPermissao(chave, data) {
+    return prisma.calendarioPermissao.upsert({
+      where: { chave },
+      create: { chave, ...data },
+      update: data,
+      include: {
+        regiao: { select: { id: true, nome: true } },
+        distrito: { select: { id: true, nome: true } },
+      },
+    });
+  },
+
+  excluirPermissao(id) {
+    return prisma.calendarioPermissao.delete({ where: { id: Number(id) } });
+  },
 };
 
 module.exports = CalendarioMissionarioModel;

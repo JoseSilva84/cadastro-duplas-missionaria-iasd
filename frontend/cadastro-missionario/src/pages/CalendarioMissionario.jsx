@@ -4,8 +4,10 @@ import LoadingState from '../components/LoadingState';
 import LinhaDoTempo from '../components/calendario/LinhaDoTempo';
 import TemaModal from '../components/calendario/TemaModal';
 import EventoModal from '../components/calendario/EventoModal';
+import PermissoesCalendarioModal from '../components/calendario/PermissoesCalendarioModal';
 import { toast } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
+import { imprimirCalendarioCompleto } from '../lib/imprimirCalendario';
 import {
   ANOS_DISPONIVEIS, DEPARTAMENTOS, calcularJanela, chaveMes, dia, formatarDia, moeda, periodoTema,
 } from '../lib/calendario';
@@ -45,10 +47,12 @@ export default function CalendarioMissionario() {
   const [filtro, setFiltro] = useState({ regiaoId: '', distritoId: '', igrejaId: '' });
   const [departamentoFiltro, setDepartamentoFiltro] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [erroAcesso, setErroAcesso] = useState('');
 
   // Modais
   const [modalTema, setModalTema] = useState(null); // { temaId } | { novo: true } | null
   const [modalEvento, setModalEvento] = useState(null); // { evento, tema, destaqueAcaoId } | null
+  const [modalPermissoes, setModalPermissoes] = useState(false);
   const [criandoModelo, setCriandoModelo] = useState(false);
 
   const perfil = usuario?.perfil;
@@ -62,6 +66,7 @@ export default function CalendarioMissionario() {
   }, []);
 
   const carregar = useCallback(async () => {
+    setErroAcesso('');
     try {
       const params = { ano: opcaoAno.ano };
       Object.entries(filtro).forEach(([k, v]) => { if (v) params[k] = v; });
@@ -69,7 +74,9 @@ export default function CalendarioMissionario() {
       setTemas(res.data.temas || []);
       setPermissoes(res.data.permissoes || { gerenciarTemas: false, gerenciarEventos: false, criarAcao: false });
     } catch (err) {
-      toast.error(err.response?.data?.erro || 'Erro ao carregar o calendário missionário.');
+      const mensagem = err.response?.data?.erro || 'Erro ao carregar o calendário missionário.';
+      if (err.response?.status === 403) setErroAcesso(mensagem);
+      else toast.error(mensagem);
     } finally {
       setCarregando(false);
     }
@@ -196,7 +203,16 @@ export default function CalendarioMissionario() {
   };
 
   const imprimir = () => {
-    window.print();
+    const abriu = imprimirCalendarioCompleto({
+      opcaoAno,
+      meses,
+      temas,
+      filtro,
+      listas,
+      totalAcoes,
+      totalValor,
+    });
+    if (!abriu) toast.error('O navegador bloqueou a janela de impressão. Autorize pop-ups e tente novamente.');
   };
 
   // Selecionar mês e navegar até ele na linha do tempo
@@ -246,6 +262,18 @@ export default function CalendarioMissionario() {
 
   if (carregando) return <LoadingState mensagem="Carregando Calendário Missionário..." />;
 
+  if (erroAcesso) {
+    return (
+      <section className="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl text-amber-700">!</div>
+        <p className="mt-4 text-xs font-extrabold uppercase tracking-[0.2em] text-[#C9963A]">Acesso ao calendário</p>
+        <h1 className="mt-1 text-2xl font-black text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Visualização não liberada</h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-500">{erroAcesso}</p>
+        <p className="mt-2 text-xs text-slate-400">Um administrador pode liberar este acesso para sua região ou distrito.</p>
+      </section>
+    );
+  }
+
   const seletor = (rotulo, campo, opcoes, todos) => (
     <label key={campo} className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
       {rotulo}
@@ -286,6 +314,20 @@ export default function CalendarioMissionario() {
 
           {/* Botões de Ação no Topo */}
           <div className="flex flex-wrap items-center gap-2.5 print:hidden">
+            {ehAdmin && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#1A3A6B]/20 bg-[#1A3A6B]/5 px-3.5 py-2 text-xs font-bold text-[#1A3A6B] transition hover:border-[#1A3A6B]/40 hover:bg-[#1A3A6B]/10"
+                onClick={() => setModalPermissoes(true)}
+                title="Definir quem pode visualizar e editar o calendário"
+              >
+                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M10 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                  <path d="M4.5 17a5.5 5.5 0 0 1 11 0M15.5 8.5h3M17 7v3" />
+                </svg>
+                Permissões
+              </button>
+            )}
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-[#1A3A6B] hover:text-[#1A3A6B]"
@@ -754,6 +796,10 @@ export default function CalendarioMissionario() {
           onFechar={() => setModalEvento(null)}
           onMudou={aoAtualizarDados}
         />
+      )}
+
+      {modalPermissoes && (
+        <PermissoesCalendarioModal listas={listas} onFechar={() => setModalPermissoes(false)} />
       )}
     </div>
   );
