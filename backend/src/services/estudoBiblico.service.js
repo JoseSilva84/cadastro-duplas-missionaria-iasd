@@ -3,6 +3,18 @@ const prisma = require('../lib/prisma');
 const { PERFIS } = require('../middlewares/auth');
 const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
 
+const whereEstudoEmAndamento = {
+  encerrado: false,
+  statusEstudo: 'EM_ANDAMENTO',
+};
+
+const whereEstudoEncerrado = {
+  OR: [
+    { encerrado: true },
+    { statusEstudo: 'ENCERRADO' },
+  ],
+};
+
 // Aplica filtros de escopo por perfil + filtros opcionais da query
 const montarFiltro = async (query = {}, usuario = null) => {
   let where = {};
@@ -19,7 +31,12 @@ const montarFiltro = async (query = {}, usuario = null) => {
     if (query.duplaId) where.duplaId = Number(query.duplaId);
   }
   if (query.serie) where.serie = query.serie;
-  if (query.encerrado !== undefined) where.encerrado = query.encerrado === 'true';
+  if (query.encerrado !== 'todos') {
+    where.AND = [
+      ...(where.AND || []),
+      query.encerrado === 'true' ? whereEstudoEncerrado : whereEstudoEmAndamento,
+    ];
+  }
   if (query.licaoAtual) where.licaoAtual = Number(query.licaoAtual);
   if (query.cidade) where.cidade = { contains: query.cidade, mode: 'insensitive' };
   if (query.tipoEstudo) where.tipoEstudo = query.tipoEstudo;

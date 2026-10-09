@@ -92,7 +92,13 @@ const RelatorioService = {
           statusEstudoBiblico: true,
           igreja: { select: { id: true, nome: true } },
           distrito: { select: { id: true, nome: true, regiao: { select: { id: true, nome: true } } } },
-          _count: { select: { estudosBiblicos: true } },
+          _count: {
+            select: {
+              estudosBiblicos: {
+                where: { encerrado: false, statusEstudo: 'EM_ANDAMENTO' },
+              },
+            },
+          },
         },
         orderBy: [{ liderNome: 'asc' }, { membro2Nome: 'asc' }],
       });

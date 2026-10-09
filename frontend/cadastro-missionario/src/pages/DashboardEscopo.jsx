@@ -6,7 +6,14 @@ import api from '../lib/api';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
-const quantidadeEstudos = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
+const estudoEncerrado = (estudo) => (
+  estudo?.encerrado === true || String(estudo?.statusEstudo || '').toUpperCase() === 'ENCERRADO'
+);
+const quantidadeEstudos = (dupla) => (
+  Array.isArray(dupla?.estudosBiblicos)
+    ? dupla.estudosBiblicos.filter((estudo) => !estudoEncerrado(estudo)).length
+    : dupla?._count?.estudosBiblicos ?? 0
+);
 const quantidadeVisitas = (dupla) => dupla?._count?.acompanhamentos ?? 0;
 
 const projetoLabel = {
@@ -66,7 +73,7 @@ export default function DashboardEscopo() {
   useEffect(() => {
     Promise.all([
       api.get('/relatorios/resumo'),
-      api.get('/relatorios/estudos-biblicos'),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'false' } }),
       api.get('/duplas'),
     ])
       .then(([resumoResposta, estudosResposta, duplasResposta]) => {
@@ -125,7 +132,7 @@ export default function DashboardEscopo() {
 
       <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CardIndicador titulo="Total de duplas" valor={totalDuplas} detalhe="Dentro do seu nível de acesso" cor="#1A3A6B" />
-        <CardIndicador titulo="Estudos cadastrados" valor={totalEstudos} detalhe="Estudos, pontos e classes" cor="#0284c7" />
+        <CardIndicador titulo="Estudos em andamento" valor={totalEstudos} detalhe="Somente estudos não encerrados" cor="#0284c7" />
         <CardIndicador titulo="Batismos" valor={resumo?.totalBatismos} detalhe="Experiência de Batismo no passado" cor="#0d9488" />
         <CardIndicador titulo="Metas de contatos" valor={resumo?.totalPessoasAlcancadas} detalhe="Pessoas alcançadas no escopo" cor="#7B2D8B" />
       </section>

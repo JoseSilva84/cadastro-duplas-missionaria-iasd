@@ -119,6 +119,7 @@ export default function Alunos() {
   const [serieSelecionada, setSerieSelecionada] = useState('');
   const [licoesSelecionadas, setLicoesSelecionadas] = useState([]);
   const [salvandoLicao, setSalvandoLicao] = useState(false);
+  const [confirmacaoUltimaLicao, setConfirmacaoUltimaLicao] = useState(null);
   const [modalEncerramento, setModalEncerramento] = useState(null);
   const [motivoEncerramento, setMotivoEncerramento] = useState('');
   const [outroMotivoEncerramento, setOutroMotivoEncerramento] = useState('');
@@ -201,6 +202,20 @@ export default function Alunos() {
 
   const salvarLicao = async () => {
     if (!estudoSelecionado || !serieSelecionada || licoesSelecionadas.length === 0) return;
+    const licaoSelecionada = maiorLicaoSelecionada(licoesSelecionadas);
+    const ultimaLicao = Number(licoesModal.at(-1)?.numero || 0);
+    if (ultimaLicao > 0 && licaoSelecionada === ultimaLicao) {
+      toast.info('A última lição encerra esta série.', {
+        description: 'Confirme se o estudo terminou para informar o motivo do encerramento.',
+      });
+      setConfirmacaoUltimaLicao({
+        aluno: modalAtualizacao,
+        estudoId: estudoSelecionado.id,
+        serie: serieSelecionada,
+        licaoAtual: licaoSelecionada,
+      });
+      return;
+    }
     setSalvandoLicao(true);
     try {
       const payload = {
@@ -213,7 +228,7 @@ export default function Alunos() {
         horarioEstudo: estudoSelecionado.horarioEstudo || '',
         duplaId: estudoSelecionado.duplaId,
         serie: serieSelecionada,
-        licaoAtual: maiorLicaoSelecionada(licoesSelecionadas),
+        licaoAtual: licaoSelecionada,
         tipoEstudo: estudoSelecionado.tipoEstudo,
         sexo: estudoSelecionado.sexo || '',
         classificacaoInteressado: estudoSelecionado.classificacaoInteressado || '',
@@ -230,7 +245,7 @@ export default function Alunos() {
       toast.success('Licao atualizada.');
     } catch (err) {
       const erros = err.response?.data?.erros;
-      toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao atualizar licao.');
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : (err.response?.data?.erro || 'Erro ao atualizar lição.'));
     } finally {
       setSalvandoLicao(false);
     }
@@ -240,6 +255,37 @@ export default function Alunos() {
     setModalEncerramento(aluno);
     setMotivoEncerramento('');
     setOutroMotivoEncerramento('');
+  };
+
+  const continuarEncerramentoUltimaLicao = () => {
+    if (!confirmacaoUltimaLicao) return;
+    setModalEncerramento({
+      ...confirmacaoUltimaLicao.aluno,
+      estudoId: confirmacaoUltimaLicao.estudoId,
+      serieFinalPendente: confirmacaoUltimaLicao.serie,
+      licaoFinalPendente: confirmacaoUltimaLicao.licaoAtual,
+      exigeMotivoUltimaLicao: true,
+    });
+    setMotivoEncerramento('');
+    setOutroMotivoEncerramento('');
+    setConfirmacaoUltimaLicao(null);
+    setModalAtualizacao(null);
+  };
+
+  const manterEstudoEmAndamento = () => {
+    setConfirmacaoUltimaLicao(null);
+    toast.warning('A última lição não foi salva.', {
+      description: 'Para registrar a última lição, informe também o motivo do encerramento do estudo.',
+    });
+  };
+
+  const fecharEncerramento = () => {
+    if (modalEncerramento?.exigeMotivoUltimaLicao) {
+      toast.warning('A última lição não foi salva.', {
+        description: 'O estudo continua em andamento até que o motivo do encerramento seja informado.',
+      });
+    }
+    setModalEncerramento(null);
   };
 
   const encerrarEstudo = async () => {
@@ -257,8 +303,8 @@ export default function Alunos() {
         diaEstudo: estudo.diaEstudo,
         horarioEstudo: estudo.horarioEstudo || '',
         duplaId: estudo.duplaId,
-        serie: estudo.serie,
-        licaoAtual: estudo.licaoAtual,
+        serie: modalEncerramento.serieFinalPendente || estudo.serie,
+        licaoAtual: modalEncerramento.licaoFinalPendente || estudo.licaoAtual,
         tipoEstudo: estudo.tipoEstudo,
         sexo: estudo.sexo || '',
         classificacaoInteressado: estudo.classificacaoInteressado || '',
@@ -275,10 +321,12 @@ export default function Alunos() {
         estudos: (atual.estudos || []).map((item) => (String(item.id) === String(data.id) ? data : item)),
       }));
       setModalEncerramento(null);
+      setModalAtualizacao(null);
+      setConfirmacaoUltimaLicao(null);
       toast.success('Estudo encerrado.');
     } catch (err) {
       const erros = err.response?.data?.erros;
-      toast.error(erros ? erros.map((e) => e.msg).join(', ') : 'Erro ao encerrar estudo.');
+      toast.error(erros ? erros.map((e) => e.msg).join(', ') : (err.response?.data?.erro || 'Erro ao encerrar estudo.'));
     } finally {
       setEncerrando(false);
     }
@@ -606,6 +654,33 @@ export default function Alunos() {
         </div>
       )}
 
+      {confirmacaoUltimaLicao && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0f2347]/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-amber-100 bg-amber-50 px-5 py-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Última lição</p>
+              <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]">O estudo foi concluído?</h2>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-sm leading-relaxed text-gray-600">
+                Você selecionou a última lição de <strong>{getSerieNome(confirmacaoUltimaLicao.serie)}</strong> para <strong>{confirmacaoUltimaLicao.aluno?.nome}</strong>.
+              </p>
+              <p className="mt-3 rounded-xl bg-[#F4F5F7] px-4 py-3 text-sm text-gray-600">
+                Se o estudo terminou, informe agora o motivo do encerramento. Caso contrário, a última lição não será salva.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={manterEstudoEmAndamento}>
+                Não, continuar estudo
+              </button>
+              <button type="button" className="rounded-lg bg-[#1A3A6B] px-5 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-[#244d83]" onClick={continuarEncerramentoUltimaLicao}>
+                Sim, encerrar estudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalEncerramento && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
@@ -616,7 +691,7 @@ export default function Alunos() {
                   <h2 className="mt-1 text-xl font-bold text-[#1A3A6B]">Motivo do encerramento</h2>
                   <p className="mt-1 text-sm text-gray-400">{modalEncerramento.nome}</p>
                 </div>
-                <button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100" onClick={() => setModalEncerramento(null)}>
+                <button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100" onClick={fecharEncerramento}>
                   Fechar
                 </button>
               </div>
@@ -651,7 +726,7 @@ export default function Alunos() {
             </div>
 
             <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end">
-              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={() => setModalEncerramento(null)}>
+              <button type="button" className="btn-outline px-5 py-2 text-sm" onClick={fecharEncerramento}>
                 Cancelar
               </button>
               <button type="button" className="rounded-lg bg-red-700 px-6 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60" onClick={encerrarEstudo} disabled={encerrando || !motivoEncerramento || (motivoEncerramento === 'OUTRO' && !outroMotivoEncerramento.trim())}>

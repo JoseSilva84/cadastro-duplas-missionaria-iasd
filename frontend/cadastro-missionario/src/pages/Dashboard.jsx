@@ -6,7 +6,6 @@ import LoadingState from '../components/LoadingState';
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 const percentual = (valor, total) => (total > 0 ? Math.round((Number(valor || 0) / total) * 100) : 0);
 
-const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
 const totalBatismosEncerrados = (estudos = []) => estudos
@@ -24,6 +23,11 @@ const normalizarStatus = (valor) => String(valor || '')
 const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
 const estudoEncerrado = (estudo) => (
   estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
+);
+const getEstudosCount = (dupla) => (
+  Array.isArray(dupla?.estudosBiblicos)
+    ? dupla.estudosBiblicos.filter((estudo) => !estudoEncerrado(estudo)).length
+    : dupla?._count?.estudosBiblicos ?? 0
 );
 const temEstudoEmAndamento = (dupla) => (
   (dupla?.estudosBiblicos || []).some((estudo) => !estudoEncerrado(estudo))
@@ -63,12 +67,6 @@ const juntarEstudosEncerradosNasDuplas = (duplas = [], estudosEncerrados = []) =
     };
   });
 };
-
-const DashboardIcon = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z" />
-  </svg>
-);
 
 const UsersIcon = ({ className = 'w-5 h-5' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -242,7 +240,7 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([
       api.get('/relatorios/dashboard-associacao'),
-      api.get('/relatorios/estudos-biblicos'),
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'false' } }),
       api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
       api.get('/duplas'),
     ])
@@ -311,7 +309,7 @@ export default function Dashboard() {
       <Section eyebrow="Resumo principal" title="Indicadores essenciais">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
-          <MetricCard label="Registros de estudos" value={totalEstudosCadastrados} detail="Individuais, pontos e classes" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
+          <MetricCard label="Estudos em andamento" value={totalEstudosCadastrados} detail="Somente estudos não encerrados" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
           <MetricCard label="Assistência/Regional" value={comVisitacao} detail="Resumo das assistências/visitas" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
           <MetricCard label="Batismos" value={batismosConfirmados} detail="Estudos encerrados com batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
         </div>

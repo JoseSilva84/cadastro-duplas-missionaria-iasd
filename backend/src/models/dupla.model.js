@@ -2,6 +2,16 @@
 const prisma = require('../lib/prisma');
 const { removerDuplasPorIds } = require('./cadastroDelete.model');
 
+const whereEstudoEmAndamento = {
+  encerrado: false,
+  statusEstudo: 'EM_ANDAMENTO',
+};
+
+const contagensDaDupla = {
+  estudosBiblicos: { where: whereEstudoEmAndamento },
+  acompanhamentos: true,
+};
+
 const DuplaModel = {
   // Lista duplas com filtro opcional
   async findAll(filtro = {}) {
@@ -14,7 +24,7 @@ const DuplaModel = {
           include: { participantes: true },
           orderBy: { atualizadoEm: 'desc' },
         },
-        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
+        _count: { select: contagensDaDupla },
       },
       orderBy: [
         { liderNome: 'asc' },
@@ -35,7 +45,7 @@ const DuplaModel = {
           include: { participantes: true },
           orderBy: { atualizadoEm: 'desc' },
         },
-        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
+        _count: { select: contagensDaDupla },
       },
     });
   },
@@ -47,7 +57,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
-        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
+        _count: { select: contagensDaDupla },
       },
     });
   },
@@ -60,7 +70,7 @@ const DuplaModel = {
       include: {
         distrito: { include: { regiao: true } },
         igreja: true,
-        _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
+        _count: { select: contagensDaDupla },
       },
     });
   },

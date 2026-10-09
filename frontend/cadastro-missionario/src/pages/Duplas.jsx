@@ -49,6 +49,7 @@ const medalhaConfig = {
 };
 
 const medalhaOrder = { ouro: 0, prata: 1, bronze: 2, semAtividade: 3 };
+const mostrarFiltrosEspeciais = false;
 const compararDuplasPorPrimeiroMembro = (a, b) => {
   const liderA = a?.liderNome || '';
   const liderB = b?.liderNome || '';
@@ -56,7 +57,6 @@ const compararDuplasPorPrimeiroMembro = (a, b) => {
   if (porLider !== 0) return porLider;
   return (a?.membro2Nome || '').localeCompare(b?.membro2Nome || '', 'pt-BR', { sensitivity: 'base' });
 };
-const getEstudosCount = (dupla) => dupla?._count?.estudosBiblicos ?? dupla?.estudosBiblicos?.length ?? 0;
 const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
 const getIgrejaNome = (dupla) => dupla?.igreja?.nome || dupla?.liderIgreja || dupla?.membro2Igreja || 'Sem igreja';
 const getDistritoNome = (dupla) => dupla?.distrito?.nome || dupla?.liderDistrito || dupla?.membro2Distrito || '';
@@ -73,22 +73,33 @@ const normalizarStatus = (valor) => String(valor || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .toUpperCase();
-const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
-const temEstudoBiblicoAtivoOuFinalizado = (dupla) => (
-  ['ATIVO', 'FINALIZADO', 'CONCLUIDO'].includes(normalizarStatus(dupla?.statusEstudoBiblico))
+const estudoEncerrado = (estudo) => (
+  estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
 );
+const getEstudosCount = (dupla) => (
+  Array.isArray(dupla?.estudosBiblicos)
+    ? dupla.estudosBiblicos.filter((estudo) => !estudoEncerrado(estudo)).length
+    : dupla?._count?.estudosBiblicos ?? 0
+);
+const getEstudosEncerradosCount = (dupla) => (
+  Array.isArray(dupla?.estudosBiblicos)
+    ? dupla.estudosBiblicos.filter(estudoEncerrado).length
+    : 0
+);
+const getTodosEstudosCount = (dupla) => getEstudosCount(dupla) + getEstudosEncerradosCount(dupla);
+const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
 // Calcula a medalha de gamificação
 function getMedalha(dupla) {
-  const estudos = getEstudosCount(dupla);
-  const temEstudo = estudos > 0;
-  const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudo;
-  const estudoAtivoOuFinalizado = temEstudoBiblicoAtivoOuFinalizado(dupla) && temEstudo;
+  const estudosAtivos = getEstudosCount(dupla);
+  const temEstudoAtivo = estudosAtivos > 0;
+  const temEstudoHistorico = getTodosEstudosCount(dupla) > 0;
+  const estudoAtivo = temEstudoBiblicoAtivo(dupla) && temEstudoAtivo;
   const temBatismoEncerrado = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
   const temVisitacao = getVisitacoesCount(dupla) >= 1;
-  const temVisitacaoOuEstudo = temVisitacao || temEstudo;
-  if (estudoAtivoOuFinalizado && temBatismoEncerrado && temVisitacao) return 'ouro';
+  const temVisitacaoOuEstudo = temVisitacao || temEstudoAtivo;
+  if (temBatismoEncerrado && temVisitacao) return 'ouro';
   if (estudoAtivo && !temBatismoEncerrado && temVisitacaoOuEstudo) return 'prata';
-  if (temEstudo || temVisitacao) return 'bronze';
+  if (temEstudoHistorico || temVisitacao) return 'bronze';
   return 'semAtividade';
 }
 const temEstudoNaoRegistrado = (dupla) => (
@@ -462,7 +473,7 @@ export default function Duplas() {
             { label: 'Igrejas', valor: distrito.igrejas?.length || 0, cor: '#16a34a', icon: '⛪', gradient: 'from-[#16a34a] to-[#22c55e]' },
             { label: 'Membros', valor: (distrito.membros || 0).toLocaleString('pt-BR'), cor: '#7B2D8B', icon: '👨‍👩‍👧‍👦', gradient: 'from-[#7B2D8B] to-[#9333ea]' },
           ] : []),
-          { label: 'Estudos', valor: duplas.filter(d => d.statusEstudoBiblico === 'ATIVO').length, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
+          { label: 'Estudos atuais', valor: duplas.reduce((total, dupla) => total + getEstudosCount(dupla), 0), cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
           { label: 'Classe Bíblica', valor: duplas.filter(d => d.statusEvangelismo === 'ATIVO').length, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
           { label: 'Batismos', valor: totalBatismosConfirmados, cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
         ].map((item, idx) => (
@@ -536,7 +547,7 @@ export default function Duplas() {
           );
         })}
 
-        {false && [
+        {mostrarFiltrosEspeciais && [
           {
             key: 'estudoNaoRegistrado',
             label: 'Dupla com estudo sem cadastro',
@@ -707,7 +718,7 @@ export default function Duplas() {
                 </div>
 
                 {/* Badges de classe + atividade + medalha + estudos + seta */}
-                <div className="hidden sm:flex items-center gap-2 flex-shrink-0 ml-2">
+                <div className="hidden sm:flex max-w-[44%] flex-wrap items-center justify-end gap-1.5 flex-shrink-0 ml-2">
                   {clsCfg && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border"
                       style={{ backgroundColor: clsCfg.bg, color: clsCfg.cor, borderColor: clsCfg.cor + '40' }}
@@ -724,11 +735,21 @@ export default function Duplas() {
                   )}
                   {getEstudosCount(dupla) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20">
-                      📖 {dupla._count?.estudosBiblicos ?? 0} {((dupla._count?.estudosBiblicos ?? 0) === 1) ? 'estudo bíblico' : 'estudos bíblicos'}
+                      📖 {getEstudosCount(dupla)} {getEstudosCount(dupla) === 1 ? 'estudo atual' : 'estudos atuais'}
                     </span>
-                  ) : (
+                  ) : getEstudosEncerradosCount(dupla) === 0 ? (
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${temEstudoNaoRegistrado(dupla) ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200'}`}>
                       {temEstudoNaoRegistrado(dupla) ? 'Tem estudo, mas não registrou' : 'Sem estudo bíblico'}
+                    </span>
+                  ) : null}
+                  {getEstudosEncerradosCount(dupla) > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                      {getEstudosEncerradosCount(dupla)} {getEstudosEncerradosCount(dupla) === 1 ? 'estudo encerrado' : 'estudos encerrados'}
+                    </span>
+                  )}
+                  {totalBatismosEncerrados(dupla.estudosBiblicos) > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+                      💧 {totalBatismosEncerrados(dupla.estudosBiblicos)} {totalBatismosEncerrados(dupla.estudosBiblicos) === 1 ? 'batismo' : 'batismos'}
                     </span>
                   )}
                   <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"

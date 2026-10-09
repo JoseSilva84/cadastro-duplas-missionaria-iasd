@@ -907,7 +907,12 @@ const RelatorioModel = {
             where: whereEstudoEmAndamento,
             select: { id: true, tipoEstudo: true },
           },
-          _count: { select: { estudosBiblicos: true, acompanhamentos: true } },
+          _count: {
+            select: {
+              estudosBiblicos: { where: whereEstudoEmAndamento },
+              acompanhamentos: true,
+            },
+          },
         },
       }),
       prisma.estudoBiblico.findMany({
