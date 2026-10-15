@@ -552,7 +552,10 @@ async function requisitar(caminho, cfg = configuracao(), repetirAposLogin = true
     );
   }
 
-  const token = tokenDeSessao || cfg.token || await autenticar(cfg);
+  // Quando há usuário e senha configurados, prefira uma sessão renovável.
+  // O token estático continua como compatibilidade para instalações antigas.
+  const usaLoginRenovavel = Boolean(cfg.email && cfg.password);
+  const token = tokenDeSessao || (usaLoginRenovavel ? await autenticar(cfg) : cfg.token);
   let resposta;
 
   try {
@@ -1223,7 +1226,13 @@ const InteressadosNovoTempoService = {
     return { ...analisarContatos(dados.contatos, filtros), atualizadoEm: dados.atualizadoEm };
   },
 
-  async porDistrito(nomeDistrito, { atualizar = false, usuario } = {}) {
+  async porDistrito(nomeDistrito, {
+    atualizar = false,
+    usuario,
+    paginado = false,
+    pagina: paginaInformada = 1,
+    limite: limiteInformado = 100,
+  } = {}) {
     const nome = texto(nomeDistrito);
     if (!nome) throw erro(400, 'Informe o distrito.', 'DISTRITO_OBRIGATORIO');
     const escopo = await obterEscopoTerritorial(usuario);
@@ -1249,6 +1258,12 @@ const InteressadosNovoTempoService = {
     }
 
     const contatos = [...contatosNoEscopo].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const pagina = Math.max(1, Number(paginaInformada) || 1);
+    const limite = Math.min(100, Math.max(1, Number(limiteInformado) || 100));
+    const leads = paginado
+      ? contatos.slice((pagina - 1) * limite, pagina * limite)
+      : contatos;
+
     return {
       distrito: contatos[0]?.distrito || nome,
       resumo: {
@@ -1261,7 +1276,12 @@ const InteressadosNovoTempoService = {
         frios: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cold').length,
         estudosAtivos: contatos.filter((contato) => contato.estudoAtivo).length,
       },
-      leads: contatos,
+      leads,
+      total: contatos.length,
+      pagina: paginado ? pagina : 1,
+      limite: paginado ? limite : contatos.length,
+      paginas: paginado ? Math.ceil(contatos.length / limite) : 1,
+      temMais: paginado ? pagina * limite < contatos.length : false,
       atualizadoEm: dados.atualizadoEm,
       sincronizando: Boolean(dados.sincronizando || dadosGerais.sincronizando),
       origemCache: dados.origemCache || dadosGerais.origemCache || 'api',

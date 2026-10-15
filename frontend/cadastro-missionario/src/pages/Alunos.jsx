@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
@@ -28,6 +28,7 @@ const motivosEncerramento = [
 ];
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
+const LIMITE_POR_PAGINA = 100;
 
 const totalLicoes = (serieId) => SERIES_ESTUDO.find((serie) => serie.id === serieId)?.licoes.length || 0;
 
@@ -110,7 +111,13 @@ export default function Alunos() {
   const prefix = isDireto ? '/direto' : '';
   const [dados, setDados] = useState({ estudos: [] });
   const [carregando, setCarregando] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [temMais, setTemMais] = useState(false);
   const [erro, setErro] = useState('');
+  const sentinelaRef = useRef(null);
+  const paginaAtualRef = useRef(1);
+  const temMaisRef = useRef(false);
+  const carregandoMaisRef = useRef(false);
   const [busca, setBusca] = useState('');
   const [tipo, setTipo] = useState('');
   const [classe, setClasse] = useState('');
@@ -125,13 +132,64 @@ export default function Alunos() {
   const [outroMotivoEncerramento, setOutroMotivoEncerramento] = useState('');
   const [encerrando, setEncerrando] = useState(false);
 
-  useEffect(() => {
-    setCarregando(true);
-    api.get('/relatorios/estudos-biblicos')
-      .then((res) => setDados(res.data || { estudos: [] }))
-      .catch((err) => setErro(err.response?.data?.erro || 'Erro ao carregar alunos.'))
-      .finally(() => setCarregando(false));
+  const carregarPagina = useCallback(async (pagina = 1, substituir = false) => {
+    if (!substituir && (carregandoMaisRef.current || !temMaisRef.current)) return;
+
+    if (substituir) setCarregando(true);
+    else {
+      carregandoMaisRef.current = true;
+      setCarregandoMais(true);
+    }
+    setErro('');
+
+    try {
+      const resposta = await api.get('/relatorios/estudos-biblicos', {
+        params: { paginado: 1, pagina, limite: LIMITE_POR_PAGINA },
+      });
+      const payload = resposta.data || {};
+      const novosEstudos = payload.estudos || payload.itens || [];
+      const aindaTemMais = Boolean(payload.temMais);
+
+      paginaAtualRef.current = payload.pagina || pagina;
+      temMaisRef.current = aindaTemMais;
+      setTemMais(aindaTemMais);
+      setDados((atual) => {
+        const estudos = substituir
+          ? novosEstudos
+          : [...(atual.estudos || []), ...novosEstudos.filter((novo) => (
+            !(atual.estudos || []).some((existente) => String(existente.id) === String(novo.id))
+          ))];
+        return {
+          ...atual,
+          ...payload,
+          estudos,
+          resumoAlunos: payload.resumoAlunos || atual.resumoAlunos,
+        };
+      });
+    } catch (err) {
+      setErro(err.response?.data?.erro || 'Erro ao carregar alunos.');
+      if (substituir) {
+        temMaisRef.current = false;
+        setTemMais(false);
+      }
+    } finally {
+      if (substituir) setCarregando(false);
+      else {
+        carregandoMaisRef.current = false;
+        setCarregandoMais(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    paginaAtualRef.current = 1;
+    temMaisRef.current = true;
+    carregarPagina(1, true);
+  }, [carregarPagina]);
+
+  const carregarMaisAlunos = useCallback(() => {
+    carregarPagina(paginaAtualRef.current + 1, false);
+  }, [carregarPagina]);
 
   const alunos = useMemo(() => (
     (dados.estudos || []).filter((estudo) => !estudo.encerrado).flatMap((estudo) => {
@@ -160,13 +218,13 @@ export default function Alunos() {
     });
   }, [alunos, busca, tipo, classe]);
 
-  const resumo = useMemo(() => ({
+  const resumo = useMemo(() => dados.resumoAlunos || ({
     total: alunos.length,
     individuais: alunos.filter((aluno) => aluno.tipoEstudo === 'UNICO').length,
     pontos: alunos.filter((aluno) => aluno.tipoEstudo === 'PONTO').length,
     classes: alunos.filter((aluno) => aluno.tipoEstudo === 'CLASSE').length,
     classeA: alunos.filter((aluno) => aluno.classificacao === 'A').length,
-  }), [alunos]);
+  }), [alunos, dados.resumoAlunos]);
 
   const caminhoRelatorio = (tipoEstudo) => (
     `${prefix}/relatorios/${tipoEstudo === 'PONTO' ? 'pontos-estudo' : tipoEstudo === 'CLASSE' ? 'classes-biblicas/registros' : 'estudos-biblicos'}`
@@ -319,6 +377,21 @@ export default function Alunos() {
       setDados((atual) => ({
         ...atual,
         estudos: (atual.estudos || []).map((item) => (String(item.id) === String(data.id) ? data : item)),
+        resumoAlunos: atual.resumoAlunos ? (() => {
+          const alunosEncerrados = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)
+            ? (estudo.participantes || []).length
+            : 1;
+          const classeAEncerrados = ['PONTO', 'CLASSE'].includes(estudo.tipoEstudo)
+            ? (estudo.participantes || []).filter((participante) => participante.classificacaoInteressado === 'A').length
+            : (estudo.classificacaoInteressado === 'A' ? 1 : 0);
+          const chaveTipo = estudo.tipoEstudo === 'PONTO' ? 'pontos' : estudo.tipoEstudo === 'CLASSE' ? 'classes' : 'individuais';
+          return {
+            ...atual.resumoAlunos,
+            total: Math.max(0, atual.resumoAlunos.total - alunosEncerrados),
+            [chaveTipo]: Math.max(0, atual.resumoAlunos[chaveTipo] - alunosEncerrados),
+            classeA: Math.max(0, atual.resumoAlunos.classeA - classeAEncerrados),
+          };
+        })() : atual.resumoAlunos,
       }));
       setModalEncerramento(null);
       setModalAtualizacao(null);
@@ -331,6 +404,17 @@ export default function Alunos() {
       setEncerrando(false);
     }
   };
+
+  useEffect(() => {
+    const alvo = sentinelaRef.current;
+    if (!alvo || !temMais || typeof IntersectionObserver === 'undefined') return undefined;
+
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((entrada) => entrada.isIntersecting)) carregarMaisAlunos();
+    }, { rootMargin: '320px 0px' });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, [carregarMaisAlunos, temMais, dados.estudos?.length]);
 
   if (carregando) return <LoadingState mensagem="Carregando alunos..." />;
 
@@ -424,7 +508,11 @@ export default function Alunos() {
               <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Lista de alunos</h2>
               <p className="text-xs sm:text-sm text-gray-400">Resultado conforme seu nível de acesso.</p>
             </div>
-            <span className="self-start sm:self-auto rounded-lg bg-[#1A3A6B]/10 px-3 py-1.5 text-xs sm:text-sm font-bold text-[#1A3A6B]">{numero(alunosFiltrados.length)} aluno(s)</span>
+            <span className="self-start sm:self-auto rounded-lg bg-[#1A3A6B]/10 px-3 py-1.5 text-xs sm:text-sm font-bold text-[#1A3A6B]">
+              {busca || tipo || classe
+                ? `${numero(alunosFiltrados.length)} resultado(s) nos dados carregados`
+                : `${numero(alunos.length)} de ${numero(resumo.total)} aluno(s)`}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
@@ -577,11 +665,28 @@ export default function Alunos() {
             );
             })}
 
-            {alunosFiltrados.length === 0 && (
+            {alunosFiltrados.length === 0 && !temMais && !carregandoMais && (
               <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
                 Nenhum aluno encontrado para os filtros selecionados.
               </div>
             )}
+
+            <div ref={sentinelaRef} className="flex min-h-16 flex-col items-center justify-center gap-2 py-3" aria-live="polite">
+              {carregandoMais && (
+                <>
+                  <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#1A3A6B]/20 border-t-[#1A3A6B]" />
+                  <span className="text-xs font-medium text-gray-400">Carregando mais alunos...</span>
+                </>
+              )}
+              {!carregandoMais && temMais && (
+                <button type="button" onClick={carregarMaisAlunos} className="btn-outline px-4 py-2 text-xs">
+                  Carregar mais alunos
+                </button>
+              )}
+              {!temMais && alunos.length > 0 && (
+                <span className="text-xs text-gray-400">Todos os alunos deste escopo foram carregados.</span>
+              )}
+            </div>
           </div>
         </section>
       </div>

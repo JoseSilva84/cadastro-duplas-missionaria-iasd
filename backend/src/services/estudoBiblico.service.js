@@ -113,7 +113,12 @@ const EstudoBiblicoService = {
   // Lista estudos bÃ­blicos filtrados por escopo de perfil
   async listar(query, usuario) {
     const where = await montarFiltro(query, usuario);
-    return EstudoBiblicoModel.findAll(where);
+    const paginado = query.paginado === '1' || query.paginado === 'true';
+    return EstudoBiblicoModel.findAll(where, {
+      paginado,
+      pagina: query.pagina,
+      limite: query.limite,
+    });
   },
 
   async buscarPorId(id, usuario) {

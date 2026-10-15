@@ -26,6 +26,9 @@ const InteressadosNovoTempoController = {
       const resultado = await InteressadosNovoTempoService.porDistrito(req.params.distrito, {
         atualizar: req.query.atualizar === '1',
         usuario: req.usuario,
+        paginado: req.query.paginado === '1' || req.query.paginado === 'true',
+        pagina: req.query.pagina,
+        limite: req.query.limite,
       });
       return res.json(resultado);
     } catch (falha) {

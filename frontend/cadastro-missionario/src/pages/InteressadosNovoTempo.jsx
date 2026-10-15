@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
@@ -464,10 +464,11 @@ function LeadCard({ lead }) {
   );
 }
 
-function VisaoLeads({ dados }) {
+function VisaoLeads({ dados, temMais, carregandoMais, falhaCarregarMais, onCarregarMais }) {
   const [busca, setBusca] = useState('');
   const [somenteWhatsapp, setSomenteWhatsapp] = useState(false);
   const [somenteVip, setSomenteVip] = useState(false);
+  const sentinelaRef = useRef(null);
 
   const leads = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase('pt-BR');
@@ -479,6 +480,16 @@ function VisaoLeads({ dados }) {
       return corresponde && (!somenteWhatsapp || lead.whatsapp) && (!somenteVip || lead.vipHistorico);
     });
   }, [busca, dados.leads, somenteVip, somenteWhatsapp]);
+
+  useEffect(() => {
+    const alvo = sentinelaRef.current;
+    if (!alvo || !temMais || falhaCarregarMais || typeof IntersectionObserver === 'undefined') return undefined;
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((entrada) => entrada.isIntersecting)) onCarregarMais();
+    }, { rootMargin: '320px 0px' });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, [dados.leads?.length, falhaCarregarMais, onCarregarMais, temMais]);
 
   return (
     <>
@@ -493,10 +504,28 @@ function VisaoLeads({ dados }) {
           VIPs históricos
         </label>
       </div>
-      <p className="text-sm text-gray-400">Exibindo {numero(leads.length)} de {numero(dados.leads?.length)} leads.</p>
+      <p className="text-sm text-gray-400">
+        Exibindo {numero(leads.length)} resultado(s) entre {numero(dados.leads?.length)} contato(s) carregado(s), de {numero(dados.total ?? dados.resumo?.totalInteressados ?? dados.leads?.length)} no distrito.
+      </p>
       <div className="space-y-4">
         {leads.map((lead) => <LeadCard key={lead.id || `${lead.nome}-${lead.whatsapp}`} lead={lead} />)}
-        {!leads.length && <div className="card py-10 text-center text-sm text-gray-400">Nenhum lead corresponde aos filtros.</div>}
+        {!leads.length && !temMais && !carregandoMais && <div className="card py-10 text-center text-sm text-gray-400">Nenhum lead corresponde aos filtros.</div>}
+        <div ref={sentinelaRef} className="flex min-h-16 flex-col items-center justify-center gap-2 py-3" aria-live="polite">
+          {carregandoMais && (
+            <>
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#1A3A6B]/20 border-t-[#1A3A6B]" />
+              <span className="text-xs font-medium text-gray-400">Carregando mais contatos...</span>
+            </>
+          )}
+          {!carregandoMais && temMais && (
+            <button type="button" className="btn-outline px-4 py-2 text-xs" onClick={onCarregarMais}>
+              {falhaCarregarMais ? 'Tentar carregar novamente' : 'Carregar mais contatos'}
+            </button>
+          )}
+          {!temMais && (dados.leads?.length || 0) > 0 && (
+            <span className="text-xs text-gray-400">Todos os contatos deste distrito foram carregados.</span>
+          )}
+        </div>
       </div>
     </>
   );
@@ -515,6 +544,10 @@ export default function InteressadosNovoTempo() {
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState('');
   const [usandoCacheLocal, setUsandoCacheLocal] = useState(false);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [temMais, setTemMais] = useState(false);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [falhaCarregarMais, setFalhaCarregarMais] = useState(false);
 
   const carregar = async (forcar = false) => {
     const caminho = nomeDistrito
@@ -528,6 +561,10 @@ export default function InteressadosNovoTempo() {
       if (cache?.dados) {
         encontrouCache = true;
         setDados(cache.dados);
+        if (nomeDistrito) {
+          setPaginaAtual(cache.dados?.pagina || 1);
+          setTemMais(Boolean(cache.dados?.temMais));
+        }
         setUsandoCacheLocal(true);
         setCarregando(false);
       }
@@ -536,9 +573,12 @@ export default function InteressadosNovoTempo() {
     if (forcar || encontrouCache || dados) setAtualizando(true);
     else setCarregando(true);
     setErro('');
+    setFalhaCarregarMais(false);
     try {
       const resposta = await api.get(caminho, {
-        params: forcar ? { atualizar: 1 } : undefined,
+        params: nomeDistrito
+          ? { paginado: 1, pagina: 1, limite: 100, ...(forcar ? { atualizar: 1 } : {}) }
+          : (forcar ? { atualizar: 1 } : undefined),
         // Esta rota depende de um serviço externo cujo limite no backend é de 30s.
         // A tela precisa aguardar a resposta do backend para receber o erro correto
         // ou a primeira cópia que será persistida para os próximos acessos.
@@ -546,6 +586,10 @@ export default function InteressadosNovoTempo() {
       });
       const { data } = resposta;
       setDados(data);
+      if (nomeDistrito) {
+        setPaginaAtual(data?.pagina || 1);
+        setTemMais(Boolean(data?.temMais));
+      }
       setUsandoCacheLocal(Boolean(resposta.fromCacheLocal));
       if (!resposta.fromCacheLocal) await salvarCacheLocal(chaveCache, data, usuario);
       if (data?.sincronizando && !forcar && !resposta.fromCacheLocal) {
@@ -578,6 +622,32 @@ export default function InteressadosNovoTempo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomeDistrito]);
 
+  const carregarMaisContatos = async () => {
+    if (!nomeDistrito || !temMais || carregandoMais) return;
+    const proximaPagina = paginaAtual + 1;
+    setCarregandoMais(true);
+    setFalhaCarregarMais(false);
+    try {
+      const { data } = await api.get(`/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}`, {
+        params: { paginado: 1, pagina: proximaPagina, limite: 100 },
+        timeout: 40000,
+      });
+      setDados((atual) => {
+        const atuais = atual?.leads || [];
+        const chaves = new Set(atuais.map((lead) => String(lead.id || `${lead.nome}-${lead.whatsapp}`)));
+        const novos = (data?.leads || []).filter((lead) => !chaves.has(String(lead.id || `${lead.nome}-${lead.whatsapp}`)));
+        return { ...atual, ...data, resumo: atual?.resumo || data?.resumo, leads: [...atuais, ...novos] };
+      });
+      setPaginaAtual(data?.pagina || proximaPagina);
+      setTemMais(Boolean(data?.temMais));
+    } catch (falha) {
+      setFalhaCarregarMais(true);
+      setErro(falha.response?.data?.erro || 'Não foi possível carregar os próximos contatos.');
+    } finally {
+      setCarregandoMais(false);
+    }
+  };
+
   if (carregando && !dados) return <InteressadosSkeleton />;
 
   const distritoUnico = !nomeDistrito && dados?.distritos?.length === 1 ? dados.distritos[0]?.nome : null;
@@ -600,7 +670,9 @@ export default function InteressadosNovoTempo() {
         {erro && !dados && <AvisoErro erro={erro} />}
         {erro && dados && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Não foi possível atualizar agora. Os últimos dados disponíveis continuam sendo exibidos.</div>}
         {dados && <CardsResumo resumo={dados.resumo} />}
-        {dados && (nomeDistrito ? <VisaoLeads dados={dados} /> : <VisaoDistritos dados={dados} prefix={prefix} />)}
+        {dados && (nomeDistrito
+          ? <VisaoLeads dados={dados} temMais={temMais} carregandoMais={carregandoMais} falhaCarregarMais={falhaCarregarMais} onCarregarMais={carregarMaisContatos} />
+          : <VisaoDistritos dados={dados} prefix={prefix} />)}
       </div>
     </div>
   );

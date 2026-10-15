@@ -71,7 +71,17 @@ const RelatorioService = {
 
   async estudosBiblicos(query, usuario) {
     const escopo = await montarEscopo(usuario);
-    const estudos = await EstudoBiblicoService.listar(query, usuario);
+    const resultadoEstudos = await EstudoBiblicoService.listar(query, usuario);
+    const paginado = !Array.isArray(resultadoEstudos);
+    const estudos = paginado ? resultadoEstudos.itens : resultadoEstudos;
+
+    if (paginado) {
+      return {
+        ...resultadoEstudos,
+        estudos,
+      };
+    }
+
     let duplasComEstudoNaoRegistrado = [];
     try {
       const duplasComEstudoEmAndamento = await prisma.dupla.findMany({
