@@ -6,6 +6,7 @@ import AvatarUpload from '../../components/AvatarUpload';
 import { toast } from '../../lib/toast';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../../contexts/AuthContext';
 import LoadingState from '../../components/LoadingState';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../../lib/cacheLocal';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -133,6 +134,8 @@ export default function RegioesDireto() {
   const [resumo, setResumo] = useState(null);
   const [porRegiao, setPorRegiao] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
   const [regiaoSelecionada, setRegiaoSelecionada] = useState(null);
   const [distritosDetalhados, setDistritosDetalhados] = useState({});
   const [fotosConselheiro, setFotosConselheiro] = useState({});
@@ -142,31 +145,67 @@ export default function RegioesDireto() {
 
   useEffect(() => {
     let ativo = true;
-    Promise.all([
-      api.get('/regioes'),
-      api.get('/relatorios/resumo'),
-      api.get('/relatorios/por-regiao'),
-    ]).then(([r, s, pr]) => {
-      if (!ativo) return;
-      setRegioes(r.data);
-      setResumo(s.data);
-      setPorRegiao(pr.data);
-      r.data.forEach(async (regiao) => {
+    const chaveCache = chaveCacheUsuario(usuario, 'pagina:regioes-direto');
+
+    const carregarFotos = (lista = []) => {
+      lista.forEach(async (regiao) => {
         const foto = await FotoService.resolverFotoParaPreview(regiao.fotoConselheiro).catch(() => '');
         if (ativo) {
           setFotosConselheiro((prev) => ({ ...prev, [regiao.id]: foto }));
         }
       });
-      if (r.data.length > 0) {
-        setRegiaoSelecionada(r.data[0]);
+    };
+
+    async function carregarPagina() {
+      setErroCarregamento(false);
+      const cache = await lerCacheLocal(chaveCache);
+      let regioesAtuais = cache?.dados?.regioes || [];
+      let resumoAtual = cache?.dados?.resumo || null;
+      let porRegiaoAtual = cache?.dados?.porRegiao || [];
+
+      if (ativo && cache?.dados) {
+        setRegioes(regioesAtuais);
+        setResumo(resumoAtual);
+        setPorRegiao(porRegiaoAtual);
+        setRegiaoSelecionada((atual) => atual || regioesAtuais[0] || null);
+        setCarregando(false);
+        carregarFotos(regioesAtuais);
       }
-    }).catch(() => {
-      if (ativo) setCarregando(false);
-    }).finally(() => {
-      if (ativo) setCarregando(false);
-    });
+
+      const resultados = await Promise.allSettled([
+        api.get('/regioes'),
+        api.get('/relatorios/resumo'),
+        api.get('/relatorios/por-regiao'),
+      ]);
+      if (!ativo) return;
+
+      const [resultadoRegioes, resultadoResumo, resultadoPorRegiao] = resultados;
+      if (resultadoRegioes.status === 'fulfilled') regioesAtuais = resultadoRegioes.value.data;
+      if (resultadoResumo.status === 'fulfilled') resumoAtual = resultadoResumo.value.data;
+      if (resultadoPorRegiao.status === 'fulfilled') porRegiaoAtual = resultadoPorRegiao.value.data;
+
+      setRegioes(regioesAtuais);
+      setResumo(resumoAtual);
+      setPorRegiao(porRegiaoAtual);
+      setRegiaoSelecionada((atual) => atual || regioesAtuais[0] || null);
+      carregarFotos(regioesAtuais);
+
+      const houveFalha = resultados.some((resultado) => resultado.status === 'rejected' || resultado.value?.fromCacheLocal);
+      setErroCarregamento(houveFalha);
+      setCarregando(false);
+
+      if (resultados.some((resultado) => resultado.status === 'fulfilled' && !resultado.value.fromCacheLocal)) {
+        await salvarCacheLocal(chaveCache, {
+          regioes: regioesAtuais,
+          resumo: resumoAtual,
+          porRegiao: porRegiaoAtual,
+        }, usuario);
+      }
+    }
+
+    void carregarPagina();
     return () => { ativo = false; };
-  }, []);
+  }, [tentativa, usuario]);
 
   async function selecionarRegiao(regiao) {
     setRegiaoSelecionada(regiao);
@@ -222,6 +261,15 @@ export default function RegioesDireto() {
           <h1 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
             Regiões Missionárias
           </h1>
+
+          {erroCarregamento && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <p>{regioes.length ? 'Exibindo a última versão salva.' : 'Não foi possível atualizar as regiões.'}</p>
+              <button type="button" onClick={() => { setCarregando(!regioes.length); setTentativa((valor) => valor + 1); }} className="mt-1 font-bold underline">
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           {/* Indicadores gerais — compactos em linha */}
           {resumo && (
@@ -508,7 +556,7 @@ export default function RegioesDireto() {
                       <div className="flex items-center gap-3 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <span className="w-3.5 h-3.5 rounded-full bg-[#1A3A6B]/10 flex items-center justify-center text-[8px]">⛪</span>
-                          {(distrito.igrejas || []).length} igrejas
+                          {distrito._count?.igrejas ?? (distrito.igrejas || []).length} igrejas
                         </span>
                         <span className="flex items-center gap-1">
                           <span className="w-3.5 h-3.5 rounded-full bg-[#C9963A]/10 flex items-center justify-center text-[8px]">👥</span>

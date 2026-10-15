@@ -5,6 +5,9 @@ import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from './cacheLocal
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
+  // Uma conexão presa não pode manter a interface em carregamento indefinido.
+  // Após este limite, o interceptor usa a última cópia local disponível.
+  timeout: 12000,
 });
 
 const usuarioLocal = () => {
@@ -13,6 +16,16 @@ const usuarioLocal = () => {
   } catch {
     return null;
   }
+};
+
+const diagnosticosRecentes = new Map();
+const deveEnviarDiagnostico = (tipo, rota) => {
+  const chave = `${tipo}:${rota}`;
+  const agora = Date.now();
+  const anterior = diagnosticosRecentes.get(chave) || 0;
+  if (agora - anterior < 60_000) return false;
+  diagnosticosRecentes.set(chave, agora);
+  return true;
 };
 
 const requisicaoCacheavel = (config = {}) => {
@@ -49,7 +62,7 @@ api.interceptors.response.use(
     const inicio = res.config?.metadata?.inicio;
     const duracaoMs = inicio ? performance.now() - inicio : 0;
     const rota = res.config?.url || '';
-    if (duracaoMs >= 5000 && !rota.includes('/auditoria/')) {
+    if (duracaoMs >= 5000 && !rota.includes('/auditoria/') && deveEnviarDiagnostico('lenta', rota)) {
       api.post('/auditoria/cliente', {
         tipo: 'REQUISICAO_LENTA',
         pagina: window.location.pathname,
@@ -66,7 +79,7 @@ api.interceptors.response.use(
   async (err) => {
     const rota = err.config?.url || '';
     const falhaTemporaria = !err.response || err.response.status >= 500;
-    if (!rota.includes('/auditoria/') && falhaTemporaria) {
+    if (!rota.includes('/auditoria/') && falhaTemporaria && deveEnviarDiagnostico('falha', rota)) {
       const inicio = err.config?.metadata?.inicio;
       api.post('/auditoria/cliente', {
         tipo: err.response ? 'ERRO_FRONTEND' : 'FALHA_REDE',

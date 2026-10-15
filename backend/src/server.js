@@ -138,8 +138,19 @@ app.get('/api/public/estatisticas', async (req, res) => {
   }
 });
 
-// Inicialização do servidor
-app.listen(PORT, () => {
-  console.log(`✝️  Servidor rodando na porta ${PORT}`);
-  console.log(`📖  API: http://localhost:${PORT}/api`);
-});
+// Inicialização do servidor. Não aceite requisições enquanto o banco ainda está
+// acordando após um deploy; isso evita telas presas e reconexões concorrentes.
+async function iniciarServidor() {
+  try {
+    await prisma.connectWithRetry();
+    app.listen(PORT, () => {
+      console.log(`✝️  Servidor rodando na porta ${PORT}`);
+      console.log(`📖  API: http://localhost:${PORT}/api`);
+    });
+  } catch (erro) {
+    console.error('Não foi possível iniciar o servidor sem conexão com o banco:', erro);
+    process.exitCode = 1;
+  }
+}
+
+void iniciarServidor();

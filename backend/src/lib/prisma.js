@@ -10,6 +10,7 @@ const prisma = new PrismaClient({
     },
   },
 });
+let reconexaoEmCurso = null;
 
 const isConnectionError = (error) => (
   error.message?.includes('terminating connection')
@@ -18,15 +19,27 @@ const isConnectionError = (error) => (
   || ['E57P01', 'P1001', 'P1008', 'P1017'].includes(error.code)
 );
 
-// Middleware para reconectar em caso de conexao perdida
+const reconectarUmaVez = async () => {
+  if (!reconexaoEmCurso) {
+    reconexaoEmCurso = (async () => {
+      console.log('Reconectando ao banco de dados...');
+      await prisma.$disconnect().catch(() => {});
+      await prisma.$connect();
+    })().finally(() => {
+      reconexaoEmCurso = null;
+    });
+  }
+  return reconexaoEmCurso;
+};
+
+// Middleware para reconectar em caso de conexao perdida. Todas as consultas
+// compartilham a mesma tentativa, evitando uma tempestade de reconexoes.
 prisma.$use(async (params, next) => {
   try {
     return await next(params);
   } catch (error) {
     if (isConnectionError(error)) {
-      console.log('Reconectando ao banco de dados...');
-      await prisma.$disconnect();
-      await prisma.$connect();
+      await reconectarUmaVez();
       return await next(params);
     }
     throw error;
@@ -51,7 +64,7 @@ async function connectWithRetry(retries = 5, delay = 2000) {
   }
 }
 
-// Inicia a conexao
-connectWithRetry().catch(console.error);
+// O servidor aguarda esta etapa antes de abrir a porta HTTP.
+prisma.connectWithRetry = connectWithRetry;
 
 module.exports = prisma;

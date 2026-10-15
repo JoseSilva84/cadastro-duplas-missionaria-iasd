@@ -18,7 +18,10 @@ const RegiaoModel = {
       include: {
         _count: { select: { distritos: true } },
         distritos: {
-          include: {
+          select: {
+            id: true,
+            nome: true,
+            membros: true,
             _count: { select: { duplas: true, igrejas: true } },
           },
         },

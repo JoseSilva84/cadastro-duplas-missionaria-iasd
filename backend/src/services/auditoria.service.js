@@ -300,7 +300,6 @@ const registrarRequisicao = async ({ req, statusHttp, duracaoMs, erro }) => {
       parametros: req.params,
     },
   });
-  if (req.sessaoId) await atualizarSessao(req.sessaoId);
 };
 
 const registrarEventoCliente = async (dados, req) => {

@@ -68,6 +68,7 @@ export default function AuditoriaLogs() {
   const [dados, setDados] = useState({ itens: [], total: 0, pagina: 1, paginas: 1 });
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState('');
+  const [buscaAplicada, setBuscaAplicada] = useState('');
   const [categoria, setCategoria] = useState('');
   const [status, setStatus] = useState('');
   const [de, setDe] = useState('');
@@ -89,7 +90,7 @@ export default function AuditoriaLogs() {
     setCarregando(true);
     try {
       const params = new URLSearchParams({ pagina: String(pagina), limite: aba === 'sessoes' ? '30' : '50' });
-      if (busca.trim()) params.set('busca', busca.trim());
+      if (buscaAplicada.trim()) params.set('busca', buscaAplicada.trim());
       if (de) params.set('de', de);
       if (ate) params.set('ate', ate);
       if (sessaoSelecionada && aba !== 'sessoes') params.set('sessaoId', sessaoSelecionada);
@@ -108,10 +109,14 @@ export default function AuditoriaLogs() {
     } finally {
       setCarregando(false);
     }
-  }, [aba, busca, categoria, status, de, ate, pagina, sessaoSelecionada]);
+  }, [aba, buscaAplicada, categoria, status, de, ate, pagina, sessaoSelecionada]);
 
   useEffect(() => { void carregarResumo(); }, [carregarResumo]);
   useEffect(() => { void carregarDados(); }, [carregarDados]);
+  useEffect(() => {
+    const temporizador = window.setTimeout(() => setBuscaAplicada(busca), 400);
+    return () => window.clearTimeout(temporizador);
+  }, [busca]);
 
   const trocarAba = (novaAba) => {
     setAba(novaAba);
@@ -128,6 +133,7 @@ export default function AuditoriaLogs() {
 
   const limparFiltros = () => {
     setBusca('');
+    setBuscaAplicada('');
     setCategoria('');
     setStatus('');
     setDe('');

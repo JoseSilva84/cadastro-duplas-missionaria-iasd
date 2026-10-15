@@ -99,7 +99,8 @@ const agruparSoma = (lista = [], chaveFn) => {
 
 const nomeDupla = (dupla) => `${dupla.liderNome || 'Lider'} + ${dupla.membro2Nome || 'Membro'}`;
 
-const criarDashboardDuplasMissionarias = (duplas = []) => {
+const criarDashboardDuplasMissionarias = (duplas = [], estudosBatismoEncerrados = []) => {
+  const duplasComBatismoConfirmado = new Set(estudosBatismoEncerrados.map((estudo) => estudo.duplaId));
   const duplasComIndicadores = duplas.map((dupla) => ({
     id: dupla.id,
     nome: nomeDupla(dupla),
@@ -111,7 +112,24 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
     batismos: dupla.batismos || 0,
     pessoasAlcancadas: dupla.pessoasAlcancadas || 0,
     tiposEstudo: new Set((dupla.estudosBiblicos || []).map((estudo) => estudo.tipoEstudo)),
+    status: dupla.status,
+    temBatismoConfirmado: duplasComBatismoConfirmado.has(dupla.id),
   }));
+
+  const medalhas = duplasComIndicadores.reduce((acc, dupla) => {
+    if (dupla.temBatismoConfirmado) acc.ouro += 1;
+    else if (dupla.estudos > 0) acc.prata += 1;
+    else if (dupla.visitas > 0) acc.bronze += 1;
+    else acc.semAtividade += 1;
+    return acc;
+  }, { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 });
+
+  const batismosConfirmados = estudosBatismoEncerrados.reduce((total, estudo) => {
+    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && estudo.participantes.length > 0) {
+      return total + estudo.participantes.length;
+    }
+    return total + 1;
+  }, 0);
 
   const ordenarPorValor = (lista = []) => [...lista].sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome));
 
@@ -156,6 +174,12 @@ const criarDashboardDuplasMissionarias = (duplas = []) => {
 
   return {
     totalDuplas: duplas.length,
+    resumoOperacional: {
+      duplasAtivas: duplasComIndicadores.filter((dupla) => dupla.status === 'ATIVA').length,
+      duplasComVisitacao: duplasComIndicadores.filter((dupla) => dupla.visitas > 0).length,
+      batismosConfirmados,
+      medalhas,
+    },
     regiaoMaisDuplas: regioes[0] || null,
     distritoMaisDuplas: distritos[0] || null,
     topEstudos: top('estudos'),
@@ -290,7 +314,17 @@ const RelatorioModel = {
       include: {
         distritos: {
           include: {
-            duplas: true,
+            // Esta tela usa somente totais. Evite transferir fotos, textos e todos
+            // os relacionamentos das duplas para montar estas somas.
+            duplas: {
+              select: {
+                status: true,
+                statusEstudoBiblico: true,
+                statusEvangelismo: true,
+                batismos: true,
+                pessoasAlcancadas: true,
+              },
+            },
             _count: { select: { duplas: true } },
           },
         },
@@ -520,6 +554,8 @@ const RelatorioModel = {
       pequenosGruposPorDuplas,
       duplasDashboard,
       classesBiblicasDashboard,
+      quantidadeEstudosEncerrados,
+      estudosBatismoEncerrados,
     ] = await Promise.all([
       prisma.ataDupla.count(),
       prisma.estudoBiblico.count({ where: whereEstudoEmAndamento }),
@@ -580,6 +616,7 @@ const RelatorioModel = {
           bairro: true,
           batismos: true,
           pessoasAlcancadas: true,
+          status: true,
           distrito: {
             select: {
               id: true,
@@ -634,6 +671,20 @@ const RelatorioModel = {
           },
         },
       }),
+      prisma.estudoBiblico.count({ where: whereEstudoEncerrado }),
+      prisma.estudoBiblico.findMany({
+        where: {
+          AND: [
+            whereEstudoEncerrado,
+            { motivoEncerramento: { equals: 'BATISMO', mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          duplaId: true,
+          tipoEstudo: true,
+          participantes: { select: { id: true } },
+        },
+      }),
     ]);
 
     const classes = { A: 0, B: 0, C: 0 };
@@ -671,6 +722,7 @@ const RelatorioModel = {
       visitasAlunos: 0,
       quantidadePequenosGrupos: pequenosGruposPorDuplas,
     };
+    const resumoDuplas = criarDashboardDuplasMissionarias(duplasDashboard, estudosBatismoEncerrados);
 
     return {
       ministerioPessoal: {
@@ -696,7 +748,14 @@ const RelatorioModel = {
         },
         quantidadePequenosGrupos: escolaSabatina.quantidadePequenosGrupos ?? pequenosGruposPorDuplas,
       },
-      duplasMissionarias: criarDashboardDuplasMissionarias(duplasDashboard),
+      duplasMissionarias: {
+        ...resumoDuplas,
+        resumoOperacional: {
+          ...resumoDuplas.resumoOperacional,
+          estudosAtivos: quantidadeEstudos,
+          estudosEncerrados: quantidadeEstudosEncerrados,
+        },
+      },
       classesBiblicasDetalhes: criarDashboardClassesBiblicas(classesBiblicasDashboard),
     };
   },

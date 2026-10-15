@@ -537,7 +537,12 @@ export default function InteressadosNovoTempo() {
     else setCarregando(true);
     setErro('');
     try {
-      const resposta = await api.get(caminho, { params: forcar ? { atualizar: 1 } : undefined });
+      const resposta = await api.get(caminho, {
+        params: forcar ? { atualizar: 1 } : undefined,
+        // A sincronização forçada consulta um serviço externo e pode legitimamente
+        // levar mais tempo; a navegação comum continua protegida pelo limite global.
+        timeout: forcar ? 35000 : undefined,
+      });
       const { data } = resposta;
       setDados(data);
       setUsandoCacheLocal(Boolean(resposta.fromCacheLocal));

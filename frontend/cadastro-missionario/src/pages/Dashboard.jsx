@@ -1,72 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
+import { useAuth } from '../contexts/AuthContext';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 const percentual = (valor, total) => (total > 0 ? Math.round((Number(valor || 0) / total) * 100) : 0);
-
-const getVisitacoesCount = (dupla) => dupla?._count?.acompanhamentos ?? dupla?.acompanhamentos?.length ?? 0;
-const motivoBatismo = (valor) => String(valor || '').toUpperCase() === 'BATISMO';
-const totalBatismosEncerrados = (estudos = []) => estudos
-  .filter((estudo) => motivoBatismo(estudo.motivoEncerramento))
-  .reduce((acc, estudo) => {
-    if (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && Array.isArray(estudo.participantes) && estudo.participantes.length > 0) {
-      return acc + estudo.participantes.length;
-    }
-    return acc + 1;
-  }, 0);
-const normalizarStatus = (valor) => String(valor || '')
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toUpperCase();
-const temEstudoBiblicoAtivo = (dupla) => normalizarStatus(dupla?.statusEstudoBiblico) === 'ATIVO';
-const estudoEncerrado = (estudo) => (
-  estudo?.encerrado === true || normalizarStatus(estudo?.statusEstudo) === 'ENCERRADO'
-);
-const getEstudosCount = (dupla) => (
-  Array.isArray(dupla?.estudosBiblicos)
-    ? dupla.estudosBiblicos.filter((estudo) => !estudoEncerrado(estudo)).length
-    : dupla?._count?.estudosBiblicos ?? 0
-);
-const temEstudoEmAndamento = (dupla) => (
-  (dupla?.estudosBiblicos || []).some((estudo) => !estudoEncerrado(estudo))
-  || (temEstudoBiblicoAtivo(dupla) && getEstudosCount(dupla) > 0)
-);
-
-function getMedalha(dupla) {
-  const temBatismo = totalBatismosEncerrados(dupla.estudosBiblicos) > 0;
-  const temVisitacao = getVisitacoesCount(dupla) >= 1;
-  if (temBatismo) return 'ouro';
-  if (temEstudoEmAndamento(dupla)) return 'prata';
-  if (temVisitacao) return 'bronze';
-  return 'semAtividade';
-}
-
-const estudoDuplaId = (estudo) => String(estudo?.dupla?.id || estudo?.duplaId || '');
-const juntarEstudosEncerradosNasDuplas = (duplas = [], estudosEncerrados = []) => {
-  const porDupla = estudosEncerrados.reduce((mapa, estudo) => {
-    const duplaId = estudoDuplaId(estudo);
-    if (!duplaId) return mapa;
-    if (!mapa.has(duplaId)) mapa.set(duplaId, []);
-    mapa.get(duplaId).push(estudo);
-    return mapa;
-  }, new Map());
-
-  return duplas.map((dupla) => {
-    const encerradosDaDupla = porDupla.get(String(dupla.id)) || [];
-    if (encerradosDaDupla.length === 0) return dupla;
-    const estudosAtuais = dupla.estudosBiblicos || [];
-    const idsAtuais = new Set(estudosAtuais.map((estudo) => String(estudo.id)));
-    return {
-      ...dupla,
-      estudosBiblicos: [
-        ...estudosAtuais,
-        ...encerradosDaDupla.filter((estudo) => !idsAtuais.has(String(estudo.id))),
-      ],
-    };
-  });
-};
 
 const UsersIcon = ({ className = 'w-5 h-5' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -227,50 +167,59 @@ function RankingList({ title, items = [], valueKey, valueLabel, color, onItemCli
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const prefix = isDireto ? '/direto' : '';
   const [dados, setDados] = useState(null);
-  const [duplas, setDuplas] = useState([]);
-  const [estudosEncerrados, setEstudosEncerrados] = useState([]);
-  const [totalEstudosCadastrados, setTotalEstudosCadastrados] = useState(0);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/relatorios/dashboard-associacao'),
-      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'false' } }),
-      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
-      api.get('/duplas'),
-    ])
-      .then(([dashboardRes, estudosRes, encerradosRes, duplasRes]) => {
-        setDados(dashboardRes.data);
-        setTotalEstudosCadastrados(Number(estudosRes.data?.total || 0));
-        setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
-        setDuplas(Array.isArray(duplasRes.data) ? duplasRes.data : []);
-      })
-      .finally(() => setCarregando(false));
-  }, []);
+    let ativo = true;
+    const chaveCache = chaveCacheUsuario(usuario, 'pagina:dashboard-associacao');
+
+    async function carregar() {
+      setErroCarregamento(false);
+      const cache = await lerCacheLocal(chaveCache);
+      if (ativo && cache?.dados) {
+        setDados(cache.dados);
+        setCarregando(false);
+      }
+
+      try {
+        const resposta = await api.get('/relatorios/dashboard-associacao');
+        if (!ativo) return;
+        setDados(resposta.data);
+        if (!resposta.fromCacheLocal) await salvarCacheLocal(chaveCache, resposta.data, usuario);
+        setErroCarregamento(Boolean(resposta.fromCacheLocal));
+      } catch {
+        if (ativo) setErroCarregamento(true);
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+
+    void carregar();
+    return () => { ativo = false; };
+  }, [tentativa, usuario]);
 
   const ministerio = dados?.ministerioPessoal || {};
   const dashboardDuplas = dados?.duplasMissionarias || {};
+  const resumoOperacional = dashboardDuplas.resumoOperacional || {};
   const cobertura = dashboardDuplas.cobertura || {};
   const indicadores = dashboardDuplas.indicadoresGerais || [];
-  const totalDuplas = dashboardDuplas.totalDuplas || duplas.length;
+  const totalDuplas = dashboardDuplas.totalDuplas || 0;
   const valorIndicador = (nome) => indicadores.find((item) => item.nome === nome)?.valor || 0;
-  const batismosConfirmados = useMemo(() => totalBatismosEncerrados(estudosEncerrados), [estudosEncerrados]);
+  const totalEstudosCadastrados = resumoOperacional.estudosAtivos || ministerio.quantidadeEstudos || 0;
+  const totalEstudosEncerrados = resumoOperacional.estudosEncerrados || 0;
+  const batismosConfirmados = resumoOperacional.batismosConfirmados || 0;
   const experienciaBatismos = valorIndicador('Batismos');
-
-  const medalhas = useMemo(() => {
-    const base = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
-    juntarEstudosEncerradosNasDuplas(duplas, estudosEncerrados).forEach((dupla) => {
-      base[getMedalha(dupla)] += 1;
-    });
-    return base;
-  }, [duplas, estudosEncerrados]);
-
-  const ativas = useMemo(() => duplas.filter((dupla) => normalizarStatus(dupla.status) === 'ATIVA').length, [duplas]);
+  const medalhas = resumoOperacional.medalhas || { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
+  const ativas = resumoOperacional.duplasAtivas || 0;
   const semAtividade = medalhas.semAtividade;
   const comVisitacao = valorIndicador('Visitas');
+  const duplasComVisitacao = resumoOperacional.duplasComVisitacao || 0;
 
   const abrir = (rota) => navigate(`${prefix}${rota}`);
   const abrirDupla = (dupla) => dupla?.id && abrir(`/duplas/${dupla.id}`);
@@ -280,6 +229,14 @@ export default function Dashboard() {
 
   return (
     <div className="animate-fade-in-up">
+      {erroCarregamento && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span>{dados ? 'Exibindo a última versão salva enquanto o servidor se recupera.' : 'Não foi possível carregar o painel agora.'}</span>
+          <button type="button" onClick={() => { setCarregando(!dados); setTentativa((valor) => valor + 1); }} className="font-bold underline">
+            Tentar novamente
+          </button>
+        </div>
+      )}
       <div className="rounded-2xl border border-[#1A3A6B]/10 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -309,7 +266,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Registros de Estudos" value={totalEstudosCadastrados} detail="Estudos não encerrados (andamento)" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
-          <MetricCard label="Estudos encerrados" value={estudosEncerrados.length} detail="Registros concluídos" color="#b91c1c" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-encerrados')} />
+          <MetricCard label="Estudos encerrados" value={totalEstudosEncerrados} detail="Registros concluídos" color="#b91c1c" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-encerrados')} />
           <MetricCard label="Batismos" value={batismosConfirmados} detail="Estudos encerrados com batismo" color="#0d9488" icon={<WaterIcon />} onClick={() => abrir('/relatorios/ranking-decisoes')} />
           <MetricCard label="Experiência de batismos" value={experienciaBatismos} detail="Histórico informado pelas duplas" color="#C9963A" icon={<WaterIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Assistência" value={comVisitacao} detail="Resumo das assistências/visitas regionais" color="#7c3aed" icon={<VisitIcon />} onClick={() => abrir('/relatorios/assistencia')} />
@@ -364,7 +321,7 @@ export default function Dashboard() {
       <Section eyebrow="Cobertura" title="Onde precisamos avançar">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <ProgressCard label="Duplas com estudo" value={cobertura.estudoBiblico?.com || 0} total={totalDuplas} color="#0284c7" detail="Estudo bíblico individual cadastrado" onClick={() => abrir('/duplas?filtro=comEstudo')} />
-          <ProgressCard label="Duplas com visitação" value={duplas.filter((dupla) => getVisitacoesCount(dupla) > 0).length} total={totalDuplas} color="#7c3aed" detail="Ao menos uma visita registrada" onClick={() => abrir('/duplas?filtro=comVisitacoes')} />
+          <ProgressCard label="Duplas com visitação" value={duplasComVisitacao} total={totalDuplas} color="#7c3aed" detail="Ao menos uma visita registrada" onClick={() => abrir('/duplas?filtro=comVisitacoes')} />
           <ProgressCard label="Duplas sem atividade" value={semAtividade} total={totalDuplas} color="#64748b" detail="Sem estudo bíblico e sem visitação" onClick={() => abrir('/duplas?status=semAtividade')} />
         </div>
       </Section>
