@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
-import LoadingState from '../components/LoadingState';
+import { useAuth } from '../contexts/AuthContext';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
+import { notificarPwa } from '../lib/pwa';
 
 const icones = {
   pessoas: (
@@ -287,6 +289,48 @@ function AvisoErro({ erro }) {
   );
 }
 
+function InteressadosSkeleton() {
+  return (
+    <div className="w-full animate-fade-in" aria-label="Preparando painel de interessados">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+          <div className="h-9 w-64 max-w-full animate-pulse rounded-lg bg-slate-200" />
+          <div className="h-4 w-80 max-w-full animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="h-10 w-36 animate-pulse rounded-lg bg-slate-200" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((item) => (
+          <div key={item} className="h-36 animate-pulse rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="h-3 w-24 rounded bg-slate-200" />
+            <div className="mt-10 h-8 w-16 rounded bg-slate-200" />
+            <div className="mt-3 h-3 w-28 rounded bg-slate-100" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div className="mb-5 h-5 w-44 animate-pulse rounded bg-slate-200" />
+        {[0, 1, 2, 3].map((item) => <div key={item} className="mb-3 h-14 animate-pulse rounded-xl bg-slate-100" />)}
+      </div>
+      <p className="mt-4 text-center text-sm font-medium text-slate-500">Preparando os dados. Você pode continuar navegando pelo sistema.</p>
+    </div>
+  );
+}
+
+function AvisoSincronizacao({ usandoCacheLocal, atualizando, atualizadoEm }) {
+  if (!usandoCacheLocal && !atualizando) return null;
+  return (
+    <div className={`flex flex-col gap-2 rounded-xl border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${usandoCacheLocal ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-blue-100 bg-blue-50 text-blue-800'}`}>
+      <p>
+        <strong>{usandoCacheLocal ? 'Exibindo a última cópia salva neste dispositivo.' : 'Dados visíveis enquanto buscamos uma versão mais recente.'}</strong>
+        {atualizadoEm ? ` Última atualização: ${dataHora(atualizadoEm)}.` : ''}
+      </p>
+      {atualizando && <span className="inline-flex shrink-0 items-center gap-2 font-semibold"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-current" />Atualizando em segundo plano</span>}
+    </div>
+  );
+}
+
 function VisaoDistritos({ dados, prefix }) {
   const navigate = useNavigate();
   const [buscaDistrito, setBuscaDistrito] = useState('');
@@ -462,6 +506,7 @@ export default function InteressadosNovoTempo() {
   const { distrito } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const prefix = isDireto ? '/direto' : '';
   const nomeDistrito = distrito || '';
@@ -469,19 +514,48 @@ export default function InteressadosNovoTempo() {
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState('');
+  const [usandoCacheLocal, setUsandoCacheLocal] = useState(false);
 
   const carregar = async (forcar = false) => {
-    if (forcar) setAtualizando(true);
+    const caminho = nomeDistrito
+      ? `/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}`
+      : '/interessados-nt/resumo';
+    const chaveCache = chaveCacheUsuario(usuario, `api:${caminho}`);
+    let encontrouCache = false;
+
+    if (!forcar && !dados) {
+      const cache = await lerCacheLocal(chaveCache);
+      if (cache?.dados) {
+        encontrouCache = true;
+        setDados(cache.dados);
+        setUsandoCacheLocal(true);
+        setCarregando(false);
+      }
+    }
+
+    if (forcar || encontrouCache || dados) setAtualizando(true);
     else setCarregando(true);
     setErro('');
     try {
-      const caminho = nomeDistrito
-        ? `/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}`
-        : '/interessados-nt/resumo';
-      const { data } = await api.get(caminho, { params: forcar ? { atualizar: 1 } : undefined });
+      const resposta = await api.get(caminho, { params: forcar ? { atualizar: 1 } : undefined });
+      const { data } = resposta;
       setDados(data);
+      setUsandoCacheLocal(Boolean(resposta.fromCacheLocal));
+      if (!resposta.fromCacheLocal) await salvarCacheLocal(chaveCache, data, usuario);
+      if (data?.sincronizando && !forcar && !resposta.fromCacheLocal) {
+        window.setTimeout(() => carregar(true), 800);
+      }
+      if (forcar && !resposta.fromCacheLocal) {
+        notificarPwa({
+          titulo: 'Interessados NT atualizados',
+          corpo: 'A sincronização com a Amigos Novo Tempo foi concluída.',
+          tag: 'interessados-nt-atualizados',
+          url: nomeDistrito ? `${prefix}/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}` : `${prefix}/interessados-nt`,
+        }).catch(() => {});
+      }
     } catch (falha) {
       setErro(falha.response?.data?.erro || 'Erro inesperado ao consultar a integração.');
+      if (encontrouCache || dados) setUsandoCacheLocal(true);
     } finally {
       setCarregando(false);
       setAtualizando(false);
@@ -494,7 +568,7 @@ export default function InteressadosNovoTempo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomeDistrito]);
 
-  if (carregando) return <LoadingState mensagem="Carregando interessados do Novo Tempo..." />;
+  if (carregando && !dados) return <InteressadosSkeleton />;
 
   const distritoUnico = !nomeDistrito && dados?.distritos?.length === 1 ? dados.distritos[0]?.nome : null;
 
@@ -512,7 +586,9 @@ export default function InteressadosNovoTempo() {
         atualizando={atualizando}
       />
       <div className={isDireto ? 'flex-1 space-y-4 sm:space-y-5 overflow-y-auto p-4 sm:p-6' : 'space-y-4 sm:space-y-5'}>
-        {erro && <AvisoErro erro={erro} />}
+        <AvisoSincronizacao usandoCacheLocal={usandoCacheLocal} atualizando={atualizando || dados?.sincronizando} atualizadoEm={dados?.atualizadoEm} />
+        {erro && !dados && <AvisoErro erro={erro} />}
+        {erro && dados && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Não foi possível atualizar agora. Os últimos dados disponíveis continuam sendo exibidos.</div>}
         {dados && <CardsResumo resumo={dados.resumo} />}
         {dados && (nomeDistrito ? <VisaoLeads dados={dados} /> : <VisaoDistritos dados={dados} prefix={prefix} />)}
       </div>

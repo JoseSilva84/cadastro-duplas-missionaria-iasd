@@ -22,6 +22,10 @@ const { PERFIS, ehAdmin } = require('../middlewares/auth');
 let cacheResumo = null;
 const cacheDistritos = new Map();
 let tokenDeSessao = null;
+let atualizacaoResumoEmCurso = null;
+const atualizacoesDistritosEmCurso = new Map();
+
+const CHAVE_CACHE_RESUMO = 'interessados-nt:resumo';
 
 const texto = (valor) => String(valor ?? '').trim();
 
@@ -749,23 +753,138 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
   return { contatos: contatosGeolocalizados, igrejas: igrejasGeolocalizadas };
 }
 
+async function lerCachePersistente(chave) {
+  try {
+    const registro = await prisma.cacheIntegracao.findUnique({ where: { chave } });
+    return registro?.dados && typeof registro.dados === 'object' ? registro.dados : null;
+  } catch (falha) {
+    console.error(`[Interessados NT] Falha ao ler cache persistente ${chave}:`, falha.message);
+    return null;
+  }
+}
+
+async function salvarCachePersistente(chave, dados) {
+  try {
+    await prisma.cacheIntegracao.upsert({
+      where: { chave },
+      create: { chave, dados },
+      update: { dados },
+    });
+  } catch (falha) {
+    // A integração continua funcionando com o cache em memória mesmo que a
+    // persistência esteja temporariamente indisponível.
+    console.error(`[Interessados NT] Falha ao salvar cache persistente ${chave}:`, falha.message);
+  }
+}
+
+async function buscarResumoAtualizado(cfg = configuracao()) {
+  if (atualizacaoResumoEmCurso) return atualizacaoResumoEmCurso;
+
+  atualizacaoResumoEmCurso = (async () => {
+    const dashboard = await requisitar('/api/dashboard', cfg);
+    const contatos = registrosInteressados(dashboard).map(normalizarRegistro);
+    const territorio = extrairTerritorio(dashboard);
+    const geolocalizados = aplicarGeolocalizacaoAproximada(contatos, territorio.igrejas);
+
+    const novoCache = {
+      criadoEm: Date.now(),
+      atualizadoEm: new Date().toISOString(),
+      contatos: geolocalizados.contatos,
+      distritosOficiais: territorio.distritosOficiais,
+      igrejas: geolocalizados.igrejas,
+      origemCache: 'api',
+      sincronizando: false,
+    };
+
+    cacheResumo = novoCache;
+    await salvarCachePersistente(CHAVE_CACHE_RESUMO, novoCache);
+    return novoCache;
+  })();
+
+  try {
+    return await atualizacaoResumoEmCurso;
+  } finally {
+    atualizacaoResumoEmCurso = null;
+  }
+}
+
 async function carregarResumo({ ignorarCache = false } = {}) {
   const cfg = configuracao();
-  if (!ignorarCache && cacheResumo && Date.now() - cacheResumo.criadoEm < cfg.cacheTtl) return cacheResumo;
 
-  const dashboard = await requisitar('/api/dashboard', cfg);
-  const contatos = registrosInteressados(dashboard).map(normalizarRegistro);
-  const territorio = extrairTerritorio(dashboard);
-  const geolocalizados = aplicarGeolocalizacaoAproximada(contatos, territorio.igrejas);
+  if (ignorarCache) return buscarResumoAtualizado(cfg);
 
-  cacheResumo = {
-    criadoEm: Date.now(),
-    atualizadoEm: new Date().toISOString(),
-    contatos: geolocalizados.contatos,
-    distritosOficiais: territorio.distritosOficiais,
-    igrejas: geolocalizados.igrejas,
-  };
-  return cacheResumo;
+  if (!cacheResumo) {
+    const persistido = await lerCachePersistente(CHAVE_CACHE_RESUMO);
+    if (persistido) cacheResumo = { ...persistido, origemCache: 'persistente' };
+  }
+
+  if (cacheResumo) {
+    const expirado = Date.now() - Number(cacheResumo.criadoEm || 0) >= cfg.cacheTtl;
+    if (expirado && !atualizacaoResumoEmCurso) {
+      buscarResumoAtualizado(cfg).catch((falha) => {
+        console.error('[Interessados NT] Atualização em segundo plano falhou:', falha.message);
+      });
+    }
+    return {
+      ...cacheResumo,
+      sincronizando: expirado || Boolean(atualizacaoResumoEmCurso),
+    };
+  }
+
+  return buscarResumoAtualizado(cfg);
+}
+
+const chavePersistenteDistrito = (chave) => `interessados-nt:distrito:${chave}`;
+
+async function buscarDistritoAtualizado(chave, cfg = configuracao()) {
+  if (atualizacoesDistritosEmCurso.has(chave)) return atualizacoesDistritosEmCurso.get(chave);
+
+  const atualizacao = (async () => {
+    const resposta = await requisitar(`/api/dashboard/district-interest/${encodeURIComponent(chave)}`, cfg);
+    const raiz = resposta?.data || resposta || {};
+    const dados = {
+      criadoEm: Date.now(),
+      atualizadoEm: new Date().toISOString(),
+      contatos: (Array.isArray(raiz.records) ? raiz.records : []).map(normalizarRegistro),
+      origemCache: 'api',
+      sincronizando: false,
+    };
+    cacheDistritos.set(chave, dados);
+    await salvarCachePersistente(chavePersistenteDistrito(chave), dados);
+    return dados;
+  })();
+
+  atualizacoesDistritosEmCurso.set(chave, atualizacao);
+  try {
+    return await atualizacao;
+  } finally {
+    atualizacoesDistritosEmCurso.delete(chave);
+  }
+}
+
+async function carregarDistrito(chave, { ignorarCache = false, cfg = configuracao() } = {}) {
+  if (ignorarCache) return buscarDistritoAtualizado(chave, cfg);
+
+  let dados = cacheDistritos.get(chave);
+  if (!dados) {
+    dados = await lerCachePersistente(chavePersistenteDistrito(chave));
+    if (dados) {
+      dados = { ...dados, origemCache: 'persistente' };
+      cacheDistritos.set(chave, dados);
+    }
+  }
+
+  if (dados) {
+    const expirado = Date.now() - Number(dados.criadoEm || 0) >= cfg.cacheTtl;
+    if (expirado && !atualizacoesDistritosEmCurso.has(chave)) {
+      buscarDistritoAtualizado(chave, cfg).catch((falha) => {
+        console.error(`[Interessados NT] Atualização do distrito ${chave} falhou:`, falha.message);
+      });
+    }
+    return { ...dados, sincronizando: expirado || atualizacoesDistritosEmCurso.has(chave) };
+  }
+
+  return buscarDistritoAtualizado(chave, cfg);
 }
 
 function resumir(dados) {
@@ -811,6 +930,8 @@ function resumir(dados) {
     },
     distritos: grupos,
     atualizadoEm: dados.atualizadoEm,
+    sincronizando: Boolean(dados.sincronizando),
+    origemCache: dados.origemCache || 'api',
   };
 }
 
@@ -1100,18 +1221,7 @@ const InteressadosNovoTempoService = {
 
     const cfg = configuracao();
     const chave = slug(nome);
-    let dados = cacheDistritos.get(chave);
-
-    if (atualizar || !dados || Date.now() - dados.criadoEm >= cfg.cacheTtl) {
-      const resposta = await requisitar(`/api/dashboard/district-interest/${encodeURIComponent(chave)}`, cfg);
-      const raiz = resposta?.data || resposta || {};
-      dados = {
-        criadoEm: Date.now(),
-        atualizadoEm: new Date().toISOString(),
-        contatos: (Array.isArray(raiz.records) ? raiz.records : []).map(normalizarRegistro),
-      };
-      cacheDistritos.set(chave, dados);
-    }
+    const dados = await carregarDistrito(chave, { ignorarCache: atualizar, cfg });
 
     // O recorte por distrito pode vir resumido. Completamos cada registro com a
     // versão do dashboard geral, que contém endereço e demais dados cadastrais.
@@ -1143,6 +1253,8 @@ const InteressadosNovoTempoService = {
       },
       leads: contatos,
       atualizadoEm: dados.atualizadoEm,
+      sincronizando: Boolean(dados.sincronizando || dadosGerais.sincronizando),
+      origemCache: dados.origemCache || dadosGerais.origemCache || 'api',
     };
   },
 

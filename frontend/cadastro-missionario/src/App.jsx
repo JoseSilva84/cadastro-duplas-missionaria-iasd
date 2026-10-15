@@ -3,6 +3,7 @@ import { AuthProvider, useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from './cont
 import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 import MonitorAuditoria from './components/MonitorAuditoria';
+import PwaStatus from './components/PwaStatus';
 
 // Páginas
 import Login from './pages/Login';
@@ -532,6 +533,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <MonitorAuditoria />
+        <PwaStatus />
         <Toaster
           position="top-right"
           richColors

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
-import LoadingState from '../components/LoadingState';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
 
 const coresPadrao = ['#1A3A6B', '#C9963A', '#2D6A4F', '#7B2D8B', '#C44D34'];
 
@@ -51,17 +51,62 @@ export default function Regioes() {
   const escopo = escopoUsuario(usuario);
   const [regioes, setRegioes] = useState([]);
   const [resumo, setResumo] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+  const [carregandoRegioes, setCarregandoRegioes] = useState(true);
+  const [carregandoResumo, setCarregandoResumo] = useState(true);
+  const [usandoCacheLocal, setUsandoCacheLocal] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/regioes'),
-      api.get('/relatorios/resumo'),
-    ]).then(([r, s]) => {
-      setRegioes(r.data);
-      setResumo(s.data);
-    }).finally(() => setCarregando(false));
-  }, []);
+    let ativo = true;
+    const chaveCache = chaveCacheUsuario(usuario, 'pagina:regioes');
+
+    async function carregarPagina() {
+      const cache = await lerCacheLocal(chaveCache);
+      let regioesAtuais = cache?.dados?.regioes || [];
+      let resumoAtual = cache?.dados?.resumo || null;
+
+      if (ativo && cache?.dados) {
+        setRegioes(regioesAtuais);
+        setResumo(resumoAtual);
+        setUsandoCacheLocal(true);
+        setCarregandoRegioes(false);
+        setCarregandoResumo(false);
+      }
+
+      const [resultadoRegioes, resultadoResumo] = await Promise.allSettled([
+        api.get('/regioes'),
+        api.get('/relatorios/resumo'),
+      ]);
+      if (!ativo) return;
+
+      if (resultadoRegioes.status === 'fulfilled') {
+        regioesAtuais = resultadoRegioes.value.data;
+        setRegioes(regioesAtuais);
+      }
+      if (resultadoResumo.status === 'fulfilled') {
+        resumoAtual = resultadoResumo.value.data;
+        setResumo(resumoAtual);
+      }
+
+      const algumaFalha = resultadoRegioes.status === 'rejected'
+        || resultadoResumo.status === 'rejected'
+        || Boolean(resultadoRegioes.value?.fromCacheLocal)
+        || Boolean(resultadoResumo.value?.fromCacheLocal);
+      setErroCarregamento(algumaFalha);
+      setUsandoCacheLocal(algumaFalha && Boolean(cache?.dados));
+      setCarregandoRegioes(false);
+      setCarregandoResumo(false);
+
+      const recebeuDadoNovo = (resultadoRegioes.status === 'fulfilled' && !resultadoRegioes.value.fromCacheLocal)
+        || (resultadoResumo.status === 'fulfilled' && !resultadoResumo.value.fromCacheLocal);
+      if (recebeuDadoNovo) {
+        await salvarCacheLocal(chaveCache, { regioes: regioesAtuais, resumo: resumoAtual }, usuario);
+      }
+    }
+
+    carregarPagina();
+    return () => { ativo = false; };
+  }, [usuario]);
 
   const excluirRegiao = async (event, regiao) => {
     event.stopPropagation();
@@ -73,8 +118,6 @@ export default function Regioes() {
       alert(err.response?.data?.erro || 'Erro ao remover região.');
     }
   };
-
-  if (carregando) return <LoadingState mensagem="Carregando regiões..." />;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in">
@@ -94,6 +137,14 @@ export default function Regioes() {
         </h1>
         <p className="text-gray-400 text-xs sm:text-sm mt-1">Associação Paulistana — Igreja Adventista do Sétimo Dia</p>
       </div>
+
+      {(usandoCacheLocal || erroCarregamento) && (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {usandoCacheLocal
+            ? 'Exibindo a última cópia salva neste dispositivo enquanto tentamos atualizar os dados.'
+            : 'Uma parte dos dados não pôde ser atualizada. As demais informações continuam disponíveis.'}
+        </div>
+      )}
 
        {/* Indicadores gerais */}
        {resumo && (
@@ -124,9 +175,21 @@ export default function Regioes() {
           ))}
         </div>
       )}
+      {!resumo && carregandoResumo && (
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Carregando indicadores">
+          {[0, 1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded-xl border border-slate-100 bg-white shadow-sm" />)}
+        </div>
+      )}
 
       {/* Grid de regiões */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger-children">
+        {carregandoRegioes && !regioes.length && [0, 1, 2, 3, 4, 5].map((item) => (
+          <div key={item} className="h-64 animate-pulse rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div className="h-5 w-40 rounded bg-slate-200" />
+            <div className="mt-10 h-24 rounded-xl bg-slate-100" />
+            <div className="mt-5 h-4 w-28 rounded bg-slate-100" />
+          </div>
+        ))}
         {regioes.map((regiao, idx) => {
           const cor = regiao.cor || coresPadrao[idx % coresPadrao.length];
           return (
@@ -212,7 +275,7 @@ export default function Regioes() {
         })}
       </div>
 
-      {regioes.length === 0 && (
+      {!carregandoRegioes && regioes.length === 0 && !erroCarregamento && (
         <div className="text-center py-20 text-gray-400 animate-fade-in">
           <div className="text-5xl mb-4 animate-float">✝️</div>
           <p className="font-medium text-lg">Nenhuma região cadastrada.</p>

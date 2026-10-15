@@ -8,19 +8,44 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       manifestFilename: 'manifest.json',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'logoiasd.png'],
       manifest: {
+        id: '/',
         name: 'Programa Capacitação Missionária — Associação Paulistana',
         short_name: 'Capacitação Missionária',
         description: 'Sistema de Gestão e Acompanhamento de Duplas Missionárias — IASD',
+        lang: 'pt-BR',
+        dir: 'ltr',
         theme_color: '#1A3A6B',
         background_color: '#0f2347',
         display: 'standalone',
+        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        categories: ['productivity', 'education', 'utilities'],
+        shortcuts: [
+          {
+            name: 'Dashboard',
+            short_name: 'Dashboard',
+            url: '/dashboard',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+          },
+          {
+            name: 'Interessados NT',
+            short_name: 'Interessados',
+            url: '/interessados-nt',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+          },
+          {
+            name: 'Alunos',
+            short_name: 'Alunos',
+            url: '/alunos',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+          },
+        ],
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -41,6 +66,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        navigateFallback: '/index.html',
+        navigationPreload: true,
+        importScripts: ['/pwa-events.js'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
@@ -70,6 +100,18 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
+            },
+          },
+          {
+            urlPattern: ({ request, url }) => request.destination === 'image' && url.origin === self.location.origin,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'pcm-images',
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],

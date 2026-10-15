@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { PERFIS, useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { toastError, toastSuccess } from '../lib/toast';
+import PwaPreferences from '../components/PwaPreferences';
 
 const DownloadIcon = () => (
   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -227,6 +228,9 @@ export default function Configuracoes() {
         <button type="button" onClick={() => setAba('conta')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'conta' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
           Conta
         </button>
+        <button type="button" onClick={() => setAba('aplicativo')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'aplicativo' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+          Aplicativo e offline
+        </button>
         {podeGerenciarUsuarios && (
           <button
             type="button"
@@ -304,6 +308,8 @@ export default function Configuracoes() {
           </div>
         </form>
       )}
+
+      {aba === 'aplicativo' && <PwaPreferences usuario={usuario} />}
 
       {aba === 'backup' && isSuperAdmin && (
         <div>

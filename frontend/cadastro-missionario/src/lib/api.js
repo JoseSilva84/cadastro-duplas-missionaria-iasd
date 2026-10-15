@@ -1,10 +1,39 @@
 import axios from 'axios';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from './cacheLocal';
 
 // Cliente Axios configurado para a API
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
+
+const usuarioLocal = () => {
+  try {
+    return JSON.parse(localStorage.getItem('usuario') || 'null');
+  } catch {
+    return null;
+  }
+};
+
+const requisicaoCacheavel = (config = {}) => {
+  const rota = config.url || '';
+  const rotaSensivel = [
+    '/auth/',
+    '/auditoria/',
+    '/configuracoes/',
+    '/usuarios',
+    '/gestao-qrcodes',
+    '/qrcode',
+  ].some((trecho) => rota.includes(trecho));
+  return String(config.method || 'get').toLowerCase() === 'get'
+    && config.responseType !== 'blob'
+    && !rotaSensivel;
+};
+
+const chaveDaRequisicao = (config) => {
+  const parametros = config.params ? JSON.stringify(config.params) : '';
+  return chaveCacheUsuario(usuarioLocal(), `http:${config.url || ''}:${parametros}`);
+};
 
 // Interceptor — adiciona token JWT em todas as requisições
 api.interceptors.request.use((config) => {
@@ -29,11 +58,15 @@ api.interceptors.response.use(
         descricao: `A operação ${rota} demorou mais de 5 segundos no navegador.`,
       }).catch(() => {});
     }
+    if (requisicaoCacheavel(res.config) && res.data !== undefined) {
+      salvarCacheLocal(chaveDaRequisicao(res.config), res.data, usuarioLocal()).catch(() => {});
+    }
     return res;
   },
-  (err) => {
+  async (err) => {
     const rota = err.config?.url || '';
-    if (!rota.includes('/auditoria/') && (!err.response || err.response.status >= 500)) {
+    const falhaTemporaria = !err.response || err.response.status >= 500;
+    if (!rota.includes('/auditoria/') && falhaTemporaria) {
       const inicio = err.config?.metadata?.inicio;
       api.post('/auditoria/cliente', {
         tipo: err.response ? 'ERRO_FRONTEND' : 'FALHA_REDE',
@@ -45,6 +78,25 @@ api.interceptors.response.use(
           : `Não foi possível comunicar com o servidor em ${rota}.`,
         detalhes: { statusHttp: err.response?.status, mensagem: err.message },
       }).catch(() => {});
+    }
+
+    if (falhaTemporaria && requisicaoCacheavel(err.config)) {
+      const cache = await lerCacheLocal(chaveDaRequisicao(err.config));
+      if (cache?.dados !== undefined) {
+        window.dispatchEvent(new CustomEvent('pcm:cache-fallback', {
+          detail: { rota, salvoEm: cache.salvoEm },
+        }));
+        return {
+          data: cache.dados,
+          status: 200,
+          statusText: 'OK (cache local)',
+          headers: {},
+          config: err.config,
+          request: err.request,
+          fromCacheLocal: true,
+          cacheSalvoEm: cache.salvoEm,
+        };
+      }
     }
     const isCredentialRequest = [
       '/auth/login',

@@ -173,6 +173,17 @@ model AuditoriaLog {
   @@index([recurso, criadoEm])
 }
 
+// Cópia persistente de integrações externas. Permite responder imediatamente
+// mesmo quando a API de origem está lenta ou temporariamente indisponível.
+model CacheIntegracao {
+  chave        String   @id
+  dados        Json
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([atualizadoEm])
+}
+
 // Regiões da Associação Paulistana
 model Regiao {
   acoesCalendario CalendarioAcaoMissionaria[]

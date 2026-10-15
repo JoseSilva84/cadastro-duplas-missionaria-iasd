@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../lib/api';
+import { limparCacheDoUsuario } from '../lib/cacheLocal';
 
 // Contexto de autenticação global
 const AuthContext = createContext(null);
@@ -118,6 +119,7 @@ export function AuthProvider({ children }) {
     } catch {
       // A limpeza local precisa acontecer mesmo se a conexão estiver indisponível.
     } finally {
+      await limparCacheDoUsuario(usuario);
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       localStorage.removeItem('layout');
