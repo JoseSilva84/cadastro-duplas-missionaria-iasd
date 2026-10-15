@@ -58,9 +58,14 @@ const DuplaService = {
       if (igrejaId) condicoes.push({ igrejaId: Number(igrejaId) });
       if (regiaoNome) condicoes.push({ regiaoNome: { contains: regiaoNome, mode: 'insensitive' } });
     }
-    if (status) condicoes.push({ status });
+    if (['ATIVA', 'PENDENTE', 'INATIVA'].includes(status)) condicoes.push({ status });
 
-    return DuplaModel.findAll(combinar(...condicoes));
+    const paginado = query.paginado === '1' || query.paginado === 'true';
+    return DuplaModel.findAll(combinar(...condicoes), {
+      paginado,
+      pagina: query.pagina,
+      limite: query.limite,
+    });
   },
 
   // Busca dupla por ID (valida escopo para DUPLA_MISSIONARIA)

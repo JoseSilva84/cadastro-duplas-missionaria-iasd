@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
@@ -92,14 +92,6 @@ const projetoLabel = {
   PEQUENOS_GRUPOS: 'Pequenos Grupos',
   ACAO_SOCIAL: 'Ação Social',
   EVANGELISMO_PUBLICO: 'Classe Bíblica',
-};
-
-const projetoIcon = {
-  CASA_A_CASA: '🏠',
-  ESTUDO_BIBLICO: '📖',
-  PEQUENOS_GRUPOS: '👥',
-  ACAO_SOCIAL: '🤲',
-  EVANGELISMO_PUBLICO: '📢',
 };
 
 const statusColors = { ATIVA: '#16a34a', PENDENTE: '#C9963A', INATIVA: '#9ca3af' };
@@ -307,12 +299,6 @@ const montarPayloadAtualizacaoLicao = (estudo, dadosLicao) => ({
     : undefined,
 });
 
-const getClassificacaoAtividadeText = (dupla) => {
-  const classe = classeConfig[dupla?.classificacaoDupla]?.label || 'Sem classe';
-  const atividade = atividadeConfig[dupla?.atividadeDupla]?.label || 'Sem atividade';
-  return `${classe} · ${atividade}`;
-};
-
 const getClassificacaoAtividadeDisplayText = (dupla) => {
   const classe = classeConfig[getClassificacaoDuplaDisplay(dupla)]?.label || 'Sem classe';
   const atividade = atividadeConfig[getAtividadeDuplaDisplay(dupla)]?.label || 'Sem atividade';
@@ -436,14 +422,15 @@ const FotoPessoa = ({ src, nome, className, fallbackClassName, onPreview }) => {
   );
 };
 
-const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igreja, navigate, estudosEncerrados, podeAlterar }) => {
-  const totalEstudos = duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
-  const totalClasses = duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
+const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igreja, navigate, estudosEncerrados, podeAlterar, resumoGeral }) => {
+  const totalEstudos = resumoGeral?.estudosEmAndamento ?? duplas.reduce((acc, dupla) => acc + getEstudosCount(dupla), 0);
+  const totalClasses = resumoGeral?.classesAtivas ?? duplas.filter((dupla) => dupla.statusEvangelismo === 'ATIVO').length;
   const duplasVisiveis = new Set(duplas.map((dupla) => String(dupla.id)));
-  const totalBatismos = totalBatismosEncerrados(estudosEncerrados.filter((estudo) => duplasVisiveis.has(String(estudo.dupla?.id || estudo.duplaId))));
+  const totalBatismos = resumoGeral?.batismos
+    ?? totalBatismosEncerrados(estudosEncerrados.filter((estudo) => duplasVisiveis.has(String(estudo.dupla?.id || estudo.duplaId))));
 
   const cards = [
-    { label: 'Duplas', valor: duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
+    { label: 'Duplas', valor: resumoGeral?.totalDuplas ?? duplas.length, cor: '#1A3A6B', icon: <UsersIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]' },
     { label: 'Estudos', valor: totalEstudos, cor: '#0284c7', icon: <BookOpenIcon />, gradient: 'from-[#0284c7] to-[#0ea5e9]' },
     { label: 'Classe Bíblica', valor: totalClasses, cor: '#ea580c', icon: <MegaphoneIcon />, gradient: 'from-[#ea580c] to-[#f97316]' },
     { label: 'Batismos', valor: totalBatismos, cor: '#0d9488', icon: <DropletIcon />, gradient: 'from-[#0d9488] to-[#14b8a6]' },
@@ -824,6 +811,16 @@ export default function DuplasDireto() {
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState('');
+  const [totalDuplas, setTotalDuplas] = useState(0);
+  const [temMais, setTemMais] = useState(false);
+  const [resumoGeral, setResumoGeral] = useState(null);
+  const sentinelaRef = useRef(null);
+  const paginaAtualRef = useRef(1);
+  const carregandoMaisRef = useRef(false);
+  const temMaisRef = useRef(false);
+  const cargaIdRef = useRef(0);
   const [duplaSelecionadaId, setDuplaSelecionadaId] = useState(null);
   const [filtro, setFiltro] = useState(''); // pode ser status (ATIVA/INATIVA) ou medalha (ouro/prata/bronze)
   const [filtroClasse, setFiltroClasse] = useState(() => {
@@ -939,6 +936,8 @@ export default function DuplasDireto() {
       setExcluindoId(duplaAlvo.id);
       await api.delete(`/duplas/${duplaAlvo.id}`);
       setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaAlvo.id));
+      setTotalDuplas((total) => Math.max(0, total - 1));
+      setResumoGeral((resumo) => resumo ? { ...resumo, totalDuplas: Math.max(0, resumo.totalDuplas - 1) } : resumo);
       setDuplaParaExcluir(null);
       setMostraDetalhe(false);
       toast.success('Dupla excluida com sucesso.');
@@ -951,31 +950,111 @@ export default function DuplasDireto() {
 
   useEffect(() => {
     let ativo = true;
+    const cargaId = cargaIdRef.current + 1;
+    cargaIdRef.current = cargaId;
+    paginaAtualRef.current = 1;
+    carregandoMaisRef.current = false;
+    temMaisRef.current = false;
     setCarregando(true);
-    Promise.all([
-      api.get('/duplas', { params: { distritoId } }),
-      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
-      distritoId ? api.get(`/distritos/${distritoId}`).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
-    ]).then(async ([d, encerradosRes, distritoRes]) => {
-      if (!ativo) return;
-      const lista = Array.isArray(d.data) ? d.data : [];
-      const listaComFotos = await Promise.all(lista.map(resolverFotosDaDupla));
-      if (ativo) {
-        setDuplas(listaComFotos);
-        setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
-        setDistritoAtual(distritoId ? (distritoRes.data || lista[0]?.distrito || null) : null);
-      }
-    }).catch(() => {
+    setCarregandoMais(false);
+    setErroCarregamento('');
+    setDistritoAtual(null);
+    api.get('/duplas', {
+      params: { distritoId, paginado: 1, pagina: 1, limite: 100 },
+    }).then((d) => {
+      if (!ativo || cargaIdRef.current !== cargaId) return;
+      const paginacao = Array.isArray(d.data) ? null : d.data;
+      const lista = Array.isArray(d.data) ? d.data : (Array.isArray(d.data?.itens) ? d.data.itens : []);
+      const total = paginacao?.total ?? lista.length;
+      const aindaTemMais = Boolean(paginacao?.temMais);
+      setDuplas(lista);
+      setTotalDuplas(total);
+      setTemMais(aindaTemMais);
+      temMaisRef.current = aindaTemMais;
+      setResumoGeral(paginacao?.resumo || null);
+      if (distritoId && lista[0]?.distrito) setDistritoAtual((atual) => atual || lista[0].distrito);
+      setCarregando(false);
+
+      // Os cards aparecem primeiro com as iniciais; as fotos entram depois sem
+      // bloquear a navegação nem a leitura dos dados.
+      Promise.all(lista.map(resolverFotosDaDupla)).then((listaComFotos) => {
+        if (ativo && cargaIdRef.current === cargaId) {
+          const fotosPorId = new Map(listaComFotos.map((dupla) => [dupla.id, dupla]));
+          setDuplas((atuais) => atuais.map((dupla) => fotosPorId.get(dupla.id) || dupla));
+        }
+      }).catch(() => {});
+    }).catch((falha) => {
       if (ativo) {
         setDuplas([]);
-        setEstudosEncerrados([]);
-        setDistritoAtual(null);
+        setTotalDuplas(0);
+        setTemMais(false);
+        temMaisRef.current = false;
+        setResumoGeral(null);
+        setErroCarregamento(falha.response?.data?.erro || 'Não foi possível carregar as duplas agora.');
       }
     }).finally(() => {
       if (ativo) setCarregando(false);
     });
+
+    Promise.all([
+      api.get('/relatorios/estudos-biblicos', { params: { encerrado: 'true' } }),
+      distritoId ? api.get(`/distritos/${distritoId}`).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
+    ]).then(([encerradosRes, distritoRes]) => {
+      if (!ativo || cargaIdRef.current !== cargaId) return;
+      setEstudosEncerrados(Array.isArray(encerradosRes.data?.estudos) ? encerradosRes.data.estudos : []);
+      setDistritoAtual((atual) => distritoId ? (distritoRes.data || atual) : null);
+    }).catch(() => {});
     return () => { ativo = false; };
   }, [distritoId]);
+
+  const carregarMaisDuplas = useCallback(async () => {
+    if (!temMaisRef.current || carregandoMaisRef.current) return;
+    const proximaPagina = paginaAtualRef.current + 1;
+    const cargaId = cargaIdRef.current;
+    carregandoMaisRef.current = true;
+    setCarregandoMais(true);
+    setErroCarregamento('');
+
+    try {
+      const resposta = await api.get('/duplas', {
+        params: { distritoId, paginado: 1, pagina: proximaPagina, limite: 100 },
+      });
+      if (cargaIdRef.current !== cargaId) return;
+      const itens = Array.isArray(resposta.data?.itens) ? resposta.data.itens : [];
+      const itensComFotos = await Promise.all(itens.map(resolverFotosDaDupla));
+      if (cargaIdRef.current !== cargaId) return;
+
+      setDuplas((atuais) => {
+        const ids = new Set(atuais.map((dupla) => dupla.id));
+        return [...atuais, ...itensComFotos.filter((dupla) => !ids.has(dupla.id))];
+      });
+      paginaAtualRef.current = resposta.data?.pagina || proximaPagina;
+      const aindaTemMais = Boolean(resposta.data?.temMais);
+      setTemMais(aindaTemMais);
+      temMaisRef.current = aindaTemMais;
+      setTotalDuplas(resposta.data?.total ?? totalDuplas);
+      if (resposta.data?.resumo) setResumoGeral(resposta.data.resumo);
+    } catch (falha) {
+      if (cargaIdRef.current === cargaId) {
+        setErroCarregamento(falha.response?.data?.erro || 'Não foi possível carregar mais duplas agora.');
+      }
+    } finally {
+      if (cargaIdRef.current === cargaId) {
+        carregandoMaisRef.current = false;
+        setCarregandoMais(false);
+      }
+    }
+  }, [distritoId, totalDuplas]);
+
+  useEffect(() => {
+    const alvo = sentinelaRef.current;
+    if (!alvo || !temMais || typeof IntersectionObserver === 'undefined') return undefined;
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((entrada) => entrada.isIntersecting)) carregarMaisDuplas();
+    }, { rootMargin: '600px 0px' });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, [carregarMaisDuplas, temMais]);
 
   useEffect(() => {
     setFiltroClasse(['A', 'B', 'C'].includes(classeParam) ? classeParam : '');
@@ -1068,7 +1147,6 @@ export default function DuplasDireto() {
     if (!selecionadaAindaVisivel) {
       setDuplaSelecionadaId(duplasFiltradas[0].id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duplasFiltradas, duplaSelecionadaId]);
 
   const abrirDetalhesDupla = (dupla) => {
@@ -1102,6 +1180,7 @@ export default function DuplasDireto() {
         navigate={navigate}
         estudosEncerrados={estudosEncerrados}
         podeAlterar={podeAlterar}
+        resumoGeral={resumoGeral}
       />
     )}
     <div className={`${isDireto ? 'h-full min-h-[calc(100vh-8rem)] overflow-y-auto px-8 py-4 sm:px-10 lg:px-16 xl:px-24 2xl:px-32' : 'animate-fade-in'} bg-transparent`}>
@@ -1120,7 +1199,11 @@ export default function DuplasDireto() {
               <h1 className="text-lg font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                 Duplas
               </h1>
-              <p className="text-gray-400 text-[10px]">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
+              <p className="text-gray-400 text-[10px]">
+                {duplas.length < totalDuplas
+                  ? `${duplas.length} de ${totalDuplas} dupla(s) carregada(s)`
+                  : `${duplasFiltradas.length} dupla(s) encontrada(s)`}
+              </p>
             </div>
             <button
               type="button"
@@ -1154,7 +1237,7 @@ export default function DuplasDireto() {
                   color: filtro === '' && filtroClasse === '' && filtroAtividade === '' && filtroEspecial === '' ? 'white' : '#6b7280',
                 }}
               >
-                {duplas.length}
+                {totalDuplas || duplas.length}
               </span>
             </button>
 
@@ -1217,65 +1300,6 @@ export default function DuplasDireto() {
               );
             })}
 
-            {false && [
-              {
-                key: 'estudoNaoRegistrado',
-                label: 'Dupla com estudo sem cadastro',
-                total: duplas.filter(temEstudoNaoRegistrado).length,
-                title: 'Duplas que responderam Sim em Estudo em andamento, mas ainda não cadastraram o estudo bíblico.',
-                cor: '#b45309',
-                bg: '#fef3c7',
-              },
-              {
-                key: 'semEstudos',
-                label: 'Sem atividade',
-                total: duplas.filter((dupla) => dupla.estudoAtualEmAndamento !== true && getEstudosCount(dupla) === 0).length,
-                title: 'Duplas que responderam Não em Estudo em andamento e não possuem estudo bíblico cadastrado.',
-                cor: '#64748b',
-                bg: '#f1f5f9',
-              },
-              {
-                key: 'comVisitacoes',
-                label: 'Com visitação',
-                total: duplas.filter((dupla) => getVisitacoesCount(dupla) >= 1).length,
-                title: 'Duplas com visitação: duplas com Visitações 1 ou mais. Visitações 0 não entram.',
-                cor: '#7c3aed',
-                bg: '#ede9fe',
-              },
-              {
-                key: 'comEstudo',
-                label: 'Com Estudo',
-                total: duplas.filter((dupla) => getEstudosCount(dupla) >= 1).length,
-                title: 'Duplas com estudo: duplas com 1 ou mais estudos bíblicos cadastrados.',
-                cor: '#0284c7',
-                bg: '#e0f2fe',
-              },
-            ].map((item) => {
-              const ativo = filtroEspecial === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setFiltroEspecial(ativo ? '' : item.key)}
-                  title={item.title}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25 active:scale-95"
-                  style={ativo
-                    ? { backgroundColor: item.cor, borderColor: item.cor, color: 'white' }
-                    : { backgroundColor: item.bg, borderColor: item.cor + '55', color: item.cor }}
-                >
-                  {item.label}
-                  <span
-                    className="rounded-full px-1.5 py-px text-[9px] font-bold"
-                    style={{
-                      backgroundColor: ativo ? 'rgba(255,255,255,0.25)' : item.cor + '20',
-                      color: ativo ? 'white' : item.cor,
-                    }}
-                  >
-                    {item.total}
-                  </span>
-                </button>
-              );
-            })}
           </div>
 
           {/* Filtros de busca e filtro unificado */}
@@ -1526,7 +1550,7 @@ export default function DuplasDireto() {
             );
           })}
 
-          {duplasFiltradas.length === 0 && (
+          {duplasFiltradas.length === 0 && !temMais && !carregandoMais && (
             <div className="text-center py-12 text-gray-400">
               <div className="text-3xl mb-2 animate-float">👥</div>
               <p className="text-sm">Nenhuma dupla encontrada.</p>
@@ -1541,6 +1565,31 @@ export default function DuplasDireto() {
               )}
             </div>
           )}
+
+          <div ref={sentinelaRef} className="flex min-h-16 flex-col items-center justify-center gap-2 py-3" aria-live="polite">
+            {carregandoMais && (
+              <>
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-[#1A3A6B]" aria-hidden="true" />
+                <p className="text-xs font-medium text-slate-500">Trazendo mais duplas...</p>
+              </>
+            )}
+            {!carregandoMais && temMais && (
+              <button type="button" onClick={carregarMaisDuplas} className="btn-outline px-4 py-2 text-xs">
+                Carregar mais 100 duplas
+              </button>
+            )}
+            {erroCarregamento && (
+              <div className="text-center">
+                <p className="text-xs text-red-600">{erroCarregamento}</p>
+                <button type="button" onClick={carregarMaisDuplas} className="mt-2 text-xs font-semibold text-[#1A3A6B] underline">
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+            {!temMais && duplas.length > 0 && (
+              <p className="text-xs text-slate-400">Todas as {totalDuplas || duplas.length} duplas foram carregadas.</p>
+            )}
+          </div>
         </div>
       </div>
 

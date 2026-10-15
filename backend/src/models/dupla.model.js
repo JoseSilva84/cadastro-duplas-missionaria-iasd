@@ -14,8 +14,8 @@ const contagensDaDupla = {
 
 const DuplaModel = {
   // Lista duplas com filtro opcional
-  async findAll(filtro = {}) {
-    return prisma.dupla.findMany({
+  async findAll(filtro = {}, opcoes = {}) {
+    const consulta = {
       where: filtro,
       include: {
         distrito: { include: { regiao: true } },
@@ -31,7 +31,64 @@ const DuplaModel = {
         { membro2Nome: 'asc' },
         { criadoEm: 'desc' },
       ],
-    });
+    };
+
+    if (!opcoes.paginado) return prisma.dupla.findMany(consulta);
+
+    const pagina = Math.max(1, Number(opcoes.pagina) || 1);
+    const limite = Math.min(100, Math.max(1, Number(opcoes.limite) || 100));
+    const [itens, total, resumo] = await Promise.all([
+      prisma.dupla.findMany({
+        ...consulta,
+        skip: (pagina - 1) * limite,
+        take: limite,
+      }),
+      prisma.dupla.count({ where: filtro }),
+      pagina === 1 ? DuplaModel.resumir(filtro) : Promise.resolve(null),
+    ]);
+
+    return {
+      itens,
+      total,
+      pagina,
+      limite,
+      paginas: Math.ceil(total / limite),
+      temMais: pagina * limite < total,
+      resumo,
+    };
+  },
+
+  async resumir(filtro = {}) {
+    const filtroDaDupla = { is: filtro };
+    const [totalDuplas, estudosEmAndamento, classesAtivas, estudosComBatismo] = await Promise.all([
+      prisma.dupla.count({ where: filtro }),
+      prisma.estudoBiblico.count({
+        where: {
+          ...whereEstudoEmAndamento,
+          dupla: filtroDaDupla,
+        },
+      }),
+      prisma.dupla.count({
+        where: { AND: [filtro, { statusEvangelismo: 'ATIVO' }] },
+      }),
+      prisma.estudoBiblico.findMany({
+        where: {
+          motivoEncerramento: 'BATISMO',
+          dupla: filtroDaDupla,
+        },
+        select: {
+          tipoEstudo: true,
+          _count: { select: { participantes: true } },
+        },
+      }),
+    ]);
+
+    const batismos = estudosComBatismo.reduce((total, estudo) => {
+      const participantes = estudo._count?.participantes || 0;
+      return total + (['PONTO', 'CLASSE'].includes(estudo.tipoEstudo) && participantes > 0 ? participantes : 1);
+    }, 0);
+
+    return { totalDuplas, estudosEmAndamento, classesAtivas, batismos };
   },
 
   // Busca dupla por ID

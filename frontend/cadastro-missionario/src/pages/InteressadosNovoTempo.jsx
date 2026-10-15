@@ -539,9 +539,10 @@ export default function InteressadosNovoTempo() {
     try {
       const resposta = await api.get(caminho, {
         params: forcar ? { atualizar: 1 } : undefined,
-        // A sincronização forçada consulta um serviço externo e pode legitimamente
-        // levar mais tempo; a navegação comum continua protegida pelo limite global.
-        timeout: forcar ? 35000 : undefined,
+        // Esta rota depende de um serviço externo cujo limite no backend é de 30s.
+        // A tela precisa aguardar a resposta do backend para receber o erro correto
+        // ou a primeira cópia que será persistida para os próximos acessos.
+        timeout: 40000,
       });
       const { data } = resposta;
       setDados(data);
@@ -559,7 +560,11 @@ export default function InteressadosNovoTempo() {
         }).catch(() => {});
       }
     } catch (falha) {
-      setErro(falha.response?.data?.erro || 'Erro inesperado ao consultar a integração.');
+      const mensagem = falha.response?.data?.erro
+        || (falha.code === 'ECONNABORTED'
+          ? 'A integração Amigos Novo Tempo demorou além do limite para responder. Tente atualizar novamente em alguns instantes.'
+          : 'Não foi possível comunicar com o servidor. Verifique a conexão e tente novamente.');
+      setErro(mensagem);
       if (encontrouCache || dados) setUsandoCacheLocal(true);
     } finally {
       setCarregando(false);

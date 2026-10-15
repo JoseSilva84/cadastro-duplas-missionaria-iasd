@@ -21,6 +21,17 @@ export default function PwaPreferences({ usuario }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario?.id, usuario?.email]);
 
+  useEffect(() => {
+    if (!notificacoesDisponiveis()) return undefined;
+    const atualizarPermissao = () => setPermissao(Notification.permission);
+    document.addEventListener('visibilitychange', atualizarPermissao);
+    window.addEventListener('focus', atualizarPermissao);
+    return () => {
+      document.removeEventListener('visibilitychange', atualizarPermissao);
+      window.removeEventListener('focus', atualizarPermissao);
+    };
+  }, []);
+
   const ativarNotificacoes = async () => {
     setProcessando(true);
     try {
@@ -74,6 +85,11 @@ export default function PwaPreferences({ usuario }) {
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500">
               Receba avisos quando uma sincronização terminar ou quando houver uma atualização importante do aplicativo.
             </p>
+            {permissao === 'default' && (
+              <p className="mt-2 max-w-2xl text-xs leading-relaxed text-gray-400">
+                Por segurança, o navegador exige sua autorização uma única vez. Depois disso, o aplicativo mantém as notificações ativas neste dispositivo.
+              </p>
+            )}
             <p className="mt-3 text-xs font-semibold text-gray-500">
               Situação: {permissao === 'granted' ? 'ativadas' : permissao === 'denied' ? 'bloqueadas pelo navegador' : permissao === 'indisponivel' ? 'não disponíveis neste navegador' : 'aguardando autorização'}
             </p>

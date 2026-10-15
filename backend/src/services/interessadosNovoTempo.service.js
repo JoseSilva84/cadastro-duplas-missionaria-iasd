@@ -1,4 +1,7 @@
 const API_URL_PADRAO = 'https://backend-leadsnt.sevenflowia.tech';
+const API_URLS_LEGADAS = new Set([
+  'https://api.sevenflowia.tech',
+]);
 const CACHE_TTL_PADRAO = 5 * 60 * 1000;
 const CENTROS_TERRITORIAIS = {
   'sao-paulo': [-23.55052, -46.63331],
@@ -203,8 +206,12 @@ function validarDistritoNoEscopo(nomeDistrito, escopo) {
 }
 
 function configuracao() {
+  const apiUrlConfigurada = texto(process.env.SEVENFLOW_API_URL || API_URL_PADRAO).replace(/\/$/, '');
   return {
-    apiUrl: texto(process.env.SEVENFLOW_API_URL || API_URL_PADRAO).replace(/\/$/, ''),
+    // O primeiro domínio usado pela integração deixou de expor /api/dashboard.
+    // Mantemos a correção automática para instalações que ainda possuem a
+    // variável antiga salva no painel de hospedagem.
+    apiUrl: API_URLS_LEGADAS.has(apiUrlConfigurada) ? API_URL_PADRAO : apiUrlConfigurada,
     token: texto(process.env.SEVENFLOW_API_TOKEN),
     email: texto(process.env.SEVENFLOW_API_EMAIL),
     password: texto(process.env.SEVENFLOW_API_PASSWORD),
@@ -570,7 +577,10 @@ async function requisitar(caminho, cfg = configuracao(), repetirAposLogin = true
   const corpo = await lerJson(resposta);
   if (!resposta.ok) {
     if ([401, 403].includes(resposta.status)) {
-      throw erro(502, 'A credencial do Amigos Novo Tempo expirou ou não permite ler o dashboard.', 'SEVENFLOW_NAO_AUTORIZADA');
+      const orientacao = cfg.email && cfg.password
+        ? 'Confira o usuário de integração cadastrado no servidor.'
+        : 'Atualize o token ou configure o usuário e a senha da integração no servidor para permitir renovação automática.';
+      throw erro(502, `A credencial do Amigos Novo Tempo expirou ou não permite ler o dashboard. ${orientacao}`, 'SEVENFLOW_NAO_AUTORIZADA');
     }
     throw erro(502, corpo?.message || corpo?.error || `O Amigos Novo Tempo respondeu com status ${resposta.status}.`, 'SEVENFLOW_ERRO');
   }
