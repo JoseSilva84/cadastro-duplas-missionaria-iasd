@@ -449,7 +449,7 @@ const AdvancedOverview = ({ duplas, duplasFiltradas, distritoId, distrito, igrej
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
             Duplas Missionárias
           </h1>
-          <p className="text-gray-400 text-xs sm:text-sm mt-1">{duplasFiltradas.length} dupla(s) encontrada(s)</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">{resumoGeral?.totalDuplas ?? duplasFiltradas.length} dupla(s) encontrada(s)</p>
         </div>
         <div className="flex flex-col items-start gap-2">
           {podeAlterar && (
@@ -937,7 +937,27 @@ export default function DuplasDireto() {
       await api.delete(`/duplas/${duplaAlvo.id}`);
       setDuplas((lista) => lista.filter((dupla) => dupla.id !== duplaAlvo.id));
       setTotalDuplas((total) => Math.max(0, total - 1));
-      setResumoGeral((resumo) => resumo ? { ...resumo, totalDuplas: Math.max(0, resumo.totalDuplas - 1) } : resumo);
+      setResumoGeral((resumo) => {
+        if (!resumo) return resumo;
+        const medalha = getMedalha(duplaAlvo);
+        const classe = getClassificacaoDuplaDisplay(duplaAlvo);
+        const estudosAtivos = (duplaAlvo.estudosBiblicos || []).filter((estudo) => !estudoEncerrado(estudo)).length;
+        return {
+          ...resumo,
+          totalDuplas: Math.max(0, resumo.totalDuplas - 1),
+          estudosEmAndamento: Math.max(0, (resumo.estudosEmAndamento || 0) - estudosAtivos),
+          classesAtivas: Math.max(0, (resumo.classesAtivas || 0) - (duplaAlvo.statusEvangelismo === 'ATIVO' ? 1 : 0)),
+          batismos: Math.max(0, (resumo.batismos || 0) - totalBatismosEncerrados(duplaAlvo.estudosBiblicos)),
+          medalhas: resumo.medalhas ? {
+            ...resumo.medalhas,
+            [medalha]: Math.max(0, (resumo.medalhas[medalha] || 0) - 1),
+          } : resumo.medalhas,
+          classes: resumo.classes && classe ? {
+            ...resumo.classes,
+            [classe]: Math.max(0, (resumo.classes[classe] || 0) - 1),
+          } : resumo.classes,
+        };
+      });
       setDuplaParaExcluir(null);
       setMostraDetalhe(false);
       toast.success('Dupla excluida com sucesso.');
@@ -1086,10 +1106,11 @@ export default function DuplasDireto() {
 
   // Contagem por medalha para os chips de filtro
   const contagemMedalha = useMemo(() => {
+    if (resumoGeral?.medalhas) return resumoGeral.medalhas;
     const c = { ouro: 0, prata: 0, bronze: 0, semAtividade: 0 };
     duplasComMedalha.forEach(d => { c[d._medalha] = (c[d._medalha] || 0) + 1; });
     return c;
-  }, [duplasComMedalha]);
+  }, [duplasComMedalha, resumoGeral]);
 
   // Filtra as duplas com base nos critérios de busca (memoizado)
   const duplasFiltradas = useMemo(() => {
@@ -1274,7 +1295,8 @@ export default function DuplasDireto() {
             {(['A', 'B', 'C']).map((classe) => {
               const cfg = classeConfig[classe];
               const ativo = filtroClasse === classe;
-              const total = duplas.filter((dupla) => pertenceClasseFiltro(dupla, classe)).length;
+              const total = resumoGeral?.classes?.[classe]
+                ?? duplas.filter((dupla) => pertenceClasseFiltro(dupla, classe)).length;
               return (
                 <button
                   key={classe}
