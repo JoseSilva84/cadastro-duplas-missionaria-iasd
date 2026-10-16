@@ -74,6 +74,18 @@ O PCM lê `GET /api/dashboard` para a base geral e `GET /api/dashboard/district-
 
 Os aliases compactos atuais (`n`, `tel`, `em`, `d`, `addr`, `end`, `a`, `birthDate`, `g`, `r`, `v`, `e`, `tm`, `materialName`, `m`, `desc`, `p`, `s`, `sim`, `faixa`, `c`, `lastContactDate`, `t`, `lat`, `lng` e campos `geo*`) são tratados no backend. Coordenadas recebidas são preservadas; quando elas não existem, o PCM gera um ponto territorial aproximado e o identifica como `Aproximado`/`fallback-territorial`, sem apresentá-lo como endereço exato.
 
+### Relatórios de campanhas Amigos NT
+
+O espelho de campanhas lê `/api/campaigns` e `/api/ai/ana/summary?campaignId=...` em segundo plano, vincula as conversas aos distritos do PCM e publica um lote completo a cada 15 minutos. As consultas do PCM usam somente o banco local. O histórico completo de uma pessoa é solicitado por `GET /api/whatsapp/conversations?limit=1&id=...` quando o detalhe é aberto e fica armazenado para consultas seguintes. O backend aplica o escopo de região ou distrito em todas as consultas, inclusive no detalhe e no PDF gerado pelo frontend.
+
+Depois de publicar esta alteração em produção, aplique a nova migration **no banco configurado para o backend** antes de abrir o relatório:
+
+```bash
+npm run db:deploy
+```
+
+Este script executa o CLI do Prisma por meio de Node, sem depender da permissão de execução do binário `prisma` no contêiner. O `prestart` gera o Prisma Client ao reiniciar o backend. O primeiro relatório aparecerá depois da primeira sincronização; se a origem não informar o distrito de uma conversa, o PCM tenta identificá-lo pelo espelho dos leads e omite os registros ainda ambíguos.
+
 ## Instalação
 
 ```bash

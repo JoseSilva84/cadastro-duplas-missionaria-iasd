@@ -45,6 +45,7 @@ import GestaoQrCodes from './pages/GestaoQrCodes';
 import CriarContaDupla from './pages/CriarContaDupla';
 import CadastroDuplaComChave from './pages/CadastroDuplaComChave';
 import InteressadosNovoTempo from './pages/InteressadosNovoTempo';
+import CampanhasNovoTempo from './pages/CampanhasNovoTempo';
 import AnalisePotenciaisNovoTempo from './pages/AnalisePotenciaisNovoTempo';
 import FiltragemAvancadaNovoTempo from './pages/FiltragemAvancadaNovoTempo';
 import AuditoriaLogs from './pages/AuditoriaLogs';
@@ -245,6 +246,7 @@ function AppRoutes() {
         <Route path="igrejas" element={<ListagemIgrejas />} />
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]}><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/campanhas" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><CampanhasNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/filtragem-avancada" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT}><FiltragemAvancadaNovoTempo /></RotaComPerfis>} />
@@ -418,6 +420,7 @@ function AppRoutes() {
         <Route path="igrejas" element={<ListagemIgrejasDireto />} />
         <Route path="alunos" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA]} redirectTo="/direto/duplas"><Alunos /></RotaComPerfis>} />
         <Route path="interessados-nt" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
+        <Route path="interessados-nt/campanhas" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><CampanhasNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/distritos/:distrito" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><InteressadosNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/analise" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><AnalisePotenciaisNovoTempo /></RotaComPerfis>} />
         <Route path="interessados-nt/filtragem-avancada" element={<RotaComPerfis perfisPermitidos={PERFIS_INTERESSADOS_NT} redirectTo="/direto/dashboard"><FiltragemAvancadaNovoTempo /></RotaComPerfis>} />

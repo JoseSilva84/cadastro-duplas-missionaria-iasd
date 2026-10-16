@@ -17,6 +17,10 @@ router.use(
   )
 );
 router.get('/status', InteressadosNovoTempoController.status);
+router.get('/campanhas', InteressadosNovoTempoController.campanhas);
+router.get('/campanhas/:campanhaId/resumo', InteressadosNovoTempoController.resumoCampanha);
+router.get('/campanhas/:campanhaId/conversas', InteressadosNovoTempoController.conversasCampanha);
+router.get('/campanhas/:campanhaId/conversas/:conversaId', InteressadosNovoTempoController.detalheConversaCampanha);
 router.get('/resumo', InteressadosNovoTempoController.resumo);
 router.get('/filtragem-avancada', InteressadosNovoTempoController.filtragemAvancada);
 router.get('/analise', InteressadosNovoTempoController.analise);

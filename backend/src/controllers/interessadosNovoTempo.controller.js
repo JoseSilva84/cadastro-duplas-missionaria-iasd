@@ -15,6 +15,26 @@ function responderErro(res, falha) {
 }
 
 const InteressadosNovoTempoController = {
+  async campanhas(req, res) {
+    try { return res.json(await InteressadosNovoTempoService.campanhas.listar(req.usuario)); }
+    catch (falha) { return responderErro(res, falha); }
+  },
+
+  async resumoCampanha(req, res) {
+    try { return res.json(await InteressadosNovoTempoService.campanhas.resumo(req.usuario, req.params.campanhaId)); }
+    catch (falha) { return responderErro(res, falha); }
+  },
+
+  async conversasCampanha(req, res) {
+    try { return res.json(await InteressadosNovoTempoService.campanhas.conversas(req.usuario, req.params.campanhaId, req.query)); }
+    catch (falha) { return responderErro(res, falha); }
+  },
+
+  async detalheConversaCampanha(req, res) {
+    try { return res.json(await InteressadosNovoTempoService.campanhas.detalhe(req.usuario, req.params.campanhaId, req.params.conversaId)); }
+    catch (falha) { return responderErro(res, falha); }
+  },
+
   async resumo(req, res) {
     try {
       const resultado = await InteressadosNovoTempoService.resumo({

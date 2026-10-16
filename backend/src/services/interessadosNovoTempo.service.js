@@ -22,6 +22,7 @@ const CENTROS_TERRITORIAIS = {
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 const criarEspelhoNovoTempo = require('./interessadosNovoTempo.mirror');
+const criarServicoCampanhasNovoTempo = require('./campanhasNovoTempo.service');
 
 let tokenDeSessao = null;
 
@@ -596,6 +597,7 @@ const espelho = criarEspelhoNovoTempo({
   aplicarGeolocalizacaoAproximada,
   chaveNormalizada,
 });
+const campanhas = criarServicoCampanhasNovoTempo({ requisitar, configuracao, possuiCredencial });
 
 function registrosInteressados(dashboard) {
   const raiz = dashboard?.data || dashboard || {};
@@ -1164,7 +1166,10 @@ const InteressadosNovoTempoService = {
   },
   iniciarSincronizacao() {
     espelho.iniciar();
+    campanhas.iniciar();
   },
+
+  campanhas,
 
   _internals: {
     chaveNormalizada,

@@ -138,7 +138,7 @@ const formatarWhatsapp = (valor) => {
   return valor;
 };
 
-function Cabecalho({ distrito, distritoUnico, onAbrirDistritoUnico, isDireto, atualizadoEm, onAtualizar, onAnalise, onFiltragem, atualizando }) {
+function Cabecalho({ distrito, distritoUnico, onAbrirDistritoUnico, isDireto, atualizadoEm, onCampanhas, onAnalise, onFiltragem }) {
   return (
     <div className={isDireto ? 'flex-shrink-0 border-b border-gray-200 bg-white px-4 py-4 sm:px-6' : 'mb-6'}>
       {distrito && <BackButton fallbackTo={isDireto ? '/direto/interessados-nt' : '/interessados-nt'} className="mb-3" />}
@@ -179,20 +179,21 @@ function Cabecalho({ distrito, distritoUnico, onAbrirDistritoUnico, isDireto, at
             {!distrito && (
               <button
                 type="button"
+                className="flex-1 sm:flex-initial text-center rounded-lg bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
+                onClick={onCampanhas}
+              >
+                Relatórios de campanhas →
+              </button>
+            )}
+            {!distrito && (
+              <button
+                type="button"
                 className="flex-1 sm:flex-initial text-center btn-outline px-3.5 py-2 text-xs sm:text-sm"
                 onClick={onFiltragem}
               >
                 Filtragem Avançada
               </button>
             )}
-            <button
-              type="button"
-              className="w-full sm:w-auto text-center btn-outline px-3.5 py-2 text-xs sm:text-sm"
-              disabled={atualizando}
-              onClick={onAtualizar}
-            >
-              {atualizando ? 'Atualizando...' : 'Atualizar dados'}
-            </button>
           </div>
         </div>
       </div>
@@ -663,10 +664,9 @@ export default function InteressadosNovoTempo() {
         onAbrirDistritoUnico={() => navigate(`${prefix}/interessados-nt/distritos/${encodeURIComponent(distritoUnico)}`)}
         isDireto={isDireto}
         atualizadoEm={dados?.atualizadoEm}
-        onAtualizar={() => carregar(true)}
+        onCampanhas={() => navigate(`${prefix}/interessados-nt/campanhas`)}
         onAnalise={() => navigate(`${prefix}/interessados-nt/analise`)}
         onFiltragem={() => navigate(`${prefix}/interessados-nt/filtragem-avancada`)}
-        atualizando={atualizando}
       />
       <div className={isDireto ? 'flex-1 space-y-4 sm:space-y-5 overflow-y-auto p-4 sm:p-6' : 'space-y-4 sm:space-y-5'}>
         <AvisoSincronizacao usandoCacheLocal={usandoCacheLocal} atualizando={atualizando || dados?.sincronizando} atualizadoEm={dados?.atualizadoEm} />

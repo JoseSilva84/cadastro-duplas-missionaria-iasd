@@ -219,6 +219,52 @@ model SincronizacaoNovoTempo {
   igrejas            Json?
 }
 
+// Relatórios do agente Ana, publicados por lote para nunca expor uma importação parcial.
+model SincronizacaoCampanhasNovoTempo {
+  id                 String    @id
+  loteAtivo          String?
+  atualizadoEm       DateTime?
+  proximaTentativaEm DateTime  @default(now())
+  bloqueioAte        DateTime?
+  execucaoId         String?
+  falhas             Int       @default(0)
+  erro               String?
+  status             String    @default("PENDENTE")
+}
+
+model CampanhaNovoTempo {
+  loteId      String
+  id          String
+  nome        String
+  status      String?
+  dadosResumo Json?
+
+  @@id([loteId, id])
+  @@index([loteId, nome])
+}
+
+model ConversaCampanhaNovoTempo {
+  loteId         String
+  campanhaId     String
+  id             String
+  distritoId     Int
+  regiaoId       Int
+  distrito       String
+  igreja         String?
+  nome           String
+  telefone       String?
+  situacao       String
+  aceitou        Boolean @default(false)
+  respondeu      Boolean @default(false)
+  endereco       String?
+  atualizadoEm   DateTime?
+  dados          Json
+
+  @@id([loteId, campanhaId, id])
+  @@index([loteId, campanhaId, regiaoId, distritoId, aceitou, nome])
+  @@index([loteId, campanhaId, distritoId, situacao])
+}
+
 // Regiões da Associação Paulistana
 model Regiao {
   acoesCalendario CalendarioAcaoMissionaria[]

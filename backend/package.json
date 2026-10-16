@@ -15,7 +15,7 @@
     "db:push": "prisma db push",
     "db:seed": "node src/seed.js",
     "db:studio": "prisma studio",
-    "test:nt": "node --test tests/interessadosNovoTempo.mirror.test.js"
+    "test:nt": "node --test tests/interessadosNovoTempo.mirror.test.js tests/campanhasNovoTempo.test.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -37,6 +37,7 @@ const requisicaoCacheavel = (config = {}) => {
     '/usuarios',
     '/gestao-qrcodes',
     '/qrcode',
+    '/interessados-nt/campanhas',
   ].some((trecho) => rota.includes(trecho));
   return String(config.method || 'get').toLowerCase() === 'get'
     && config.responseType !== 'blob'
