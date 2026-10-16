@@ -230,11 +230,14 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
     } catch (falha) {
       const falhas = Number(anterior.falhas || 0) + 1;
       const espera = Math.min(60, 2 ** Math.min(falhas - 1, 6)) * 60 * 1000;
+      const mensagem = ['SEVENFLOW_INDISPONIVEL', 'SEVENFLOW_NAO_AUTORIZADA'].includes(falha.codigo)
+        ? falha.message
+        : 'Não foi possível atualizar os relatórios de campanhas. Os últimos dados disponíveis continuam acessíveis.';
       await db.sincronizacaoCampanhasNovoTempo.updateMany({
         where: { id: ID, execucaoId },
         data: {
           status: 'ERRO', bloqueioAte: null, execucaoId: null, falhas,
-          erro: 'Não foi possível atualizar os relatórios de campanhas. Os últimos dados disponíveis continuam acessíveis.',
+          erro: mensagem,
           proximaTentativaEm: new Date(Date.now() + espera),
         },
       }).catch((erroBanco) => console.error('[Campanhas NT] Falha ao registrar erro:', erroBanco.message));

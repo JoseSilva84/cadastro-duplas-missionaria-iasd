@@ -25,6 +25,7 @@ const criarEspelhoNovoTempo = require('./interessadosNovoTempo.mirror');
 const criarServicoCampanhasNovoTempo = require('./campanhasNovoTempo.service');
 
 let tokenDeSessao = null;
+let autenticacaoEmCurso = null;
 
 const texto = (valor) => String(valor ?? '').trim();
 
@@ -517,26 +518,45 @@ async function lerJson(resposta) {
 
 async function autenticar(cfg) {
   if (!cfg.email || !cfg.password) return cfg.token;
+  if (!autenticacaoEmCurso) {
+    // O espelho de leads e os relatórios iniciam juntos. Compartilhar o login
+    // evita duas conexões simultâneas ao mesmo servidor quando ele está lento.
+    autenticacaoEmCurso = (async () => {
+      let resposta;
+      try {
+        resposta = await fetch(`${cfg.apiUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cfg.email, password: cfg.password }),
+          signal: AbortSignal.timeout(30000),
+        });
+      } catch (falha) {
+        console.warn('[Interessados NT] API de login indisponível:',
+          falha?.cause?.code || falha?.name || 'erro de conexão');
+        throw erro(502,
+          'A API do Amigos Novo Tempo não respondeu ao login. Verifique se o endereço configurado está acessível.',
+          'SEVENFLOW_INDISPONIVEL');
+      }
 
-  let resposta;
-  try {
-    resposta = await fetch(`${cfg.apiUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: cfg.email, password: cfg.password }),
-      signal: AbortSignal.timeout(30000),
-    });
-  } catch {
-    throw erro(502, 'Não foi possível autenticar no sistema Amigos Novo Tempo.', 'SEVENFLOW_INDISPONIVEL');
+      const corpo = await lerJson(resposta);
+      if ([401, 403].includes(resposta.status)) {
+        console.warn('[Interessados NT] Login recusado pela API:', resposta.status);
+        throw erro(502,
+          'A API do Amigos Novo Tempo respondeu, mas recusou o login. Confira o usuário e a senha de integração.',
+          'SEVENFLOW_NAO_AUTORIZADA');
+      }
+      if (!resposta.ok || !corpo?.token) {
+        console.warn('[Interessados NT] Resposta inesperada da API de login:', resposta.status);
+        throw erro(502,
+          'A API do Amigos Novo Tempo respondeu, mas não concluiu o login. Verifique o serviço de origem.',
+          'SEVENFLOW_INDISPONIVEL');
+      }
+
+      tokenDeSessao = corpo.token;
+      return tokenDeSessao;
+    })().finally(() => { autenticacaoEmCurso = null; });
   }
-
-  const corpo = await lerJson(resposta);
-  if (!resposta.ok || !corpo?.token) {
-    throw erro(502, 'O usuário de integração do Amigos Novo Tempo não foi autenticado.', 'SEVENFLOW_NAO_AUTORIZADA');
-  }
-
-  tokenDeSessao = corpo.token;
-  return tokenDeSessao;
+  return autenticacaoEmCurso;
 }
 
 async function requisitar(caminho, cfg = configuracao(), repetirAposLogin = true) {

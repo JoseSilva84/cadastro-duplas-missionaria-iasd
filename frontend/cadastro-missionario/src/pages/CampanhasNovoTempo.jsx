@@ -226,7 +226,11 @@ export default function CampanhasNovoTempo() {
       {erro && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{erro}</div>}
       {catalogo?.erroSincronizacao && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{catalogo.erroSincronizacao}</div>}
       {carregandoCatalogo && <div className="rounded-xl bg-white p-6 text-sm text-gray-500">Consultando as campanhas disponíveis...</div>}
-      {!carregandoCatalogo && !campanhaId && !erro && <div className="rounded-xl bg-white p-6 text-sm text-gray-600">{catalogo?.sincronizando ? 'O primeiro relatório está sendo preparado.' : 'Ainda não há campanhas com conversas no seu território.'}</div>}
+      {!carregandoCatalogo && !campanhaId && !erro && <div className="rounded-xl bg-white p-6 text-sm text-gray-600">{catalogo?.sincronizando
+        ? 'O primeiro relatório está sendo preparado.'
+        : catalogo?.erroSincronizacao
+          ? 'O primeiro relatório ainda não foi importado. A importação será tentada novamente automaticamente.'
+          : 'Ainda não há campanhas com conversas no seu território.'}</div>}
       {carregandoRelatorio && <div className="rounded-xl bg-white p-6 text-sm text-gray-500">Carregando o resumo da campanha...</div>}
       {resumo && (
         <>
