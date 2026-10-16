@@ -49,10 +49,10 @@ function CardResumo({ titulo, valor, descricao, destaque = 'azul' }) {
     roxo: 'border-purple-500 text-purple-700',
   };
   return (
-    <div className={`rounded-2xl border border-slate-200 border-t-4 bg-white p-5 shadow-sm ${cores[destaque]}`}>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{titulo}</p>
-      <p className="mt-1 text-3xl font-black">{valor}</p>
-      <p className="mt-1 text-xs text-slate-500">{descricao}</p>
+    <div className={`rounded-xl sm:rounded-2xl border border-slate-200 border-t-4 bg-white p-3 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${cores[destaque]}`}>
+      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-500 truncate">{titulo}</p>
+      <p className="mt-1 text-2xl sm:text-3xl font-black leading-tight tracking-tight">{valor}</p>
+      <p className="mt-1 text-[10px] sm:text-xs text-slate-500 line-clamp-1">{descricao}</p>
     </div>
   );
 }
@@ -165,7 +165,7 @@ export default function AuditoriaLogs() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+      <section className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
         <CardResumo titulo="Online agora" valor={resumo?.onlineAgora ?? '—'} descricao="Ativos nos últimos 2 minutos" destaque="verde" />
         <CardResumo titulo="Acessos hoje" valor={resumo?.acessosHoje ?? '—'} descricao="Sessões iniciadas" />
         <CardResumo titulo="Usuários hoje" valor={resumo?.usuariosAtivosHoje ?? '—'} descricao="Pessoas diferentes" />

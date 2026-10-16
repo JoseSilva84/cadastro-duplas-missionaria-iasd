@@ -257,16 +257,16 @@ export default function RelatorioRankingDecisoes() {
           <div className="card border border-red-100 text-red-600 text-sm">{erro}</div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ['Batismo da dupla', resumo.batismosReais, '#0d9488'],
             ['Decisões Classe A', resumo.decisoesClasseA, '#047857'],
             ['Aguardando confirmação', resumo.aguardandoConfirmacao, '#C9963A'],
             ['Progresso médio', `${resumo.media}%`, '#1A3A6B'],
           ].map(([label, valor, cor]) => (
-            <div key={label} className="card">
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-3xl font-bold mt-1" style={{ color: cor }}>{valor}</p>
+            <div key={label} className="card p-3 sm:p-5 flex flex-col justify-between">
+              <p className="text-[10px] sm:text-xs text-gray-400 font-semibold uppercase tracking-wider truncate">{label}</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 leading-none tracking-tight" style={{ color: cor }}>{valor}</p>
             </div>
           ))}
         </div>

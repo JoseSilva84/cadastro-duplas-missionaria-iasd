@@ -475,26 +475,26 @@ export default function RelatorioEstudosGeral() {
       </div>
 
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-5' : 'space-y-5'}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           {[
             ['Registros de estudo', resumo.totalRegistros, '#1A3A6B'],
             ['Pessoas estudando', resumo.totalEstudantes, '#0d9488'],
             ['Progresso médio', `${resumo.mediaProgresso}%`, '#C9963A'],
             ['Prontos para batismo', resumo.porClasse.A || 0, '#047857'],
           ].map(([label, valor, cor]) => (
-            <div key={label} className="card">
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-3xl font-bold mt-1" style={{ color: cor }}>{valor}</p>
+            <div key={label} className="card p-3 sm:p-5 flex flex-col justify-between">
+              <p className="text-[10px] sm:text-xs text-gray-400 font-semibold uppercase tracking-wider truncate">{label}</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 leading-none tracking-tight" style={{ color: cor }}>{valor}</p>
             </div>
           ))}
           <button
             type="button"
-            className="card text-left transition hover:-translate-y-0.5 hover:shadow-md"
+            className="card p-3 sm:p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between"
             onClick={abrirEstudosEncerrados}
             title="Ver todos os estudos encerrados e seus detalhes."
           >
-            <p className="text-xs text-gray-400">Estudos encerrados</p>
-            <p className="text-3xl font-bold mt-1 text-[#b91c1c]">{resumo.totalEncerrados}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 font-semibold uppercase tracking-wider truncate">Estudos encerrados</p>
+            <p className="text-2xl sm:text-3xl font-black mt-1 text-[#b91c1c] leading-none tracking-tight">{resumo.totalEncerrados}</p>
           </button>
           <button
             type="button"
@@ -502,20 +502,20 @@ export default function RelatorioEstudosGeral() {
             onClick={abrirDuplasComEstudoNaoRegistrado}
             title="Ver duplas que responderam Sim em Estudo em andamento, mas ainda não cadastraram estudo bíblico."
           >
-            <p className="text-xs text-amber-700">Dupla com estudo sem cadastro</p>
-            <p className="text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
+            <p className="text-xs text-amber-700 font-semibold uppercase tracking-wider">Dupla com estudo sem cadastro</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-1 text-amber-700">{resumo.totalDuplasComEstudoNaoRegistrado}</p>
           </button>
           {resumo.indicadoresDuplas.map((item) => (
             <button
               key={item.label}
               type="button"
-              className="card text-left border transition hover:-translate-y-0.5 hover:shadow-md"
+              className="card p-3 sm:p-5 text-left border transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between"
               style={{ backgroundColor: item.bg, borderColor: `${item.cor}40` }}
               onClick={() => navigate(caminho(item.destino))}
               title={item.title}
             >
-              <p className="text-xs font-medium" style={{ color: item.cor }}>{item.label}</p>
-              <p className="text-3xl font-bold mt-1" style={{ color: item.cor }}>{item.valor}</p>
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider truncate" style={{ color: item.cor }}>{item.label}</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 leading-none tracking-tight" style={{ color: item.cor }}>{item.valor}</p>
             </button>
           ))}
         </div>

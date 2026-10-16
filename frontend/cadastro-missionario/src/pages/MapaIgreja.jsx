@@ -17,20 +17,22 @@ const formatarData = (valor) => {
 };
 
 const CardIndicador = ({ label, valor, cor, detalhe }) => (
-  <article className="group rounded-xl border bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10" style={{ borderColor: `${cor}35` }}>
-    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg" style={{ backgroundColor: cor }}>
-      <span className="text-lg font-bold">{String(label).charAt(0)}</span>
+  <article className="group flex flex-col justify-between rounded-xl border bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10" style={{ borderColor: `${cor}35` }}>
+    <div>
+      <div className="mb-2 sm:mb-4 flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl text-white shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg" style={{ backgroundColor: cor }}>
+        <span className="text-sm sm:text-lg font-bold">{String(label).charAt(0)}</span>
+      </div>
+      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 transition-colors duration-300 group-hover:text-[#1A3A6B] line-clamp-1">{label}</p>
+      <p className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-0.5" style={{ color: cor }}>{valor}</p>
     </div>
-    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 transition-colors duration-300 group-hover:text-[#1A3A6B]">{label}</p>
-    <p className="mt-1 text-3xl font-bold transition-transform duration-300 group-hover:translate-x-0.5" style={{ color: cor }}>{valor}</p>
-    {detalhe && <p className="mt-1 text-sm text-slate-400">{detalhe}</p>}
+    {detalhe && <p className="mt-2 text-[10px] sm:text-sm text-slate-400 line-clamp-1">{detalhe}</p>}
   </article>
 );
 
 const LinhaLideranca = ({ label, valor }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
-    <p className="mt-1 break-words text-base font-bold text-[#1A3A6B]">{valor || 'Não informado'}</p>
+  <div className="rounded-xl border border-slate-100 bg-slate-50 p-2.5 sm:p-3">
+    <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 truncate">{label}</p>
+    <p className="mt-0.5 sm:mt-1 truncate text-xs sm:text-base font-bold text-[#1A3A6B]">{valor || 'Não informado'}</p>
   </div>
 );
 
@@ -66,7 +68,7 @@ const MapaCard = ({ mapa, onEditar, onExcluir, excluindo }) => {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
         <LinhaLideranca label="Pastor" valor={mapa.pastorNome} />
         <LinhaLideranca label="Diretor Missionário" valor={mapa.diretorMissionarioNome} />
         <LinhaLideranca label="Primeiro Ancião" valor={mapa.primeiroAnciaoNome} />
@@ -75,7 +77,7 @@ const MapaCard = ({ mapa, onEditar, onExcluir, excluindo }) => {
         <LinhaLideranca label="Evangelismo de colheita" valor={formatarData(mapa.dataEvangelismoColheita)} />
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {indicadores.map(([label, valor, cor]) => (
           <CardIndicador key={label} label={label} valor={numero(valor)} cor={cor} />
         ))}
@@ -238,7 +240,7 @@ export default function MapaIgreja() {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CardIndicador label="Igrejas mapeadas" valor={numero(resumo.igrejas)} cor={cores[0]} detalhe={`${igrejas.length} igreja(s) no escopo`} />
         <CardIndicador label="Membros" valor={numero(resumo.membros)} cor={cores[1]} />
         <CardIndicador label="Pequenos Grupos" valor={numero(resumo.pequenosGrupos)} cor={cores[2]} />

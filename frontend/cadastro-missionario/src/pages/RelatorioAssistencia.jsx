@@ -27,10 +27,12 @@ const nomeDupla = (dupla) => {
 };
 
 const MetricCard = ({ label, valor, detalhe, cor }) => (
-  <div className="card">
-    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="mt-2 text-3xl font-bold leading-none" style={{ color: cor }}>{numero(valor)}</p>
-    {detalhe && <p className="mt-3 text-sm font-medium text-gray-500">{detalhe}</p>}
+  <div className="card p-3 sm:p-5 flex flex-col justify-between">
+    <div>
+      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 truncate">{label}</p>
+      <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-black leading-none tracking-tight" style={{ color: cor }}>{numero(valor)}</p>
+    </div>
+    {detalhe && <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs font-medium text-gray-500 line-clamp-2">{detalhe}</p>}
   </div>
 );
 
@@ -186,7 +188,7 @@ export default function RelatorioAssistencia() {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Assistências" valor={resumo.totalSaidas} detalhe="Saídas registradas no período" cor="#7c3aed" />
           <MetricCard label="Duplas acompanhadas" valor={resumo.totalDuplasVisitadas} detalhe="Contagem total, incluindo repetições" cor="#0d9488" />
           <MetricCard label="Duplas únicas" valor={resumo.duplasUnicas} detalhe="Duplas distintas acompanhadas" cor="#1A3A6B" />

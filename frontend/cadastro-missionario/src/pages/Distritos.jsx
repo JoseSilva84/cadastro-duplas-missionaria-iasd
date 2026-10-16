@@ -148,7 +148,7 @@ export default function Distritos() {
         </div>
       </div>
 
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6 sm:mb-8 animate-fade-in-down" style={{ animationDelay: '150ms' }}>
         {[
           { label: 'Distritos', valor: regiao.distritos.length, cor: '#1A3A6B', icon: <BuildingIcon />, gradient: 'from-[#1A3A6B] to-[#2a5298]', tooltip: 'Distritos: total de distritos vinculados a esta regiao.' },
           { label: 'Igrejas', valor: regiao.distritos.reduce((acc, d) => acc + d.igrejas.length, 0), cor: '#16a34a', icon: <ChurchIcon />, gradient: 'from-[#16a34a] to-[#22c55e]', tooltip: 'Igrejas: soma das igrejas cadastradas nos distritos desta regiao.' },
@@ -157,18 +157,18 @@ export default function Distritos() {
         ].map((item) => (
           <div
             key={item.label}
-            className="smart-tooltip smart-tooltip-up card group cursor-default hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35 transition-all duration-300"
+            className="smart-tooltip smart-tooltip-up card group cursor-default hover:-translate-y-1 hover:shadow-xl hover:border-[#C9963A]/35 transition-all duration-300 p-3 sm:p-5"
             data-tooltip={item.tooltip}
             tabIndex={0}
             style={{ borderTop: `3px solid ${item.cor}` }}
           >
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-xl sm:text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <div className="flex items-center gap-2.5 sm:gap-4">
+              <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg sm:text-2xl shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0 text-white`}>
                 {item.icon}
               </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold" style={{ color: item.cor }}>{item.valor}</p>
-                <p className="text-gray-500 text-xs font-medium">{item.label}</p>
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-black leading-tight tracking-tight truncate" style={{ color: item.cor }}>{item.valor}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs font-medium truncate">{item.label}</p>
               </div>
             </div>
           </div>

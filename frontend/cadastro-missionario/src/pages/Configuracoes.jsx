@@ -224,18 +224,18 @@ export default function Configuracoes() {
         <p className="mt-1 text-sm text-gray-400">Gerencie seus dados de acesso e segurança.</p>
       </div>
 
-      <div className="mb-5 flex gap-2 overflow-x-auto border-b border-gray-200">
-        <button type="button" onClick={() => setAba('conta')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'conta' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+      <div className="mb-5 flex gap-1.5 sm:gap-2 overflow-x-auto border-b border-gray-200 pb-px scrollbar-none touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
+        <button type="button" onClick={() => setAba('conta')} className={`whitespace-nowrap flex-shrink-0 border-b-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition ${aba === 'conta' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
           Conta
         </button>
-        <button type="button" onClick={() => setAba('aplicativo')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'aplicativo' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+        <button type="button" onClick={() => setAba('aplicativo')} className={`whitespace-nowrap flex-shrink-0 border-b-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition ${aba === 'aplicativo' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
           Aplicativo e offline
         </button>
         {podeGerenciarUsuarios && (
           <button
             type="button"
             onClick={() => navigate(location.pathname.startsWith('/direto/') ? '/direto/gestao-usuarios' : '/gestao-usuarios')}
-            className="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-gray-400 transition hover:text-gray-600"
+            className="whitespace-nowrap flex-shrink-0 border-b-2 border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-400 transition hover:text-gray-600"
           >
             Gestão de usuários
           </button>
@@ -247,7 +247,7 @@ export default function Configuracoes() {
               setAba('chaves');
               carregarChaves();
             }}
-            className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${
+            className={`whitespace-nowrap flex-shrink-0 border-b-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition ${
               aba === 'chaves' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -258,13 +258,13 @@ export default function Configuracoes() {
           <button
             type="button"
             onClick={() => navigate(location.pathname.startsWith('/direto/') ? '/direto/gestao-qrcodes' : '/gestao-qrcodes')}
-            className="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-gray-400 transition hover:text-gray-600"
+            className="whitespace-nowrap flex-shrink-0 border-b-2 border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-400 transition hover:text-gray-600"
           >
             Gestão de QR Codes
           </button>
         )}
         {isSuperAdmin && (
-          <button type="button" onClick={() => setAba('backup')} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${aba === 'backup' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+          <button type="button" onClick={() => setAba('backup')} className={`whitespace-nowrap flex-shrink-0 border-b-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition ${aba === 'backup' ? 'border-[#1A3A6B] text-[#1A3A6B]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Backup dos dados
           </button>
         )}
