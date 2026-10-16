@@ -109,10 +109,12 @@ Prepare o Prisma:
 
 ```bash
 npm run db:generate
-npx prisma migrate deploy
+npm run db:deploy
 ```
 
 Em uma instalação existente, aplique a migração `20261016120000_espelho_interessados_nt` **antes** de iniciar a nova versão do backend. Se o banco anterior foi criado com `db:push` sem histórico de migrações, alinhe esse histórico antes de usar `migrate deploy`. A primeira sincronização começa no início do servidor e publica o lote somente após importar todos os contatos. Se o Amigos NT falhar, a última versão publicada permanece disponível; novas tentativas usam intervalo crescente. O botão **Atualizar dados** apenas solicita uma sincronização em segundo plano e é limitado a uma tentativa por minuto. Sem acesso ao banco do Amigos NT, a fonte continua sendo sua API; as credenciais do site não dão acesso direto ao banco.
+
+No Coolify, após publicar esta versão, execute `cd /app/backend` e `npm run db:deploy` no terminal do container. O pacote `prisma` faz parte das dependências de produção, e o script chama a CLI diretamente pelo Node para evitar erros de permissão no executável. Mantenha somente uma variável `SEVENFLOW_API_URL`, apontando para `https://backend-leadsnt.sevenflowia.tech`, junto com `SEVENFLOW_API_EMAIL` e `SEVENFLOW_API_PASSWORD` disponíveis em runtime. Consulte os logs do backend para a causa exata de uma falha de sincronização; a tela permanece acessível enquanto o espelho local aguarda os dados.
 
 A rota autenticada `GET /api/interessados-nt/status` informa se há dados, se uma sincronização está em andamento, a data da última atualização e a próxima tentativa. A lista principal é paginada no banco; as telas de análise e filtragem continuam calculando seus gráficos e facetas sobre a cópia local completa.
 

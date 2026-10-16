@@ -2,6 +2,12 @@ const InteressadosNovoTempoService = require('../services/interessadosNovoTempo.
 
 function responderErro(res, falha) {
   console.error('[Interessados NT]', falha);
+  if (['P2021', 'P2022'].includes(falha.code)) {
+    return res.status(503).json({
+      erro: 'O banco do PCM ainda não tem as tabelas dos Interessados NT. Aplique a migração do banco no backend.',
+      codigo: 'INTERESSADOS_NT_MIGRACAO_PENDENTE',
+    });
+  }
   return res.status(falha.status || 500).json({
     erro: falha.mensagem || 'Erro ao consultar os interessados do Novo Tempo.',
     codigo: falha.codigo || 'INTERESSADOS_NT_ERRO',
