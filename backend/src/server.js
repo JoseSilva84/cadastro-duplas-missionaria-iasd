@@ -20,6 +20,7 @@ const mapaIgrejaRoutes = require('./routes/mapaIgreja');
 const calendarioMissionarioRoutes = require('./routes/calendarioMissionario');
 const configuracaoRoutes = require('./routes/configuracoes');
 const interessadosNovoTempoRoutes = require('./routes/interessadosNovoTempo');
+const interessadosNovoTempoService = require('./services/interessadosNovoTempo.service');
 const auditoriaRoutes = require('./routes/auditoria');
 const { auditarRequisicao } = require('./middlewares/auditoria');
 
@@ -146,6 +147,7 @@ async function iniciarServidor() {
     app.listen(PORT, () => {
       console.log(`✝️  Servidor rodando na porta ${PORT}`);
       console.log(`📖  API: http://localhost:${PORT}/api`);
+      interessadosNovoTempoService.iniciarSincronizacao();
     });
   } catch (erro) {
     console.error('Não foi possível iniciar o servidor sem conexão com o banco:', erro);

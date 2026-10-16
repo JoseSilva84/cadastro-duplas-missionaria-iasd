@@ -21,14 +21,9 @@ const CENTROS_TERRITORIAIS = {
 };
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
+const criarEspelhoNovoTempo = require('./interessadosNovoTempo.mirror');
 
-let cacheResumo = null;
-const cacheDistritos = new Map();
 let tokenDeSessao = null;
-let atualizacaoResumoEmCurso = null;
-const atualizacoesDistritosEmCurso = new Map();
-
-const CHAVE_CACHE_RESUMO = 'interessados-nt:resumo';
 
 const texto = (valor) => String(valor ?? '').trim();
 
@@ -215,7 +210,7 @@ function configuracao() {
     token: texto(process.env.SEVENFLOW_API_TOKEN),
     email: texto(process.env.SEVENFLOW_API_EMAIL),
     password: texto(process.env.SEVENFLOW_API_PASSWORD),
-    cacheTtl: Math.max(0, Number(process.env.SEVENFLOW_CACHE_TTL_MS) || CACHE_TTL_PADRAO),
+    cacheTtl: Math.max(60 * 1000, Number(process.env.SEVENFLOW_CACHE_TTL_MS) || CACHE_TTL_PADRAO),
   };
 }
 
@@ -591,6 +586,17 @@ async function requisitar(caminho, cfg = configuracao(), repetirAposLogin = true
   return corpo;
 }
 
+const espelho = criarEspelhoNovoTempo({
+  configuracao,
+  possuiCredencial,
+  requisitar,
+  registrosInteressados,
+  normalizarRegistro,
+  extrairTerritorio,
+  aplicarGeolocalizacaoAproximada,
+  chaveNormalizada,
+});
+
 function registrosInteressados(dashboard) {
   const raiz = dashboard?.data || dashboard || {};
   // A visão geral do Amigos NT calcula seus indicadores sobre `records`.
@@ -712,6 +718,9 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
     lista.push(igreja);
     centrosIgrejas.set(chave, lista);
   });
+  const coordenadasIgrejas = new Map(
+    [...centrosIgrejas].map(([chave, lista]) => [chave, mediaCoordenadas(lista)])
+  );
 
   const contatosGeolocalizados = contatos.map((contato) => {
     if (possuiCoordenadas(contato)) {
@@ -724,7 +733,7 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
       );
     }
 
-    const centroIgreja = mediaCoordenadas(centrosIgrejas.get(chaveNormalizada(contato.distrito)) || []);
+    const centroIgreja = coordenadasIgrejas.get(chaveNormalizada(contato.distrito));
     const base = centroConhecido(contato.cidade, contato.endereco, contato.distrito)
       || centroIgreja
       || CENTROS_TERRITORIAIS['sao-paulo'];
@@ -744,6 +753,9 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
     lista.push(contato);
     centrosLeads.set(chave, lista);
   });
+  const coordenadasLeads = new Map(
+    [...centrosLeads].map(([chave, lista]) => [chave, mediaCoordenadas(lista)])
+  );
 
   const igrejasGeolocalizadas = igrejas.map((igreja) => {
     if (possuiCoordenadas(igreja)) {
@@ -755,7 +767,7 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
         'api-amigos-nt'
       );
     }
-    const centroLeads = mediaCoordenadas(centrosLeads.get(chaveNormalizada(igreja.distrito)) || []);
+    const centroLeads = coordenadasLeads.get(chaveNormalizada(igreja.distrito));
     const base = centroLeads
       || centroConhecido(igreja.endereco, igreja.distrito)
       || CENTROS_TERRITORIAIS['sao-paulo'];
@@ -764,140 +776,6 @@ function aplicarGeolocalizacaoAproximada(contatos, igrejas) {
   });
 
   return { contatos: contatosGeolocalizados, igrejas: igrejasGeolocalizadas };
-}
-
-async function lerCachePersistente(chave) {
-  try {
-    const registro = await prisma.cacheIntegracao.findUnique({ where: { chave } });
-    return registro?.dados && typeof registro.dados === 'object' ? registro.dados : null;
-  } catch (falha) {
-    console.error(`[Interessados NT] Falha ao ler cache persistente ${chave}:`, falha.message);
-    return null;
-  }
-}
-
-async function salvarCachePersistente(chave, dados) {
-  try {
-    await prisma.cacheIntegracao.upsert({
-      where: { chave },
-      create: { chave, dados },
-      update: { dados },
-    });
-  } catch (falha) {
-    // A integração continua funcionando com o cache em memória mesmo que a
-    // persistência esteja temporariamente indisponível.
-    console.error(`[Interessados NT] Falha ao salvar cache persistente ${chave}:`, falha.message);
-  }
-}
-
-async function buscarResumoAtualizado(cfg = configuracao()) {
-  if (atualizacaoResumoEmCurso) return atualizacaoResumoEmCurso;
-
-  atualizacaoResumoEmCurso = (async () => {
-    const dashboard = await requisitar('/api/dashboard', cfg);
-    const contatos = registrosInteressados(dashboard).map(normalizarRegistro);
-    const territorio = extrairTerritorio(dashboard);
-    const geolocalizados = aplicarGeolocalizacaoAproximada(contatos, territorio.igrejas);
-
-    const novoCache = {
-      criadoEm: Date.now(),
-      atualizadoEm: new Date().toISOString(),
-      contatos: geolocalizados.contatos,
-      distritosOficiais: territorio.distritosOficiais,
-      igrejas: geolocalizados.igrejas,
-      origemCache: 'api',
-      sincronizando: false,
-    };
-
-    cacheResumo = novoCache;
-    await salvarCachePersistente(CHAVE_CACHE_RESUMO, novoCache);
-    return novoCache;
-  })();
-
-  try {
-    return await atualizacaoResumoEmCurso;
-  } finally {
-    atualizacaoResumoEmCurso = null;
-  }
-}
-
-async function carregarResumo({ ignorarCache = false } = {}) {
-  const cfg = configuracao();
-
-  if (ignorarCache) return buscarResumoAtualizado(cfg);
-
-  if (!cacheResumo) {
-    const persistido = await lerCachePersistente(CHAVE_CACHE_RESUMO);
-    if (persistido) cacheResumo = { ...persistido, origemCache: 'persistente' };
-  }
-
-  if (cacheResumo) {
-    const expirado = Date.now() - Number(cacheResumo.criadoEm || 0) >= cfg.cacheTtl;
-    if (expirado && !atualizacaoResumoEmCurso) {
-      buscarResumoAtualizado(cfg).catch((falha) => {
-        console.error('[Interessados NT] Atualização em segundo plano falhou:', falha.message);
-      });
-    }
-    return {
-      ...cacheResumo,
-      sincronizando: expirado || Boolean(atualizacaoResumoEmCurso),
-    };
-  }
-
-  return buscarResumoAtualizado(cfg);
-}
-
-const chavePersistenteDistrito = (chave) => `interessados-nt:distrito:${chave}`;
-
-async function buscarDistritoAtualizado(chave, cfg = configuracao()) {
-  if (atualizacoesDistritosEmCurso.has(chave)) return atualizacoesDistritosEmCurso.get(chave);
-
-  const atualizacao = (async () => {
-    const resposta = await requisitar(`/api/dashboard/district-interest/${encodeURIComponent(chave)}`, cfg);
-    const raiz = resposta?.data || resposta || {};
-    const dados = {
-      criadoEm: Date.now(),
-      atualizadoEm: new Date().toISOString(),
-      contatos: (Array.isArray(raiz.records) ? raiz.records : []).map(normalizarRegistro),
-      origemCache: 'api',
-      sincronizando: false,
-    };
-    cacheDistritos.set(chave, dados);
-    await salvarCachePersistente(chavePersistenteDistrito(chave), dados);
-    return dados;
-  })();
-
-  atualizacoesDistritosEmCurso.set(chave, atualizacao);
-  try {
-    return await atualizacao;
-  } finally {
-    atualizacoesDistritosEmCurso.delete(chave);
-  }
-}
-
-async function carregarDistrito(chave, { ignorarCache = false, cfg = configuracao() } = {}) {
-  if (ignorarCache) return buscarDistritoAtualizado(chave, cfg);
-
-  let dados = cacheDistritos.get(chave);
-  if (!dados) {
-    dados = await lerCachePersistente(chavePersistenteDistrito(chave));
-    if (dados) {
-      dados = { ...dados, origemCache: 'persistente' };
-      cacheDistritos.set(chave, dados);
-    }
-  }
-
-  if (dados) {
-    const expirado = Date.now() - Number(dados.criadoEm || 0) >= cfg.cacheTtl;
-    if (expirado && !atualizacoesDistritosEmCurso.has(chave)) {
-      buscarDistritoAtualizado(chave, cfg).catch((falha) => {
-        console.error(`[Interessados NT] Atualização do distrito ${chave} falhou:`, falha.message);
-      });
-    }
-    return { ...dados, sincronizando: expirado || atualizacoesDistritosEmCurso.has(chave) };
-  }
-
-  return buscarDistritoAtualizado(chave, cfg);
 }
 
 function resumir(dados) {
@@ -1149,14 +1027,15 @@ function analisarDistrito(dados) {
 const InteressadosNovoTempoService = {
   async resumo({ atualizar = false, usuario } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
-    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
-    return resumir(dados);
+    if (atualizar) await espelho.solicitar({ forcar: true });
+    return espelho.resumo(escopo);
   },
 
   async filtragemAvancada({ atualizar = false, usuario } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
-    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
-    const leads = dados.contatos.map((contato) => ({
+    if (atualizar) await espelho.solicitar({ forcar: true });
+    const { meta, contatos } = await espelho.todos(escopo);
+    const leads = contatos.map((contato) => ({
       id: contato.id,
       nome: contato.nome,
       whatsapp: contato.whatsapp,
@@ -1212,18 +1091,22 @@ const InteressadosNovoTempoService = {
     }));
 
     return {
-      atualizadoEm: dados.atualizadoEm,
+      atualizadoEm: meta.atualizadoEm,
       total: leads.length,
       leads,
-      igrejas: dados.igrejas || [],
-      distritosOficiais: dados.distritosOficiais || [],
+      igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),
+      distritosOficiais: (meta.distritosOficiais || []).filter((distrito) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(nomeDistritoOficial(distrito)))),
+      sincronizando: meta.sincronizando,
+      semDados: meta.semDados,
+      erroSincronizacao: meta.erroSincronizacao,
     };
   },
 
   async analise(filtros = {}, { atualizar = false, usuario } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
-    const dados = aplicarEscopoTerritorial(await carregarResumo({ ignorarCache: atualizar }), escopo);
-    return { ...analisarContatos(dados.contatos, filtros), atualizadoEm: dados.atualizadoEm };
+    if (atualizar) await espelho.solicitar({ forcar: true });
+    const { meta, contatos } = await espelho.todos(escopo);
+    return { ...analisarContatos(contatos, filtros), atualizadoEm: meta.atualizadoEm, sincronizando: meta.sincronizando, semDados: meta.semDados, erroSincronizacao: meta.erroSincronizacao };
   },
 
   async porDistrito(nomeDistrito, {
@@ -1232,74 +1115,55 @@ const InteressadosNovoTempoService = {
     paginado = false,
     pagina: paginaInformada = 1,
     limite: limiteInformado = 100,
+    versao = null,
   } = {}) {
     const nome = texto(nomeDistrito);
     if (!nome) throw erro(400, 'Informe o distrito.', 'DISTRITO_OBRIGATORIO');
     const escopo = await obterEscopoTerritorial(usuario);
     validarDistritoNoEscopo(nome, escopo);
-
-    const cfg = configuracao();
-    const chave = slug(nome);
-    const dados = await carregarDistrito(chave, { ignorarCache: atualizar, cfg });
-
-    // O recorte por distrito pode vir resumido. Completamos cada registro com a
-    // versão do dashboard geral, que contém endereço e demais dados cadastrais.
-    const dadosGerais = await carregarResumo({ ignorarCache: atualizar });
-    const contatosGeraisDoDistrito = dadosGerais.contatos.filter(
-      (contato) => chaveNormalizada(contato.distrito) === chaveNormalizada(nome)
-    );
-    const contatosCompletos = completarComDadosGerais(dados.contatos, contatosGeraisDoDistrito);
-    const contatosNoEscopo = escopo.acessoTotal
-      ? contatosCompletos
-      : contatosCompletos.filter((contato) => escopo.distritos.has(chaveNormalizada(contato.distrito)));
-
-    if (!contatosNoEscopo.length) {
+    if (atualizar) await espelho.solicitar({ forcar: true });
+    const resultado = await espelho.porDistrito(nome, escopo, {
+      pagina: paginaInformada,
+      limite: limiteInformado,
+      paginado,
+      versao,
+    });
+    if (resultado?.versaoExpirada) {
+      throw erro(409, 'Os interessados foram atualizados. Recarregue a primeira página.', 'VERSAO_NT_EXPIRADA');
+    }
+    if (!resultado) {
       throw erro(404, 'Nenhum interessado encontrado para este distrito.', 'DISTRITO_SEM_INTERESSADOS');
     }
-
-    const contatos = [...contatosNoEscopo].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    const pagina = Math.max(1, Number(paginaInformada) || 1);
-    const limite = Math.min(100, Math.max(1, Number(limiteInformado) || 100));
-    const leads = paginado
-      ? contatos.slice((pagina - 1) * limite, pagina * limite)
-      : contatos;
-
-    return {
-      distrito: contatos[0]?.distrito || nome,
-      resumo: {
-        totalInteressados: contatos.length,
-        comWhatsapp: contatos.filter((contato) => contato.temWhatsapp).length,
-        vipsHistoricos: contatos.filter((contato) => contato.vipHistorico).length,
-        quentes: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'hot').length,
-        potenciais: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'warm').length,
-        mornos: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cool').length,
-        frios: contatos.filter((contato) => chaveNormalizada(contato.prioridade) === 'cold').length,
-        estudosAtivos: contatos.filter((contato) => contato.estudoAtivo).length,
-      },
-      leads,
-      total: contatos.length,
-      pagina: paginado ? pagina : 1,
-      limite: paginado ? limite : contatos.length,
-      paginas: paginado ? Math.ceil(contatos.length / limite) : 1,
-      temMais: paginado ? pagina * limite < contatos.length : false,
-      atualizadoEm: dados.atualizadoEm,
-      sincronizando: Boolean(dados.sincronizando || dadosGerais.sincronizando),
-      origemCache: dados.origemCache || dadosGerais.origemCache || 'api',
-    };
+    return resultado;
   },
 
   async analisePorDistrito(nomeDistrito, { atualizar = false, usuario } = {}) {
-    return analisarDistrito(await this.porDistrito(nomeDistrito, { atualizar, usuario }));
+    const dados = await this.porDistrito(nomeDistrito, { atualizar, usuario, paginado: false });
+    return {
+      ...analisarDistrito(dados),
+      sincronizando: dados.sincronizando,
+      semDados: dados.semDados,
+      erroSincronizacao: dados.erroSincronizacao,
+    };
   },
 
-  statusConfiguracao() {
+  async statusConfiguracao() {
     const cfg = configuracao();
+    const estado = await espelho.estado();
     return {
       configurada: possuiCredencial(cfg),
       apiUrl: cfg.apiUrl,
       autenticacao: cfg.email && cfg.password ? 'Usuário de integração' : cfg.token ? 'Bearer token' : null,
       cacheTtlMs: cfg.cacheTtl,
+      atualizadoEm: estado.atualizadoEm,
+      sincronizando: estado.sincronizando,
+      semDados: estado.semDados,
+      erroSincronizacao: estado.erroSincronizacao,
+      proximaTentativaEm: estado.proximaTentativaEm,
     };
+  },
+  iniciarSincronizacao() {
+    espelho.iniciar();
   },
 
   _internals: {

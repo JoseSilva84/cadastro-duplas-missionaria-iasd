@@ -26,9 +26,10 @@ const InteressadosNovoTempoController = {
       const resultado = await InteressadosNovoTempoService.porDistrito(req.params.distrito, {
         atualizar: req.query.atualizar === '1',
         usuario: req.usuario,
-        paginado: req.query.paginado === '1' || req.query.paginado === 'true',
+        paginado: true,
         pagina: req.query.pagina,
         limite: req.query.limite,
+        versao: req.query.versao,
       });
       return res.json(resultado);
     } catch (falha) {
@@ -79,8 +80,12 @@ const InteressadosNovoTempoController = {
     }
   },
 
-  status(req, res) {
-    return res.json(InteressadosNovoTempoService.statusConfiguracao());
+  async status(req, res) {
+    try {
+      return res.json(await InteressadosNovoTempoService.statusConfiguracao());
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
   },
 };
 

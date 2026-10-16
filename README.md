@@ -96,12 +96,12 @@ SEVENFLOW_API_EMAIL="integracao-pcm@exemplo.com"
 SEVENFLOW_API_PASSWORD="senha-forte-da-conta-de-integracao"
 ```
 
-Para habilitar a tela **Interessados NT**, use uma conta autorizada do sistema Amigos Novo Tempo. A integração autentica em `POST /api/auth/login`, consulta `GET /api/dashboard` e carrega os detalhes em `GET /api/dashboard/district-interest/:distrito`. Administradores veem toda a associação; pastor e coordenador regional veem sua região; pastor distrital e diretor missionário veem seu distrito. A credencial nunca deve ser colocada no frontend.
+Para habilitar a tela **Interessados NT**, use uma conta autorizada do sistema Amigos Novo Tempo. O backend autentica em `POST /api/auth/login` e sincroniza `GET /api/dashboard` em segundo plano para tabelas locais do PCM. A lista de distritos e as páginas de até 100 contatos são consultadas no banco do PCM; abrir a tela não faz uma chamada ao Amigos NT. Administradores veem toda a associação; pastor e coordenador regional veem sua região; pastor distrital e diretor missionário veem seu distrito. A credencial nunca deve ser colocada no frontend.
 
 Configuração opcional da integração:
 
 ```env
-# Cache local para evitar excesso de chamadas à API externa (milissegundos).
+# Intervalo minimo entre sincronizacoes automaticas (milissegundos; minimo de 60000).
 SEVENFLOW_CACHE_TTL_MS=300000
 ```
 
@@ -109,8 +109,12 @@ Prepare o Prisma:
 
 ```bash
 npm run db:generate
-npm run db:push
+npx prisma migrate deploy
 ```
+
+Em uma instalação existente, aplique a migração `20261016120000_espelho_interessados_nt` **antes** de iniciar a nova versão do backend. Se o banco anterior foi criado com `db:push` sem histórico de migrações, alinhe esse histórico antes de usar `migrate deploy`. A primeira sincronização começa no início do servidor e publica o lote somente após importar todos os contatos. Se o Amigos NT falhar, a última versão publicada permanece disponível; novas tentativas usam intervalo crescente. O botão **Atualizar dados** apenas solicita uma sincronização em segundo plano e é limitado a uma tentativa por minuto. Sem acesso ao banco do Amigos NT, a fonte continua sendo sua API; as credenciais do site não dão acesso direto ao banco.
+
+A rota autenticada `GET /api/interessados-nt/status` informa se há dados, se uma sincronização está em andamento, a data da última atualização e a próxima tentativa. A lista principal é paginada no banco; as telas de análise e filtragem continuam calculando seus gráficos e facetas sobre a cópia local completa.
 
 Opcionalmente, carregue dados iniciais:
 

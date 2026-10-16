@@ -281,6 +281,37 @@ export default function FiltragemAvancadaNovoTempo() {
     api.get('/interessados-nt/filtragem-avancada').then(({ data }) => setDados(data)).catch((falha) => setErro(falha.response?.data?.erro || 'Não foi possível carregar a filtragem avançada.'));
   }, []);
 
+  const sincronizando = dados?.sincronizando;
+  const semDados = dados?.semDados;
+  const atualizadoEm = dados?.atualizadoEm;
+  useEffect(() => {
+    if (!sincronizando && !semDados) return undefined;
+    let consultando = false;
+    const temporizador = window.setInterval(async () => {
+      if (consultando) return;
+      consultando = true;
+      try {
+        const { data: status } = await api.get('/interessados-nt/status');
+        if (status.atualizadoEm && status.atualizadoEm !== atualizadoEm) {
+          const { data } = await api.get('/interessados-nt/filtragem-avancada');
+          setDados(data);
+        } else {
+          setDados((atual) => {
+            if (!atual) return atual;
+            if (atual.sincronizando === status.sincronizando && atual.semDados === status.semDados
+              && atual.erroSincronizacao === status.erroSincronizacao) return atual;
+            return { ...atual, sincronizando: status.sincronizando, semDados: status.semDados, erroSincronizacao: status.erroSincronizacao };
+          });
+        }
+      } catch {
+        // A cópia local continua disponível durante uma falha temporária.
+      } finally {
+        consultando = false;
+      }
+    }, 10000);
+    return () => window.clearInterval(temporizador);
+  }, [atualizadoEm, sincronizando, semDados]);
+
   const leads = useMemo(() => dados?.leads || [], [dados?.leads]);
   const opcoes = useMemo(() => ({
     distritos: contar(aplicarFiltros(leads, filtros, 'distritos'), (x) => x.distrito),
@@ -330,7 +361,9 @@ export default function FiltragemAvancadaNovoTempo() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">CRM de leads</p><h1 className="mt-2 text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>Filtragem Avançada</h1><p className="mt-2 text-slate-500">Encontre os contatos certos e visualize leads e igrejas no mapa.</p></div><div className="rounded-2xl bg-emerald-50 px-6 py-4 text-right"><p className="text-xs uppercase tracking-wider text-emerald-700">Resultado</p><p className="text-3xl font-bold text-emerald-950">{numero(filtrados.length)}</p></div></div>
       </header>
       {erro && <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">{erro}</div>}
-      {dados && <>
+      {dados?.erroSincronizacao && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{dados.erroSincronizacao}</div>}
+      {dados?.semDados && <div className="rounded-2xl border border-blue-100 bg-white p-6 text-sm text-slate-600">Aguardando a primeira sincronização dos interessados NT.</div>}
+      {dados && !dados.semDados && <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><CardResumo titulo="Total de leads" valor={filtrados.length} detalhe="resultado dos filtros" classe="bg-gradient-to-br from-blue-600 to-cyan-600"/><CardResumo titulo="Com WhatsApp" valor={totalWhats} detalhe="aptos para contato" classe="bg-gradient-to-br from-emerald-500 to-teal-700"/><CardResumo titulo="Quentes" valor={totalQuentes} detalhe="prioridade para ação" classe="bg-gradient-to-br from-red-600 to-orange-500"/><CardResumo titulo="Reativar" valor={reativar} detalhe="sem contato há mais de 1 ano" classe="bg-gradient-to-br from-violet-600 to-fuchsia-600"/></div>
         <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-lg sm:p-7">
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Filtragem avançada</p><h2 className="mt-1 text-2xl font-bold text-slate-900">Encontrar leads certos</h2></div><button type="button" onClick={() => setFiltros(filtrosIniciais)} className="btn-outline">Limpar todos os filtros</button></div>

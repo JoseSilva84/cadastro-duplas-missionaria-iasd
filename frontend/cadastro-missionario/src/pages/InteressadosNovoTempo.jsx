@@ -4,7 +4,6 @@ import api from '../lib/api';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
-import { notificarPwa } from '../lib/pwa';
 
 const icones = {
   pessoas: (
@@ -548,6 +547,9 @@ export default function InteressadosNovoTempo() {
   const [temMais, setTemMais] = useState(false);
   const [carregandoMais, setCarregandoMais] = useState(false);
   const [falhaCarregarMais, setFalhaCarregarMais] = useState(false);
+  const temporizadorRef = useRef(null);
+  const carregarRef = useRef(null);
+  const versaoRef = useRef(null);
 
   const carregar = async (forcar = false) => {
     const caminho = nomeDistrito
@@ -560,6 +562,7 @@ export default function InteressadosNovoTempo() {
       const cache = await lerCacheLocal(chaveCache);
       if (cache?.dados) {
         encontrouCache = true;
+        versaoRef.current = cache.dados.versao || null;
         setDados(cache.dados);
         if (nomeDistrito) {
           setPaginaAtual(cache.dados?.pagina || 1);
@@ -579,12 +582,10 @@ export default function InteressadosNovoTempo() {
         params: nomeDistrito
           ? { paginado: 1, pagina: 1, limite: 100, ...(forcar ? { atualizar: 1 } : {}) }
           : (forcar ? { atualizar: 1 } : undefined),
-        // Esta rota depende de um serviço externo cujo limite no backend é de 30s.
-        // A tela precisa aguardar a resposta do backend para receber o erro correto
-        // ou a primeira cópia que será persistida para os próximos acessos.
-        timeout: 40000,
+        timeout: 12000,
       });
       const { data } = resposta;
+      versaoRef.current = data?.versao || null;
       setDados(data);
       if (nomeDistrito) {
         setPaginaAtual(data?.pagina || 1);
@@ -592,16 +593,10 @@ export default function InteressadosNovoTempo() {
       }
       setUsandoCacheLocal(Boolean(resposta.fromCacheLocal));
       if (!resposta.fromCacheLocal) await salvarCacheLocal(chaveCache, data, usuario);
-      if (data?.sincronizando && !forcar && !resposta.fromCacheLocal) {
-        window.setTimeout(() => carregar(true), 800);
-      }
-      if (forcar && !resposta.fromCacheLocal) {
-        notificarPwa({
-          titulo: 'Interessados NT atualizados',
-          corpo: 'A sincronização com a Amigos Novo Tempo foi concluída.',
-          tag: 'interessados-nt-atualizados',
-          url: nomeDistrito ? `${prefix}/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}` : `${prefix}/interessados-nt`,
-        }).catch(() => {});
+      window.clearTimeout(temporizadorRef.current);
+      if ((data?.sincronizando || (data?.semDados && !data?.erroSincronizacao)) && !resposta.fromCacheLocal) {
+        // Apenas relê o banco local; nunca dispara outra consulta ao Amigos NT.
+        temporizadorRef.current = window.setTimeout(() => carregarRef.current?.(), 10000);
       }
     } catch (falha) {
       const mensagem = falha.response?.data?.erro
@@ -615,9 +610,11 @@ export default function InteressadosNovoTempo() {
       setAtualizando(false);
     }
   };
+  useEffect(() => { carregarRef.current = carregar; });
 
   useEffect(() => {
     carregar();
+    return () => window.clearTimeout(temporizadorRef.current);
     // O nome do distrito define integralmente a consulta desta tela.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomeDistrito]);
@@ -625,13 +622,15 @@ export default function InteressadosNovoTempo() {
   const carregarMaisContatos = async () => {
     if (!nomeDistrito || !temMais || carregandoMais) return;
     const proximaPagina = paginaAtual + 1;
+    const versaoSolicitada = versaoRef.current;
     setCarregandoMais(true);
     setFalhaCarregarMais(false);
     try {
       const { data } = await api.get(`/interessados-nt/distritos/${encodeURIComponent(nomeDistrito)}`, {
-        params: { paginado: 1, pagina: proximaPagina, limite: 100 },
-        timeout: 40000,
+        params: { paginado: 1, pagina: proximaPagina, limite: 100, ...(versaoSolicitada ? { versao: versaoSolicitada } : {}) },
+        timeout: 12000,
       });
+      if (versaoSolicitada !== versaoRef.current || (versaoSolicitada && data?.versao !== versaoSolicitada)) return;
       setDados((atual) => {
         const atuais = atual?.leads || [];
         const chaves = new Set(atuais.map((lead) => String(lead.id || `${lead.nome}-${lead.whatsapp}`)));
@@ -641,6 +640,10 @@ export default function InteressadosNovoTempo() {
       setPaginaAtual(data?.pagina || proximaPagina);
       setTemMais(Boolean(data?.temMais));
     } catch (falha) {
+      if (falha.response?.data?.codigo === 'VERSAO_NT_EXPIRADA') {
+        await carregar();
+        return;
+      }
       setFalhaCarregarMais(true);
       setErro(falha.response?.data?.erro || 'Não foi possível carregar os próximos contatos.');
     } finally {
@@ -669,8 +672,10 @@ export default function InteressadosNovoTempo() {
         <AvisoSincronizacao usandoCacheLocal={usandoCacheLocal} atualizando={atualizando || dados?.sincronizando} atualizadoEm={dados?.atualizadoEm} />
         {erro && !dados && <AvisoErro erro={erro} />}
         {erro && dados && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Não foi possível atualizar agora. Os últimos dados disponíveis continuam sendo exibidos.</div>}
-        {dados && <CardsResumo resumo={dados.resumo} />}
-        {dados && (nomeDistrito
+        {dados?.erroSincronizacao && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{dados.erroSincronizacao}</div>}
+        {dados?.semDados && <div className="card py-8 text-sm text-gray-600">Aguardando a primeira sincronização dos interessados NT. Esta página será atualizada automaticamente quando os dados estiverem disponíveis.</div>}
+        {dados && !dados.semDados && <CardsResumo resumo={dados.resumo} />}
+        {dados && !dados.semDados && (nomeDistrito
           ? <VisaoLeads dados={dados} temMais={temMais} carregandoMais={carregandoMais} falhaCarregarMais={falhaCarregarMais} onCarregarMais={carregarMaisContatos} />
           : <VisaoDistritos dados={dados} prefix={prefix} />)}
       </div>

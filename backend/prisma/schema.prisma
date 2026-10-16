@@ -184,6 +184,41 @@ model CacheIntegracao {
   @@index([atualizadoEm])
 }
 
+// Espelho dos interessados NT. Cada sincronizacao escreve um lote novo;
+// a troca do lote ativo impede que leitores vejam uma importacao incompleta.
+model InteressadoNovoTempo {
+  loteId           String
+  id               String
+  distrito         String
+  distritoChave    String
+  nome             String
+  prioridadeChave  String
+  temWhatsapp      Boolean
+  vipHistorico     Boolean
+  estudoAtivo      Boolean
+  dados            Json
+
+  @@id([loteId, id])
+  @@index([loteId, distritoChave, nome, id])
+  @@index([loteId, distritoChave])
+}
+
+model SincronizacaoNovoTempo {
+  id                 String    @id
+  loteAtivo          String?
+  loteAnterior       String?
+  atualizadoEm       DateTime?
+  proximaTentativaEm DateTime  @default(now())
+  ultimaTentativaEm  DateTime?
+  bloqueioAte        DateTime?
+  execucaoId         String?
+  falhas             Int       @default(0)
+  erro               String?
+  status             String    @default("PENDENTE")
+  distritosOficiais  Json?
+  igrejas            Json?
+}
+
 // Regiões da Associação Paulistana
 model Regiao {
   acoesCalendario CalendarioAcaoMissionaria[]

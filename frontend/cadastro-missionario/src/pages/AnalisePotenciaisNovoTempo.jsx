@@ -350,6 +350,35 @@ export default function AnalisePotenciaisNovoTempo() {
   useEffect(() => { carregar(); }, [carregar]);
 
   const dadosDaTelaAtual = tipoDosDados === tipoTela ? dados : null;
+  const sincronizando = dadosDaTelaAtual?.sincronizando;
+  const semDados = dadosDaTelaAtual?.semDados;
+  const atualizadoEm = dadosDaTelaAtual?.atualizadoEm;
+  useEffect(() => {
+    if (!sincronizando && !semDados) return undefined;
+    let consultando = false;
+    const temporizador = window.setInterval(async () => {
+      if (consultando) return;
+      consultando = true;
+      try {
+        const { data: status } = await api.get('/interessados-nt/status');
+        if (status.atualizadoEm && status.atualizadoEm !== atualizadoEm) {
+          await carregar();
+        } else {
+          setDados((atual) => {
+            if (!atual || tipoDosDados !== tipoTela) return atual;
+            if (atual.sincronizando === status.sincronizando && atual.semDados === status.semDados
+              && atual.erroSincronizacao === status.erroSincronizacao) return atual;
+            return { ...atual, sincronizando: status.sincronizando, semDados: status.semDados, erroSincronizacao: status.erroSincronizacao };
+          });
+        }
+      } catch {
+        // A última cópia permanece visível durante uma falha temporária.
+      } finally {
+        consultando = false;
+      }
+    }, 10000);
+    return () => window.clearInterval(temporizador);
+  }, [carregar, atualizadoEm, sincronizando, semDados, tipoDosDados, tipoTela]);
   if (carregando || (!dadosDaTelaAtual && !erro)) return <LoadingState mensagem="Preparando análise dos potenciais..." />;
   const abrirDistrito = (nome) => navigate(`${prefix}/interessados-nt/analise/distritos/${encodeURIComponent(nome)}`);
 
@@ -357,7 +386,9 @@ export default function AnalisePotenciaisNovoTempo() {
     <main className={isDireto ? 'h-full overflow-y-auto bg-[#eef2f7]' : 'min-h-full bg-[#eef2f7]'}>
       <div className="mx-auto max-w-[1600px] space-y-5 p-4 sm:p-6 lg:p-8">
         {erro && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{erro}</div>}
-        {dadosDaTelaAtual && (distrito
+        {dadosDaTelaAtual?.erroSincronizacao && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{dadosDaTelaAtual.erroSincronizacao}</div>}
+        {dadosDaTelaAtual?.semDados && <div className="rounded-xl border border-blue-100 bg-white p-6 text-sm text-slate-600">Aguardando a primeira sincronização dos interessados NT.</div>}
+        {dadosDaTelaAtual && !dadosDaTelaAtual.semDados && (distrito
           ? <VisaoDistrito dados={dadosDaTelaAtual} atualizar={() => carregar(true)} atualizando={atualizando} fallback={`${prefix}/interessados-nt/analise`} />
           : <VisaoGeral dados={dadosDaTelaAtual} filtros={filtros} setFiltros={setFiltros} atualizar={() => carregar(true)} atualizando={atualizando} abrirDistrito={abrirDistrito} fallback={`${prefix}/interessados-nt`} />)}
       </div>
