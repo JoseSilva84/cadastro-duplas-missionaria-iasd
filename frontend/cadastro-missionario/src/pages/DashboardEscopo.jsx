@@ -36,13 +36,21 @@ const projetoLabel = {
 function CardIndicador({ titulo, valor, detalhe, cor }) {
   return (
     <div
-      className="group relative overflow-hidden rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/35 hover:shadow-xl hover:shadow-[#1A3A6B]/10"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-gray-100 bg-white p-3.5 sm:p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9963A]/35 hover:shadow-xl hover:shadow-[#1A3A6B]/10"
       style={{ borderTop: `3px solid ${cor}` }}
     >
-      <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-0 transition-all duration-500 group-hover:scale-125 group-hover:opacity-10" style={{ backgroundColor: cor }} />
-      <p className="relative text-xs font-bold uppercase tracking-wider text-gray-400 transition-colors duration-300 group-hover:text-gray-600">{titulo}</p>
-      <p className="relative mt-2 text-3xl font-bold transition-transform duration-300 group-hover:translate-x-1" style={{ color: cor }}>{numero(valor)}</p>
-      <p className="relative mt-2 text-xs text-gray-500">{detalhe}</p>
+      <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 sm:h-24 sm:w-24 rounded-full opacity-0 transition-all duration-500 group-hover:scale-125 group-hover:opacity-10" style={{ backgroundColor: cor }} />
+      <div>
+        <p className="relative min-h-[28px] sm:min-h-auto text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 transition-colors duration-300 group-hover:text-gray-600 line-clamp-2">
+          {titulo}
+        </p>
+        <p className="relative mt-1.5 sm:mt-2 text-2xl sm:text-3xl font-black transition-transform duration-300 group-hover:translate-x-1 leading-none tracking-tight" style={{ color: cor }}>
+          {numero(valor)}
+        </p>
+      </div>
+      <p className="relative mt-2 sm:mt-2.5 text-[10px] sm:text-xs text-gray-500 line-clamp-2 leading-tight">
+        {detalhe}
+      </p>
     </div>
   );
 }
@@ -146,7 +154,7 @@ export default function DashboardEscopo() {
         </div>
       </section>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <section className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
         <CardIndicador titulo="Total de duplas" valor={totalDuplas} detalhe="Dentro do seu nível de acesso" cor="#1A3A6B" />
         <CardIndicador titulo="Estudos em andamento" valor={totalEstudos} detalhe="Somente estudos não encerrados" cor="#0284c7" />
         <CardIndicador titulo="Estudos encerrados" valor={estudosEncerrados.length} detalhe="Registros concluídos no escopo" cor="#b91c1c" />

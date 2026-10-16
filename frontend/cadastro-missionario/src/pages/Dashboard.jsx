@@ -42,19 +42,34 @@ const MedalIcon = ({ className = 'w-5 h-5' }) => (
 
 function MetricCard({ label, value, detail, color, icon, onClick }) {
   const content = (
-    <>
-      <div className="min-w-0 pr-16">
-        <p className="min-h-12 text-xs font-bold uppercase leading-4 tracking-widest text-gray-400">{label}</p>
-        <p className="mt-2 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
+    <div className="flex flex-col justify-between h-full">
+      <div>
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-h-[28px] sm:min-h-10 text-[10px] sm:text-xs font-bold uppercase leading-tight tracking-wider text-gray-400 line-clamp-2">
+            {label}
+          </p>
+          <div
+            className="flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl text-white shadow-md flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+          >
+            <span className="scale-75 sm:scale-100 flex items-center justify-center">
+              {icon}
+            </span>
+          </div>
+        </div>
+        <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-black leading-none tracking-tight" style={{ color }}>
+          {numero(value)}
+        </p>
       </div>
-      <div className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
-        {icon}
-      </div>
-      {detail && <p className="mt-4 text-sm font-medium text-gray-500 leading-snug">{detail}</p>}
-    </>
+      {detail && (
+        <p className="mt-2 sm:mt-3 text-[11px] sm:text-sm font-medium text-gray-500 leading-tight line-clamp-2">
+          {detail}
+        </p>
+      )}
+    </div>
   );
 
-  const classes = 'smart-tooltip group relative rounded-xl border border-white bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-xl hover:shadow-[#1A3A6B]/10 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30';
+  const classes = 'smart-tooltip group relative rounded-xl border border-white bg-white p-3 sm:p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-xl hover:shadow-[#1A3A6B]/10 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/30';
 
   if (onClick) {
     return (
@@ -92,20 +107,20 @@ function ProgressCard({ label, value, total, color, detail, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="smart-tooltip w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/15"
+      className="smart-tooltip w-full rounded-xl border border-gray-100 bg-white p-3.5 sm:p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#C9963A]/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/15"
       data-tooltip={`${label}: ${numero(value)} de ${numero(total)} duplas, ${pct}% do total.`}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold text-[#1A3A6B]">{label}</p>
-          <p className="mt-1 text-xs text-gray-400">{detail}</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-bold text-[#1A3A6B] truncate">{label}</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 line-clamp-1">{detail}</p>
         </div>
-        <p className="text-2xl font-bold" style={{ color }}>{pct}%</p>
+        <p className="text-xl sm:text-2xl font-bold flex-shrink-0" style={{ color }}>{pct}%</p>
       </div>
-      <div className="mt-4 h-2 rounded-full bg-gray-100">
+      <div className="mt-3 sm:mt-4 h-1.5 sm:h-2 rounded-full bg-gray-100">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <p className="mt-3 text-sm font-semibold text-gray-500">{numero(value)} dupla{Number(value || 0) === 1 ? '' : 's'}</p>
+      <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm font-semibold text-gray-500">{numero(value)} dupla{Number(value || 0) === 1 ? '' : 's'}</p>
     </button>
   );
 }
@@ -116,17 +131,17 @@ function MedalhaCard({ label, value, total, color, bg, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="smart-tooltip relative overflow-hidden rounded-xl border p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
+      className="smart-tooltip relative overflow-hidden rounded-xl border p-3 sm:p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
       style={{ background: `linear-gradient(145deg, ${bg}, #ffffff 78%)`, borderColor: `${color}40` }}
       data-tooltip={`${label}: ${numero(value)} dupla(s), ${pct}% do total.`}
     >
-      <span className="pointer-events-none absolute right-3 top-3 h-14 w-14 rounded-full opacity-10" style={{ backgroundColor: color }} />
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-bold" style={{ color }}>{label}</span>
-        <span className="rounded-full border bg-white/80 px-2.5 py-1 text-xs font-bold shadow-sm" style={{ color, borderColor: `${color}22` }}>{pct}%</span>
+      <span className="pointer-events-none absolute right-3 top-3 h-10 w-10 sm:h-14 sm:w-14 rounded-full opacity-10" style={{ backgroundColor: color }} />
+      <div className="flex items-center justify-between gap-1.5">
+        <span className="text-xs sm:text-sm font-bold truncate" style={{ color }}>{label}</span>
+        <span className="rounded-full border bg-white/80 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-bold shadow-sm flex-shrink-0" style={{ color, borderColor: `${color}22` }}>{pct}%</span>
       </div>
-      <p className="mt-3 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
-      <div className="mt-4 h-2 rounded-full bg-white/75 shadow-inner">
+      <p className="mt-2 sm:mt-3 text-2xl sm:text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
+      <div className="mt-3 sm:mt-4 h-1.5 sm:h-2 rounded-full bg-white/75 shadow-inner">
         <div className="h-full rounded-full shadow-sm" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </button>
@@ -263,7 +278,7 @@ export default function Dashboard() {
       </div>
 
       <Section eyebrow="Resumo principal" title="Indicadores essenciais">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
           <MetricCard label="Total de duplas" value={totalDuplas} detail={`${numero(ativas)} ativas no sistema`} color="#1A3A6B" icon={<UsersIcon />} onClick={() => abrir('/duplas')} />
           <MetricCard label="Registros de Estudos" value={totalEstudosCadastrados} detail="Estudos não encerrados (andamento)" color="#0284c7" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-cadastrados')} />
           <MetricCard label="Estudos encerrados" value={totalEstudosEncerrados} detail="Registros concluídos" color="#b91c1c" icon={<BookIcon />} onClick={() => abrir('/relatorios/estudos-encerrados')} />
@@ -284,7 +299,7 @@ export default function Dashboard() {
               <MedalIcon />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MedalhaCard label="Ouro" value={medalhas.ouro} total={totalDuplas} color="#C9963A" bg="#fffbeb" onClick={() => abrirMedalha('ouro')} />
             <MedalhaCard label="Prata" value={medalhas.prata} total={totalDuplas} color="#64748b" bg="#f8fafc" onClick={() => abrirMedalha('prata')} />
             <MedalhaCard label="Bronze" value={medalhas.bronze} total={totalDuplas} color="#92400e" bg="#fff7ed" onClick={() => abrirMedalha('bronze')} />
@@ -335,7 +350,7 @@ export default function Dashboard() {
       </Section>
 
       <Section eyebrow="Sub-classificação" title="Classes das duplas">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             ['Classe A', ministerio.classes?.A || 0, '#047857', '#ecfdf5', 'Prontas ou com fruto batismal registrado'],
             ['Classe B', ministerio.classes?.B || 0, '#b45309', '#fffbeb', 'Com estudo, aguardando avanço'],
@@ -345,13 +360,13 @@ export default function Dashboard() {
               key={label}
               type="button"
               onClick={() => abrir(`/duplas?classe=${label.slice(-1)}`)}
-              className="smart-tooltip rounded-xl border p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
+              className="smart-tooltip rounded-xl border p-3.5 sm:p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"
               style={{ backgroundColor: bg, borderColor: `${color}30` }}
               data-tooltip={`${label}: ${numero(value)} dupla(s). Clique para filtrar.`}
             >
-              <p className="text-sm font-bold" style={{ color }}>{label}</p>
-              <p className="mt-2 text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
-              <p className="mt-3 text-sm font-medium text-gray-500">{detail}</p>
+              <p className="text-xs sm:text-sm font-bold" style={{ color }}>{label}</p>
+              <p className="mt-1.5 sm:mt-2 text-2xl sm:text-3xl font-bold leading-none" style={{ color }}>{numero(value)}</p>
+              <p className="mt-2 sm:mt-3 text-xs sm:text-sm font-medium text-gray-500 line-clamp-2">{detail}</p>
             </button>
           ))}
         </div>

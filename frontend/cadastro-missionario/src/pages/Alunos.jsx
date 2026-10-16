@@ -55,16 +55,28 @@ const BadgeClasse = ({ classe }) => {
   );
 };
 
-const MetricCard = ({ label, valor, detalhe, cor, onClick, className = '' }) => (
+const MetricCard = ({ label, valor, detalhe, cor, onClick, className = '', destaqueHorizontalMobile = false }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`group card relative min-h-24 sm:min-h-28 overflow-hidden text-left p-3.5 sm:p-4 md:p-5 transition-all duration-200 hover:-translate-y-1 hover:ring-1 hover:ring-[#C9963A]/35 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/45 ${className}`}
+    className={`group card relative min-h-[78px] sm:min-h-28 overflow-hidden text-left p-3 sm:p-4 md:p-5 transition-all duration-200 hover:-translate-y-1 hover:ring-1 hover:ring-[#C9963A]/35 focus:outline-none focus:ring-2 focus:ring-[#C9963A]/45 ${className}`}
   >
     <span className="absolute inset-x-0 top-0 h-1 opacity-80 transition-all duration-200 group-hover:h-1.5" style={{ backgroundColor: cor }} />
-    <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-400 truncate">{label}</p>
-    <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight" style={{ color: cor }}>{numero(valor)}</p>
-    {detalhe && <p className="mt-2 text-xs sm:text-sm font-medium text-gray-500 line-clamp-1">{detalhe}</p>}
+    {destaqueHorizontalMobile ? (
+      <div className="flex sm:flex-col items-center sm:items-start justify-between w-full gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 truncate">{label}</p>
+          {detalhe && <p className="mt-0.5 sm:mt-2 text-[11px] sm:text-xs font-medium text-gray-500 line-clamp-1">{detalhe}</p>}
+        </div>
+        <p className="text-xl sm:text-3xl font-extrabold leading-none tracking-tight flex-shrink-0" style={{ color: cor }}>{numero(valor)}</p>
+      </div>
+    ) : (
+      <>
+        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 truncate">{label}</p>
+        <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-extrabold leading-none tracking-tight" style={{ color: cor }}>{numero(valor)}</p>
+        {detalhe && <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs font-medium text-gray-500 line-clamp-1">{detalhe}</p>}
+      </>
+    )}
   </button>
 );
 
@@ -449,14 +461,13 @@ export default function Alunos() {
       <div className={isDireto ? 'flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5' : 'space-y-4 sm:space-y-5'}>
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
           <MetricCard
             label="Total de alunos"
             valor={resumo.total}
             detalhe="Todos os formatos"
             cor="#1A3A6B"
             onClick={() => navigate(`${prefix}/relatorios/estudos-cadastrados`)}
-            className="col-span-2 sm:col-span-1 md:col-span-1"
           />
           <MetricCard label="Individuais" valor={resumo.individuais} detalhe="Estudos individuais" cor="#0284c7" onClick={() => navigate(caminhoRelatorio('UNICO'))} />
           <MetricCard label="Pontos" valor={resumo.pontos} detalhe="Alunos em pontos" cor="#0d9488" onClick={() => navigate(caminhoRelatorio('PONTO'))} />
@@ -467,7 +478,8 @@ export default function Alunos() {
             detalhe="Prontos para batismo"
             cor="#047857"
             onClick={() => { setClasse('A'); setTipo(''); setBusca(''); }}
-            className="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1"
+            className="col-span-2 sm:col-span-1"
+            destaqueHorizontalMobile
           />
         </div>
 

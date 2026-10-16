@@ -203,22 +203,38 @@ function Cabecalho({ distrito, distritoUnico, onAbrirDistritoUnico, isDireto, at
 
 const percentual = (parte, total) => total ? Math.round((Number(parte) / Number(total)) * 100) : 0;
 
-function CardMetrica({ titulo, valor, detalhe, inicio, fim, icone, className = '' }) {
+function CardMetrica({ titulo, valor, detalhe, inicio, fim, icone, className = '', destaqueHorizontalMobile = false }) {
   return (
     <div
-      className={`group relative min-h-28 sm:min-h-36 lg:min-h-40 overflow-hidden rounded-2xl p-4 sm:p-5 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${className}`}
+      className={`group relative min-h-[84px] sm:min-h-36 lg:min-h-40 overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${className}`}
       style={{ background: `linear-gradient(135deg, ${inicio} 0%, ${fim} 100%)` }}
     >
-      <span className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125" />
-      <span className="absolute -bottom-14 -left-10 h-32 w-32 rounded-full bg-black/5" />
-      <div className="relative flex h-full flex-col justify-between gap-3 sm:gap-4">
+      <span className="absolute -right-10 -top-10 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125" />
+      <span className="absolute -bottom-14 -left-10 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-black/5" />
+      {destaqueHorizontalMobile ? (
+        <div className="relative flex sm:hidden h-full items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 truncate">{titulo}</p>
+            <p className="text-xl font-extrabold tracking-tight">{numero(valor)}</p>
+            {detalhe && <p className="text-[10px] font-medium text-white/85 line-clamp-1">{detalhe}</p>}
+          </div>
+          <span className="rounded-lg border border-white/25 bg-white/10 p-1.5 shadow-inner backdrop-blur-sm flex-shrink-0">
+            {icone}
+          </span>
+        </div>
+      ) : null}
+      <div className={`relative ${destaqueHorizontalMobile ? 'hidden sm:flex' : 'flex'} h-full flex-col justify-between gap-2 sm:gap-4`}>
         <div className="flex items-start justify-between gap-2">
-          <p className="pt-0.5 text-[11px] sm:text-xs font-bold uppercase tracking-[0.14em] text-white/90 truncate">{titulo}</p>
-          <span className="rounded-xl border border-white/25 bg-white/10 p-2 sm:p-2.5 shadow-inner backdrop-blur-sm flex-shrink-0">{icone}</span>
+          <p className="pt-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/90 truncate">{titulo}</p>
+          <span className="rounded-lg sm:rounded-xl border border-white/25 bg-white/10 p-1.5 sm:p-2.5 shadow-inner backdrop-blur-sm flex-shrink-0">
+            <span className="scale-75 sm:scale-100 flex items-center justify-center">
+              {icone}
+            </span>
+          </span>
         </div>
         <div>
-          <p className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">{numero(valor)}</p>
-          <p className="mt-1 text-xs sm:text-sm font-medium text-white/85 line-clamp-1">{detalhe}</p>
+          <p className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">{numero(valor)}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium text-white/85 line-clamp-1">{detalhe}</p>
         </div>
       </div>
     </div>
@@ -228,7 +244,7 @@ function CardMetrica({ titulo, valor, detalhe, inicio, fim, icone, className = '
 function CardsResumo({ resumo }) {
   const total = resumo?.totalInteressados || 0;
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
       <CardMetrica
         titulo="Interessados"
         valor={total}
@@ -236,7 +252,6 @@ function CardsResumo({ resumo }) {
         inicio="#2563EB"
         fim="#0891B2"
         icone={icones.pessoas}
-        className="col-span-2 sm:col-span-1 md:col-span-1"
       />
       <CardMetrica
         titulo="Com WhatsApp"
@@ -269,7 +284,8 @@ function CardsResumo({ resumo }) {
         inicio="#2563EB"
         fim="#0284C7"
         icone={icones.estudo}
-        className="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1"
+        className="col-span-2 sm:col-span-1"
+        destaqueHorizontalMobile
       />
     </div>
   );
