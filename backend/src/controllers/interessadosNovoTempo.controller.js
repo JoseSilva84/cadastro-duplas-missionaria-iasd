@@ -4,8 +4,8 @@ function responderErro(res, falha) {
   console.error('[Interessados NT]', falha);
   if (['P2021', 'P2022'].includes(falha.code)) {
     return res.status(503).json({
-      erro: 'O banco do PCM ainda não tem as tabelas dos Interessados NT. Aplique a migração do banco no backend.',
-      codigo: 'INTERESSADOS_NT_MIGRACAO_PENDENTE',
+      erro: 'A estrutura dos Interessados NT não foi encontrada no banco usado por este backend. Confira o banco configurado e a migração aplicada nele.',
+      codigo: 'INTERESSADOS_NT_ESTRUTURA_BANCO',
     });
   }
   return res.status(falha.status || 500).json({
