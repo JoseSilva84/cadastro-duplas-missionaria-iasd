@@ -1,5 +1,11 @@
 const IgrejaModel = require('../models/igreja.model');
 const { montarEscopo, combinar, validarIgreja, validarDistrito } = require('./escopo.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
+
+const camposNotificaveis = [
+  'nome', 'membros', 'distritoId', 'endereco', 'nomeDiretorMinisterioPessoal',
+  'whatsappDiretorMinisterioPessoal', 'nomeCoordInteressados', 'telefoneCoordInteressados',
+];
 
 const IgrejaService = {
   async listar(usuario, query = {}) {
@@ -23,11 +29,16 @@ const IgrejaService = {
 
   async criar(data, usuario) {
     await validarDistrito(usuario, data.distritoId);
-    return IgrejaModel.create(data);
+    const igreja = await IgrejaModel.create(data);
+    await registrarAtividade({
+      ator: usuario, igrejaId: igreja.id, titulo: 'Nova igreja cadastrada',
+      mensagem: `A igreja ${igreja.nome} foi cadastrada.`, url: '/igrejas',
+    });
+    return igreja;
   },
 
   async atualizar(id, data, usuario) {
-    await this.buscarPorId(id, usuario);
+    const anterior = await this.buscarPorId(id, usuario);
     if (data.distritoId !== undefined) await validarDistrito(usuario, data.distritoId);
 
     const campos = {};
@@ -55,12 +66,24 @@ const IgrejaService = {
         ? new Date(data.dataNascimentoCoordInteressados)
         : null;
     }
-    return IgrejaModel.update(id, campos);
+    const atualizada = await IgrejaModel.update(id, campos);
+    if (camposNotificaveis.some((campo) => anterior[campo] !== atualizada[campo])) {
+      await registrarAtividade({
+        ator: usuario, igrejaId: atualizada.id, titulo: 'Dados da igreja atualizados',
+        mensagem: `O cadastro da igreja ${atualizada.nome} foi atualizado.`, url: '/igrejas',
+      });
+    }
+    return atualizada;
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return IgrejaModel.remove(id);
+    const anterior = await this.buscarPorId(id, usuario);
+    const removida = await IgrejaModel.remove(id);
+    await registrarAtividade({
+      ator: usuario, distritoId: anterior.distritoId, titulo: 'Igreja removida',
+      mensagem: `A igreja ${anterior.nome} foi removida.`, url: '/igrejas',
+    });
+    return removida;
   },
 };
 

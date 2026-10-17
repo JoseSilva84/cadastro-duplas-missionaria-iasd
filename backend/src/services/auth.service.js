@@ -7,6 +7,7 @@ const UsuarioService = require('./usuario.service');
 const AuditoriaService = require('./auditoria.service');
 const { montarIdentidadeUsuario } = require('./usuarioIdentidade.service');
 const { ehSomenteLeitura } = require('../middlewares/auth');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
 const normalizarSenha = (senha) => String(senha ?? '').trim();
@@ -1114,6 +1115,13 @@ const AuthService = {
       });
 
       return { dupla: novaDupla, usuario: novoUsuario };
+    });
+
+    await registrarAtividade({
+      duplaId: resultado.dupla.id,
+      titulo: 'Nova dupla missionária',
+      mensagem: `A dupla ${nomeDupla} concluiu o cadastro no sistema.`,
+      url: `/duplas/${resultado.dupla.id}`,
     });
 
     return {

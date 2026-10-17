@@ -26,7 +26,7 @@ const RegiaoController = {
   // POST /api/regioes
   async criar(req, res) {
     try {
-      const regiao = await RegiaoService.criar(req.body);
+      const regiao = await RegiaoService.criar(req.body, req.usuario);
       res.status(201).json(regiao);
     } catch (err) {
       res.status(500).json({ erro: 'Erro ao criar região.' });

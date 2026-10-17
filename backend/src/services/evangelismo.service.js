@@ -2,6 +2,7 @@ const EvangelismoModel = require('../models/evangelismo.model');
 const prisma = require('../lib/prisma');
 const { PERFIS } = require('../middlewares/auth');
 const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const montarFiltro = async (query = {}, usuario = null) => {
   let where = {};
@@ -40,12 +41,19 @@ const normalizar = (data, duplaIdPadrao = null) => ({
 
 async function validarDuplaDoRegistro(usuario, duplaId) {
   if (!usuario) return;
+  if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && Number(usuario.duplaId) !== Number(duplaId)) {
+    throw { status: 403, mensagem: 'Acesso negado: esta não é a sua dupla.' };
+  }
   const dupla = await prisma.dupla.findUnique({
     where: { id: Number(duplaId) },
-    select: { igrejaId: true },
+    select: { igrejaId: true, distritoId: true },
   });
   if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
+  if (!dupla.igrejaId && usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+    throw { status: 403, mensagem: 'Acesso negado: dupla sem igreja vinculada.' };
+  }
   if (dupla.igrejaId) await validarIgreja(usuario, dupla.igrejaId);
+  else await validarDistrito(usuario, dupla.distritoId);
 }
 
 async function obterDuplaPadrao(usuario) {
@@ -69,15 +77,15 @@ const EvangelismoService = {
     if (!evangelismo) throw { status: 404, mensagem: 'Registro de evangelismo não encontrado.' };
 
     if (usuario && usuario.perfil === PERFIS.DUPLA_MISSIONARIA) {
-      if (usuario.duplaId) {
-        const escopo = await montarEscopo(usuario);
-        if (evangelismo.dupla?.igreja?.id !== escopo.igrejaId) {
-          throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra igreja.' };
-        }
+      if (Number(evangelismo.duplaId) !== Number(usuario.duplaId)) {
+        throw { status: 403, mensagem: 'Acesso negado: registro pertence a outra dupla.' };
       }
     } else if (usuario && evangelismo.dupla?.igreja?.id) {
       await validarIgreja(usuario, evangelismo.dupla.igreja.id);
     } else if (usuario && evangelismo.dupla?.distrito?.id) {
+      if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+        throw { status: 403, mensagem: 'Acesso negado: registro sem igreja vinculada.' };
+      }
       await validarDistrito(usuario, evangelismo.dupla.distrito.id);
     }
     return evangelismo;
@@ -86,20 +94,44 @@ const EvangelismoService = {
   async criar(data, usuario) {
     const duplaId = data.duplaId || await obterDuplaPadrao(usuario);
     await validarDuplaDoRegistro(usuario, duplaId);
-    return EvangelismoModel.create(normalizar(data, duplaId));
+    const registro = await EvangelismoModel.create(normalizar(data, duplaId));
+    await registrarAtividade({
+      ator: usuario, duplaId: registro.duplaId, titulo: 'Novo registro de evangelismo',
+      mensagem: `Um acompanhamento de evangelismo para ${registro.nomePessoa} foi cadastrado.`,
+      url: `/duplas/${registro.duplaId}`,
+    });
+    return registro;
   },
 
   async atualizar(id, data, usuario) {
-    await this.buscarPorId(id, usuario);
-    const atual = await EvangelismoModel.findById(id);
-    const duplaId = data.duplaId || atual?.dupla?.id;
+    const anterior = await this.buscarPorId(id, usuario);
+    const duplaId = data.duplaId || anterior?.dupla?.id;
     await validarDuplaDoRegistro(usuario, duplaId);
-    return EvangelismoModel.update(id, normalizar(data, duplaId));
+    const atualizado = await EvangelismoModel.update(id, normalizar(data, duplaId));
+    if (['nomePessoa', 'duplaId', 'serie', 'estudoAtual', 'diaEvangelismo', 'cidade', 'endereco']
+      .some((campo) => anterior[campo] !== atualizado[campo])) {
+      const titulo = anterior.estudoAtual !== atualizado.estudoAtual
+        ? 'Etapa de evangelismo atualizada' : 'Registro de evangelismo atualizado';
+      await registrarAtividade({
+        ator: usuario, duplaId: atualizado.duplaId, titulo,
+        mensagem: anterior.estudoAtual !== atualizado.estudoAtual
+          ? `O acompanhamento de ${atualizado.nomePessoa} passou da etapa ${anterior.estudoAtual} para a ${atualizado.estudoAtual}.`
+          : `O acompanhamento de ${atualizado.nomePessoa} foi atualizado.`,
+        url: `/duplas/${atualizado.duplaId}`,
+      });
+    }
+    return atualizado;
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return EvangelismoModel.remove(id);
+    const anterior = await this.buscarPorId(id, usuario);
+    const removido = await EvangelismoModel.remove(id);
+    await registrarAtividade({
+      ator: usuario, duplaId: anterior.duplaId, titulo: 'Registro de evangelismo removido',
+      mensagem: `O acompanhamento de ${anterior.nomePessoa} foi removido.`,
+      url: `/duplas/${anterior.duplaId}`,
+    });
+    return removido;
   },
 };
 

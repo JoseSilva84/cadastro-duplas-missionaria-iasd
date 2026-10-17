@@ -1,6 +1,7 @@
 const MapaIgrejaModel = require('../models/mapaIgreja.model');
 const { montarEscopo, combinar, validarIgreja } = require('./escopo.service');
 const { PERFIS } = require('../middlewares/auth');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const inteiro = (valor) => Math.max(Number(valor || 0), 0);
 const texto = (valor) => {
@@ -88,14 +89,33 @@ const MapaIgrejaService = {
       criadoPorId: usuario?.id || null,
     };
 
-    return MapaIgrejaModel.salvar(igrejaId, payload);
+    const anterior = await MapaIgrejaModel.buscarPorIgreja(igrejaId);
+    const salvo = await MapaIgrejaModel.salvar(igrejaId, payload);
+    const alterado = !anterior || Object.keys(payload).some((campo) => {
+      if (campo === 'criadoPorId') return false;
+      return JSON.stringify(anterior[campo]) !== JSON.stringify(payload[campo]);
+    });
+    if (alterado) {
+      await registrarAtividade({
+        ator: usuario, igrejaId,
+        titulo: anterior ? 'Mapa da igreja atualizado' : 'Mapa da igreja cadastrado',
+        mensagem: `Os dados do mapa da igreja ${igreja.nome} foram ${anterior ? 'atualizados' : 'cadastrados'}.`,
+        url: '/igrejas',
+      });
+    }
+    return salvo;
   },
 
   async remover(usuario, id) {
     const mapa = await MapaIgrejaModel.buscarPorId(id);
     if (!mapa) throw { status: 404, mensagem: 'Mapa da igreja nao encontrado.' };
     await validarIgreja(usuario, mapa.igrejaId);
-    return MapaIgrejaModel.remover(id);
+    const removido = await MapaIgrejaModel.remover(id);
+    await registrarAtividade({
+      ator: usuario, igrejaId: mapa.igrejaId, titulo: 'Mapa da igreja removido',
+      mensagem: 'O mapa desta igreja foi removido.', url: '/igrejas',
+    });
+    return removido;
   },
 };
 

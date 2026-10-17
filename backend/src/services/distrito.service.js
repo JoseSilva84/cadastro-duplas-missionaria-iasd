@@ -1,6 +1,7 @@
 const DistritoModel = require('../models/distrito.model');
 const { montarEscopo, combinar, validarDistrito, validarRegiao } = require('./escopo.service');
 const { PERFIS } = require('../middlewares/auth');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const limitarDetalhesAoDiretor = (distrito, usuario, igrejaId) => {
   if (!distrito || usuario?.perfil !== PERFIS.DIRETOR_MISSIONARIO_IGREJA) return distrito;
@@ -39,14 +40,19 @@ const DistritoService = {
 
   async criar(data, usuario) {
     validarRegiao(usuario, data.regiaoId);
-    return DistritoModel.create({
+    const distrito = await DistritoModel.create({
       nome: data.nome,
       regiaoId: Number(data.regiaoId),
     });
+    await registrarAtividade({
+      ator: usuario, distritoId: distrito.id, titulo: 'Novo distrito cadastrado',
+      mensagem: `O distrito ${distrito.nome} foi cadastrado.`, url: '/distritos',
+    });
+    return distrito;
   },
 
   async atualizar(id, data, usuario) {
-    await this.buscarPorId(id, usuario);
+    const anterior = await this.buscarPorId(id, usuario);
     const campos = {};
     if (data.nome !== undefined) campos.nome = data.nome;
     if (data.membros !== undefined) campos.membros = Number(data.membros);
@@ -60,12 +66,25 @@ const DistritoService = {
         ? new Date(data.dataNascimentoPastor)
         : null;
     }
-    return DistritoModel.update(id, campos);
+    const atualizado = await DistritoModel.update(id, campos);
+    const relevantes = ['nome', 'membros', 'nomePastor', 'cargoPastor', 'telefonePastor', 'enderecoPastor'];
+    if (relevantes.some((campo) => anterior[campo] !== atualizado[campo])) {
+      await registrarAtividade({
+        ator: usuario, distritoId: atualizado.id, titulo: 'Dados do distrito atualizados',
+        mensagem: `Os dados do distrito ${atualizado.nome} foram atualizados.`, url: '/distritos',
+      });
+    }
+    return atualizado;
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return DistritoModel.remove(id);
+    const anterior = await this.buscarPorId(id, usuario);
+    const removido = await DistritoModel.remove(id);
+    await registrarAtividade({
+      ator: usuario, regiaoId: anterior.regiaoId, titulo: 'Distrito removido',
+      mensagem: `O distrito ${anterior.nome} foi removido.`, url: '/distritos',
+    });
+    return removido;
   },
 };
 

@@ -2,6 +2,7 @@
 const prisma = require('../lib/prisma');
 const { PERFIS } = require('../middlewares/auth');
 const { montarEscopo, validarDistrito, validarIgreja } = require('./escopo.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const whereEstudoEmAndamento = {
   encerrado: false,
@@ -109,6 +110,59 @@ const normalizarEstudo = (data, duplaIdPadrao = null) => {
   });
 };
 
+const encerrado = (estudo) => estudo?.encerrado === true || estudo?.statusEstudo === 'ENCERRADO';
+const batismo = (estudo) => String(estudo?.motivoEncerramento || '').trim().toUpperCase() === 'BATISMO';
+const participantesResumo = (estudo) => JSON.stringify((estudo?.participantes || [])
+  .map((item) => [item.nome, item.classificacaoInteressado, item.motivoImpedimento]));
+const camposAcompanhados = [
+  'nomeEstudante', 'serie', 'diaEstudo', 'horarioEstudo', 'classificacaoInteressado',
+  'motivoImpedimento', 'vaIgreja', 'leBiblia', 'estudaLicao', 'devolveDizimos',
+  'cultoFamiliar', 'observacoes', 'tipoEstudo', 'motivoEncerramento',
+];
+
+function descreverMudancaEstudo(atual, anterior = null, removido = false) {
+  const nome = atual.nomeEstudante;
+  let titulo;
+  let mensagem;
+  if (removido) {
+    titulo = 'Estudo removido';
+    mensagem = `O estudo de ${nome} foi removido.`;
+  } else if (!anterior) {
+    titulo = encerrado(atual) && batismo(atual) ? 'Batismo registrado' : 'Novo estudo bíblico';
+    mensagem = titulo === 'Batismo registrado'
+      ? `O estudo de ${nome} foi cadastrado como encerrado por batismo.`
+      : `Um novo estudo de ${nome} foi cadastrado.`;
+  } else if (batismo(atual) && !batismo(anterior) && encerrado(atual)) {
+    titulo = 'Batismo registrado';
+    mensagem = `O estudo de ${nome} foi encerrado com batismo.`;
+  } else if (!encerrado(anterior) && encerrado(atual)) {
+    titulo = 'Estudo encerrado';
+    mensagem = `O estudo de ${nome} foi encerrado${atual.motivoEncerramento ? `: ${atual.motivoEncerramento}` : '.'}`;
+  } else if (encerrado(anterior) && !encerrado(atual)) {
+    titulo = 'Estudo reaberto';
+    mensagem = `O estudo de ${nome} voltou a ficar em andamento.`;
+  } else if (anterior.licaoAtual !== atual.licaoAtual) {
+    titulo = 'Lição do estudo atualizada';
+    mensagem = `O estudo de ${nome} passou da lição ${anterior.licaoAtual} para a ${atual.licaoAtual}.`;
+  } else if (camposAcompanhados.some((campo) => anterior[campo] !== atual[campo]) ||
+    participantesResumo(anterior) !== participantesResumo(atual)) {
+    titulo = 'Estudo atualizado';
+    mensagem = `Os dados do estudo de ${nome} foram atualizados.`;
+  } else {
+    return null;
+  }
+  return { titulo, mensagem };
+}
+
+async function avisarEstudo(usuario, atual, anterior = null, removido = false) {
+  const aviso = descreverMudancaEstudo(atual, anterior, removido);
+  if (!aviso) return;
+  await registrarAtividade({
+    ator: usuario, duplaId: atual.duplaId, ...aviso,
+    url: `/duplas/${atual.duplaId}`,
+  });
+}
+
 const EstudoBiblicoService = {
   // Lista estudos bÃ­blicos filtrados por escopo de perfil
   async listar(query, usuario) {
@@ -133,6 +187,9 @@ const EstudoBiblicoService = {
     } else if (usuario && estudo.dupla?.igreja?.id) {
       await validarIgreja(usuario, estudo.dupla.igreja.id);
     } else if (usuario && estudo.dupla?.distrito?.id) {
+      if (usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+        throw { status: 403, mensagem: 'Acesso negado: estudo sem igreja vinculada.' };
+      }
       await validarDistrito(usuario, estudo.dupla.distrito.id);
     }
     return estudo;
@@ -153,19 +210,26 @@ const EstudoBiblicoService = {
     if (!duplaIdPadrao) throw { status: 400, mensagem: 'Nao ha dupla disponivel para vincular este cadastro.' };
 
     if (usuario) {
+      if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && Number(duplaIdPadrao) !== Number(usuario.duplaId)) {
+        throw { status: 403, mensagem: 'Acesso negado: esta não é a sua dupla.' };
+      }
       const dupla = await prisma.dupla.findUnique({
         where: { id: Number(duplaIdPadrao) },
-        select: { igrejaId: true },
+        select: { igrejaId: true, distritoId: true },
       });
       if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
+      if (!dupla.igrejaId && usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+        throw { status: 403, mensagem: 'Acesso negado: dupla sem igreja vinculada.' };
+      }
       if (dupla.igrejaId) await validarIgreja(usuario, dupla.igrejaId);
+      else await validarDistrito(usuario, dupla.distritoId);
     }
 
     const dadosEstudo = normalizarEstudo(data, duplaIdPadrao);
     const participantes = data.participantes || [];
 
     if ((dadosEstudo.tipoEstudo === 'PONTO' || dadosEstudo.tipoEstudo === 'CLASSE') && participantes.length > 0) {
-      return prisma.$transaction(async (tx) => {
+      const estudo = await prisma.$transaction(async (tx) => {
         const estudo = await tx.estudoBiblico.create({
           data: {
             ...dadosEstudo,
@@ -195,32 +259,43 @@ const EstudoBiblicoService = {
         });
         return estudo;
       });
+      await avisarEstudo(usuario, estudo);
+      return estudo;
     }
 
-    return EstudoBiblicoModel.create(dadosEstudo);
+    const estudo = await EstudoBiblicoModel.create(dadosEstudo);
+    await avisarEstudo(usuario, estudo);
+    return estudo;
   },
 
   // AtualizaÃ§Ã£o com validaÃ§Ã£o de escopo para DUPLA_MISSIONARIA
   async atualizar(id, data, usuario) {
-    await this.buscarPorId(id, usuario);
+    const anterior = await this.buscarPorId(id, usuario);
     let duplaIdPadrao = data.duplaId;
     if (!duplaIdPadrao) {
       const atual = await EstudoBiblicoModel.findById(id);
       duplaIdPadrao = atual?.dupla?.id;
     }
     if (usuario && data.duplaId) {
+      if (usuario.perfil === PERFIS.DUPLA_MISSIONARIA && Number(data.duplaId) !== Number(usuario.duplaId)) {
+        throw { status: 403, mensagem: 'Acesso negado: esta não é a sua dupla.' };
+      }
       const dupla = await prisma.dupla.findUnique({
         where: { id: Number(data.duplaId) },
-        select: { igrejaId: true },
+        select: { igrejaId: true, distritoId: true },
       });
       if (!dupla) throw { status: 404, mensagem: 'Dupla não encontrada.' };
-      await validarIgreja(usuario, dupla.igrejaId);
+      if (!dupla.igrejaId && usuario.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
+        throw { status: 403, mensagem: 'Acesso negado: dupla sem igreja vinculada.' };
+      }
+      if (dupla.igrejaId) await validarIgreja(usuario, dupla.igrejaId);
+      else await validarDistrito(usuario, dupla.distritoId);
     }
     const dadosEstudo = normalizarEstudo(data, duplaIdPadrao);
     const participantes = data.participantes;
 
     if (participantes !== undefined) {
-      return prisma.$transaction(async (tx) => {
+      const atualizado = await prisma.$transaction(async (tx) => {
         await tx.participante.deleteMany({ where: { estudoBiblicoId: Number(id) } });
 
         return tx.estudoBiblico.update({
@@ -252,25 +327,34 @@ const EstudoBiblicoService = {
           },
         });
       });
+      await avisarEstudo(usuario, atualizado, anterior);
+      return atualizado;
     }
 
-    return EstudoBiblicoModel.update(id, dadosEstudo);
+    const atualizado = await EstudoBiblicoModel.update(id, dadosEstudo);
+    await avisarEstudo(usuario, atualizado, anterior);
+    return atualizado;
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return EstudoBiblicoModel.remove(id);
+    const anterior = await this.buscarPorId(id, usuario);
+    const removido = await EstudoBiblicoModel.remove(id);
+    await avisarEstudo(usuario, anterior, null, true);
+    return removido;
   },
 
   async reabrir(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return EstudoBiblicoModel.update(id, {
+    const anterior = await this.buscarPorId(id, usuario);
+    const atualizado = await EstudoBiblicoModel.update(id, {
       encerrado: false,
       statusEstudo: 'EM_ANDAMENTO',
       motivoEncerramento: null,
       encerradoEm: null,
     });
+    await avisarEstudo(usuario, atualizado, anterior);
+    return atualizado;
   },
 };
 
+EstudoBiblicoService.descreverMudancaEstudo = descreverMudancaEstudo;
 module.exports = EstudoBiblicoService;

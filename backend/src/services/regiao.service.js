@@ -1,5 +1,6 @@
 const RegiaoModel = require('../models/regiao.model');
 const { montarEscopo, validarRegiao } = require('./escopo.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const RegiaoService = {
   async listar(usuario) {
@@ -18,12 +19,17 @@ const RegiaoService = {
     return regiao;
   },
 
-  async criar(data) {
-    return RegiaoModel.create(data);
+  async criar(data, usuario) {
+    const regiao = await RegiaoModel.create(data);
+    await registrarAtividade({
+      ator: usuario, regiaoId: regiao.id, titulo: 'Nova região cadastrada',
+      mensagem: `A região ${regiao.nome} foi cadastrada.`, url: '/regioes',
+    });
+    return regiao;
   },
 
   async atualizar(id, data, usuario) {
-    await this.buscarPorId(id, usuario);
+    const anterior = await this.buscarPorId(id, usuario);
     const campos = {};
     if (data.nome !== undefined) campos.nome = data.nome;
     if (data.descricao !== undefined) campos.descricao = data.descricao;
@@ -38,12 +44,25 @@ const RegiaoService = {
         ? new Date(data.dataNascimentoConselheiro)
         : null;
     }
-    return RegiaoModel.update(id, campos);
+    const atualizada = await RegiaoModel.update(id, campos);
+    const relevantes = ['nome', 'descricao', 'nomeConselheiro', 'cargoConselheiro', 'telefoneConselheiro', 'enderecoConselheiro'];
+    if (relevantes.some((campo) => anterior[campo] !== atualizada[campo])) {
+      await registrarAtividade({
+        ator: usuario, regiaoId: atualizada.id, titulo: 'Dados da região atualizados',
+        mensagem: `Os dados da região ${atualizada.nome} foram atualizados.`, url: '/regioes',
+      });
+    }
+    return atualizada;
   },
 
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return RegiaoModel.remove(id);
+    const anterior = await this.buscarPorId(id, usuario);
+    const removida = await RegiaoModel.remove(id);
+    await registrarAtividade({
+      ator: usuario, regiaoId: anterior.id, titulo: 'Região removida',
+      mensagem: `A região ${anterior.nome} foi removida.`, url: '/regioes',
+    });
+    return removida;
   },
 };
 

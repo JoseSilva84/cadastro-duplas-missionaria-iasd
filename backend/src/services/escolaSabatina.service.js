@@ -1,8 +1,14 @@
 const EscolaSabatinaModel = require('../models/escolaSabatina.model');
 const { montarEscopo, combinar, validarIgreja } = require('./escopo.service');
 const { PERFIS } = require('../middlewares/auth');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const inteiro = (valor) => Math.max(Number(valor || 0), 0);
+const camposNotificaveis = [
+  'igrejaId', 'distritoId', 'unidadesAcao', 'classeProfessores', 'classeInteressados',
+  'visitasDiretores', 'visitasProfessores', 'visitasAlunos', 'quantidadePequenosGrupos', 'observacoes',
+];
+const idsDuplas = (cadastro) => (cadastro.duplas || []).map((item) => item.duplaId).sort((a, b) => a - b);
 
 const aplicarEscopo = async (usuario, condicoes) => {
   const escopo = await montarEscopo(usuario);
@@ -50,7 +56,7 @@ const EscolaSabatinaService = {
       throw { status: 400, mensagem: 'Selecione apenas duplas da igreja e distrito informados.' };
     }
 
-    return EscolaSabatinaModel.atualizar(id, {
+    const atualizado = await EscolaSabatinaModel.atualizar(id, {
       distritoId,
       igrejaId,
       unidadesAcao: inteiro(data.unidadesAcao),
@@ -62,6 +68,14 @@ const EscolaSabatinaService = {
       quantidadePequenosGrupos: inteiro(data.quantidadePequenosGrupos),
       observacoes: data.observacoes || null,
     }, duplaIds);
+    if (camposNotificaveis.some((campo) => cadastro[campo] !== atualizado[campo]) ||
+        JSON.stringify(idsDuplas(cadastro)) !== JSON.stringify(idsDuplas(atualizado))) {
+      await registrarAtividade({
+        ator: usuario, igrejaId, titulo: 'Escola Sabatina atualizada',
+        mensagem: 'Os dados da Escola Sabatina desta igreja foram atualizados.', url: '/igrejas',
+      });
+    }
+    return atualizado;
   },
 
   async criar(data, usuario) {
@@ -93,7 +107,7 @@ const EscolaSabatinaService = {
       ? inteiro(data.quantidadePequenosGrupos)
       : duplas.filter((dupla) => dupla.tipoProjeto === 'PEQUENOS_GRUPOS').length;
 
-    return EscolaSabatinaModel.criar({
+    const cadastro = await EscolaSabatinaModel.criar({
       distritoId,
       igrejaId,
       unidadesAcao: inteiro(data.unidadesAcao),
@@ -106,6 +120,11 @@ const EscolaSabatinaService = {
       observacoes: data.observacoes || null,
       criadoPorId: usuario.id || null,
     }, duplaIds);
+    await registrarAtividade({
+      ator: usuario, igrejaId, titulo: 'Escola Sabatina cadastrada',
+      mensagem: 'Um novo cadastro da Escola Sabatina foi registrado nesta igreja.', url: '/igrejas',
+    });
+    return cadastro;
   },
 
   async remover(id, usuario) {
@@ -114,7 +133,12 @@ const EscolaSabatinaService = {
       && cadastro.criadoPorId && Number(cadastro.criadoPorId) !== Number(usuario.id)) {
       throw { status: 403, mensagem: 'Acesso negado: este cadastro foi realizado por outro usuário.' };
     }
-    return EscolaSabatinaModel.remover(id);
+    const removido = await EscolaSabatinaModel.remover(id);
+    await registrarAtividade({
+      ator: usuario, igrejaId: cadastro.igrejaId, titulo: 'Escola Sabatina removida',
+      mensagem: 'Um cadastro da Escola Sabatina foi removido desta igreja.', url: '/igrejas',
+    });
+    return removido;
   },
 };
 

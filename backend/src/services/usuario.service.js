@@ -4,6 +4,7 @@ const UsuarioModel = require('../models/usuario.model');
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 const { montarIdentidadeUsuario } = require('./usuarioIdentidade.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 // Perfis reservados à administração da Associação.
 const PERFIS_EXCLUSIVOS_ADMIN = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR];
@@ -14,6 +15,10 @@ const PERFIS_GERENCIAVEIS_IGREJA = [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DU
 const ehGestorRegional = (perfil) => PERFIS_GESTORES_REGIONAIS.includes(perfil);
 const ehGestorDistrital = (perfil) => perfil === PERFIS.PASTOR_DISTRITAL;
 const ehGestorIgreja = (perfil) => perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
+const localDaConta = (usuario) => ({
+  duplaId: usuario.duplaId, igrejaId: usuario.igrejaId,
+  distritoId: usuario.distritoId, regiaoId: usuario.regiaoId,
+});
 
 const obterRegiaoIdUsuario = (usuario) => {
   if (usuario?.perfil === PERFIS.PASTOR_DISTRITAL) {
@@ -276,6 +281,11 @@ const UsuarioService = {
           : null,
       });
 
+      await registrarAtividade({
+        ator: usuarioLogado, ...localDaConta(usuario), titulo: 'Nova conta de acesso',
+        mensagem: `A conta de ${usuario.nome} foi cadastrada no sistema.`, url: '/gestao-usuarios',
+      });
+
       const { senha: _, ...usuarioSemSenha } = usuario;
       return usuarioSemSenha;
     } catch (err) {
@@ -368,6 +378,13 @@ const UsuarioService = {
 
     try {
       const usuario = await UsuarioModel.update(id, updateData);
+      const relevantes = ['nome', 'perfil', 'ativo', 'regiaoId', 'distritoId', 'igrejaId', 'duplaId'];
+      if (relevantes.some((campo) => usuarioAtual[campo] !== usuario[campo])) {
+        await registrarAtividade({
+          ator: usuarioLogado, ...localDaConta(usuario), titulo: 'Conta de acesso atualizada',
+          mensagem: `Os dados de acesso de ${usuario.nome} foram atualizados.`, url: '/gestao-usuarios',
+        });
+      }
       const { senha: _, ...usuarioSemSenha } = usuario;
       return usuarioSemSenha;
     } catch (err) {
@@ -413,7 +430,12 @@ const UsuarioService = {
     if (Number(id) === Number(usuarioLogado.id)) {
       throw { status: 400, mensagem: 'Você não pode desativar o próprio usuário logado.' };
     }
-    return UsuarioModel.deactivate(id);
+    const desativado = await UsuarioModel.deactivate(id);
+    await registrarAtividade({
+      ator: usuarioLogado, ...localDaConta(usuarioAtual), titulo: 'Conta de acesso desativada',
+      mensagem: `A conta de ${usuarioAtual.nome} foi desativada.`, url: '/gestao-usuarios',
+    });
+    return desativado;
   },
 
   // Exclui usuário definitivamente
@@ -426,7 +448,12 @@ const UsuarioService = {
       throw { status: 404, mensagem: 'Usuário não encontrado.' };
     }
     await validarPermissaoGerenciarUsuario(usuarioAtual, usuarioLogado);
-    return UsuarioModel.remove(id);
+    const removido = await UsuarioModel.remove(id);
+    await registrarAtividade({
+      ator: usuarioLogado, ...localDaConta(usuarioAtual), titulo: 'Conta de acesso removida',
+      mensagem: `A conta de ${usuarioAtual.nome} foi removida.`, url: '/gestao-usuarios',
+    });
+    return removido;
   },
 
   validarPermissaoGerenciarUsuario,

@@ -3,6 +3,7 @@ const DuplaModel = require('../models/dupla.model');
 const prisma = require('../lib/prisma');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 const { montarEscopo, combinar, validarDistrito, validarIgreja } = require('./escopo.service');
+const { registrarAtividade } = require('./notificacoesAtividade.service');
 
 const comoBoolean = (valor) => {
   if (valor === undefined || valor === null || valor === '') return null;
@@ -32,6 +33,13 @@ const calcularClassificacao = (data) => {
     atividadeDupla: estudoAtualEmAndamento === null ? null : estudoAtualEmAndamento ? 'ATIVA' : 'INATIVA',
   };
 };
+
+const nomeDaDupla = (dupla) => [dupla.liderNome, dupla.membro2Nome].filter(Boolean).join(' e ');
+const camposNotificaveis = [
+  'liderNome', 'membro2Nome', 'status', 'distritoId', 'igrejaId', 'bairro',
+  'pessoasAlcancadas', 'batismos', 'estudoBiblico', 'statusEstudoBiblico',
+  'statusEvangelismo', 'classificacaoDupla', 'atividadeDupla',
+];
 
 async function resolverIgrejaPadrao(distritoId) {
   const igrejas = await prisma.igreja.findMany({
@@ -212,6 +220,10 @@ const DuplaService = {
       }
     }
 
+    await registrarAtividade({
+      ator: usuario, duplaId: novaDupla.id, titulo: 'Nova dupla missionária',
+      mensagem: `A dupla ${nomeDaDupla(novaDupla)} foi cadastrada.`, url: `/duplas/${novaDupla.id}`,
+    });
     return novaDupla;
   },
 
@@ -275,13 +287,31 @@ const DuplaService = {
       }
     });
 
-    return DuplaModel.update(id, dadosAtualizados);
+    const atualizada = await DuplaModel.update(id, dadosAtualizados);
+    if (camposNotificaveis.some((campo) => dupla[campo] !== atualizada[campo])) {
+      const batismosAumentaram = atualizada.batismos > dupla.batismos;
+      await registrarAtividade({
+        ator: usuario, duplaId: atualizada.id,
+        titulo: batismosAumentaram ? 'Batismos da dupla atualizados' : 'Dupla missionária atualizada',
+        mensagem: batismosAumentaram
+          ? `A dupla ${nomeDaDupla(atualizada)} passou de ${dupla.batismos} para ${atualizada.batismos} batismo(s).`
+          : `O cadastro da dupla ${nomeDaDupla(atualizada)} foi atualizado.`,
+        url: `/duplas/${atualizada.id}`,
+      });
+    }
+    return atualizada;
   },
 
   // Remove dupla apos validar o escopo do perfil solicitante.
   async remover(id, usuario) {
-    await this.buscarPorId(id, usuario);
-    return DuplaModel.remove(id);
+    const dupla = await this.buscarPorId(id, usuario);
+    const removida = await DuplaModel.remove(id);
+    await registrarAtividade({
+      ator: usuario, igrejaId: dupla.igrejaId, distritoId: dupla.distritoId,
+      titulo: 'Dupla missionária removida',
+      mensagem: `A dupla ${nomeDaDupla(dupla)} foi removida.`, url: '/duplas',
+    });
+    return removida;
   },
 };
 

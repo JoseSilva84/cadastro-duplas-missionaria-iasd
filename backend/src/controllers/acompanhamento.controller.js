@@ -2,6 +2,7 @@
 const prisma = require('../lib/prisma');
 const { body, validationResult } = require('express-validator');
 const { ehAdmin } = require('../middlewares/auth');
+const { registrarAtividade } = require('../services/notificacoesAtividade.service');
 
 const validarAcompanhamento = [
   body('dataSaida').notEmpty().withMessage('Data da saída obrigatória.'),
@@ -17,6 +18,10 @@ const AcompanhamentoController = {
 
     try {
       const { dataSaida, observacoes, duplaIds } = req.body;
+      const idsDuplas = [...new Set(duplaIds.map(Number))];
+      if (!idsDuplas.length || idsDuplas.some((id) => !Number.isInteger(id) || id <= 0)) {
+        return res.status(400).json({ erro: 'Selecione duplas válidas para o acompanhamento.' });
+      }
       const coordenadorId = Number(req.body.coordenadorId);
 
       if (!ehAdmin(req.usuario.perfil) && coordenadorId !== req.usuario.id) {
@@ -29,11 +34,19 @@ const AcompanhamentoController = {
           perfil: 'COORDENADOR_REGIONAL',
           ativo: true,
         },
-        select: { id: true },
+        select: { id: true, regiaoId: true },
       });
 
       if (!coordenador) {
         return res.status(400).json({ erro: 'Selecione um coordenador regional válido.' });
+      }
+      const duplas = await prisma.dupla.findMany({
+        where: { id: { in: idsDuplas } },
+        select: { id: true, igrejaId: true, distritoId: true, distrito: { select: { regiaoId: true } } },
+      });
+      if (!coordenador.regiaoId || duplas.length !== idsDuplas.length ||
+          duplas.some((dupla) => dupla.distrito.regiaoId !== coordenador.regiaoId)) {
+        return res.status(400).json({ erro: 'Selecione apenas duplas da região do coordenador.' });
       }
 
       const resultado = await prisma.$transaction(async (tx) => {
@@ -44,7 +57,7 @@ const AcompanhamentoController = {
             coordenadorId,
             observacoes: observacoes || null,
             duplas: {
-              create: duplaIds.map((duplaId) => ({ duplaId: Number(duplaId) })),
+              create: idsDuplas.map((duplaId) => ({ duplaId })),
             },
           },
           include: {
@@ -55,13 +68,28 @@ const AcompanhamentoController = {
 
         // Atualiza ultimoAcompanhamento de cada dupla visitada
         await tx.dupla.updateMany({
-          where: { id: { in: duplaIds.map(Number) } },
+          where: { id: { in: idsDuplas } },
           data: { ultimoAcompanhamento: new Date(dataSaida) },
         });
 
         return acomp;
       });
 
+      const grupos = new Map();
+      for (const dupla of duplas) {
+        const chave = dupla.igrejaId ? `igreja:${dupla.igrejaId}` : `distrito:${dupla.distritoId}`;
+        const grupo = grupos.get(chave) || { igrejaId: dupla.igrejaId, distritoId: dupla.distritoId, quantidade: 0 };
+        grupo.quantidade += 1;
+        grupos.set(chave, grupo);
+      }
+      for (const grupo of grupos.values()) {
+        await registrarAtividade({
+          ator: req.usuario, igrejaId: grupo.igrejaId, distritoId: grupo.distritoId,
+          titulo: 'Acompanhamento missionário registrado',
+          mensagem: `Foi registrada uma saída com ${grupo.quantidade} dupla(s) ${grupo.igrejaId ? 'desta igreja' : 'deste distrito'}.`,
+          url: '/duplas',
+        });
+      }
       res.status(201).json(resultado);
     } catch (err) {
       console.error(err);
