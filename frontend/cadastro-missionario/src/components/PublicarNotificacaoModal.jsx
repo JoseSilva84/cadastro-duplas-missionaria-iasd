@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../lib/api';
 import { toastError, toastSuccess } from '../lib/toast';
 import { useAuth, PERFIS } from '../contexts/AuthContext';
@@ -34,6 +35,7 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
   const [perfisSelecionados, setPerfisSelecionados] = useState([]);
   const [usuarioIdsSelecionados, setUsuarioIdsSelecionados] = useState([]);
   const [buscaPessoa, setBuscaPessoa] = useState('');
+  const [areaVisivel, setAreaVisivel] = useState(null);
 
   const carregar = async () => {
     setCarregando(true);
@@ -60,9 +62,27 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
   useEffect(() => {
     if (!aberto) return undefined;
     const aoTeclar = (evento) => { if (evento.key === 'Escape' && !salvando) aoFechar(); };
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', aoTeclar);
-    return () => window.removeEventListener('keydown', aoTeclar);
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      window.removeEventListener('keydown', aoTeclar);
+    };
   }, [aberto, aoFechar, salvando]);
+
+  useEffect(() => {
+    if (!aberto || !window.visualViewport) return undefined;
+    const viewport = window.visualViewport;
+    const atualizar = () => setAreaVisivel({ altura: viewport.height, topo: viewport.offsetTop });
+    atualizar();
+    viewport.addEventListener('resize', atualizar);
+    viewport.addEventListener('scroll', atualizar);
+    return () => {
+      viewport.removeEventListener('resize', atualizar);
+      viewport.removeEventListener('scroll', atualizar);
+    };
+  }, [aberto]);
 
   if (!aberto) return null;
 
@@ -117,10 +137,10 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvando) aoFechar(); }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="publicar-notificacao-titulo" className="flex max-h-[95dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90dvh] sm:rounded-3xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
+  return createPortal(
+    <div className="fixed inset-x-0 top-0 z-[9999] flex h-[100dvh] items-center justify-center bg-slate-950/70 px-3 backdrop-blur-sm sm:px-5" style={{ top: areaVisivel?.topo ?? 0, height: areaVisivel ? `${areaVisivel.altura}px` : '100dvh', paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }} onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvando) aoFechar(); }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="publicar-notificacao-titulo" className="flex min-h-0 max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[min(90dvh,800px)] sm:rounded-3xl">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B3812D]">Comunicação</p>
             <h2 id="publicar-notificacao-titulo" className="mt-1 text-xl font-bold text-[#142B50] sm:text-2xl">Publicar notificação</h2>
@@ -128,7 +148,7 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
           </div>
           <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">✕</button>
         </div>
-        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7" tabIndex={0}>
           <form id="form-publicar-notificacao" onSubmit={enviar} className="space-y-4">
             <fieldset className="rounded-2xl border border-[#DCE5F1] bg-[#F5F8FC] p-4">
               <legend className="px-1 text-xs font-bold uppercase tracking-wide text-[#1A3A6B]">Quem recebe</legend>
@@ -175,7 +195,7 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
             )}
             <div>
               <label htmlFor="publicacao-titulo" className="mb-1.5 block text-sm font-semibold text-slate-700">Título</label>
-              <input id="publicacao-titulo" autoFocus required maxLength={160} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Nova ferramenta disponível" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none" />
+              <input id="publicacao-titulo" required maxLength={160} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Nova ferramenta disponível" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#1A3A6B] focus:outline-none" />
             </div>
             <div>
               <label htmlFor="publicacao-mensagem" className="mb-1.5 block text-sm font-semibold text-slate-700">Mensagem</label>
@@ -235,11 +255,11 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
             </div>
           </div>
         </div>
-        <div className="flex gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:justify-end sm:px-7">
-          <button type="button" onClick={aoFechar} disabled={salvando} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 sm:flex-none">Fechar</button>
-          <button form="form-publicar-notificacao" type="submit" disabled={salvando || carregando || !dados || (modoDestinatarios === 'SELECIONADOS' && !quantidadeSelecionada)} className="flex-1 rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#142B50] disabled:opacity-50 sm:flex-none">{salvando ? 'Salvando…' : quando === 'AGENDAR' ? 'Agendar publicação' : 'Publicar agora'}</button>
+        <div className="flex shrink-0 gap-3 border-t border-slate-100 bg-white px-5 py-3 shadow-[0_-6px_18px_-12px_rgba(15,35,71,0.25)] sm:justify-end sm:px-7 sm:py-4">
+          <button type="button" onClick={aoFechar} disabled={salvando} className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:flex-none sm:px-4">Fechar</button>
+          <button form="form-publicar-notificacao" type="submit" disabled={salvando || carregando || !dados || (modoDestinatarios === 'SELECIONADOS' && !quantidadeSelecionada)} className="min-h-11 min-w-0 flex-1 rounded-xl bg-[#1A3A6B] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#142B50] disabled:opacity-50 sm:flex-none sm:px-5">{salvando ? 'Salvando…' : quando === 'AGENDAR' ? 'Agendar publicação' : 'Publicar agora'}</button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   );
 }
