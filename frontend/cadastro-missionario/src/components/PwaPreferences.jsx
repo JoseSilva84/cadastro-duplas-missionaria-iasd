@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import { limparCacheDoUsuario, resumoCacheLocal } from '../lib/cacheLocal';
-import { notificarPwa, notificacoesDisponiveis, pedirPermissaoNotificacoes } from '../lib/pwa';
-import { toastError, toastSuccess } from '../lib/toast';
+import { notificarPwa } from '../lib/pwa';
+import { toastSuccess } from '../lib/toast';
+import { useNotificacoes } from '../contexts/NotificacoesContext';
 
 const formatarData = (valor) => valor ? new Date(valor).toLocaleString('pt-BR') : 'Nenhum dado salvo ainda';
 
 export default function PwaPreferences({ usuario }) {
-  const [permissao, setPermissao] = useState(() => {
-    if (!notificacoesDisponiveis()) return 'indisponivel';
-    return Notification.permission;
-  });
+  const { permissao, pushDisponivel, ativar, processando: ativando } = useNotificacoes();
   const [cache, setCache] = useState({ itens: 0, salvoEm: null });
   const [processando, setProcessando] = useState(false);
 
@@ -20,39 +18,6 @@ export default function PwaPreferences({ usuario }) {
     // O identificador da conta separa os dados offline de cada usuário.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario?.id, usuario?.email]);
-
-  useEffect(() => {
-    if (!notificacoesDisponiveis()) return undefined;
-    const atualizarPermissao = () => setPermissao(Notification.permission);
-    document.addEventListener('visibilitychange', atualizarPermissao);
-    window.addEventListener('focus', atualizarPermissao);
-    return () => {
-      document.removeEventListener('visibilitychange', atualizarPermissao);
-      window.removeEventListener('focus', atualizarPermissao);
-    };
-  }, []);
-
-  const ativarNotificacoes = async () => {
-    setProcessando(true);
-    try {
-      const resultado = await pedirPermissaoNotificacoes();
-      setPermissao(resultado);
-      if (resultado === 'granted') {
-        await notificarPwa({
-          titulo: 'Notificações ativadas',
-          corpo: 'O aplicativo poderá avisar quando uma atualização importante for concluída.',
-          tag: 'pcm-notificacoes-ativas',
-          url: '/configuracoes',
-          forcar: true,
-        });
-        toastSuccess('Notificações ativadas neste dispositivo.');
-      } else if (resultado === 'denied') {
-        toastError('A permissão foi bloqueada pelo navegador. Ela pode ser liberada nas configurações do site.');
-      }
-    } finally {
-      setProcessando(false);
-    }
-  };
 
   const limparDados = async () => {
     setProcessando(true);
@@ -83,7 +48,7 @@ export default function PwaPreferences({ usuario }) {
             <p className="text-xs font-bold uppercase tracking-wider text-[#C9963A]">Notificações do aplicativo</p>
             <h2 className="mt-1 text-lg font-bold text-[#1A3A6B]">Avisos no computador ou celular</h2>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500">
-              Receba avisos quando uma sincronização terminar ou quando houver uma atualização importante do aplicativo.
+              Receba avisos sobre novidades do sistema mesmo com o aplicativo fechado. As notificações também ficam guardadas no sino quando você abre o PCM.
             </p>
             {permissao === 'default' && (
               <p className="mt-2 max-w-2xl text-xs leading-relaxed text-gray-400">
@@ -91,14 +56,14 @@ export default function PwaPreferences({ usuario }) {
               </p>
             )}
             <p className="mt-3 text-xs font-semibold text-gray-500">
-              Situação: {permissao === 'granted' ? 'ativadas' : permissao === 'denied' ? 'bloqueadas pelo navegador' : permissao === 'indisponivel' ? 'não disponíveis neste navegador' : 'aguardando autorização'}
+              Situação: {!pushDisponivel ? 'Web Push indisponível neste dispositivo ou aguardando configuração do servidor' : permissao === 'granted' ? 'ativadas' : permissao === 'denied' ? 'bloqueadas pelo navegador' : 'aguardando autorização'}
             </p>
           </div>
           {permissao === 'granted' ? (
             <button type="button" onClick={testarNotificacao} className="btn-outline shrink-0">Testar notificação</button>
           ) : (
-            <button type="button" disabled={processando || permissao === 'indisponivel'} onClick={ativarNotificacoes} className="btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-50">
-              Ativar notificações
+            <button type="button" disabled={ativando || !pushDisponivel} onClick={ativar} className="btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-50">
+              {ativando ? 'Ativando...' : 'Ativar notificações'}
             </button>
           )}
         </div>

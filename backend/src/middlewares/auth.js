@@ -109,7 +109,11 @@ const autenticar = async (req, res, next) => {
       && req.baseUrl === '/api/auth'
       && req.path === '/conta';
 
-    if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method) && !alteracaoDaPropriaConta) {
+    const preferenciasDeNotificacao = req.baseUrl === '/api/notificacoes' && (
+      req.method === 'PATCH' ||
+      (req.path === '/push/inscricoes' && ['POST', 'DELETE'].includes(req.method))
+    );
+    if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method) && !alteracaoDaPropriaConta && !preferenciasDeNotificacao) {
       return res.status(403).json({
         erro: 'Este acesso e somente para observacao. Alteracoes nao sao permitidas.',
         codigo: 'SOMENTE_LEITURA',
@@ -157,6 +161,7 @@ const apenasAdmins = autorizar(...ADMINS);
 const apenasSuperAdmin = autorizar(PERFIS.SUPER_ADMIN);
 
 module.exports = {
+  versaoDasCredenciais,
   autenticar,
   autorizar,
   bloquear,

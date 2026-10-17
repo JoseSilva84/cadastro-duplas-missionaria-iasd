@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 import MonitorAuditoria from './components/MonitorAuditoria';
 import PwaStatus from './components/PwaStatus';
+import { NotificacoesProvider } from './contexts/NotificacoesContext';
 
 // Páginas
 import Login from './pages/Login';
@@ -548,9 +549,11 @@ function App() {
             },
           }}
         />
-        <ErrorBoundary>
-          <AppRoutes />
-        </ErrorBoundary>
+        <NotificacoesProvider>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+        </NotificacoesProvider>
       </BrowserRouter>
     </AuthProvider>
   );

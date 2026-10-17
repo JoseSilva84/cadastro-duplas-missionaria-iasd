@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import UsuarioAvatar from './UsuarioAvatar';
+import NotificationBell from './NotificationBell';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
@@ -287,13 +288,16 @@ export default function Layout({ children }) {
          <header className="lg:hidden flex items-center justify-between px-3 py-3 shadow-md gap-2"
            style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}
          >
-           <button
-             type="button"
-             onClick={() => setSidebarAberta(true)}
-             className="text-white p-3 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
-           >
-             {icons.menu}
-           </button>
+           <div className="w-20 flex-shrink-0">
+             <button
+               type="button"
+               onClick={() => setSidebarAberta(true)}
+               aria-label="Abrir menu"
+               className="text-white p-3 rounded-lg hover:bg-white/10 transition-colors"
+             >
+               {icons.menu}
+             </button>
+           </div>
             <div className="flex items-end justify-center gap-2.5 min-w-0 flex-1 pb-0.5">
               <div className="h-8 w-8 sm:h-9 sm:w-9 flex items-end justify-center flex-shrink-0">
                 <img src="/logoiasd.png" alt="Logo IASD" className="w-full h-full object-contain object-bottom" />
@@ -305,7 +309,10 @@ export default function Layout({ children }) {
                 PCM
               </span>
             </div>
-            <div className="w-12 flex-shrink-0" />
+            <div className="flex w-20 flex-shrink-0 items-center justify-end gap-0.5">
+              <NotificationBell />
+              <button type="button" onClick={handleLogout} aria-label="Sair" title="Sair" className="flex h-10 w-10 items-center justify-center rounded-xl text-white hover:bg-white/15">{icons.logout}</button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4F5F7] pb-20 lg:pb-0">
@@ -369,6 +376,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
           </p>
           <p className="text-[#C9963A] text-xs font-medium mt-0.5">Assoc. Paulistana</p>
         </div>
+        <div className="ml-auto hidden lg:block"><NotificationBell align="left" /></div>
       </div>
 
       {/* Indicador do modelo atual */}

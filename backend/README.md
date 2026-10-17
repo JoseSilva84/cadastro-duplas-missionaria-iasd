@@ -9,6 +9,17 @@ API REST do Programa Capacitação Missionária, construída com Node.js, Expres
 - Expor endpoints para regiões, distritos, igrejas, duplas, estudos, classes, Escola Sabatina, usuários e relatórios.
 - Persistir dados via Prisma Client.
 - Consolidar métricas e relatórios para o frontend.
+- Guardar o histórico de notificações, entregar eventos via Socket.IO e enviar Web Push.
+
+## Notificações
+
+As migrações `20261017120000_notificacoes` e `20261017123000_configuracao_push` criam as tabelas de notificações por usuário, inscrições por dispositivo e configuração VAPID. Aplique no PostgreSQL usado pelo serviço antes de publicar o novo backend: `npm run db:deploy`.
+
+Na primeira inicialização, o backend gera automaticamente um par VAPID e o guarda em `ConfiguracaoPush`. A chave privada fica apenas no servidor e no banco; a API entrega somente a chave pública. Se preferir configurar as chaves no Coolify, defina `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` (URL HTTPS ou `mailto:`) no ambiente do backend. Mantenha o mesmo par de chaves entre deploys: trocá-lo exige que os usuários inscrevam novamente os dispositivos.
+
+O site precisa estar em HTTPS para Web Push fora de `localhost`. O proxy reverso deve encaminhar `/socket.io` ao mesmo serviço Node que atende `/api`; o cliente usa a conexão autenticada pelo JWT. Com mais de uma réplica do backend, configure um adaptador compartilhado para Socket.IO antes de escalar horizontalmente. O navegador solicita permissão somente após o usuário escolher **Ativar notificações**. O histórico e o contador funcionam mesmo sem permissão push.
+
+Ao criar um evento ou ação no calendário, o backend registra notificações para os usuários do escopo correspondente e tenta entregá-las via Socket.IO e Web Push. Administradores também podem usar `POST /api/notificacoes/enviar` com `usuarioIds`, `titulo`, `mensagem` e `url` interna para outros fluxos do sistema. A rota é autenticada e restrita a administradores. O histórico fica em `GET /api/notificacoes`, com 20 itens por página, e pode ser marcado como lido pelas rotas `PATCH /api/notificacoes/:id/lida` e `PATCH /api/notificacoes/lidas`.
 
 ## Stack
 

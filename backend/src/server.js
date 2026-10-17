@@ -4,6 +4,9 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
 const regiaoRoutes = require('./routes/regioes');
@@ -23,10 +26,36 @@ const interessadosNovoTempoRoutes = require('./routes/interessadosNovoTempo');
 const interessadosNovoTempoService = require('./services/interessadosNovoTempo.service');
 const auditoriaRoutes = require('./routes/auditoria');
 const { auditarRequisicao } = require('./middlewares/auditoria');
+const notificacoesRoutes = require('./routes/notificacoes');
+const { definirSocket, inicializarPush } = require('./services/notificacoes.service');
+const { versaoDasCredenciais } = require('./middlewares/auth');
 
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
+const origensPermitidas = [
+  'http://localhost:5173', 'http://localhost:3000',
+  'http://pcmpaulistana.com.br', 'https://pcmpaulistana.com.br',
+  'http://www.pcmpaulistana.com.br', 'https://www.pcmpaulistana.com.br',
+];
+const io = new Server(httpServer, { path: '/socket.io', cors: { origin: origensPermitidas, credentials: true } });
+definirSocket(io);
+io.use(async (socket, next) => {
+  try {
+    const decoded = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET);
+    const usuario = await require('./lib/prisma').usuario.findUnique({
+      where: { id: Number(decoded.id) },
+      select: { id: true, email: true, senha: true, ativo: true },
+    });
+    if (!usuario?.ativo || (decoded.versaoCredenciais && decoded.versaoCredenciais !== versaoDasCredenciais(usuario))) {
+      return next(new Error('Sessão inválida.'));
+    }
+    socket.data.usuarioId = usuario.id;
+    return next();
+  } catch { return next(new Error('Sessão inválida.')); }
+});
+io.on('connection', (socket) => socket.join(`usuario:${socket.data.usuarioId}`));
 
 app.set('trust proxy', 1);
 
@@ -53,14 +82,7 @@ app.use((req, res, next) => {
 
 // Middlewares
 app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000', 
-    'http://pcmpaulistana.com.br', 
-    'https://pcmpaulistana.com.br', 
-    'http://www.pcmpaulistana.com.br', 
-    'https://www.pcmpaulistana.com.br'
-  ],
+  origin: origensPermitidas,
   credentials: true,
   exposedHeaders: ['Content-Disposition'],
 }));
@@ -84,6 +106,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/configuracoes', configuracaoRoutes);
 app.use('/api/interessados-nt', interessadosNovoTempoRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
+app.use('/api/notificacoes', notificacoesRoutes);
 
 const publicDir = path.join(__dirname, '..', 'public');
 const indexHtml = path.join(publicDir, 'index.html');
@@ -144,7 +167,8 @@ app.get('/api/public/estatisticas', async (req, res) => {
 async function iniciarServidor() {
   try {
     await prisma.connectWithRetry();
-    app.listen(PORT, () => {
+    await inicializarPush();
+    httpServer.listen(PORT, () => {
       console.log(`✝️  Servidor rodando na porta ${PORT}`);
       console.log(`📖  API: http://localhost:${PORT}/api`);
       interessadosNovoTempoService.iniciarSincronizacao();

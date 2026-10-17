@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import DropdownMenu from './DropdownMenu';
 import UsuarioAvatar from './UsuarioAvatar';
+import NotificationBell from './NotificationBell';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
@@ -257,6 +258,7 @@ export default function LayoutDireto() {
 
             {/* Ações à direita */}
             <div className="flex flex-shrink-0 items-center gap-2 lg:ml-2 xl:ml-4">
+              <NotificationBell />
               {/* Indicador do modelo */}
               <div className="hidden 2xl:flex items-center gap-2 bg-[#C9963A]/15 border border-[#C9963A]/20 rounded-lg px-3 py-1.5 mr-1">
                 <div className="w-2 h-2 rounded-full bg-[#C9963A]" />

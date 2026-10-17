@@ -1,5 +1,6 @@
 const CalendarioMissionarioModel = require('../models/calendarioMissionario.model');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
+const { avisarNovoItemCalendario } = require('./notificacoes.service');
 
 const ANO_PADRAO = 2027;
 const STATUS = ['PLANEJADA', 'EM_ANDAMENTO', 'CONCLUIDA'];
@@ -414,6 +415,11 @@ const CalendarioMissionarioService = {
       criadoPorPerfil: usuario.perfil,
       criadoPorNome: usuario.nome,
     });
+    await avisarNovoItemCalendario(usuario, {
+      titulo: 'Novo evento no calendário',
+      mensagem: `${usuario.nome} cadastrou ${nome}.`,
+      url: '/calendario-missionario',
+    }).catch((erroNotificacao) => console.error('Falha ao notificar evento:', erroNotificacao));
     return formatarEvento(evento, usuario, acesso);
   },
 
@@ -470,6 +476,12 @@ const CalendarioMissionarioService = {
       criadoPorPerfil: usuario.perfil,
       criadoPorNome: usuario.nome,
     });
+    await avisarNovoItemCalendario(usuario, {
+      titulo: 'Nova ação missionária',
+      mensagem: `${usuario.nome} cadastrou ${dados.nome}.`,
+      url: '/calendario-missionario',
+      alvo: origem,
+    }).catch((erroNotificacao) => console.error('Falha ao notificar ação:', erroNotificacao));
     return formatarAcao(acao, usuario, acesso);
   },
 

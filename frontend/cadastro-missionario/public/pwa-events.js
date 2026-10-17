@@ -1,5 +1,5 @@
 self.addEventListener('push', (event) => {
-  let mensagem = {};
+  let mensagem;
   try {
     mensagem = event.data?.json() || {};
   } catch {
@@ -20,7 +20,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const destino = new URL(event.notification.data?.url || '/dashboard', self.location.origin).href;
+  const url = event.notification.data?.url || '/dashboard';
+  const destinoResolvido = new URL(url, self.location.origin);
+  const destino = destinoResolvido.origin === self.location.origin ? destinoResolvido.href : `${self.location.origin}/dashboard`;
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientes) => {
     const existente = clientes.find((cliente) => cliente.url.startsWith(self.location.origin));
     if (existente) {

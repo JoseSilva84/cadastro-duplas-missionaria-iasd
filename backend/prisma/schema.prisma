@@ -84,6 +84,8 @@ model QrCodeAtivacao {
 
 // Usuários do sistema
 model Usuario {
+  notificacoes Notificacao[]
+  inscricoesPush InscricaoPush[]
   acoesCalendario CalendarioAcaoMissionaria[]
   permissoesCalendarioCriadas CalendarioPermissao[]
   sessoesAuditoria AuditoriaSessao[]
@@ -110,6 +112,42 @@ model Usuario {
   acompanhamentos AcompanhamentoDupla[]
   escolasSabatinaCriadas EscolaSabatinaCadastro[]
   mapasIgrejaCriados MapaIgreja[]
+}
+
+model Notificacao {
+  id Int @id @default(autoincrement())
+  usuarioId Int
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  titulo String
+  mensagem String
+  tipo String @default("INFO")
+  url String?
+  criadaEm DateTime @default(now())
+  lidaEm DateTime?
+
+  @@index([usuarioId, criadaEm(sort: Desc)])
+  @@index([usuarioId, lidaEm])
+}
+
+model InscricaoPush {
+  id Int @id @default(autoincrement())
+  usuarioId Int
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  endpoint String @unique
+  p256dh String
+  auth String
+  criadaEm DateTime @default(now())
+  atualizadaEm DateTime @updatedAt
+
+  @@index([usuarioId])
+}
+
+model ConfiguracaoPush {
+  id Int @id @default(1)
+  chavePublica String
+  chavePrivada String
+  assunto String
+  criadaEm DateTime @default(now())
 }
 
 // Sessões persistentes para medir acessos e tempo de utilização do sistema.

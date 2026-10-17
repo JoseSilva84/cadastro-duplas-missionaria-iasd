@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../lib/api';
 import { limparCacheDoUsuario } from '../lib/cacheLocal';
+import { removerInscricaoDoDispositivo } from '../lib/push';
 
 // Contexto de autenticação global
 const AuthContext = createContext(null);
@@ -115,6 +116,7 @@ export function AuthProvider({ children }) {
   // Realiza logout
   const logout = async () => {
     try {
+      await removerInscricaoDoDispositivo().catch(() => {});
       await api.post('/auditoria/logout');
     } catch {
       // A limpeza local precisa acontecer mesmo se a conexão estiver indisponível.

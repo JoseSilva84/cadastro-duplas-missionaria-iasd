@@ -32,6 +32,7 @@ const requisicaoCacheavel = (config = {}) => {
   const rota = config.url || '';
   const rotaSensivel = [
     '/auth/',
+    '/notificacoes',
     '/auditoria/',
     '/configuracoes/',
     '/usuarios',
