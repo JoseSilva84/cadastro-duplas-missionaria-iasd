@@ -206,6 +206,8 @@ export default function LayoutDireto() {
     { to: '/direto/calendario-missionario', label: 'Calendário Missionário', shortLabel: 'Calend.', icon: icons.calendario },
     { to: '/direto/configuracoes', label: 'Configurações', shortLabel: 'Conf.', icon: icons.configuracoes },
   ];
+  const navLinksComPublicacao = navLinks.flatMap((link) =>
+    link.to === '/direto/configuracoes' && podePublicarNotificacao ? [{ type: 'publicar', key: 'publicar' }, link] : [link]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F4F5F7]">
@@ -231,7 +233,12 @@ export default function LayoutDireto() {
 
             {/* Navegação desktop — centro */}
             <nav className="hidden lg:flex flex-1 min-w-0 items-center gap-1 overflow-visible py-1 pr-1">
-              {navLinks.map((link) => link.type === 'dropdown' ? (
+              {navLinksComPublicacao.map((link) => link.type === 'publicar' ? (
+                <button key={link.key} type="button" onClick={() => setModalPublicacaoAberto(true)} className="flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-[#F2C979] hover:bg-white/10 hover:text-white xl:px-3 xl:text-sm" title="Publicar notificação">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+                  <span className="hidden xl:inline">Publicar</span>
+                </button>
+              ) : link.type === 'dropdown' ? (
                 <DropdownMenu
                   key={link.key}
                   label={link.label}
@@ -257,12 +264,6 @@ export default function LayoutDireto() {
                   <span className="xl:hidden">{link.shortLabel || link.label}</span>
                 </NavLink>
               ))}
-              {podePublicarNotificacao && (
-                <button type="button" onClick={() => setModalPublicacaoAberto(true)} className="flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-[#F2C979] hover:bg-white/10 hover:text-white xl:px-3 xl:text-sm" title="Publicar notificação">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
-                  <span className="hidden xl:inline">Publicar</span>
-                </button>
-              )}
             </nav>
 
             {/* Ações à direita */}
@@ -322,7 +323,12 @@ export default function LayoutDireto() {
         {menuAberto && (
           <div className="lg:hidden border-t border-white/10 bg-[#0f2347] animate-fade-in" style={{ maxHeight: 'calc(100vh - 56px)', overflowY: 'auto' }}>
             <div className="px-4 py-3 space-y-1">
-              {navLinks.map((link) => link.type === 'dropdown' ? (
+              {navLinksComPublicacao.map((link) => link.type === 'publicar' ? (
+                <button key={link.key} type="button" onClick={() => { setMenuAberto(false); setModalPublicacaoAberto(true); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#F2C979] hover:bg-white/10">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+                  Publicar notificação
+                </button>
+              ) : link.type === 'dropdown' ? (
                 <div key={link.key}>
                   <button
                     type="button"
@@ -367,12 +373,6 @@ export default function LayoutDireto() {
                   {link.label}
                 </NavLink>
               ))}
-              {podePublicarNotificacao && (
-                <button type="button" onClick={() => { setMenuAberto(false); setModalPublicacaoAberto(true); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#F2C979] hover:bg-white/10">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
-                  Publicar notificação
-                </button>
-              )}
 
               <div className="border-t border-white/10 pt-2 mt-2">
                 <button

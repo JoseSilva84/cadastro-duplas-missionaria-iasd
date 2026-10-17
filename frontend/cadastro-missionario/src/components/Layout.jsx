@@ -401,6 +401,15 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
       <nav className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
         <p className="px-3 pt-0 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30 xl:px-4 xl:pb-2">Menu</p>
         {navLinks.map((link) => {
+          if (link.label === 'Configurações' && podePublicarNotificacao) {
+            return <div key={link.to}>
+              <button type="button" onClick={aoAbrirPublicacao} className="sidebar-link w-full text-left text-[#F2C979] hover:text-white hover:bg-white/10">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+                Publicar notificação
+              </button>
+              <NavLink to={link.to} onClick={() => setSidebarAberta(false)} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>{link.icon}{link.label}</NavLink>
+            </div>;
+          }
           if (link.type === 'dropdown') {
             const aberto = submenuAberto === link.key;
             return (
@@ -453,12 +462,6 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
             </NavLink>
           );
         })}
-        {podePublicarNotificacao && (
-          <button type="button" onClick={aoAbrirPublicacao} className="sidebar-link w-full text-left text-[#F2C979] hover:text-white hover:bg-white/10">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
-            Publicar notificação
-          </button>
-        )}
         <div className="mt-auto border-t border-white/10 pt-5">
           <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
             <div className="flex items-center gap-2.5">

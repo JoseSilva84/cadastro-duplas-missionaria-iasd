@@ -4,6 +4,7 @@ const { criarNotificacoes } = require('./notificacoes.service');
 const PERFIS_GLOBAIS = ['SUPER_ADMIN', 'ADMINISTRADOR'];
 const PERFIS_REGIONAIS = ['PASTOR_REGIONAL', 'COORDENADOR_REGIONAL'];
 const PERFIS_PUBLICADORES = [...PERFIS_GLOBAIS, ...PERFIS_REGIONAIS, 'PASTOR_DISTRITAL'];
+const PERFIS_DESTINATARIOS = [...PERFIS_PUBLICADORES, 'DIRETOR_MISSIONARIO_IGREJA', 'DUPLA_MISSIONARIA'];
 let verificando = false;
 
 function escopoDoAutor(usuario) {
@@ -19,25 +20,33 @@ function escopoDoAutor(usuario) {
 
 function filtroDestinatarios(publicacao) {
   const base = { ativo: true };
-  if (publicacao.escopo === 'TODOS') return base;
-  if (publicacao.escopo === 'REGIAO' && publicacao.regiaoId) {
+  let alcance;
+  if (publicacao.escopo === 'TODOS') alcance = base;
+  else if (publicacao.escopo === 'REGIAO' && publicacao.regiaoId) {
     const id = publicacao.regiaoId;
-    return { ...base, OR: [
+    alcance = { ...base, OR: [
       { regiaoId: id },
       { distrito: { is: { regiaoId: id } } },
       { igreja: { is: { distrito: { is: { regiaoId: id } } } } },
       { dupla: { is: { distrito: { is: { regiaoId: id } } } } },
     ] };
-  }
-  if (publicacao.escopo === 'DISTRITO' && publicacao.distritoId) {
+  } else if (publicacao.escopo === 'DISTRITO' && publicacao.distritoId) {
     const id = publicacao.distritoId;
-    return { ...base, OR: [
+    alcance = { ...base, OR: [
       { distritoId: id },
       { igreja: { is: { distritoId: id } } },
       { dupla: { is: { distritoId: id } } },
     ] };
-  }
-  throw new Error('Publicação sem abrangência válida.');
+  } else throw new Error('Publicação sem abrangência válida.');
+  if (publicacao.modoDestinatarios !== 'SELECIONADOS') return alcance;
+  const perfis = publicacao.perfisSelecionados || [];
+  const ids = publicacao.usuarioIdsSelecionados || [];
+  if (!perfis.length && !ids.length) throw new Error('Publicação sem destinatários selecionados.');
+  const selecao = { OR: [
+    ...(perfis.length ? [{ perfil: { in: perfis } }] : []),
+    ...(ids.length ? [{ id: { in: ids } }] : []),
+  ] };
+  return { ativo: true, AND: [alcance, selecao] };
 }
 
 async function publicar(id) {
@@ -118,4 +127,4 @@ function iniciarAgendador() {
   timer.unref?.();
 }
 
-module.exports = { PERFIS_PUBLICADORES, escopoDoAutor, filtroDestinatarios, publicar, iniciarAgendador };
+module.exports = { PERFIS_PUBLICADORES, PERFIS_DESTINATARIOS, escopoDoAutor, filtroDestinatarios, publicar, iniciarAgendador };

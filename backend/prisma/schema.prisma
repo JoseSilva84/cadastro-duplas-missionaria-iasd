@@ -144,6 +144,9 @@ model PublicacaoNotificacao {
   escopo String
   regiaoId Int?
   distritoId Int?
+  modoDestinatarios String @default("TODOS")
+  perfisSelecionados Perfil[] @default([])
+  usuarioIdsSelecionados Int[] @default([])
   agendadaPara DateTime
   status String @default("AGENDADA")
   tentativas Int @default(0)

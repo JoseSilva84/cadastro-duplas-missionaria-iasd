@@ -30,3 +30,21 @@ test('alcance inclui usuários vinculados por igreja ou dupla e exige vínculo v
   ]);
   assert.throws(() => filtroDestinatarios({ escopo: 'REGIAO' }), /abrangência válida/);
 });
+
+test('seleção combina grupos e pessoas sem ampliar o alcance territorial', () => {
+  const filtro = filtroDestinatarios({
+    escopo: 'DISTRITO', distritoId: 11, modoDestinatarios: 'SELECIONADOS',
+    perfisSelecionados: ['DIRETOR_MISSIONARIO_IGREJA'], usuarioIdsSelecionados: [42],
+  });
+  assert.equal(filtro.ativo, true);
+  assert.deepEqual(filtro.AND[0].OR, [
+    { distritoId: 11 },
+    { igreja: { is: { distritoId: 11 } } },
+    { dupla: { is: { distritoId: 11 } } },
+  ]);
+  assert.deepEqual(filtro.AND[1].OR, [
+    { perfil: { in: ['DIRETOR_MISSIONARIO_IGREJA'] } },
+    { id: { in: [42] } },
+  ]);
+  assert.throws(() => filtroDestinatarios({ escopo: 'TODOS', modoDestinatarios: 'SELECIONADOS' }), /sem destinatários/);
+});

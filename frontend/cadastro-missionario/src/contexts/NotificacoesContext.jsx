@@ -144,9 +144,13 @@ export function NotificacoesProvider({ children }) {
   }, [usuario?.id, carregar]);
 
   const marcarLida = async (id) => {
-    await api.patch(`/notificacoes/${id}/lida`);
+    const { data } = await api.patch(`/notificacoes/${id}/lida`);
     setItens((anteriores) => anteriores.map((item) => item.id === id ? { ...item, lidaEm: item.lidaEm || new Date().toISOString() } : item));
-    setNaoLidas((numero) => Math.max(0, numero - 1));
+    if (data.atualizada) setNaoLidas((numero) => Math.max(0, numero - 1));
+  };
+  const apagar = async (id) => {
+    await api.delete(`/notificacoes/${id}`);
+    await carregar(itens.length === 1 && pagina > 1 ? pagina - 1 : pagina);
   };
   const marcarTodas = async () => {
     await api.patch('/notificacoes/lidas');
@@ -154,7 +158,7 @@ export function NotificacoesProvider({ children }) {
     setNaoLidas(0);
   };
 
-  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas }}>
+  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas, apagar }}>
     {children}
   </NotificacoesContext.Provider>;
 }

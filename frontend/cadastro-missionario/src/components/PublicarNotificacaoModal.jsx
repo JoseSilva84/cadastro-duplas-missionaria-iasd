@@ -9,6 +9,12 @@ const rotulosEscopo = {
   DISTRITO: 'Usuários do seu distrito, inclusive igrejas e duplas',
 };
 const rotulosStatus = { AGENDADA: 'Agendada', PROCESSANDO: 'Enviando', PUBLICADA: 'Publicada', CANCELADA: 'Cancelada', ERRO: 'Falha no envio' };
+const rotulosPerfil = {
+  SUPER_ADMIN: 'Super administradores', ADMINISTRADOR: 'Administradores',
+  PASTOR_REGIONAL: 'Pastores regionais', COORDENADOR_REGIONAL: 'Coordenadores regionais',
+  PASTOR_DISTRITAL: 'Pastores distritais', DIRETOR_MISSIONARIO_IGREJA: 'Diretores missionários',
+  DUPLA_MISSIONARIA: 'Duplas missionárias',
+};
 const dataLocal = (valor) => valor ? new Date(valor).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
 export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
@@ -23,12 +29,20 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [dataMinima, setDataMinima] = useState('');
+  const [usuarios, setUsuarios] = useState([]);
+  const [modoDestinatarios, setModoDestinatarios] = useState('TODOS');
+  const [perfisSelecionados, setPerfisSelecionados] = useState([]);
+  const [usuarioIdsSelecionados, setUsuarioIdsSelecionados] = useState([]);
+  const [buscaPessoa, setBuscaPessoa] = useState('');
 
   const carregar = async () => {
     setCarregando(true);
     try {
-      const resposta = await api.get('/notificacoes/publicacoes');
-      setDados(resposta.data);
+      const [publicacoes, destinatarios] = await Promise.all([
+        api.get('/notificacoes/publicacoes'), api.get('/notificacoes/publicacoes/destinatarios'),
+      ]);
+      setDados(publicacoes.data);
+      setUsuarios(destinatarios.data.usuarios);
     } catch (erro) {
       toastError(erro.response?.data?.erro || 'Não foi possível carregar as publicações.');
     } finally {
@@ -52,10 +66,24 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
 
   if (!aberto) return null;
 
+  const perfisDisponiveis = Object.keys(rotulosPerfil).filter((perfil) => usuarios.some((pessoa) => pessoa.perfil === perfil));
+  const quantidadeSelecionada = modoDestinatarios === 'TODOS' ? usuarios.length : usuarios.filter((pessoa) =>
+    perfisSelecionados.includes(pessoa.perfil) || usuarioIdsSelecionados.includes(pessoa.id)).length;
+  const pessoasFiltradas = usuarios.filter((pessoa) => {
+    const termo = buscaPessoa.trim().toLocaleLowerCase('pt-BR');
+    return !termo || `${pessoa.nome} ${rotulosPerfil[pessoa.perfil]} ${pessoa.regiao?.nome || ''} ${pessoa.distrito?.nome || ''} ${pessoa.igreja?.nome || ''}`.toLocaleLowerCase('pt-BR').includes(termo);
+  });
+  const alternarPerfil = (perfil) => setPerfisSelecionados((atuais) => atuais.includes(perfil) ? atuais.filter((item) => item !== perfil) : [...atuais, perfil]);
+  const alternarPessoa = (id) => setUsuarioIdsSelecionados((atuais) => atuais.includes(id) ? atuais.filter((item) => item !== id) : [...atuais, id]);
+
   const enviar = async (evento) => {
     evento.preventDefault();
     if (quando === 'AGENDAR' && (!dataHora || new Date(dataHora) <= new Date())) {
       toastError('Escolha uma data e um horário futuros.');
+      return;
+    }
+    if (modoDestinatarios === 'SELECIONADOS' && !quantidadeSelecionada) {
+      toastError('Selecione pelo menos um destinatário.');
       return;
     }
     setSalvando(true);
@@ -63,11 +91,14 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
       const resposta = await api.post('/notificacoes/publicacoes', {
         titulo: titulo.trim(), mensagem: mensagem.trim(), url: url.trim() || null,
         tipo, agendadaPara: quando === 'AGENDAR' ? new Date(dataHora).toISOString() : null,
+        modoDestinatarios, perfisSelecionados: modoDestinatarios === 'SELECIONADOS' ? perfisSelecionados : [],
+        usuarioIdsSelecionados: modoDestinatarios === 'SELECIONADOS' ? usuarioIdsSelecionados : [],
       });
       if (resposta.data.item?.status === 'PUBLICADA') toastSuccess('Notificação publicada.');
       else if (resposta.data.item?.status === 'ERRO') toastError('O envio falhou. A publicação ficou registrada para o suporte.');
       else toastSuccess(quando === 'AGENDAR' ? 'Notificação agendada.' : 'O envio será retomado automaticamente.');
       setTitulo(''); setMensagem(''); setUrl(''); setTipo('COMUNICADO'); setQuando('AGORA'); setDataHora('');
+      setModoDestinatarios('TODOS'); setPerfisSelecionados([]); setUsuarioIdsSelecionados([]); setBuscaPessoa('');
       await carregar();
     } catch (erro) {
       toastError(erro.response?.data?.erro || 'Não foi possível publicar a notificação.');
@@ -98,12 +129,41 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
           <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">✕</button>
         </div>
         <div className="overflow-y-auto px-5 py-5 sm:px-7">
-          <div className="mb-5 rounded-2xl border border-[#DCE5F1] bg-[#F5F8FC] px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-[#1A3A6B]">Quem recebe</p>
-            <p className="mt-1 text-sm font-medium text-[#203758]">{rotulosEscopo[dados?.escopo] || 'Carregando abrangência…'}</p>
-            {dados && <p className="mt-1 text-xs text-slate-500">{dados.destinatarios} usuário(s) ativo(s) neste momento. Para agendamentos, os destinatários são conferidos na hora do envio.</p>}
-          </div>
           <form id="form-publicar-notificacao" onSubmit={enviar} className="space-y-4">
+            <fieldset className="rounded-2xl border border-[#DCE5F1] bg-[#F5F8FC] p-4">
+              <legend className="px-1 text-xs font-bold uppercase tracking-wide text-[#1A3A6B]">Quem recebe</legend>
+              <p className="text-sm text-[#203758]">{rotulosEscopo[dados?.escopo] || 'Carregando abrangência…'}</p>
+              <p className="mt-1 text-xs text-slate-500">{quantidadeSelecionada} pessoa(s) ativa(s) nesta seleção. Para agendamentos, a lista é conferida no envio.</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {[['TODOS', 'Todos no meu alcance'], ['SELECIONADOS', 'Escolher destinatários']].map(([valor, rotulo]) => (
+                  <label key={valor} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold ${modoDestinatarios === valor ? 'border-[#1A3A6B] bg-white text-[#1A3A6B]' : 'border-slate-200 bg-white/60 text-slate-600'}`}>
+                    <input type="radio" name="modo-destinatarios" checked={modoDestinatarios === valor} onChange={() => setModoDestinatarios(valor)} />{rotulo}
+                  </label>
+                ))}
+              </div>
+              {modoDestinatarios === 'SELECIONADOS' && <div className="mt-4 space-y-4">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-[#203758]">Grupos inteiros</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {perfisDisponiveis.map((perfil) => <label key={perfil} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+                      <input type="checkbox" checked={perfisSelecionados.includes(perfil)} onChange={() => alternarPerfil(perfil)} />
+                      <span>{rotulosPerfil[perfil]} ({usuarios.filter((pessoa) => pessoa.perfil === perfil).length})</span>
+                    </label>)}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="busca-destinatario" className="mb-1.5 block text-sm font-semibold text-[#203758]">Pessoas específicas</label>
+                  <input id="busca-destinatario" type="search" value={buscaPessoa} onChange={(evento) => setBuscaPessoa(evento.target.value)} placeholder="Buscar por nome, perfil ou local" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white">
+                    {pessoasFiltradas.length === 0 ? <p className="p-3 text-sm text-slate-500">Nenhuma pessoa encontrada.</p> : pessoasFiltradas.map((pessoa) => <label key={pessoa.id} className="flex cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-2 last:border-0 hover:bg-slate-50">
+                      <input type="checkbox" checked={usuarioIdsSelecionados.includes(pessoa.id)} onChange={() => alternarPessoa(pessoa.id)} />
+                      <span className="min-w-0 text-sm"><span className="block truncate font-medium text-slate-800">{pessoa.nome}</span><span className="block truncate text-xs text-slate-500">{rotulosPerfil[pessoa.perfil]}{pessoa.distrito?.nome ? ` · ${pessoa.distrito.nome}` : pessoa.regiao?.nome ? ` · ${pessoa.regiao.nome}` : pessoa.igreja?.nome ? ` · ${pessoa.igreja.nome}` : ''}</span></span>
+                    </label>)}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">Pessoas escolhidas individualmente recebem mesmo que não estejam em um grupo marcado.</p>
+                </div>
+              </div>}
+            </fieldset>
             {usuario?.perfil === PERFIS.SUPER_ADMIN && (
               <div>
                 <label htmlFor="publicacao-tipo" className="mb-1.5 block text-sm font-semibold text-slate-700">Categoria</label>
@@ -159,6 +219,12 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${item.status === 'PUBLICADA' ? 'bg-green-50 text-green-700' : item.status === 'ERRO' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{rotulosStatus[item.status] || item.status}</span>
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-slate-600">{item.mensagem}</p>
+                  <p className="mt-1 text-xs text-slate-500">{item.modoDestinatarios === 'SELECIONADOS'
+                    ? `Seleção: ${[
+                      ...(item.perfisSelecionados || []).map((perfil) => rotulosPerfil[perfil] || perfil),
+                      ...(item.usuarioIdsSelecionados?.length ? [`${item.usuarioIdsSelecionados.length} pessoa(s) específica(s)`] : []),
+                    ].join(' + ')}`
+                    : 'Todos no alcance do publicador'}</p>
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                     <span>{item.status === 'PUBLICADA' ? `Enviada em ${dataLocal(item.publicadaEm)} · ${item.quantidadeDestinatarios} destinatário(s)` : `Prevista para ${dataLocal(item.agendadaPara)}`}</span>
                     {item.status === 'AGENDADA' && <button type="button" onClick={() => void cancelar(item.id)} className="font-semibold text-red-600 hover:underline">Cancelar</button>}
@@ -171,7 +237,7 @@ export default function PublicarNotificacaoModal({ aberto, aoFechar }) {
         </div>
         <div className="flex gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:justify-end sm:px-7">
           <button type="button" onClick={aoFechar} disabled={salvando} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 sm:flex-none">Fechar</button>
-          <button form="form-publicar-notificacao" type="submit" disabled={salvando || carregando || !dados} className="flex-1 rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#142B50] disabled:opacity-50 sm:flex-none">{salvando ? 'Salvando…' : quando === 'AGENDAR' ? 'Agendar publicação' : 'Publicar agora'}</button>
+          <button form="form-publicar-notificacao" type="submit" disabled={salvando || carregando || !dados || (modoDestinatarios === 'SELECIONADOS' && !quantidadeSelecionada)} className="flex-1 rounded-xl bg-[#1A3A6B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#142B50] disabled:opacity-50 sm:flex-none">{salvando ? 'Salvando…' : quando === 'AGENDAR' ? 'Agendar publicação' : 'Publicar agora'}</button>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ const express = require('express');
 const prisma = require('../lib/prisma');
 const { autenticar, apenasAdmins, autorizar } = require('../middlewares/auth');
 const { criarNotificacoes, configuracaoPublica, urlInterna } = require('../services/notificacoes.service');
-const { PERFIS_PUBLICADORES, escopoDoAutor, filtroDestinatarios, publicar } = require('../services/publicacoesNotificacoes.service');
+const { PERFIS_PUBLICADORES, PERFIS_DESTINATARIOS, escopoDoAutor, filtroDestinatarios, publicar } = require('../services/publicacoesNotificacoes.service');
 
 const router = express.Router();
 router.use(autenticar);
@@ -72,6 +72,19 @@ router.delete('/push/inscricoes', async (req, res) => {
 
 const apenasPublicadores = autorizar(...PERFIS_PUBLICADORES);
 
+router.get('/publicacoes/destinatarios', apenasPublicadores, async (req, res) => {
+  const escopo = escopoDoAutor(req.usuario);
+  if (!escopo) return res.status(403).json({ erro: 'Seu usuário precisa estar vinculado a uma região ou distrito para publicar.' });
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      where: filtroDestinatarios(escopo),
+      select: { id: true, nome: true, perfil: true, regiao: { select: { nome: true } }, distrito: { select: { nome: true } }, igreja: { select: { nome: true } } },
+      orderBy: [{ nome: 'asc' }, { id: 'asc' }],
+    });
+    return res.json({ usuarios });
+  } catch (erro) { return responder(res, erro); }
+});
+
 router.get('/publicacoes', apenasPublicadores, async (req, res) => {
   try {
     const escopo = escopoDoAutor(req.usuario);
@@ -80,7 +93,7 @@ router.get('/publicacoes', apenasPublicadores, async (req, res) => {
       prisma.publicacaoNotificacao.findMany({
         where: { autorId: req.usuario.id },
         orderBy: { criadaEm: 'desc' }, take: 30,
-        select: { id: true, titulo: true, mensagem: true, tipo: true, escopo: true, agendadaPara: true, publicadaEm: true, status: true, quantidadeDestinatarios: true, erro: true, criadaEm: true },
+        select: { id: true, titulo: true, mensagem: true, tipo: true, escopo: true, modoDestinatarios: true, perfisSelecionados: true, usuarioIdsSelecionados: true, agendadaPara: true, publicadaEm: true, status: true, quantidadeDestinatarios: true, erro: true, criadaEm: true },
       }),
       prisma.usuario.count({ where: filtroDestinatarios(escopo) }),
     ]);
@@ -89,7 +102,7 @@ router.get('/publicacoes', apenasPublicadores, async (req, res) => {
 });
 
 router.post('/publicacoes', apenasPublicadores, async (req, res) => {
-  const { titulo, mensagem, url, agendadaPara, tipo } = req.body || {};
+  const { titulo, mensagem, url, agendadaPara, tipo, modoDestinatarios = 'TODOS', perfisSelecionados = [], usuarioIdsSelecionados = [] } = req.body || {};
   const escopo = escopoDoAutor(req.usuario);
   if (!escopo) return res.status(403).json({ erro: 'Seu usuário precisa estar vinculado a uma região ou distrito para publicar.' });
   const tituloLimpo = typeof titulo === 'string' ? titulo.trim() : '';
@@ -104,11 +117,30 @@ router.post('/publicacoes', apenasPublicadores, async (req, res) => {
   if (Number.isNaN(data.getTime()) || (agendadaPara && (data <= agora || data.getTime() > agora.getTime() + 366 * 86_400_000))) {
     return res.status(400).json({ erro: 'Escolha uma data futura dentro dos próximos 12 meses.' });
   }
+  if (!['TODOS', 'SELECIONADOS'].includes(modoDestinatarios) || !Array.isArray(perfisSelecionados) ||
+      !Array.isArray(usuarioIdsSelecionados) || perfisSelecionados.length > PERFIS_DESTINATARIOS.length ||
+      usuarioIdsSelecionados.length > 5000 ||
+      !perfisSelecionados.every((perfil) => PERFIS_DESTINATARIOS.includes(perfil)) ||
+      !usuarioIdsSelecionados.every((id) => Number.isInteger(id) && id > 0) ||
+      (modoDestinatarios === 'SELECIONADOS' && !perfisSelecionados.length && !usuarioIdsSelecionados.length)) {
+    return res.status(400).json({ erro: 'Selecione destinatários válidos.' });
+  }
+  const perfis = modoDestinatarios === 'SELECIONADOS' ? [...new Set(perfisSelecionados)] : [];
+  const ids = modoDestinatarios === 'SELECIONADOS' ? [...new Set(usuarioIdsSelecionados)] : [];
   try {
+    if (modoDestinatarios === 'SELECIONADOS') {
+      const [usuariosSelecionados, quantidade] = await Promise.all([
+        prisma.usuario.findMany({ where: { AND: [filtroDestinatarios(escopo), { id: { in: ids } }] }, select: { id: true } }),
+        prisma.usuario.count({ where: filtroDestinatarios({ ...escopo, modoDestinatarios, perfisSelecionados: perfis, usuarioIdsSelecionados: ids }) }),
+      ]);
+      if (usuariosSelecionados.length !== ids.length) return res.status(400).json({ erro: 'Uma das pessoas selecionadas não está ativa ou não pertence à sua área.' });
+      if (!quantidade) return res.status(400).json({ erro: 'Nenhum destinatário ativo corresponde à seleção.' });
+    }
     const item = await prisma.publicacaoNotificacao.create({
       data: {
         autorId: req.usuario.id, titulo: tituloLimpo, mensagem: mensagemLimpa,
-        url: url || null, tipo: tipo || 'COMUNICADO', ...escopo, agendadaPara: data,
+        url: url || null, tipo: tipo || 'COMUNICADO', ...escopo, modoDestinatarios,
+        perfisSelecionados: perfis, usuarioIdsSelecionados: ids, agendadaPara: data,
       },
     });
     if (!agendadaPara) await publicar(item.id);
@@ -141,6 +173,16 @@ router.post('/enviar', apenasAdmins, async (req, res) => {
     const usuarios = await prisma.usuario.findMany({ where: { id: { in: usuarioIds.map(Number) }, ativo: true }, select: { id: true } });
     const criadas = await criarNotificacoes(usuarios.map((item) => item.id), { titulo, mensagem, url });
     return res.status(201).json({ enviadas: criadas.length });
+  } catch (erro) { return responder(res, erro); }
+});
+
+router.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: 'Notificação inválida.' });
+  try {
+    const apagada = await prisma.notificacao.deleteMany({ where: { id, usuarioId: req.usuario.id } });
+    if (!apagada.count) return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    return res.status(204).end();
   } catch (erro) { return responder(res, erro); }
 });
 
