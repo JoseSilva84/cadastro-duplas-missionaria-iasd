@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import UsuarioAvatar from './UsuarioAvatar';
 import NotificationBell from './NotificationBell';
+import PublicarNotificacaoModal from './PublicarNotificacaoModal';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
@@ -103,6 +104,7 @@ export default function Layout({ children }) {
   const { usuario, logout, layout } = useAuth();
   const navigate = useNavigate();
   const [sidebarAberta, setSidebarAberta] = useState(false);
+  const [modalPublicacaoAberto, setModalPublicacaoAberto] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -115,6 +117,7 @@ export default function Layout({ children }) {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const podePublicarNotificacao = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil));
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeGerenciarLiderancas = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil));
@@ -258,6 +261,8 @@ export default function Layout({ children }) {
           navLinks={navLinksVisiveis}
           handleLogout={handleLogout}
           setSidebarAberta={setSidebarAberta}
+          aoAbrirPublicacao={() => { setSidebarAberta(false); setModalPublicacaoAberto(true); }}
+          podePublicarNotificacao={podePublicarNotificacao}
           layout={layout}
         />
       </aside>
@@ -277,6 +282,8 @@ export default function Layout({ children }) {
              navLinks={navLinksVisiveis}
              handleLogout={handleLogout}
              setSidebarAberta={setSidebarAberta}
+             aoAbrirPublicacao={() => { setSidebarAberta(false); setModalPublicacaoAberto(true); }}
+             podePublicarNotificacao={podePublicarNotificacao}
              layout={layout}
            />
          </aside>
@@ -322,6 +329,7 @@ export default function Layout({ children }) {
           </main>
          <BottomNavigation navLinks={navLinksVisiveis} onMenuClick={() => setSidebarAberta(true)} />
        </div>
+       <PublicarNotificacaoModal aberto={modalPublicacaoAberto} aoFechar={() => setModalPublicacaoAberto(false)} />
     </div>
   );
 }
@@ -359,7 +367,7 @@ function BottomNavigation({ navLinks, onMenuClick }) {
   );
 }
 
-function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
+function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoAbrirPublicacao, podePublicarNotificacao }) {
   const [submenuAberto, setSubmenuAberto] = useState(null);
   const funcao = usuario?.somenteLeitura ? 'Suporte (somente leitura)' : funcaoUsuario(usuario);
   const nomePessoa = nomePessoaUsuario(usuario);
@@ -445,6 +453,12 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta }) {
             </NavLink>
           );
         })}
+        {podePublicarNotificacao && (
+          <button type="button" onClick={aoAbrirPublicacao} className="sidebar-link w-full text-left text-[#F2C979] hover:text-white hover:bg-white/10">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+            Publicar notificação
+          </button>
+        )}
         <div className="mt-auto border-t border-white/10 pt-5">
           <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
             <div className="flex items-center gap-2.5">

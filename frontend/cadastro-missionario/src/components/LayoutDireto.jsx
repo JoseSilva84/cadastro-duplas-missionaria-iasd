@@ -4,6 +4,7 @@ import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthCont
 import DropdownMenu from './DropdownMenu';
 import UsuarioAvatar from './UsuarioAvatar';
 import NotificationBell from './NotificationBell';
+import PublicarNotificacaoModal from './PublicarNotificacaoModal';
 import { escopoUsuario, funcaoUsuario, nomePessoaUsuario } from '../lib/usuarioIdentidade';
 
 const icons = {
@@ -92,6 +93,7 @@ export default function LayoutDireto() {
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
+  const [modalPublicacaoAberto, setModalPublicacaoAberto] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -109,6 +111,7 @@ export default function LayoutDireto() {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const podePublicarNotificacao = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil));
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
@@ -254,6 +257,12 @@ export default function LayoutDireto() {
                   <span className="xl:hidden">{link.shortLabel || link.label}</span>
                 </NavLink>
               ))}
+              {podePublicarNotificacao && (
+                <button type="button" onClick={() => setModalPublicacaoAberto(true)} className="flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-[#F2C979] hover:bg-white/10 hover:text-white xl:px-3 xl:text-sm" title="Publicar notificação">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+                  <span className="hidden xl:inline">Publicar</span>
+                </button>
+              )}
             </nav>
 
             {/* Ações à direita */}
@@ -358,6 +367,12 @@ export default function LayoutDireto() {
                   {link.label}
                 </NavLink>
               ))}
+              {podePublicarNotificacao && (
+                <button type="button" onClick={() => { setMenuAberto(false); setModalPublicacaoAberto(true); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#F2C979] hover:bg-white/10">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
+                  Publicar notificação
+                </button>
+              )}
 
               <div className="border-t border-white/10 pt-2 mt-2">
                 <button
@@ -393,6 +408,7 @@ export default function LayoutDireto() {
         <Outlet />
       </main>
       <BottomNavigation navLinks={navLinks} onMenuClick={() => setMenuAberto(true)} />
+      <PublicarNotificacaoModal aberto={modalPublicacaoAberto} aoFechar={() => setModalPublicacaoAberto(false)} />
     </div>
   );
 }

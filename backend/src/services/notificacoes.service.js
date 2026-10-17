@@ -38,7 +38,7 @@ const urlInterna = (valor) => {
 
 function definirSocket(servidorSocket) { io = servidorSocket; }
 
-async function criarNotificacoes(usuarioIds, { titulo, mensagem, tipo = 'INFO', url = null }) {
+async function criarNotificacoes(usuarioIds, { titulo, mensagem, tipo = 'INFO', url = null, publicacaoId = null }) {
   const ids = [...new Set(usuarioIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
   if (!ids.length) return [];
   const textoTitulo = String(titulo || '').trim().slice(0, 160);
@@ -48,17 +48,26 @@ async function criarNotificacoes(usuarioIds, { titulo, mensagem, tipo = 'INFO', 
   const criadas = [];
   for (let inicio = 0; inicio < ids.length; inicio += 200) {
     const lote = ids.slice(inicio, inicio + 200);
-    criadas.push(...await prisma.$transaction(lote.map((usuarioId) => prisma.notificacao.create({
-      data: { usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino },
-    }))));
+    if (publicacaoId) {
+      // A chave única impede duplicatas se o servidor reiniciar durante um envio agendado.
+      criadas.push(...await prisma.notificacao.createManyAndReturn({
+        data: lote.map((usuarioId) => ({ usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino, publicacaoId })),
+        skipDuplicates: true,
+      }));
+    } else {
+      criadas.push(...await prisma.$transaction(lote.map((usuarioId) => prisma.notificacao.create({
+        data: { usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino },
+      }))));
+    }
   }
   for (const notificacao of criadas) {
     io?.to(`usuario:${notificacao.usuarioId}`).emit('notificacao:nova', notificacao);
   }
   if (chavePublica) {
-    const inscricoes = await prisma.inscricaoPush.findMany({ where: { usuarioId: { in: ids } } });
+    const criadasPorUsuario = new Map(criadas.map((item) => [item.usuarioId, item]));
+    const inscricoes = await prisma.inscricaoPush.findMany({ where: { usuarioId: { in: [...criadasPorUsuario.keys()] } } });
     void Promise.allSettled(inscricoes.map(async (inscricao) => {
-      const notificacao = criadas.find((item) => item.usuarioId === inscricao.usuarioId);
+      const notificacao = criadasPorUsuario.get(inscricao.usuarioId);
       try {
         await webpush.sendNotification({
           endpoint: inscricao.endpoint,

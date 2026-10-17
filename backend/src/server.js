@@ -28,6 +28,8 @@ const auditoriaRoutes = require('./routes/auditoria');
 const { auditarRequisicao } = require('./middlewares/auditoria');
 const notificacoesRoutes = require('./routes/notificacoes');
 const { definirSocket, inicializarPush } = require('./services/notificacoes.service');
+const { iniciarAgendador } = require('./services/publicacoesNotificacoes.service');
+const { anunciarNovidadesSistema } = require('./services/novidadesSistema.service');
 const { versaoDasCredenciais } = require('./middlewares/auth');
 
 const app = express();
@@ -172,6 +174,8 @@ async function iniciarServidor() {
       console.log(`✝️  Servidor rodando na porta ${PORT}`);
       console.log(`📖  API: http://localhost:${PORT}/api`);
       interessadosNovoTempoService.iniciarSincronizacao();
+      iniciarAgendador();
+      void anunciarNovidadesSistema();
     });
   } catch (erro) {
     console.error('Não foi possível iniciar o servidor sem conexão com o banco:', erro);

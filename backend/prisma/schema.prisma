@@ -85,6 +85,7 @@ model QrCodeAtivacao {
 // Usuários do sistema
 model Usuario {
   notificacoes Notificacao[]
+  publicacoesNotificacao PublicacaoNotificacao[]
   inscricoesPush InscricaoPush[]
   acoesCalendario CalendarioAcaoMissionaria[]
   permissoesCalendarioCriadas CalendarioPermissao[]
@@ -124,9 +125,39 @@ model Notificacao {
   url String?
   criadaEm DateTime @default(now())
   lidaEm DateTime?
+  publicacaoId Int?
+  publicacao PublicacaoNotificacao? @relation(fields: [publicacaoId], references: [id], onDelete: SetNull)
 
   @@index([usuarioId, criadaEm(sort: Desc)])
   @@index([usuarioId, lidaEm])
+  @@unique([publicacaoId, usuarioId])
+}
+
+model PublicacaoNotificacao {
+  id Int @id @default(autoincrement())
+  autorId Int?
+  autor Usuario? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+  titulo String
+  mensagem String
+  url String?
+  tipo String @default("COMUNICADO")
+  escopo String
+  regiaoId Int?
+  distritoId Int?
+  agendadaPara DateTime
+  status String @default("AGENDADA")
+  tentativas Int @default(0)
+  proximaTentativaEm DateTime?
+  bloqueioAte DateTime?
+  publicadaEm DateTime?
+  quantidadeDestinatarios Int @default(0)
+  erro String?
+  criadaEm DateTime @default(now())
+  atualizadaEm DateTime @updatedAt
+  notificacoes Notificacao[]
+
+  @@index([status, agendadaPara])
+  @@index([autorId, criadaEm(sort: Desc)])
 }
 
 model InscricaoPush {
