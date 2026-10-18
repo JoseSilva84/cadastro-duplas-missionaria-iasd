@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
@@ -287,7 +288,7 @@ export default function DashboardCoordenadorRegional() {
         </Painel>
       </div>
 
-      {modalCoordenador && (
+      {modalCoordenador && createPortal(
         <div className="app-modal-overlay" onClick={() => setModalCoordenador(null)}>
           <div className="app-modal-panel max-w-5xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header flex-col sm:flex-row">
@@ -387,7 +388,8 @@ export default function DashboardCoordenadorRegional() {
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalCoordenador(null)}>Fechar</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

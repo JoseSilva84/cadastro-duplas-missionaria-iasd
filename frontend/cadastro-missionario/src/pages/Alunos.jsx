@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
@@ -703,9 +704,9 @@ export default function Alunos() {
         </section>
       </div>
 
-      {modalAtualizacao && (
-        <div className="fixed inset-x-0 top-0 bottom-16 z-50 flex items-center justify-center bg-[#0f2347]/50 px-4 py-5 backdrop-blur-sm sm:inset-0 sm:p-4">
-          <div className="flex max-h-[calc(100dvh-7.5rem)] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl sm:max-h-[86vh] sm:max-w-3xl">
+      {modalAtualizacao && createPortal(
+        <div className="app-modal-overlay">
+          <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl sm:max-h-[86vh] sm:max-w-3xl">
             <div className="flex-shrink-0 border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -768,11 +769,12 @@ export default function Alunos() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {confirmacaoUltimaLicao && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0f2347]/60 p-4 backdrop-blur-sm">
+      {confirmacaoUltimaLicao && createPortal(
+        <div className="app-modal-overlay">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-amber-100 bg-amber-50 px-5 py-4">
               <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Última lição</p>
@@ -795,11 +797,12 @@ export default function Alunos() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {modalEncerramento && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f2347]/50 p-4 backdrop-blur-sm">
+      {modalEncerramento && createPortal(
+        <div className="app-modal-overlay">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-gray-100 px-5 py-4">
               <div className="flex items-start justify-between gap-4">
@@ -851,7 +854,8 @@ export default function Alunos() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

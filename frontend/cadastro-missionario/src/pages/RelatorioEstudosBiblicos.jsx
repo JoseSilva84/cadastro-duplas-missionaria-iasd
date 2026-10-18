@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
@@ -1206,9 +1207,9 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
           )}
         </div>
       </div>
-      {confirmacaoAcao && (
+      {confirmacaoAcao && createPortal(
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+          className="app-modal-overlay"
           onClick={() => setConfirmacaoAcao(null)}
         >
           <div
@@ -1243,10 +1244,11 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-      {modalVisitaPastoral && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setModalVisitaPastoral(null)}>
+      {modalVisitaPastoral && createPortal(
+        <div className="app-modal-overlay" onClick={() => setModalVisitaPastoral(null)}>
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl ring-1 ring-black/5" onClick={(event) => event.stopPropagation()}>
             <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Relatório para comissão</p>
             <h3 className="mt-2 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
@@ -1279,7 +1281,8 @@ export default function RelatorioEstudosBiblicos({ tipoRelatorio = 'UNICO' }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

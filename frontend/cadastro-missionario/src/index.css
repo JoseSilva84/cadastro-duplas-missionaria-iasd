@@ -108,13 +108,14 @@
   }
 
   .app-modal-overlay {
-    @apply fixed inset-0 z-[90] flex items-center justify-center bg-black/55;
-    animation: fadeIn 0.4s ease both;
+    @apply fixed inset-0 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs;
+    z-index: 2147483600;
+    animation: fadeIn 0.25s ease both;
     padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
   }
 
   .app-modal-panel {
-    @apply flex w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl;
+    @apply flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl;
     max-height: calc(100dvh - 1.5rem);
   }
 
@@ -132,13 +133,13 @@
 
   @media (max-width: 639.98px) {
     .app-modal-overlay {
-      align-items: flex-end;
-      padding: 0.5rem 0.5rem max(5.25rem, calc(4.75rem + env(safe-area-inset-bottom)));
+      align-items: center;
+      padding: max(0.5rem, env(safe-area-inset-top)) 0.5rem max(0.5rem, env(safe-area-inset-bottom));
     }
 
     .app-modal-panel {
-      border-radius: 0.875rem;
-      max-height: calc(100dvh - 6rem);
+      border-radius: 1rem;
+      max-height: calc(100dvh - 1rem);
     }
 
     .app-modal-header {

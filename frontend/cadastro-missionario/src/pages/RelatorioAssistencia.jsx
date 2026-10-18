@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
@@ -295,7 +296,7 @@ export default function RelatorioAssistencia() {
         </section>
       </div>
 
-      {modalRegistrosAberto && (
+      {modalRegistrosAberto && createPortal(
         <div className="app-modal-overlay" onClick={() => setModalRegistrosAberto(false)}>
           <div className="app-modal-panel max-w-6xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header flex-col sm:flex-row">
@@ -366,10 +367,11 @@ export default function RelatorioAssistencia() {
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setModalRegistrosAberto(false)}>Fechar</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {registroSelecionado && (
+      {registroSelecionado && createPortal(
         <div className="app-modal-overlay" onClick={() => setRegistroSelecionado(null)}>
           <div className="app-modal-panel max-w-3xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header">
@@ -424,7 +426,8 @@ export default function RelatorioAssistencia() {
               <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setRegistroSelecionado(null)}>Fechar</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
