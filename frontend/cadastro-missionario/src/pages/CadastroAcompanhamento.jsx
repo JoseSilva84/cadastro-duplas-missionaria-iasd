@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { toast } from '../lib/toast';
 import { DIAS_SEMANA, SERIES_ESTUDO, UFS_BRASIL, formatarWhatsApp } from '../lib/seriesEstudo';
 import BackButton from '../components/BackButton';
+import SeletorDuplaInteligente from '../components/SeletorDuplaInteligente';
 
 const configs = {
   estudo: {
@@ -81,14 +82,17 @@ const estadoInicial = {
   estudoAtual: '',
 };
 
-const Campo = ({ label, children, obrigatorio }) => (
-  <label className="block">
-    <span className="block text-sm font-medium text-gray-600 mb-1.5">
-      {label} {obrigatorio && <span className="text-red-400">*</span>}
-    </span>
-    {children}
-  </label>
-);
+const Campo = ({ label, children, obrigatorio, comoDiv = false }) => {
+  const Tag = comoDiv ? 'div' : 'label';
+  return (
+    <Tag className="block">
+      <span className="block text-sm font-medium text-gray-600 mb-1.5">
+        {label} {obrigatorio && <span className="text-red-400">*</span>}
+      </span>
+      {children}
+    </Tag>
+  );
+};
 
 const Secao = ({ numero, titulo, children, compacto = false }) => (
   <section className="card">
@@ -369,16 +373,15 @@ export default function CadastroAcompanhamento({ tipo = 'estudo' }) {
                   <input type="time" className="input-field" value={form.horarioEstudo} onChange={(e) => set('horarioEstudo', e.target.value)} />
                 </Campo>
               )}
-              <Campo label={config.duplaLabel}>
-                <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
-                  <option value="">Selecione a dupla</option>
-                  {duplas.map((dupla) => (
-                    <option key={dupla.id} value={dupla.id}>
-                      {dupla.liderNome} + {dupla.membro2Nome}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
+              <div className="md:col-span-2">
+                <Campo label={config.duplaLabel} comoDiv>
+                  <SeletorDuplaInteligente
+                    duplas={duplas}
+                    value={form.duplaId}
+                    onChange={(novoId) => set('duplaId', novoId)}
+                  />
+                </Campo>
+              </div>
             </Secao>
 
             <Secao numero="3" titulo={tipo === 'evangelismo' ? 'Série da Classe Bíblica' : 'Série de Estudo'}>

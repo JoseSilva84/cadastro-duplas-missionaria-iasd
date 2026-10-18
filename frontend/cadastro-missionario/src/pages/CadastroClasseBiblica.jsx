@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { toast } from '../lib/toast';
 import { DIAS_SEMANA, SERIES_ESTUDO, UFS_BRASIL, formatarWhatsApp } from '../lib/seriesEstudo';
 import BackButton from '../components/BackButton';
+import SeletorDuplaInteligente from '../components/SeletorDuplaInteligente';
 
 const criarParticipante = (ordem) => ({
   ordem,
@@ -27,14 +28,17 @@ const estadoInicial = {
   licaoAtual: '',
 };
 
-const Campo = ({ label, children, obrigatorio }) => (
-  <label className="block">
-    <span className="block text-sm font-medium text-gray-600 mb-1.5">
-      {label} {obrigatorio && <span className="text-red-400">*</span>}
-    </span>
-    {children}
-  </label>
-);
+const Campo = ({ label, children, obrigatorio, comoDiv = false }) => {
+  const Tag = comoDiv ? 'div' : 'label';
+  return (
+    <Tag className="block">
+      <span className="block text-sm font-medium text-gray-600 mb-1.5">
+        {label} {obrigatorio && <span className="text-red-400">*</span>}
+      </span>
+      {children}
+    </Tag>
+  );
+};
 
 const Secao = ({ numero, titulo, children }) => (
   <section className="card">
@@ -225,13 +229,12 @@ export default function CadastroClasseBiblica() {
                 <Campo label="Nome da Classe Bíblica" obrigatorio>
                   <input className="input-field" value={form.nomeClasse} onChange={(e) => set('nomeClasse', e.target.value)} required />
                 </Campo>
-                <Campo label="Dupla responsável">
-                  <select className="input-field" value={form.duplaId} onChange={(e) => set('duplaId', e.target.value)}>
-                    <option value="">Selecione a dupla</option>
-                    {duplas.map((dupla) => (
-                      <option key={dupla.id} value={dupla.id}>{dupla.liderNome} + {dupla.membro2Nome}</option>
-                    ))}
-                  </select>
+                <Campo label="Dupla responsável" comoDiv>
+                  <SeletorDuplaInteligente
+                    duplas={duplas}
+                    value={form.duplaId}
+                    onChange={(novoId) => set('duplaId', novoId)}
+                  />
                 </Campo>
                 <Campo label="Endereço / Local">
                   <input className="input-field" value={form.endereco} onChange={(e) => set('endereco', e.target.value)} />
