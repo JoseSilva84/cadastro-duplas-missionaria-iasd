@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import { ehAdmin, PERFIS, useAuth } from '../contexts/AuthContext';
@@ -94,7 +95,7 @@ function ListaDestaque({ titulo, descricao, itens = [], campo, cor = '#1A3A6B' }
 }
 
 export default function Relatorios() {
-  const { usuario } = useAuth();
+  const { usuario, layout } = useAuth();
   const isAdmin = ehAdmin(usuario);
   const isGestorRegional = [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
   const podeConsultarRegioes = isAdmin || isGestorRegional;
@@ -150,17 +151,28 @@ export default function Relatorios() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8 animate-fade-in">
-      <div className="mb-8 animate-fade-in-down">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-6 w-1 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#C9963A] sm:text-sm">{isAdmin ? 'Administração' : funcaoUsuario(usuario)}</p>
+      <div className="mb-8 flex flex-col gap-4 animate-fade-in-down sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-6 w-1 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#C9963A] sm:text-sm">{isAdmin ? 'Administração' : funcaoUsuario(usuario)}</p>
+          </div>
+          <h1 className="text-2xl font-bold text-[#1A3A6B] sm:text-3xl" style={{ fontFamily: 'Georgia, serif' }}>
+            {isAdmin ? 'Relatório Geral' : `Relatórios — ${nomeEscopo}`}
+          </h1>
+          <p className="mt-1 text-xs text-gray-400 sm:text-sm">
+            {isAdmin ? 'Visão consolidada das duplas, estudos e resultados missionários da Associação Paulistana' : `${nomePessoaUsuario(usuario)} • informações limitadas ao seu nível de acesso`}
+          </p>
         </div>
-        <h1 className="text-2xl font-bold text-[#1A3A6B] sm:text-3xl" style={{ fontFamily: 'Georgia, serif' }}>
-          {isAdmin ? 'Relatório Geral' : `Relatórios — ${nomeEscopo}`}
-        </h1>
-        <p className="mt-1 text-xs text-gray-400 sm:text-sm">
-          {isAdmin ? 'Visão consolidada das duplas, estudos e resultados missionários da Associação Paulistana' : `${nomePessoaUsuario(usuario)} • informações limitadas ao seu nível de acesso`}
-        </p>
+        {isAdmin && (
+          <Link
+            to={layout === 'direto' ? '/direto/relatorios/personalizado' : '/relatorios/personalizado'}
+            className="btn-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-5 sm:w-auto sm:self-center"
+          >
+            <span aria-hidden="true">RP</span>
+            Relatório Personalizado
+          </Link>
+        )}
       </div>
 
       {resumo && (

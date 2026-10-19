@@ -488,7 +488,7 @@ export default function Alunos() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-[1fr_200px_200px_auto] gap-3 items-end">
             <label className="sm:col-span-2 md:col-span-1">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Buscar</span>
-              <input className="input-field" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Nome, dupla, igreja, distrito..." />
+              <input className="input-field" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Aluno, dupla, igreja, distrito..." />
             </label>
             <label>
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Tipo</span>

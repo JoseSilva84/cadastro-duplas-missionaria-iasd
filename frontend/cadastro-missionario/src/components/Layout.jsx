@@ -182,9 +182,9 @@ export default function Layout({ children }) {
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
+          ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/direto/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           ...(isAdmin ? [{ to: '/direto/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' }] : []),
-          ...(isAdmin ? [{ to: '/direto/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
@@ -224,9 +224,9 @@ export default function Layout({ children }) {
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
+          ...(isAdmin ? [{ to: '/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/relatorios/estudos-geral', label: 'Estudos no Geral', icon: 'EG' },
           ...(isAdmin ? [{ to: '/relatorios/dashboard-associacao', label: 'Duplas Missionárias', icon: 'DM' }] : []),
-          ...(isAdmin ? [{ to: '/relatorios/personalizado', label: 'Relatório Personalizado', icon: 'RP' }] : []),
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
