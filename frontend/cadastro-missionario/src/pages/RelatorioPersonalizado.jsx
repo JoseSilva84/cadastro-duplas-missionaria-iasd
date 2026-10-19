@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../lib/api';
 import EChart from '../components/EChart';
 import BackButton from '../components/BackButton';
 
 const cards = [
-  ['novaDupla', 'Nova Dupla'],
+  ['totalIgrejas', 'Igrejas'],
+  ['novaDupla', 'Duplas'],
   ['estudosBiblicos', 'Estudos Bíblicos'],
   ['pontosEstudo', 'Ponto de Estudo'],
   ['classesBiblicas', 'Classe Bíblica'],
+  ['batismosDuplas', 'Batismos de Duplas'],
+  ['experienciaBatismo', 'Experiência de Batismo'],
+  ['metaPessoasAlcancadas', 'Meta de Pessoas Alcançadas'],
   ['diretorMinisterioPessoal', 'Diretor Minist. Pessoal'],
   ['diretoresMissionarios', 'Diretor Missionário'],
-  ['batismos', 'Batismos'],
-  ['pessoasAlcancadas', 'Pessoas Alcançadas'],
 ];
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
@@ -24,15 +26,126 @@ const escapeHtml = (valor = '') => String(valor ?? '')
   .replace(/'/g, '&#039;');
 
 const corIndicador = {
+  totalIgrejas: '#16a34a',
   novaDupla: '#1A3A6B',
   estudosBiblicos: '#0284c7',
   pontosEstudo: '#0d9488',
   classesBiblicas: '#7B2D8B',
   diretorMinisterioPessoal: '#C9963A',
   diretoresMissionarios: '#2563eb',
-  batismos: '#14b8a6',
-  pessoasAlcancadas: '#ea580c',
+  batismosDuplas: '#14b8a6',
+  experienciaBatismo: '#C9963A',
+  metaPessoasAlcancadas: '#ea580c',
 };
+
+const tooltipIndicador = {
+  totalIgrejas: 'Igrejas cadastradas no escopo selecionado.',
+  novaDupla: 'Duplas vinculadas ao escopo selecionado.',
+  estudosBiblicos: 'Estudos em andamento. Inclui fichas completas e registros resumidos informados pelas duplas.',
+  pontosEstudo: 'Pontos de estudo com ficha em andamento no banco de dados.',
+  classesBiblicas: 'Classes em andamento. Inclui fichas completas e registros resumidos informados pelas duplas.',
+  batismosDuplas: 'Pessoas em estudos encerrados com o motivo Batismo.',
+  experienciaBatismo: 'Experiência histórica de batismo informada no cadastro das duplas. Este número não representa batismos de estudos encerrados.',
+  metaPessoasAlcancadas: 'Meta de pessoas alcançadas informada pelas duplas do escopo.',
+  diretorMinisterioPessoal: 'Quantidade de igrejas usada como referência para Diretores de Ministério Pessoal.',
+  diretoresMissionarios: 'Diretores missionários ativos vinculados ao escopo.',
+};
+
+const rotuloTipoEstudo = (tipo) => ({
+  UNICO: 'Estudo bíblico',
+  PONTO: 'Ponto de estudo',
+  CLASSE: 'Classe bíblica',
+}[tipo] || tipo || 'Não informado');
+
+const formatarData = (valor) => {
+  if (!valor) return 'Não informada';
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? 'Não informada' : data.toLocaleDateString('pt-BR');
+};
+
+function SecaoProgressiva({ children, forcar = false, className = '', altura = 'min-h-80', ...props }) {
+  const ref = useRef(null);
+  const [visivel, setVisivel] = useState(forcar);
+
+  useEffect(() => {
+    if (forcar || visivel) {
+      setVisivel(true);
+      return undefined;
+    }
+    const observador = new IntersectionObserver(([entrada]) => {
+      if (entrada.isIntersecting) {
+        setVisivel(true);
+        observador.disconnect();
+      }
+    }, { rootMargin: '500px 0px' });
+    if (ref.current) observador.observe(ref.current);
+    return () => observador.disconnect();
+  }, [forcar, visivel]);
+
+  return (
+    <section ref={ref} className={`${className} ${!visivel ? altura : ''}`} {...props}>
+      {visivel ? children : (
+        <div className="flex h-full min-h-72 items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-400">
+          Esta seção será carregada ao se aproximar da tela.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TabelaProgressiva({ itens = [], colunas = [], vazio = 'Nenhum registro encontrado.' }) {
+  const [limite, setLimite] = useState(15);
+  const sentinela = useRef(null);
+
+  useEffect(() => setLimite(15), [itens]);
+
+  useEffect(() => {
+    if (limite >= itens.length) return undefined;
+    const observador = new IntersectionObserver(([entrada]) => {
+      if (entrada.isIntersecting) setLimite((atual) => Math.min(atual + 15, itens.length));
+    }, { rootMargin: '250px 0px' });
+    if (sentinela.current) observador.observe(sentinela.current);
+    return () => observador.disconnect();
+  }, [itens.length, limite]);
+
+  if (!itens.length) {
+    return <p className="rounded-xl bg-slate-50 px-4 py-5 text-sm text-slate-500">{vazio}</p>;
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <table className="min-w-full divide-y divide-slate-200 text-sm">
+          <thead className="bg-slate-50">
+            <tr>
+              {colunas.map((coluna) => (
+                <th key={coluna.titulo} className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {coluna.titulo}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 bg-white">
+            {itens.slice(0, limite).map((item, indice) => (
+              <tr key={item.id ?? `${indice}-${item.igreja || ''}`} className="align-top">
+                {colunas.map((coluna) => (
+                  <td key={coluna.titulo} className="px-4 py-3 text-slate-600">
+                    {coluna.render(item)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {limite < itens.length && (
+        <div ref={sentinela} className="py-3 text-center text-xs text-slate-400">
+          Exibindo {numero(limite)} de {numero(itens.length)} registros…
+        </div>
+      )}
+    </>
+  );
+}
 
 const montarMetricas = (dados) => cards.map(([key, label]) => ({
   key,
@@ -57,7 +170,7 @@ const coletarImagensGraficos = () => Array.from(document.querySelectorAll('[data
   })
   .filter(Boolean);
 
-const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] }) => {
+const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [], janelaExistente = null }) => {
   const metricas = montarMetricas(dados);
   const maior = Math.max(...metricas.map((item) => item.valor), 1);
   const linhas = metricas.map((item) => `
@@ -69,13 +182,15 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] 
       </td>
     </tr>
   `).join('');
-  const totalAtividades = metricas.reduce((acc, item) => acc + item.valor, 0);
   const cobertura = dados?.cobertura || {};
   const classificacoes = dados?.classificacoesDuplas || {};
   const linhasCobertura = [
     ['Duplas com estudo bíblico', cobertura.estudoBiblico?.com || 0],
     ['Duplas sem estudo bíblico', cobertura.estudoBiblico?.sem || 0],
-    ['Estudos bíblicos cadastrados', cobertura.estudoBiblico?.totalEstudos || 0],
+    ['Estudos bíblicos com ficha completa', cobertura.estudoBiblico?.totalCadastrados || 0],
+    ['Estudos bíblicos em registro resumido', cobertura.estudoBiblico?.totalResumidos || 0],
+    ['Classes bíblicas com ficha completa', cobertura.classeBiblica?.totalCadastradas || 0],
+    ['Classes bíblicas em registro resumido', cobertura.classeBiblica?.totalResumidas || 0],
     ['Duplas com visitação', cobertura.visitacao?.com || 0],
     ['Duplas sem visitação', cobertura.visitacao?.sem || 0],
     ['Visitações registradas', cobertura.visitacao?.totalVisitas || 0],
@@ -84,15 +199,49 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] 
     ['Classe C', classificacoes.C || 0],
     ['Sem classificação', classificacoes.semClassificacao || 0],
   ].map(([label, valor]) => `<tr><td>${escapeHtml(label)}</td><td><strong>${numero(valor)}</strong></td></tr>`).join('');
+  const linhasBatismos = (dados?.batismosDetalhados || []).map((item) => `
+    <tr>
+      <td>${escapeHtml((item.pessoas || []).join(', ') || item.estudo)}</td>
+      <td>${numero(item.quantidade)}</td>
+      <td>${escapeHtml(formatarData(item.data))}</td>
+      <td>${escapeHtml(item.estudo)} (${escapeHtml(rotuloTipoEstudo(item.tipo))})</td>
+      <td>${escapeHtml(item.dupla)}</td>
+      <td>${escapeHtml(item.igreja)} / ${escapeHtml(item.distrito)} / ${escapeHtml(item.regiao)}</td>
+    </tr>
+  `).join('');
+  const linhasEstudos = (dados?.detalhesEstudos || []).map((item) => `
+    <tr>
+      <td>${escapeHtml(rotuloTipoEstudo(item.tipo))}</td>
+      <td>${escapeHtml(item.nome)}</td>
+      <td>${escapeHtml((item.pessoas || []).join(', ') || (item.registroResumido ? 'Sem ficha individual' : 'Não informado'))}</td>
+      <td>${item.licaoAtual ? `Lição ${numero(item.licaoAtual)}` : 'Não informada'}</td>
+      <td>${escapeHtml(item.dupla)}</td>
+      <td>${escapeHtml(item.igreja)} / ${escapeHtml(item.distrito)} / ${escapeHtml(item.regiao)}</td>
+      <td>${item.registroResumido ? 'Registro resumido' : 'Ficha completa'}</td>
+    </tr>
+  `).join('');
+  const linhasIgrejas = (dados?.duplasPorIgreja || []).map((item) => `
+    <tr>
+      <td>${escapeHtml(item.igreja)}</td>
+      <td>${escapeHtml(item.distrito)}</td>
+      <td>${escapeHtml(item.regiao)}</td>
+      <td>${numero(item.quantidadeDuplas)}</td>
+      <td>${numero(item.estudosBiblicos)}</td>
+      <td>${numero(item.pontosEstudo)}</td>
+      <td>${numero(item.classesBiblicas)}</td>
+      <td>${numero(item.batismosDuplas)}</td>
+    </tr>
+  `).join('');
   const blocosGraficos = imagensGraficos.map((grafico) => `
     <div class="grafico">
       <h2>${escapeHtml(grafico.titulo)}</h2>
       <img src="${grafico.imagem}" alt="${escapeHtml(grafico.titulo)}" />
     </div>
   `).join('');
-  const janela = window.open('', '_blank');
+  const janela = janelaExistente || window.open('', '_blank');
   if (!janela) return false;
 
+  janela.document.open();
   janela.document.write(`
     <html>
       <head>
@@ -115,6 +264,11 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] 
           .bar span { display: block; height: 100%; border-radius: 999px; }
           .grafico { break-inside: avoid; page-break-inside: avoid; margin-top: 18px; }
           .grafico img { width: 100%; max-height: 310px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 10px; }
+          .detalhes { margin-top: 24px; }
+          .detalhes table { font-size: 10px; }
+          .detalhes th, .detalhes td { padding: 6px; }
+          thead { display: table-header-group; }
+          tr { break-inside: avoid; page-break-inside: avoid; }
           .rodape { color: #6b7280; font-size: 11px; margin-top: 24px; }
         </style>
       </head>
@@ -122,8 +276,8 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] 
         <h1>Relatório Personalizado</h1>
         <p class="sub">Análise consolidada por ${escapeHtml(nivel)}: <strong>${escapeHtml(escopoNome)}</strong></p>
         <div class="meta">
-          Total consolidado dos indicadores exibidos: <strong>${numero(totalAtividades)}</strong><br>
-          Gerado em ${new Date().toLocaleString('pt-BR')}
+          Dados filtrados diretamente pelo escopo selecionado.<br>
+          Gerado em ${new Date().toLocaleString('pt-BR')}.
         </div>
         <div class="cards">
           ${metricas.map((item) => `<div class="card"><span>${escapeHtml(item.label)}</span><strong>${numero(item.valor)}</strong></div>`).join('')}
@@ -138,6 +292,27 @@ const abrirPdfPersonalizado = ({ dados, nivel, escopoNome, imagensGraficos = [] 
           <thead><tr><th>Indicador detalhado</th><th>Total</th></tr></thead>
           <tbody>${linhasCobertura}</tbody>
         </table>
+        <div class="detalhes">
+          <h2>Batismos de duplas</h2>
+          <table>
+            <thead><tr><th>Quem foi batizado</th><th>Qtd.</th><th>Data</th><th>Estudo de origem</th><th>Dupla</th><th>Localização</th></tr></thead>
+            <tbody>${linhasBatismos || '<tr><td colspan="6">Nenhum estudo encerrado com batismo neste escopo.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <div class="detalhes">
+          <h2>Estudos em andamento</h2>
+          <table>
+            <thead><tr><th>Tipo</th><th>Estudo</th><th>Pessoas</th><th>Lição</th><th>Dupla</th><th>Localização</th><th>Origem</th></tr></thead>
+            <tbody>${linhasEstudos || '<tr><td colspan="7">Nenhum estudo em andamento neste escopo.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <div class="detalhes">
+          <h2>Igrejas e atividade missionária</h2>
+          <table>
+            <thead><tr><th>Igreja</th><th>Distrito</th><th>Região</th><th>Duplas</th><th>Estudos</th><th>Pontos</th><th>Classes</th><th>Batismos</th></tr></thead>
+            <tbody>${linhasIgrejas || '<tr><td colspan="8">Nenhuma igreja encontrada neste escopo.</td></tr>'}</tbody>
+          </table>
+        </div>
         ${blocosGraficos}
         <p class="rodape">Sistema de Duplas Missionárias - PCM Associação Paulistana.</p>
       </body>
@@ -158,6 +333,7 @@ export default function RelatorioPersonalizado() {
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
+  const [renderizarTudo, setRenderizarTudo] = useState(false);
 
   useEffect(() => {
     Promise.all([api.get('/regioes'), api.get('/distritos'), api.get('/igrejas')])
@@ -188,11 +364,11 @@ export default function RelatorioPersonalizado() {
   const metricas = useMemo(() => montarMetricas(dados), [dados]);
 
   const grupoMinisterio = useMemo(() => (
-    metricas.filter((item) => ['novaDupla', 'estudosBiblicos', 'pontosEstudo', 'classesBiblicas'].includes(item.key))
+    metricas.filter((item) => ['totalIgrejas', 'novaDupla', 'estudosBiblicos', 'pontosEstudo', 'classesBiblicas'].includes(item.key))
   ), [metricas]);
 
   const grupoImpacto = useMemo(() => (
-    metricas.filter((item) => ['diretorMinisterioPessoal', 'diretoresMissionarios', 'batismos', 'pessoasAlcancadas'].includes(item.key))
+    metricas.filter((item) => ['batismosDuplas', 'experienciaBatismo', 'metaPessoasAlcancadas', 'diretorMinisterioPessoal', 'diretoresMissionarios'].includes(item.key))
   ), [metricas]);
 
   const colunaOption = useMemo(() => ({
@@ -219,37 +395,25 @@ export default function RelatorioPersonalizado() {
     grid: { left: 28, right: 20, bottom: 48, top: 24, containLabel: true },
     xAxis: {
       type: 'category',
-      data: ['Duplas', 'Estudos', 'Pontos', 'Classes', 'Batismos', 'Pessoas'],
+      data: ['Igrejas', 'Duplas', 'Estudos', 'Pontos', 'Classes', 'Batismos', 'Experiência', 'Meta'],
       axisLabel: { color: '#64748b' },
     },
     yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
     series: [
       {
-        name: 'Frentes missionárias',
+        name: 'Indicadores do escopo',
         type: 'line',
         smooth: true,
         symbolSize: 8,
         data: [
+          dados?.totalIgrejas || 0,
           dados?.novaDupla || 0,
           dados?.estudosBiblicos || 0,
           dados?.pontosEstudo || 0,
           dados?.classesBiblicas || 0,
-          dados?.batismos || 0,
-          dados?.pessoasAlcancadas || 0,
-        ],
-      },
-      {
-        name: 'Liderança',
-        type: 'line',
-        smooth: true,
-        symbolSize: 8,
-        data: [
-          0,
-          dados?.diretorMinisterioPessoal || 0,
-          0,
-          dados?.diretoresMissionarios || 0,
-          0,
-          0,
+          dados?.batismosDuplas || 0,
+          dados?.experienciaBatismo || 0,
+          dados?.metaPessoasAlcancadas || 0,
         ],
       },
     ],
@@ -317,16 +481,17 @@ export default function RelatorioPersonalizado() {
       color: ['#0284c7', '#0d9488', '#7B2D8B', '#C9963A'],
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       grid: { left: 28, right: 18, top: 24, bottom: 36, containLabel: true },
-      xAxis: { type: 'category', data: ['Estudos bíblicos', 'Pontos', 'Classes', 'Estudo sem cadastro'], axisLabel: { color: '#64748b', interval: 0 } },
+      xAxis: { type: 'category', data: ['Estudos com ficha', 'Estudos resumidos', 'Pontos', 'Classes com ficha', 'Classes resumidas'], axisLabel: { color: '#64748b', interval: 0, rotate: 18 } },
       yAxis: { type: 'value', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
       series: [{
         type: 'bar',
         barWidth: 30,
         data: [
-          { value: cobertura.estudoBiblico?.totalEstudos || 0, itemStyle: { color: '#0284c7', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.estudoBiblico?.totalCadastrados || 0, itemStyle: { color: '#0284c7', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.estudoBiblico?.totalResumidos || 0, itemStyle: { color: '#C9963A', borderRadius: [6, 6, 0, 0] } },
           { value: cobertura.pontoEstudo?.totalPontos || 0, itemStyle: { color: '#0d9488', borderRadius: [6, 6, 0, 0] } },
-          { value: cobertura.classeBiblica?.totalClasses || 0, itemStyle: { color: '#7B2D8B', borderRadius: [6, 6, 0, 0] } },
-          { value: dados?.duplasComEstudoSemCadastro || 0, itemStyle: { color: '#C9963A', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.classeBiblica?.totalCadastradas || 0, itemStyle: { color: '#7B2D8B', borderRadius: [6, 6, 0, 0] } },
+          { value: cobertura.classeBiblica?.totalResumidas || 0, itemStyle: { color: '#f59e0b', borderRadius: [6, 6, 0, 0] } },
         ],
       }],
     };
@@ -412,6 +577,7 @@ export default function RelatorioPersonalizado() {
       if (nivel === 'igreja') params.igrejaId = selecionado;
       const { data } = await api.get('/relatorios/personalizado', { params });
       setDados(data);
+      setRenderizarTudo(false);
     } catch (err) {
       setErro(err.response?.data?.erro || 'Erro ao gerar relatório personalizado.');
     } finally {
@@ -419,16 +585,80 @@ export default function RelatorioPersonalizado() {
     }
   };
 
-  const gerarPdf = () => {
+  const gerarPdf = async () => {
     if (!dados) return;
+    const janelaPdf = window.open('', '_blank');
+    if (!janelaPdf) {
+      setErro('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
+      return;
+    }
+    janelaPdf.document.write('<p style="font-family:Arial,sans-serif;padding:24px">Preparando relatório completo…</p>');
+    janelaPdf.document.close();
+    setRenderizarTudo(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
     const ok = abrirPdfPersonalizado({
       dados,
       nivel: nivel === 'regiao' ? 'Região' : nivel === 'distrito' ? 'Distrito' : 'Igreja',
       escopoNome: escopoSelecionado?.nome || 'Escopo selecionado',
       imagensGraficos: coletarImagensGraficos(),
+      janelaExistente: janelaPdf,
     });
     if (!ok) setErro('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
   };
+
+  const colunasBatismos = [
+    {
+      titulo: 'Quem foi batizado',
+      render: (item) => <span className="font-semibold text-slate-800">{(item.pessoas || []).join(', ') || item.estudo}</span>,
+    },
+    { titulo: 'Qtd.', render: (item) => numero(item.quantidade) },
+    { titulo: 'Data', render: (item) => formatarData(item.data) },
+    {
+      titulo: 'Estudo de origem',
+      render: (item) => <>{item.estudo}<span className="mt-0.5 block text-xs text-slate-400">{rotuloTipoEstudo(item.tipo)}</span></>,
+    },
+    { titulo: 'Dupla', render: (item) => item.dupla },
+    {
+      titulo: 'Localização',
+      render: (item) => <>{item.igreja}<span className="mt-0.5 block text-xs text-slate-400">{item.distrito} · {item.regiao}</span></>,
+    },
+  ];
+
+  const colunasEstudos = [
+    { titulo: 'Tipo', render: (item) => rotuloTipoEstudo(item.tipo) },
+    {
+      titulo: 'Estudo / estudante',
+      render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span>,
+    },
+    {
+      titulo: 'Pessoas',
+      render: (item) => (item.pessoas || []).join(', ') || (item.registroResumido ? 'Sem ficha individual' : 'Não informado'),
+    },
+    { titulo: 'Lição', render: (item) => (item.licaoAtual ? `Lição ${numero(item.licaoAtual)}` : 'Não informada') },
+    { titulo: 'Dupla', render: (item) => item.dupla },
+    {
+      titulo: 'Igreja',
+      render: (item) => <>{item.igreja}<span className="mt-0.5 block text-xs text-slate-400">{item.distrito} · {item.regiao}</span></>,
+    },
+    {
+      titulo: 'Origem',
+      render: (item) => (
+        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${item.registroResumido ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+          {item.registroResumido ? 'Registro resumido' : 'Ficha completa'}
+        </span>
+      ),
+    },
+  ];
+
+  const colunasIgrejas = [
+    { titulo: 'Igreja', render: (item) => <span className="font-semibold text-slate-800">{item.igreja}</span> },
+    { titulo: 'Distrito / região', render: (item) => <>{item.distrito}<span className="mt-0.5 block text-xs text-slate-400">{item.regiao}</span></> },
+    { titulo: 'Duplas', render: (item) => numero(item.quantidadeDuplas) },
+    { titulo: 'Estudos', render: (item) => numero(item.estudosBiblicos) },
+    { titulo: 'Pontos', render: (item) => numero(item.pontosEstudo) },
+    { titulo: 'Classes', render: (item) => numero(item.classesBiblicas) },
+    { titulo: 'Batismos', render: (item) => numero(item.batismosDuplas) },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
@@ -481,12 +711,12 @@ export default function RelatorioPersonalizado() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {metricas.map(({ key, label, valor, cor }) => (
               <div
                 key={key}
                 className="smart-tooltip card p-4"
-                data-tooltip={`${label}: total consolidado para o escopo selecionado nos filtros do relatório personalizado.`}
+                data-tooltip={tooltipIndicador[key] || `${label}: total no escopo selecionado.`}
                 tabIndex={0}
               >
                 <p className="text-xs font-semibold text-gray-500">{label}</p>
@@ -495,60 +725,103 @@ export default function RelatorioPersonalizado() {
             ))}
           </div>
 
+          <div className="mt-5 grid grid-cols-1 gap-5">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" altura="min-h-72">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos de duplas</h2>
+                  <p className="mt-1 text-sm text-gray-400">Pessoas, data, estudo de origem, dupla e localização dos estudos encerrados com batismo.</p>
+                </div>
+                <strong className="text-sm text-emerald-700">{numero(dados.batismosDuplas)} pessoa(s)</strong>
+              </div>
+              <TabelaProgressiva
+                itens={dados.batismosDetalhados || []}
+                colunas={colunasBatismos}
+                vazio="Nenhum estudo foi encerrado com batismo neste escopo."
+              />
+            </SecaoProgressiva>
+
+            <SecaoProgressiva forcar={renderizarTudo} className="card" altura="min-h-80">
+              <div className="mb-4">
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Estudos em andamento</h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  Fichas individuais e registros resumidos das duplas. Os registros resumidos não possuem nome do estudante ou lição.
+                </p>
+              </div>
+              <TabelaProgressiva
+                itens={dados.detalhesEstudos || []}
+                colunas={colunasEstudos}
+                vazio="Nenhum estudo em andamento neste escopo."
+              />
+            </SecaoProgressiva>
+
+            <SecaoProgressiva forcar={renderizarTudo} className="card" altura="min-h-72">
+              <div className="mb-4">
+                <h2 className="text-lg font-bold text-[#1A3A6B]">Igrejas e atividade missionária</h2>
+                <p className="mt-1 text-sm text-gray-400">Quantidade de duplas, estudos, classes e batismos por igreja do escopo.</p>
+              </div>
+              <TabelaProgressiva
+                itens={dados.duplasPorIgreja || []}
+                colunas={colunasIgrejas}
+                vazio="Nenhuma igreja encontrada neste escopo."
+              />
+            </SecaoProgressiva>
+          </div>
+
           <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <section className="card" data-report-chart data-report-title="Colunas por indicador">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Colunas por indicador">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Colunas por indicador</h2>
               <p className="mt-1 text-sm text-gray-400">Comparação direta dos totais no escopo selecionado.</p>
               <EChart option={colunaOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Distribuição por área">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Distribuição por área">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Distribuição por área</h2>
               <p className="mt-1 text-sm text-gray-400">Peso proporcional de cada indicador no relatório.</p>
               <EChart option={pizzaOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card xl:col-span-2" data-report-chart data-report-title="Linha comparativa">
+            <SecaoProgressiva forcar={renderizarTudo} className="card xl:col-span-2" data-report-chart data-report-title="Linha comparativa">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Linha comparativa</h2>
               <p className="mt-1 text-sm text-gray-400">Leitura sequencial entre frentes missionárias e liderança.</p>
               <EChart option={linhaOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Cobertura das duplas">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Cobertura das duplas">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Cobertura das duplas</h2>
               <p className="mt-1 text-sm text-gray-400">Duplas com e sem estudo, ponto, classe e visitação.</p>
               <EChart option={coberturaOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Volume de estudos e visitação">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Volume de estudos e visitação">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Volume de estudos e visitação</h2>
-              <p className="mt-1 text-sm text-gray-400">Quantidade de estudos cadastrados e estudos informados sem cadastro.</p>
+              <p className="mt-1 text-sm text-gray-400">Fichas completas e registros resumidos, separados por tipo.</p>
               <EChart option={volumeEstudosOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Classificação das duplas">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Classificação das duplas">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Classificação das duplas</h2>
               <p className="mt-1 text-sm text-gray-400">Distribuição das duplas por Classe A, B, C e sem classificação.</p>
               <EChart option={classificacaoOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Status das duplas">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Status das duplas">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Status das duplas</h2>
               <p className="mt-1 text-sm text-gray-400">Ativas, pendentes e inativas dentro da seleção.</p>
               <EChart option={statusOption} className="h-80" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Duplas com mais estudos">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Duplas com mais estudos">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas com mais estudos</h2>
               <p className="mt-1 text-sm text-gray-400">Ranking das duplas com maior volume de estudos cadastrados.</p>
               <EChart option={rankingEstudosOption} className="h-96" />
-            </section>
+            </SecaoProgressiva>
 
-            <section className="card" data-report-chart data-report-title="Duplas com mais visitações">
+            <SecaoProgressiva forcar={renderizarTudo} className="card" data-report-chart data-report-title="Duplas com mais visitações">
               <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas com mais visitações</h2>
               <p className="mt-1 text-sm text-gray-400">Ranking das duplas mais acompanhadas na seleção.</p>
               <EChart option={rankingVisitasOption} className="h-96" />
-            </section>
+            </SecaoProgressiva>
           </div>
         </div>
       )}
