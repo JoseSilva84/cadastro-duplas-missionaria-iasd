@@ -957,6 +957,7 @@ const RelatorioModel = {
         select: {
           id: true,
           nome: true,
+          nomeDiretorMinisterioPessoal: true,
           distrito: {
             select: {
               nome: true,
@@ -1074,7 +1075,7 @@ const RelatorioModel = {
           quantidadePequenosGrupos: true,
         },
       }),
-      prisma.usuario.count({
+      prisma.usuario.findMany({
         where: {
           perfil: 'DIRETOR_MISSIONARIO_IGREJA',
           ativo: true,
@@ -1082,6 +1083,23 @@ const RelatorioModel = {
             ? { igrejaId: escopo }
             : { igreja: { is: whereIgreja } }),
         },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          igreja: {
+            select: {
+              nome: true,
+              distrito: {
+                select: {
+                  nome: true,
+                  regiao: { select: { nome: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { nome: 'asc' },
       }),
     ]);
 
@@ -1287,6 +1305,40 @@ const RelatorioModel = {
     const batismosDuplas = batismosDetalhados.reduce((acc, item) => acc + item.quantidade, 0);
     const experienciaBatismo = duplas.reduce((acc, dupla) => acc + (dupla.batismos || 0), 0);
     const metaPessoasAlcancadas = duplas.reduce((acc, dupla) => acc + (dupla.pessoasAlcancadas || 0), 0);
+    const duplasDetalhadas = duplas.map((dupla) => {
+      const analitica = duplasAnaliticas.find((item) => item.id === dupla.id);
+      return {
+        id: dupla.id,
+        nome: nomeDupla(dupla),
+        status: dupla.status,
+        classificacao: dupla.classificacaoDupla || null,
+        tipoProjeto: dupla.tipoProjeto,
+        estudosBiblicos: analitica?.estudosBiblicos || 0,
+        pontosEstudo: analitica?.pontosEstudo || 0,
+        classesBiblicas: analitica?.classesBiblicas || 0,
+        experienciaBatismo: dupla.batismos || 0,
+        metaPessoasAlcancadas: dupla.pessoasAlcancadas || 0,
+        atualizadoEm: dupla.atualizadoEm,
+        ...localizacao(dupla),
+      };
+    }).sort((a, b) => a.nome.localeCompare(b.nome));
+
+    const diretoresMinisterioPessoalDetalhados = igrejasDoEscopo.map((igreja) => ({
+      id: igreja.id,
+      nome: igreja.nomeDiretorMinisterioPessoal || 'Não informado',
+      igreja: igreja.nome,
+      distrito: igreja.distrito?.nome || 'Sem distrito vinculado',
+      regiao: igreja.distrito?.regiao?.nome || 'Sem região vinculada',
+    }));
+
+    const diretoresMissionariosDetalhados = diretoresMissionarios.map((diretor) => ({
+      id: diretor.id,
+      nome: diretor.nome,
+      email: diretor.email,
+      igreja: diretor.igreja?.nome || 'Sem igreja vinculada',
+      distrito: diretor.igreja?.distrito?.nome || 'Sem distrito vinculado',
+      regiao: diretor.igreja?.distrito?.regiao?.nome || 'Sem região vinculada',
+    }));
 
     return {
       escopo: { nivel, id: escopo },
@@ -1300,7 +1352,7 @@ const RelatorioModel = {
       experienciaBatismo,
       metaPessoasAlcancadas,
       diretorMinisterioPessoal: totalIgrejas,
-      diretoresMissionarios,
+      diretoresMissionarios: diretoresMissionarios.length,
       escolaSabatina: somaEscola,
       duplasPorStatus: {
         ativas: duplas.filter((dupla) => dupla.status === 'ATIVA').length,
@@ -1314,6 +1366,9 @@ const RelatorioModel = {
       detalhesEstudos,
       batismosDetalhados,
       duplasPorIgreja,
+      duplasDetalhadas,
+      diretoresMinisterioPessoalDetalhados,
+      diretoresMissionariosDetalhados,
       rankings: {
         estudos: top('estudos'),
         visitas: top('visitas'),

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../lib/api';
 import EChart from '../components/EChart';
 import BackButton from '../components/BackButton';
@@ -93,20 +94,21 @@ function SecaoProgressiva({ children, forcar = false, className = '', altura = '
   );
 }
 
-function TabelaProgressiva({ itens = [], colunas = [], vazio = 'Nenhum registro encontrado.' }) {
+function TabelaProgressiva({ itens = [], colunas = [], vazio = 'Nenhum registro encontrado.', maximo = null }) {
   const [limite, setLimite] = useState(15);
   const sentinela = useRef(null);
+  const itensDisponiveis = maximo ? itens.slice(0, maximo) : itens;
 
   useEffect(() => setLimite(15), [itens]);
 
   useEffect(() => {
-    if (limite >= itens.length) return undefined;
+    if (limite >= itensDisponiveis.length) return undefined;
     const observador = new IntersectionObserver(([entrada]) => {
-      if (entrada.isIntersecting) setLimite((atual) => Math.min(atual + 15, itens.length));
+      if (entrada.isIntersecting) setLimite((atual) => Math.min(atual + 15, itensDisponiveis.length));
     }, { rootMargin: '250px 0px' });
     if (sentinela.current) observador.observe(sentinela.current);
     return () => observador.disconnect();
-  }, [itens.length, limite]);
+  }, [itensDisponiveis.length, limite]);
 
   if (!itens.length) {
     return <p className="rounded-xl bg-slate-50 px-4 py-5 text-sm text-slate-500">{vazio}</p>;
@@ -126,8 +128,12 @@ function TabelaProgressiva({ itens = [], colunas = [], vazio = 'Nenhum registro 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
-            {itens.slice(0, limite).map((item, indice) => (
-              <tr key={item.id ?? `${indice}-${item.igreja || ''}`} className="align-top">
+            {itensDisponiveis.slice(0, limite).map((item, indice) => (
+              <tr
+                key={item.id ?? `${indice}-${item.igreja || ''}`}
+                className="align-top outline-none transition-colors duration-150 hover:bg-blue-50/70 active:bg-blue-100/80 focus-visible:bg-blue-50/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2563eb]/35"
+                tabIndex={0}
+              >
                 {colunas.map((coluna) => (
                   <td key={coluna.titulo} className="px-4 py-3 text-slate-600">
                     {coluna.render(item)}
@@ -138,12 +144,97 @@ function TabelaProgressiva({ itens = [], colunas = [], vazio = 'Nenhum registro 
           </tbody>
         </table>
       </div>
-      {limite < itens.length && (
+      {limite < itensDisponiveis.length && (
         <div ref={sentinela} className="py-3 text-center text-xs text-slate-400">
-          Exibindo {numero(limite)} de {numero(itens.length)} registros…
+          Exibindo {numero(limite)} de {numero(itensDisponiveis.length)} registros…
         </div>
       )}
     </>
+  );
+}
+
+function ModalDetalhes({ titulo, subtitulo, itens = [], colunas = [], vazio, aoFechar }) {
+  const [busca, setBusca] = useState('');
+  const tituloId = 'titulo-modal-relatorio-personalizado';
+
+  useEffect(() => {
+    const overflowAnterior = document.body.style.overflow;
+    const fecharComEsc = (evento) => {
+      if (evento.key === 'Escape') aoFechar();
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', fecharComEsc);
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      window.removeEventListener('keydown', fecharComEsc);
+    };
+  }, [aoFechar]);
+
+  const normalizar = (valor) => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const termo = normalizar(busca.trim());
+  const filtrados = termo
+    ? itens.filter((item) => normalizar(Object.values(item).flat().join(' ')).includes(termo))
+    : itens;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-5"
+      role="presentation"
+      onMouseDown={(evento) => { if (evento.target === evento.currentTarget) aoFechar(); }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={tituloId}
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[92dvh] sm:rounded-3xl"
+      >
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#C9963A]">Relatório detalhado</p>
+            <h2 id={tituloId} className="mt-1 text-xl font-bold text-[#1A3A6B] sm:text-2xl" style={{ fontFamily: 'Georgia, serif' }}>
+              {titulo}
+            </h2>
+            {subtitulo && <p className="mt-1 text-sm text-slate-500">{subtitulo}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={aoFechar}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-slate-200 text-xl text-slate-500 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+            aria-label="Fechar detalhes"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="shrink-0 border-b border-slate-100 px-4 py-3 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="relative block w-full sm:max-w-md">
+              <span className="sr-only">Buscar nos detalhes</span>
+              <input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Buscar por nome, igreja, distrito…"
+                className="input-field h-11 w-full pr-10"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
+            </label>
+            <span className="text-sm font-semibold text-slate-500">
+              {numero(filtrados.length)} de {numero(itens.length)} registro(s)
+            </span>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5">
+          <TabelaProgressiva itens={filtrados} colunas={colunas} vazio={vazio} />
+        </div>
+
+        <footer className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 text-right sm:px-6">
+          <button type="button" className="btn-primary min-h-11 px-6" onClick={aoFechar}>Fechar</button>
+        </footer>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -334,6 +425,7 @@ export default function RelatorioPersonalizado() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
   const [renderizarTudo, setRenderizarTudo] = useState(false);
+  const [modalIndicador, setModalIndicador] = useState(null);
 
   useEffect(() => {
     Promise.all([api.get('/regioes'), api.get('/distritos'), api.get('/igrejas')])
@@ -578,6 +670,7 @@ export default function RelatorioPersonalizado() {
       const { data } = await api.get('/relatorios/personalizado', { params });
       setDados(data);
       setRenderizarTudo(false);
+      setModalIndicador(null);
     } catch (err) {
       setErro(err.response?.data?.erro || 'Erro ao gerar relatório personalizado.');
     } finally {
@@ -660,6 +753,134 @@ export default function RelatorioPersonalizado() {
     { titulo: 'Batismos', render: (item) => numero(item.batismosDuplas) },
   ];
 
+  const colunasDuplas = [
+    { titulo: 'Dupla', render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span> },
+    {
+      titulo: 'Localização',
+      render: (item) => <>{item.igreja}<span className="mt-0.5 block text-xs text-slate-400">{item.distrito} · {item.regiao}</span></>,
+    },
+    { titulo: 'Status', render: (item) => item.status || 'Não informado' },
+    { titulo: 'Estudos', render: (item) => numero(item.estudosBiblicos) },
+    { titulo: 'Pontos', render: (item) => numero(item.pontosEstudo) },
+    { titulo: 'Classes', render: (item) => numero(item.classesBiblicas) },
+    { titulo: 'Experiência de batismo', render: (item) => numero(item.experienciaBatismo) },
+    { titulo: 'Meta alcançada', render: (item) => numero(item.metaPessoasAlcancadas) },
+  ];
+
+  const colunasExperiencia = [
+    { titulo: 'Dupla', render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span> },
+    { titulo: 'Experiência de batismo', render: (item) => <strong className="text-amber-700">{numero(item.experienciaBatismo)}</strong> },
+    { titulo: 'Igreja', render: (item) => item.igreja },
+    { titulo: 'Distrito / região', render: (item) => `${item.distrito} · ${item.regiao}` },
+  ];
+
+  const colunasMetaPessoas = [
+    { titulo: 'Dupla', render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span> },
+    { titulo: 'Meta de pessoas alcançadas', render: (item) => <strong className="text-orange-700">{numero(item.metaPessoasAlcancadas)}</strong> },
+    { titulo: 'Igreja', render: (item) => item.igreja },
+    { titulo: 'Distrito / região', render: (item) => `${item.distrito} · ${item.regiao}` },
+  ];
+
+  const colunasDiretoresMinisterio = [
+    { titulo: 'Diretor de Ministério Pessoal', render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span> },
+    { titulo: 'Igreja', render: (item) => item.igreja },
+    { titulo: 'Distrito', render: (item) => item.distrito },
+    { titulo: 'Região', render: (item) => item.regiao },
+  ];
+
+  const colunasDiretoresMissionarios = [
+    { titulo: 'Diretor missionário', render: (item) => <span className="font-semibold text-slate-800">{item.nome}</span> },
+    { titulo: 'E-mail', render: (item) => item.email },
+    { titulo: 'Igreja', render: (item) => item.igreja },
+    { titulo: 'Distrito / região', render: (item) => `${item.distrito} · ${item.regiao}` },
+  ];
+
+  const configuracaoModal = (() => {
+    if (!dados || !modalIndicador) return null;
+    const estudosPorTipo = (tipo) => (dados.detalhesEstudos || []).filter((item) => item.tipo === tipo);
+    const duplasDetalhadas = dados.duplasDetalhadas || [];
+    const configuracoes = {
+      totalIgrejas: {
+        titulo: 'Igrejas do escopo',
+        subtitulo: 'Duplas e atividades missionárias organizadas por igreja.',
+        itens: dados.duplasPorIgreja || [],
+        colunas: colunasIgrejas,
+        vazio: 'Nenhuma igreja encontrada neste escopo.',
+      },
+      novaDupla: {
+        titulo: 'Todas as duplas',
+        subtitulo: 'Duplas, localização, status e indicadores no escopo selecionado.',
+        itens: duplasDetalhadas,
+        colunas: colunasDuplas,
+        vazio: 'Nenhuma dupla encontrada neste escopo.',
+      },
+      estudosBiblicos: {
+        titulo: 'Todos os estudos bíblicos',
+        subtitulo: 'Fichas completas e registros resumidos em andamento.',
+        itens: estudosPorTipo('UNICO'),
+        colunas: colunasEstudos,
+        vazio: 'Nenhum estudo bíblico em andamento neste escopo.',
+      },
+      todosEstudos: {
+        titulo: 'Todos os estudos em andamento',
+        subtitulo: 'Estudos bíblicos, pontos de estudo e classes bíblicas do escopo selecionado.',
+        itens: dados.detalhesEstudos || [],
+        colunas: colunasEstudos,
+        vazio: 'Nenhum estudo em andamento neste escopo.',
+      },
+      pontosEstudo: {
+        titulo: 'Todos os pontos de estudo',
+        subtitulo: 'Pontos de estudo em andamento no escopo selecionado.',
+        itens: estudosPorTipo('PONTO'),
+        colunas: colunasEstudos,
+        vazio: 'Nenhum ponto de estudo em andamento neste escopo.',
+      },
+      classesBiblicas: {
+        titulo: 'Todas as classes bíblicas',
+        subtitulo: 'Fichas completas e registros resumidos em andamento.',
+        itens: estudosPorTipo('CLASSE'),
+        colunas: colunasEstudos,
+        vazio: 'Nenhuma classe bíblica em andamento neste escopo.',
+      },
+      batismosDuplas: {
+        titulo: 'Todos os batismos de duplas',
+        subtitulo: 'Pessoas batizadas, data, estudo de origem, dupla e localização.',
+        itens: dados.batismosDetalhados || [],
+        colunas: colunasBatismos,
+        vazio: 'Nenhum estudo foi encerrado com batismo neste escopo.',
+      },
+      experienciaBatismo: {
+        titulo: 'Experiências de batismo',
+        subtitulo: 'Histórico de experiência informado no cadastro de cada dupla.',
+        itens: duplasDetalhadas.filter((item) => item.experienciaBatismo > 0),
+        colunas: colunasExperiencia,
+        vazio: 'Nenhuma experiência de batismo foi informada neste escopo.',
+      },
+      metaPessoasAlcancadas: {
+        titulo: 'Meta de pessoas alcançadas',
+        subtitulo: 'Metas informadas pelas duplas do escopo selecionado.',
+        itens: duplasDetalhadas.filter((item) => item.metaPessoasAlcancadas > 0),
+        colunas: colunasMetaPessoas,
+        vazio: 'Nenhuma meta de pessoas alcançadas foi informada neste escopo.',
+      },
+      diretorMinisterioPessoal: {
+        titulo: 'Diretores de Ministério Pessoal',
+        subtitulo: 'Responsáveis informados nas igrejas do escopo.',
+        itens: dados.diretoresMinisterioPessoalDetalhados || [],
+        colunas: colunasDiretoresMinisterio,
+        vazio: 'Nenhuma igreja encontrada neste escopo.',
+      },
+      diretoresMissionarios: {
+        titulo: 'Diretores missionários',
+        subtitulo: 'Usuários ativos com acesso de Diretor Missionário de Igreja.',
+        itens: dados.diretoresMissionariosDetalhados || [],
+        colunas: colunasDiretoresMissionarios,
+        vazio: 'Nenhum diretor missionário ativo encontrado neste escopo.',
+      },
+    };
+    return configuracoes[modalIndicador] || null;
+  })();
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6">
@@ -713,45 +934,62 @@ export default function RelatorioPersonalizado() {
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {metricas.map(({ key, label, valor, cor }) => (
-              <div
+              <button
+                type="button"
                 key={key}
-                className="smart-tooltip card p-4"
+                className="smart-tooltip card group min-h-32 p-4 text-left outline-none transition duration-200 hover:-translate-y-0.5 hover:border-[#2563eb]/35 hover:bg-blue-50/40 hover:shadow-lg active:scale-[0.99] active:bg-blue-100/60 focus-visible:-translate-y-0.5 focus-visible:border-[#2563eb] focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                 data-tooltip={tooltipIndicador[key] || `${label}: total no escopo selecionado.`}
-                tabIndex={0}
+                onClick={() => setModalIndicador(key)}
+                aria-haspopup="dialog"
               >
-                <p className="text-xs font-semibold text-gray-500">{label}</p>
+                <span className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-semibold text-gray-500">{label}</span>
+                  <span className="shrink-0 text-[11px] font-bold text-[#1A3A6B] opacity-75 transition group-hover:opacity-100">Ver todos</span>
+                </span>
                 <p className="mt-2 text-3xl font-bold" style={{ color: cor }}>{numero(valor)}</p>
-              </div>
+              </button>
             ))}
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-5">
             <SecaoProgressiva forcar={renderizarTudo} className="card" altura="min-h-72">
-              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-[#1A3A6B]">Batismos de duplas</h2>
                   <p className="mt-1 text-sm text-gray-400">Pessoas, data, estudo de origem, dupla e localização dos estudos encerrados com batismo.</p>
                 </div>
-                <strong className="text-sm text-emerald-700">{numero(dados.batismosDuplas)} pessoa(s)</strong>
+                <div className="flex items-center gap-3">
+                  <strong className="text-sm text-emerald-700">{numero(dados.batismosDuplas)} pessoa(s)</strong>
+                  <button type="button" className="rounded-lg px-2 py-1 text-sm font-bold text-[#1A3A6B] transition hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]" onClick={() => setModalIndicador('batismosDuplas')}>
+                    Ver todos
+                  </button>
+                </div>
               </div>
               <TabelaProgressiva
                 itens={dados.batismosDetalhados || []}
                 colunas={colunasBatismos}
                 vazio="Nenhum estudo foi encerrado com batismo neste escopo."
+                maximo={5}
               />
             </SecaoProgressiva>
 
             <SecaoProgressiva forcar={renderizarTudo} className="card" altura="min-h-80">
-              <div className="mb-4">
-                <h2 className="text-lg font-bold text-[#1A3A6B]">Estudos em andamento</h2>
-                <p className="mt-1 text-sm text-gray-400">
-                  Fichas individuais e registros resumidos das duplas. Os registros resumidos não possuem nome do estudante ou lição.
-                </p>
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1A3A6B]">Estudos em andamento</h2>
+                  <p className="mt-1 text-sm text-gray-400">
+                    Fichas individuais e registros resumidos das duplas. Os registros resumidos não possuem nome do estudante ou lição.
+                  </p>
+                </div>
+                <button type="button" className="self-start rounded-lg px-2 py-1 text-sm font-bold text-[#1A3A6B] transition hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]" onClick={() => setModalIndicador('todosEstudos')}>
+                  Ver todos
+                </button>
               </div>
               <TabelaProgressiva
                 itens={dados.detalhesEstudos || []}
                 colunas={colunasEstudos}
                 vazio="Nenhum estudo em andamento neste escopo."
+                maximo={5}
               />
             </SecaoProgressiva>
 
@@ -824,6 +1062,18 @@ export default function RelatorioPersonalizado() {
             </SecaoProgressiva>
           </div>
         </div>
+      )}
+
+      {configuracaoModal && (
+        <ModalDetalhes
+          key={modalIndicador}
+          titulo={configuracaoModal.titulo}
+          subtitulo={configuracaoModal.subtitulo}
+          itens={configuracaoModal.itens}
+          colunas={configuracaoModal.colunas}
+          vazio={configuracaoModal.vazio}
+          aoFechar={() => setModalIndicador(null)}
+        />
       )}
     </div>
   );
