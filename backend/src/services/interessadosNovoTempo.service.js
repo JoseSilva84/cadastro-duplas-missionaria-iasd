@@ -886,6 +886,16 @@ async function aceitesCampanhaAtivos(escopo) {
     }));
 }
 
+function indexarAceites(aceites) {
+  const porTelefone = new Map();
+  const porNome = new Map();
+  aceites.forEach((aceite) => {
+    if (aceite.chaveTelefone && !porTelefone.has(aceite.chaveTelefone)) porTelefone.set(aceite.chaveTelefone, aceite);
+    if (aceite.chaveNome && !porNome.has(aceite.chaveNome)) porNome.set(aceite.chaveNome, aceite);
+  });
+  return { porTelefone, porNome };
+}
+
 function faixaSemContato(dias) {
   if (dias === null) return 'Não informado';
   if (dias <= 90) return 'Até 3 meses';
@@ -1101,6 +1111,7 @@ const InteressadosNovoTempoService = {
       throw erro(409, 'Os interessados foram atualizados. Recarregue a primeira página.', 'VERSAO_NT_EXPIRADA');
     }
     const { meta, contatos } = resultado;
+    const indexAceites = indexarAceites(aceites);
     const leads = contatos.map((contato) => ({
       id: contato.id,
       nome: contato.nome,
@@ -1160,8 +1171,7 @@ const InteressadosNovoTempoService = {
     const leadsComAceites = mapa ? leads.map((lead) => {
       const telefone = texto(lead.whatsapp).replace(/\D/g, '').slice(-10);
       const nome = chaveNormalizada(lead.nome);
-      const aceite = aceites.find((item) => (telefone && item.chaveTelefone === telefone)
-        || (nome && item.chaveNome === nome));
+      const aceite = indexAceites.porTelefone.get(telefone) || indexAceites.porNome.get(nome);
       return aceite ? {
         ...lead,
         aceitouVisita: true,
@@ -1173,8 +1183,7 @@ const InteressadosNovoTempoService = {
     const pontosMapa = mapa ? (resultado.mapa || []).map((contato) => {
       const telefone = texto(contato.whatsapp).replace(/\D/g, '').slice(-10);
       const nome = chaveNormalizada(contato.nome);
-      const aceite = aceites.find((item) => (telefone && item.chaveTelefone === telefone)
-        || (nome && item.chaveNome === nome));
+      const aceite = indexAceites.porTelefone.get(telefone) || indexAceites.porNome.get(nome);
       return {
         id: contato.id,
         nome: contato.nome,

@@ -108,6 +108,15 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
   const temSelecao = categoriasAtivas.length > 0;
   const leadsDoMapa = mapa?.leads ?? leads;
   const prioridadesSelecionadas = categoriasAtivas.filter((categoria) => PRIORIDADES[categoria]);
+  const igrejasPorDistrito = useMemo(() => {
+    const indice = new Map();
+    igrejas.forEach((igreja) => {
+      const chave = normalizar(igreja.distrito);
+      if (!indice.has(chave)) indice.set(chave, []);
+      indice.get(chave).push(igreja);
+    });
+    return indice;
+  }, [igrejas]);
   const leadsVisiveis = useMemo(() => {
     if (!prioridadesSelecionadas.length) return leadsDoMapa;
     return leadsDoMapa.filter((lead) => prioridadesSelecionadas.includes(lead.prioridade));
@@ -115,7 +124,7 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
   const igrejasVisiveis = useMemo(() => (
     !temSelecao || categoriasAtivas.includes('igrejas') ? igrejas : []
   ), [categoriasAtivas, igrejas, temSelecao]);
-  const pontosLeads = useMemo(() => leadsVisiveis.filter(coordenadasValidas).slice(0, 5000), [leadsVisiveis]);
+  const pontosLeads = useMemo(() => leadsVisiveis.filter(coordenadasValidas), [leadsVisiveis]);
   const pontosIgrejas = useMemo(() => igrejasVisiveis.filter(coordenadasValidas), [igrejasVisiveis]);
   const pontos = useMemo(() => [...pontosLeads, ...pontosIgrejas], [pontosIgrejas, pontosLeads]);
   const centro = pontos[0] ? [Number(pontos[0].latitude), Number(pontos[0].longitude)] : [-23.5505, -46.6333];
@@ -128,14 +137,14 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
   const alternarCategoria = (categoria) => setCategoriasAtivas((atuais) => (
     atuais.includes(categoria) ? atuais.filter((item) => item !== categoria) : [...atuais, categoria]
   ));
-  const afiliacaoSelecionada = useMemo(() => encontrarIgrejaAfiliada(leadMapaSelecionado, igrejas), [igrejas, leadMapaSelecionado]);
+  const afiliacaoSelecionada = useMemo(() => encontrarIgrejaAfiliada(leadMapaSelecionado, igrejasPorDistrito.get(normalizar(leadMapaSelecionado?.distrito)) || igrejas), [igrejas, igrejasPorDistrito, leadMapaSelecionado]);
   return (
     <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-lg">
       <div className="flex flex-col gap-4 bg-gradient-to-r from-white to-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">Mapa dos leads filtrados</p>
           <h2 className="mt-1 text-2xl font-bold text-[#1A3A6B]">Pontos com leads e igrejas</h2>
-          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · exibindo {numero(pontosLeads.length)} no mapa{mapa?.truncado ? ` de ${numero(mapa.total)}` : ''}</p>
+          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · todos os leads com coordenadas no mapa</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {
@@ -158,7 +167,7 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
             const aproximada = ehAproximada(lead);
             const endereco = enderecoDoLead(lead);
             const links = linksDoMapa(lead);
-            const afiliacao = encontrarIgrejaAfiliada(lead, igrejas);
+            const afiliacao = encontrarIgrejaAfiliada(lead, igrejasPorDistrito.get(normalizar(lead.distrito)) || igrejas);
             const popup = (
               <Popup minWidth={285} maxWidth={340}>
                   <div className="space-y-1 text-sm leading-snug text-slate-700">

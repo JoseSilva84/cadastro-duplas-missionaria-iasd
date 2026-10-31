@@ -539,7 +539,6 @@ module.exports = function criarEspelhoNovoTempo({
         FROM "InteressadoNovoTempo"
         WHERE ${whereSql}
         ORDER BY dados->>'nome', dados->>'id'
-        LIMIT 5000
       `) : Promise.resolve([]);
     const [totais, linhas, pontosMapa] = await Promise.all([
       db.$queryRaw(Prisma.sql`
