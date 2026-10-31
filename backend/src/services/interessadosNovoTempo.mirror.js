@@ -306,5 +306,242 @@ module.exports = function criarEspelhoNovoTempo({
     return { meta, contatos };
   }
 
-  return { iniciar, solicitar, estado, resumo, porDistrito, todos };
+  function condicoesSql(meta, escopo, extras = []) {
+    const condicoes = [Prisma.sql`"loteId" = ${meta.loteId}`];
+    if (!escopo.acessoTotal) condicoes.push(Prisma.sql`"distritoChave" IN (${Prisma.join([...escopo.distritos])})`);
+    condicoes.push(...extras);
+    return Prisma.join(condicoes, ' AND ');
+  }
+
+  async function dadosParaAnalise(escopo, distritoChave = null) {
+    const meta = await estado();
+    if (!meta.loteId) return { meta, contatos: [] };
+    const extras = distritoChave === null ? [] : [Prisma.sql`"distritoChave" = ${distritoChave}`];
+    const linhas = await db.$queryRaw(Prisma.sql`
+      SELECT id, distrito,
+        "prioridadeChave" AS prioridade,
+        "temWhatsapp", "vipHistorico", "estudoAtivo",
+        dados->>'nome' AS nome,
+        dados->>'whatsapp' AS whatsapp,
+        dados->>'email' AS email,
+        dados->>'bairro' AS bairro,
+        dados->>'material' AS material,
+        dados->>'genero' AS genero,
+        dados->>'idade' AS idade,
+        dados->>'dataNascimento' AS "dataNascimento",
+        dados->>'religiao' AS religiao,
+        dados->>'canal' AS canal,
+        dados->>'cidade' AS cidade,
+        NULLIF(dados->>'telefoneValido', '')::boolean AS "telefoneValido",
+        NULLIF(dados->>'emailValido', '')::boolean AS "emailValido",
+        NULLIF(dados->>'temDescricao', '')::boolean AS "temDescricao",
+        NULLIF(dados->>'tentativaContato', '')::boolean AS "tentativaContato",
+        NULLIF(dados->>'respondeu', '')::boolean AS respondeu,
+        NULLIF(dados->>'demonstrouInteresse', '')::boolean AS "demonstrouInteresse",
+        NULLIF(dados->>'aceitouVisita', '')::boolean AS "aceitouVisita",
+        NULLIF(dados->>'participou', '')::boolean AS participou,
+        CASE WHEN COALESCE(dados->>'materiaisQuantidade', '') ~ '^[0-9]+$'
+          THEN (dados->>'materiaisQuantidade')::int ELSE NULL END AS "materiaisQuantidade",
+        dados->>'prioridadeRotulo' AS "prioridadeRotulo",
+        CASE WHEN COALESCE(dados->>'pontuacao', '') ~ '^-?[0-9]+([.,][0-9]+)?$'
+          THEN REPLACE(dados->>'pontuacao', ',', '.')::double precision ELSE NULL END AS pontuacao,
+        CASE WHEN COALESCE(dados->>'diasSemContato', '') ~ '^-?[0-9]+$'
+          THEN (dados->>'diasSemContato')::int ELSE NULL END AS "diasSemContato"
+      FROM "InteressadoNovoTempo"
+      WHERE ${condicoesSql(meta, escopo, extras)}
+    `);
+    return { meta, contatos: linhas };
+  }
+
+  async function analiseAgregada(escopo, filtros = {}) {
+    const meta = await estado();
+    if (!meta.loteId) return { meta, distritos: [], religioes: [], tempoSemContato: [], generos: [] };
+    const extras = [];
+    if (filtros.distrito && filtros.distrito !== 'todos') extras.push(Prisma.sql`"distritoChave" = ${chaveNormalizada(filtros.distrito)}`);
+    if (filtros.prioridade && filtros.prioridade !== 'todos') extras.push(Prisma.sql`"prioridadeChave" = ${chaveNormalizada(filtros.prioridade)}`);
+    if (['0', '1'].includes(filtros.vip)) extras.push(Prisma.sql`"vipHistorico" = ${filtros.vip === '1'}`);
+    if (['0', '1'].includes(filtros.whatsapp)) extras.push(Prisma.sql`"temWhatsapp" = ${filtros.whatsapp === '1'}`);
+    if (['0', '1'].includes(filtros.estudos)) extras.push(Prisma.sql`"estudoAtivo" = ${filtros.estudos === '1'}`);
+    if (filtros.genero && filtros.genero !== 'todos') extras.push(Prisma.sql`LOWER(COALESCE(dados->>'genero', '')) = ${String(filtros.genero).toLocaleLowerCase('pt-BR')}`);
+    const whereSql = condicoesSql(meta, escopo, extras);
+    const whereBase = condicoesSql(meta, escopo);
+    const [distritos, religioes, tempos, opcoes] = await Promise.all([
+      db.$queryRaw(Prisma.sql`
+        SELECT MIN(distrito) AS nome,
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE "temWhatsapp")::int AS "comWhatsapp",
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'hot')::int AS quentes,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'warm')::int AS potenciais,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'cool')::int AS mornos,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'cold')::int AS frios,
+          COUNT(*) FILTER (WHERE "vipHistorico")::int AS vips,
+          COUNT(*) FILTER (WHERE "estudoAtivo")::int AS estudos,
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int > 1825)::int AS "semContato5Anos",
+          ROUND(AVG(CASE WHEN COALESCE(dados->>'pontuacao', '') ~ '^-?[0-9]+([.,][0-9]+)?$' THEN REPLACE(dados->>'pontuacao', ',', '.')::numeric END), 1)::double precision AS "pontuacaoMedia"
+        FROM "InteressadoNovoTempo" WHERE ${whereSql}
+        GROUP BY "distritoChave" ORDER BY total DESC, nome
+      `),
+      db.$queryRaw(Prisma.sql`
+        SELECT COALESCE(NULLIF(dados->>'religiao', ''), 'Não informado') AS nome, COUNT(*)::int AS total
+        FROM "InteressadoNovoTempo" WHERE ${whereSql}
+        GROUP BY COALESCE(NULLIF(dados->>'religiao', ''), 'Não informado') ORDER BY total DESC, nome LIMIT 10
+      `),
+      db.$queryRaw(Prisma.sql`
+        SELECT faixa AS nome, COUNT(*)::int AS total FROM (
+          SELECT CASE
+            WHEN COALESCE(dados->>'diasSemContato', '') !~ '^[0-9]+$' THEN 'Não informado'
+            WHEN (dados->>'diasSemContato')::int <= 90 THEN 'Até 3 meses'
+            WHEN (dados->>'diasSemContato')::int <= 365 THEN '3 meses a 1 ano'
+            WHEN (dados->>'diasSemContato')::int <= 730 THEN '1 a 2 anos'
+            WHEN (dados->>'diasSemContato')::int <= 1825 THEN '2 a 5 anos'
+            ELSE '5+ anos' END AS faixa
+          FROM "InteressadoNovoTempo" WHERE ${whereSql}
+        ) faixas GROUP BY faixa ORDER BY total DESC, faixa
+      `),
+      db.$queryRaw(Prisma.sql`
+        SELECT
+          ARRAY_AGG(DISTINCT distrito ORDER BY distrito) AS distritos,
+          ARRAY_AGG(DISTINCT dados->>'genero' ORDER BY dados->>'genero') FILTER (WHERE COALESCE(dados->>'genero', '') <> '') AS generos
+        FROM "InteressadoNovoTempo" WHERE ${whereBase}
+      `),
+    ]);
+    return { meta, distritos, religioes, tempoSemContato: tempos, generos: opcoes[0]?.generos || [], distritosDisponiveis: opcoes[0]?.distritos || [] };
+  }
+
+  async function facetas(escopo) {
+    const meta = await estado();
+    if (!meta.loteId) return { meta, facetas: {} };
+    const whereSql = condicoesSql(meta, escopo);
+    const linhas = await db.$queryRaw(Prisma.sql`
+      SELECT tipo, nome, total FROM (
+        SELECT 'distritos' AS tipo, COALESCE(NULLIF(distrito, ''), 'Não informado') AS nome, COUNT(*)::int AS total
+          FROM "InteressadoNovoTempo" WHERE ${whereSql} GROUP BY distrito
+        UNION ALL
+        SELECT 'bairros', COALESCE(NULLIF(dados->>'bairro', ''), 'Não informado'), COUNT(*)::int
+          FROM "InteressadoNovoTempo" WHERE ${whereSql} GROUP BY dados->>'bairro'
+        UNION ALL
+        SELECT 'materiais', COALESCE(NULLIF(dados->>'material', ''), 'Não informado'), COUNT(*)::int
+          FROM "InteressadoNovoTempo" WHERE ${whereSql} GROUP BY dados->>'material'
+        UNION ALL
+        SELECT 'generos', COALESCE(NULLIF(dados->>'genero', ''), 'Não informado'), COUNT(*)::int
+          FROM "InteressadoNovoTempo" WHERE ${whereSql} GROUP BY dados->>'genero'
+        UNION ALL
+        SELECT 'prioridades', CASE "prioridadeChave" WHEN 'hot' THEN 'Quente' WHEN 'warm' THEN 'Potencial' WHEN 'cool' THEN 'Morno' WHEN 'cold' THEN 'Frio' ELSE 'Sem prioridade' END, COUNT(*)::int
+          FROM "InteressadoNovoTempo" WHERE ${whereSql} GROUP BY "prioridadeChave"
+        UNION ALL
+        SELECT 'idades', faixa, COUNT(*)::int FROM (
+          SELECT CASE
+            WHEN COALESCE(dados->>'idade', '') !~ '^[0-9]+$' THEN 'Sem idade'
+            WHEN (dados->>'idade')::int <= 17 THEN 'Até 17'
+            WHEN (dados->>'idade')::int <= 29 THEN '18 a 29'
+            WHEN (dados->>'idade')::int <= 44 THEN '30 a 44'
+            WHEN (dados->>'idade')::int <= 59 THEN '45 a 59'
+            ELSE '60+' END AS faixa
+          FROM "InteressadoNovoTempo" WHERE ${whereSql}
+        ) idades_base GROUP BY faixa
+      ) facetas_base ORDER BY tipo, total DESC, nome
+    `);
+    const resultado = { distritos: [], bairros: [], materiais: [], idades: [], generos: [], prioridades: [] };
+    linhas.forEach(({ tipo, nome, total }) => resultado[tipo]?.push({ nome, total }));
+    return { meta, facetas: resultado };
+  }
+
+  async function buscar(escopo, filtros = {}, { pagina = 1, limite = 100, versao = null } = {}) {
+    const meta = await estado();
+    if (!meta.loteId) return { meta, contatos: [], total: 0, pagina: 1, limite: 100, temMais: false };
+    if (versao && ![meta.loteId, meta.loteAnterior].includes(versao)) return { versaoExpirada: true };
+    if (versao) meta.loteId = versao;
+
+    const extras = [];
+    const lista = (valor) => (Array.isArray(valor) ? valor : String(valor || '').split('|'))
+      .map((item) => String(item || '').trim()).filter(Boolean);
+    const minusculas = (valor) => lista(valor).map((item) => item.toLocaleLowerCase('pt-BR'));
+    const distritos = lista(filtros.distritos).map(chaveNormalizada);
+    const bairros = minusculas(filtros.bairros);
+    const materiais = minusculas(filtros.materiais);
+    const idades = lista(filtros.idades);
+    const generos = minusculas(filtros.generos);
+    const prioridades = minusculas(filtros.prioridades).map((item) => ({ quente: 'hot', potencial: 'warm', morno: 'cool', frio: 'cold' })[item] || item);
+    if (distritos.length) extras.push(Prisma.sql`"distritoChave" IN (${Prisma.join(distritos)})`);
+    if (bairros.length) extras.push(Prisma.sql`LOWER(COALESCE(dados->>'bairro', '')) IN (${Prisma.join(bairros)})`);
+    if (materiais.length) extras.push(Prisma.sql`LOWER(COALESCE(dados->>'material', '')) IN (${Prisma.join(materiais)})`);
+    if (generos.length) extras.push(Prisma.sql`LOWER(COALESCE(dados->>'genero', '')) IN (${Prisma.join(generos)})`);
+    if (prioridades.length) extras.push(Prisma.sql`"prioridadeChave" IN (${Prisma.join(prioridades)})`);
+    if (idades.length) {
+      const idade = Prisma.sql`CASE WHEN COALESCE(dados->>'idade', '') ~ '^[0-9]+$' THEN (dados->>'idade')::int ELSE NULL END`;
+      const faixas = [];
+      if (idades.includes('Até 17')) faixas.push(Prisma.sql`${idade} <= 17`);
+      if (idades.includes('18 a 29')) faixas.push(Prisma.sql`${idade} BETWEEN 18 AND 29`);
+      if (idades.includes('30 a 44')) faixas.push(Prisma.sql`${idade} BETWEEN 30 AND 44`);
+      if (idades.includes('45 a 59')) faixas.push(Prisma.sql`${idade} BETWEEN 45 AND 59`);
+      if (idades.includes('60+')) faixas.push(Prisma.sql`${idade} >= 60`);
+      if (idades.includes('Sem idade')) faixas.push(Prisma.sql`${idade} IS NULL`);
+      if (faixas.length) extras.push(Prisma.sql`(${Prisma.join(faixas, ' OR ')})`);
+    }
+    if (filtros.whatsapp === 'sim') extras.push(Prisma.sql`"temWhatsapp" = true`);
+    if (filtros.whatsapp === 'nao') extras.push(Prisma.sql`"temWhatsapp" = false`);
+    if (filtros.estudos === 'sim') extras.push(Prisma.sql`"estudoAtivo" = true`);
+    if (filtros.estudos === 'nao') extras.push(Prisma.sql`"estudoAtivo" = false`);
+    if (filtros.vip === 'sim') extras.push(Prisma.sql`"vipHistorico" = true`);
+    if (filtros.vip === 'nao') extras.push(Prisma.sql`"vipHistorico" = false`);
+    if (filtros.email === 'sim') extras.push(Prisma.sql`COALESCE(dados->>'email', '') <> ''`);
+    if (filtros.email === 'nao') extras.push(Prisma.sql`COALESCE(dados->>'email', '') = ''`);
+    if (filtros.religiao === 'adventista') extras.push(Prisma.sql`LOWER(COALESCE(dados->>'religiao', '')) LIKE '%adventista%'`);
+    if (filtros.religiao === 'outra') extras.push(Prisma.sql`LOWER(COALESCE(dados->>'religiao', '')) NOT LIKE '%adventista%'`);
+    if (filtros.tempo && filtros.tempo !== 'todos') {
+      const dias = Prisma.sql`CASE WHEN COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' THEN (dados->>'diasSemContato')::int ELSE NULL END`;
+      if (filtros.tempo === 'Até 3 meses') extras.push(Prisma.sql`${dias} <= 90`);
+      if (filtros.tempo === '3 meses a 1 ano') extras.push(Prisma.sql`${dias} BETWEEN 91 AND 365`);
+      if (filtros.tempo === '1 a 2 anos') extras.push(Prisma.sql`${dias} BETWEEN 366 AND 730`);
+      if (filtros.tempo === '2 a 5 anos') extras.push(Prisma.sql`${dias} BETWEEN 731 AND 1825`);
+      if (filtros.tempo === '5+ anos') extras.push(Prisma.sql`${dias} > 1825`);
+      if (filtros.tempo === 'Não informado') extras.push(Prisma.sql`${dias} IS NULL`);
+    }
+    if (filtros.busca) {
+      const termo = `%${String(filtros.busca).toLocaleLowerCase('pt-BR').trim()}%`;
+      extras.push(Prisma.sql`LOWER(CONCAT_WS(' ', dados->>'nome', dados->>'email', dados->>'whatsapp', distrito, dados->>'bairro', dados->>'material')) LIKE ${termo}`);
+    }
+
+    const limiteValido = Math.min(100, Math.max(1, Number(limite) || 100));
+    const paginaValida = Math.max(1, Number(pagina) || 1);
+    const whereSql = condicoesSql(meta, escopo, extras);
+    const [totais, linhas] = await Promise.all([
+      db.$queryRaw(Prisma.sql`
+        SELECT COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE "temWhatsapp")::int AS "comWhatsapp",
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'hot')::int AS quentes,
+          COUNT(*) FILTER (WHERE "vipHistorico")::int AS vips,
+          COUNT(*) FILTER (WHERE "estudoAtivo")::int AS estudos,
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'email', '') <> '')::int AS "comEmail",
+          COUNT(*) FILTER (WHERE LOWER(COALESCE(dados->>'religiao', '')) LIKE '%adventista%')::int AS adventistas,
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int <= 90)::int AS "tempoAte3Meses",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int BETWEEN 91 AND 365)::int AS "tempo3Meses1Ano",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int BETWEEN 366 AND 730)::int AS "tempo1A2Anos",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int BETWEEN 731 AND 1825)::int AS "tempo2A5Anos",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int > 1825)::int AS "tempo5AnosMais",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') !~ '^[0-9]+$')::int AS "tempoNaoInformado",
+          COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '0') ~ '^[0-9]+$'
+            AND (dados->>'diasSemContato')::int > 365)::int AS reativar
+        FROM "InteressadoNovoTempo" WHERE ${whereSql}
+      `),
+      db.$queryRaw(Prisma.sql`
+        SELECT dados FROM "InteressadoNovoTempo"
+        WHERE ${whereSql}
+        ORDER BY nome, id
+        LIMIT ${limiteValido} OFFSET ${(paginaValida - 1) * limiteValido}
+      `),
+    ]);
+    const resumo = totais[0] || { total: 0, comWhatsapp: 0, quentes: 0, vips: 0, estudos: 0, reativar: 0 };
+    return {
+      meta,
+      contatos: linhas.map((linha) => linha.dados),
+      resumo,
+      total: resumo.total,
+      pagina: paginaValida,
+      limite: limiteValido,
+      temMais: paginaValida * limiteValido < resumo.total,
+    };
+  }
+
+  return { iniciar, solicitar, estado, resumo, porDistrito, todos, dadosParaAnalise, analiseAgregada, facetas, buscar };
 };

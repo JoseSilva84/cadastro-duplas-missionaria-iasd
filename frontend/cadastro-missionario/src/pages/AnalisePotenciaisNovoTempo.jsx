@@ -3,6 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import BackButton from '../components/BackButton';
 import LoadingState from '../components/LoadingState';
+import { useAuth } from '../contexts/AuthContext';
+import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
 
 const nf = new Intl.NumberFormat('pt-BR');
 const numero = (valor) => nf.format(Number(valor) || 0);
@@ -280,24 +282,23 @@ function ListaRanking({ titulo, itens = [], cor = '#3b82f6' }) {
   );
 }
 
-function ListaLeads({ leads = [] }) {
+function ListaLeads({ leads = [], total = 0, temMais = false, carregandoMais = false, onCarregarMais }) {
   const [busca, setBusca] = useState('');
-  const [limite, setLimite] = useState(60);
   const lista = useMemo(() => leads.filter((lead) => `${lead.nome} ${lead.whatsapp} ${lead.email} ${lead.bairro}`.toLocaleLowerCase('pt-BR').includes(busca.toLocaleLowerCase('pt-BR'))), [busca, leads]);
   return (
     <section className="rounded-2xl border border-white bg-white p-5 shadow-[0_18px_45px_rgba(30,58,95,0.08)] transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(37,99,235,0.14)] sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-bold text-[#173766]">Leads do distrito por score</h2><p className="text-sm text-slate-400">Ordenados pela pontuação operacional.</p></div><input className="input-field sm:max-w-sm" placeholder="Buscar nome, telefone, e-mail ou bairro..." value={busca} onChange={(e) => { setBusca(e.target.value); setLimite(60); }} /></div>
-      <div className="mt-5 space-y-3">{lista.slice(0, limite).map((lead, index) => {
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-bold text-[#173766]">Leads do distrito por score</h2><p className="text-sm text-slate-400">{numero(leads.length)} de {numero(total || leads.length)} carregados, em lotes de 100.</p></div><input className="input-field sm:max-w-sm" placeholder="Buscar nos contatos carregados..." value={busca} onChange={(e) => setBusca(e.target.value)} /></div>
+      <div className="mt-5 space-y-3">{lista.map((lead, index) => {
         const prioridade = lead.prioridade || 'Cold';
         const tom = prioridade === 'Hot' ? 'bg-orange-500' : prioridade === 'Warm' ? 'bg-amber-500' : prioridade === 'Cool' ? 'bg-blue-500' : 'bg-slate-500';
         return <article key={lead.id || `${lead.nome}-${index}`} className="group grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg sm:grid-cols-[auto_1fr_auto]"><span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-sm font-bold transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">#{index + 1}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-base text-[#10284e]">{lead.nome}</strong><span className={`${tom} rounded-full px-2.5 py-1 text-[10px] font-bold uppercase text-white`}>{lead.prioridadeRotulo || prioridade}</span></div><p className="mt-1 break-words text-sm text-slate-500">{lead.bairro || lead.distrito} · {lead.whatsapp || 'sem telefone'} · {lead.email || 'sem e-mail'}</p><div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600"><span>WhatsApp: {lead.temWhatsapp ? 'sim' : 'não'}</span><span>VIP: {lead.vipHistorico ? 'sim' : 'não'}</span><span>Estudo: {lead.estudoAtivo ? 'sim' : 'não'}</span><span>Material: {lead.material || 'não informado'}</span></div></div><strong className="self-start rounded-xl bg-blue-600 px-4 py-2 text-lg text-white transition-transform group-hover:scale-105">{Number(lead.pontuacao || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong></article>;
       })}</div>
-      {lista.length > limite && <button type="button" className="btn-outline mx-auto mt-5 block" onClick={() => setLimite((valor) => valor + 60)}>Carregar mais</button>}
+      {temMais && <button type="button" disabled={carregandoMais} className="btn-outline mx-auto mt-5 block" onClick={onCarregarMais}>{carregandoMais ? 'Carregando mais 100...' : 'Ver mais 100'}</button>}
     </section>
   );
 }
 
-function VisaoDistrito({ dados, atualizar, atualizando, fallback }) {
+function VisaoDistrito({ dados, atualizar, atualizando, fallback, carregandoMais, onCarregarMais }) {
   const total = dados.resumo?.total || 0;
   return (
     <>
@@ -308,7 +309,7 @@ function VisaoDistrito({ dados, atualizar, atualizando, fallback }) {
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><GrupoIndicadores titulo="Contato iniciado" itens={dados.tentativas} total={total} /><GrupoIndicadores titulo="Resposta do lead" itens={dados.respostas} total={total} /><GrupoIndicadores titulo="Sinal de interesse" itens={dados.interesse} total={total} /><GrupoIndicadores titulo="Aceite de visita" itens={dados.visitas} total={total} /></section>
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><GrupoIndicadores titulo="Presença registrada" itens={dados.participacao} total={total} /><GrupoIndicadores titulo="Quantidade de materiais" itens={dados.materiaisQuantidade} total={total} /><ListaRanking titulo="Canais de tentativa" itens={dados.canais} /><ListaRanking titulo="Materiais principais" itens={dados.materiais} cor="#8b5cf6" /></section>
       <section className="grid gap-5 lg:grid-cols-3"><ListaRanking titulo="Concentração por cidade" itens={dados.cidades} cor="#059669" /><ListaRanking titulo="Concentração por bairro" itens={dados.bairros} /><ListaRanking titulo="Perfil religioso" itens={dados.religioes} cor="#8b5cf6" /></section>
-      <ListaLeads leads={dados.leads} />
+      <ListaLeads leads={dados.leads} total={dados.total} temMais={dados.temMais} carregandoMais={carregandoMais} onCarregarMais={onCarregarMais} />
     </>
   );
 }
@@ -319,6 +320,7 @@ export default function AnalisePotenciaisNovoTempo() {
   const { distrito } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const isDireto = location.pathname.startsWith('/direto');
   const prefix = isDireto ? '/direto' : '';
   const tipoTela = distrito ? 'distrito' : 'geral';
@@ -327,25 +329,58 @@ export default function AnalisePotenciaisNovoTempo() {
   const [tipoDosDados, setTipoDosDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
+  const [carregandoMais, setCarregandoMais] = useState(false);
   const [erro, setErro] = useState('');
 
   const parametros = useMemo(() => distrito ? {} : Object.fromEntries(Object.entries(filtros).filter(([, valor]) => valor !== 'todos')), [distrito, filtros]);
 
   const carregar = useCallback(async (forcar = false) => {
-    forcar ? setAtualizando(true) : setCarregando(true);
+    const caminho = distrito ? `/interessados-nt/analise/distritos/${encodeURIComponent(distrito)}` : '/interessados-nt/analise';
+    const params = { ...parametros, ...(distrito ? { pagina: 1, limite: 100 } : {}), ...(forcar ? { atualizar: 1 } : {}) };
+    const chaveCache = chaveCacheUsuario(usuario, `tela-analise-nt:${caminho}:${JSON.stringify(params)}`);
+    let exibiuCache = false;
+    if (!forcar) {
+      const cache = await lerCacheLocal(chaveCache);
+      if (cache?.dados) {
+        setDados(cache.dados);
+        setTipoDosDados(tipoTela);
+        setCarregando(false);
+        exibiuCache = true;
+      }
+    }
+    forcar || exibiuCache ? setAtualizando(true) : setCarregando(true);
     setErro('');
     try {
-      const caminho = distrito ? `/interessados-nt/analise/distritos/${encodeURIComponent(distrito)}` : '/interessados-nt/analise';
-      const { data } = await api.get(caminho, { params: { ...parametros, ...(forcar ? { atualizar: 1 } : {}) } });
+      const { data } = await api.get(caminho, { params });
       setDados(data);
       setTipoDosDados(tipoTela);
+      await salvarCacheLocal(chaveCache, data, usuario);
     } catch (falha) {
       setErro(falha.response?.data?.erro || 'Não foi possível carregar a análise dos potenciais.');
     } finally {
       setCarregando(false);
       setAtualizando(false);
     }
-  }, [distrito, parametros, tipoTela]);
+  }, [distrito, parametros, tipoTela, usuario]);
+
+  const carregarMais = async () => {
+    if (!distrito || !dados?.temMais || carregandoMais) return;
+    const proximaPagina = Number(dados.pagina || 1) + 1;
+    setCarregandoMais(true);
+    setErro('');
+    try {
+      const caminho = `/interessados-nt/analise/distritos/${encodeURIComponent(distrito)}`;
+      const params = { pagina: proximaPagina, limite: 100, ...(dados.versao ? { versao: dados.versao } : {}) };
+      const { data } = await api.get(caminho, { params });
+      setDados((atual) => ({ ...data, leads: [...(atual?.leads || []), ...(data.leads || [])] }));
+      await salvarCacheLocal(chaveCacheUsuario(usuario, `tela-analise-nt:${caminho}:${JSON.stringify(params)}`), data, usuario);
+    } catch (falha) {
+      if (falha.response?.data?.codigo === 'VERSAO_NT_EXPIRADA') await carregar();
+      else setErro(falha.response?.data?.erro || 'Não foi possível carregar os próximos 100 contatos.');
+    } finally {
+      setCarregandoMais(false);
+    }
+  };
 
   useEffect(() => { carregar(); }, [carregar]);
 
@@ -389,7 +424,7 @@ export default function AnalisePotenciaisNovoTempo() {
         {dadosDaTelaAtual?.erroSincronizacao && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{dadosDaTelaAtual.erroSincronizacao}</div>}
         {dadosDaTelaAtual?.semDados && <div className="rounded-xl border border-blue-100 bg-white p-6 text-sm text-slate-600">Aguardando a primeira sincronização dos interessados NT.</div>}
         {dadosDaTelaAtual && !dadosDaTelaAtual.semDados && (distrito
-          ? <VisaoDistrito dados={dadosDaTelaAtual} atualizar={() => carregar(true)} atualizando={atualizando} fallback={`${prefix}/interessados-nt/analise`} />
+          ? <VisaoDistrito dados={dadosDaTelaAtual} atualizar={() => carregar(true)} atualizando={atualizando} fallback={`${prefix}/interessados-nt/analise`} carregandoMais={carregandoMais} onCarregarMais={carregarMais} />
           : <VisaoGeral dados={dadosDaTelaAtual} filtros={filtros} setFiltros={setFiltros} atualizar={() => carregar(true)} atualizando={atualizando} abrirDistrito={abrirDistrito} fallback={`${prefix}/interessados-nt`} />)}
       </div>
     </main>

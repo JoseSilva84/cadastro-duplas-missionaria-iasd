@@ -1053,10 +1053,19 @@ const InteressadosNovoTempoService = {
     return espelho.resumo(escopo);
   },
 
-  async filtragemAvancada({ atualizar = false, usuario } = {}) {
+  async filtragemAvancada(filtros = {}, {
+    atualizar = false, usuario, pagina = 1, limite = 100, versao = null, incluirFacetas = false,
+  } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
     if (atualizar) await espelho.solicitar({ forcar: true });
-    const { meta, contatos } = await espelho.todos(escopo);
+    const [resultado, dadosFacetas] = await Promise.all([
+      espelho.buscar(escopo, filtros, { pagina, limite, versao }),
+      incluirFacetas ? espelho.facetas(escopo) : Promise.resolve(null),
+    ]);
+    if (resultado?.versaoExpirada) {
+      throw erro(409, 'Os interessados foram atualizados. Recarregue a primeira página.', 'VERSAO_NT_EXPIRADA');
+    }
+    const { meta, contatos } = resultado;
     const leads = contatos.map((contato) => ({
       id: contato.id,
       nome: contato.nome,
@@ -1114,10 +1123,16 @@ const InteressadosNovoTempoService = {
 
     return {
       atualizadoEm: meta.atualizadoEm,
-      total: leads.length,
+      total: resultado.total,
       leads,
+      pagina: resultado.pagina,
+      limite: resultado.limite,
+      temMais: resultado.temMais,
+      versao: meta.loteId,
+      resumo: resultado.resumo,
       igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),
       distritosOficiais: (meta.distritosOficiais || []).filter((distrito) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(nomeDistritoOficial(distrito)))),
+      ...(dadosFacetas ? { facetas: dadosFacetas.facetas } : {}),
       sincronizando: meta.sincronizando,
       semDados: meta.semDados,
       erroSincronizacao: meta.erroSincronizacao,
@@ -1127,8 +1142,43 @@ const InteressadosNovoTempoService = {
   async analise(filtros = {}, { atualizar = false, usuario } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
     if (atualizar) await espelho.solicitar({ forcar: true });
-    const { meta, contatos } = await espelho.todos(escopo);
-    return { ...analisarContatos(contatos, filtros), atualizadoEm: meta.atualizadoEm, sincronizando: meta.sincronizando, semDados: meta.semDados, erroSincronizacao: meta.erroSincronizacao };
+    const resultado = await espelho.analiseAgregada(escopo, filtros);
+    const { meta, distritos } = resultado;
+    const resumo = distritos.reduce((total, distrito) => ({
+      total: total.total + distrito.total,
+      comWhatsapp: total.comWhatsapp + distrito.comWhatsapp,
+      quentes: total.quentes + distrito.quentes,
+      potenciais: total.potenciais + distrito.potenciais,
+      mornos: total.mornos + distrito.mornos,
+      frios: total.frios + distrito.frios,
+      vips: total.vips + distrito.vips,
+      estudos: total.estudos + distrito.estudos,
+      distritos: distritos.length,
+    }), { total: 0, comWhatsapp: 0, quentes: 0, potenciais: 0, mornos: 0, frios: 0, vips: 0, estudos: 0, distritos: distritos.length });
+    const maior = (campo) => [...distritos].sort((a, b) => b[campo] - a[campo])[0] || null;
+    return {
+      resumo,
+      prioridades: [
+        { nome: 'Quentes', total: resumo.quentes, cor: '#f97316' },
+        { nome: 'Potenciais', total: resumo.potenciais, cor: '#f59e0b' },
+        { nome: 'Mornos', total: resumo.mornos, cor: '#3b82f6' },
+        { nome: 'Frios', total: resumo.frios, cor: '#64748b' },
+      ],
+      religioes: resultado.religioes,
+      tempoSemContato: resultado.tempoSemContato,
+      distritos,
+      prioridadesAcao: [
+        { titulo: 'Atacar agora', distrito: maior('quentes')?.nome, total: maior('quentes')?.quentes || 0, descricao: 'contatos quentes para priorizar', cor: '#f97316' },
+        { titulo: 'Maior potencial', distrito: maior('potenciais')?.nome, total: maior('potenciais')?.potenciais || 0, descricao: 'contatos potenciais no funil', cor: '#f59e0b' },
+        { titulo: 'Base VIP', distrito: maior('vips')?.nome, total: maior('vips')?.vips || 0, descricao: 'VIPs para relacionamento', cor: '#8b5cf6' },
+        { titulo: 'Recuperação', distrito: maior('semContato5Anos')?.nome, total: maior('semContato5Anos')?.semContato5Anos || 0, descricao: 'contatos há 5+ anos sem contato', cor: '#dc2626' },
+      ].filter((item) => item.distrito),
+      filtrosDisponiveis: { distritos: resultado.distritosDisponiveis, generos: resultado.generos },
+      atualizadoEm: meta.atualizadoEm,
+      sincronizando: meta.sincronizando,
+      semDados: meta.semDados,
+      erroSincronizacao: meta.erroSincronizacao,
+    };
   },
 
   async porDistrito(nomeDistrito, {
@@ -1159,10 +1209,31 @@ const InteressadosNovoTempoService = {
     return resultado;
   },
 
-  async analisePorDistrito(nomeDistrito, { atualizar = false, usuario } = {}) {
-    const dados = await this.porDistrito(nomeDistrito, { atualizar, usuario, paginado: false });
+  async analisePorDistrito(nomeDistrito, {
+    atualizar = false, usuario, pagina = 1, limite = 100, versao = null,
+  } = {}) {
+    const nome = texto(nomeDistrito);
+    if (!nome) throw erro(400, 'Informe o distrito.', 'DISTRITO_OBRIGATORIO');
+    const escopo = await obterEscopoTerritorial(usuario);
+    validarDistritoNoEscopo(nome, escopo);
+    if (atualizar) await espelho.solicitar({ forcar: true });
+    const [dados, base] = await Promise.all([
+      espelho.porDistrito(nome, escopo, { pagina, limite, paginado: true, versao }),
+      espelho.dadosParaAnalise(escopo, chaveNormalizada(nome)),
+    ]);
+    if (dados?.versaoExpirada) {
+      throw erro(409, 'Os interessados foram atualizados. Recarregue a primeira página.', 'VERSAO_NT_EXPIRADA');
+    }
+    if (!dados) throw erro(404, 'Nenhum interessado encontrado para este distrito.', 'DISTRITO_SEM_INTERESSADOS');
     return {
-      ...analisarDistrito(dados),
+      ...analisarDistrito({ ...dados, leads: base.contatos }),
+      leads: dados.leads,
+      total: dados.total,
+      pagina: dados.pagina,
+      limite: dados.limite,
+      paginas: dados.paginas,
+      temMais: dados.temMais,
+      versao: dados.versao,
       sincronizando: dados.sincronizando,
       semDados: dados.semDados,
       erroSincronizacao: dados.erroSincronizacao,

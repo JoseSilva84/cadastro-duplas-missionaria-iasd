@@ -85,8 +85,26 @@ const InteressadosNovoTempoController = {
   async filtragemAvancada(req, res) {
     try {
       const resultado = await InteressadosNovoTempoService.filtragemAvancada({
+        busca: req.query.busca,
+        distritos: req.query.distritos,
+        bairros: req.query.bairros,
+        materiais: req.query.materiais,
+        idades: req.query.idades,
+        generos: req.query.generos,
+        prioridades: req.query.prioridades,
+        whatsapp: req.query.whatsapp,
+        email: req.query.email,
+        estudos: req.query.estudos,
+        vip: req.query.vip,
+        religiao: req.query.religiao,
+        tempo: req.query.tempo,
+      }, {
         atualizar: req.query.atualizar === '1',
         usuario: req.usuario,
+        pagina: req.query.pagina,
+        limite: req.query.limite,
+        versao: req.query.versao,
+        incluirFacetas: req.query.incluirFacetas === '1',
       });
       return res.json(resultado);
     } catch (falha) {
@@ -99,6 +117,9 @@ const InteressadosNovoTempoController = {
       const resultado = await InteressadosNovoTempoService.analisePorDistrito(req.params.distrito, {
         atualizar: req.query.atualizar === '1',
         usuario: req.usuario,
+        pagina: req.query.pagina,
+        limite: req.query.limite,
+        versao: req.query.versao,
       });
       return res.json(resultado);
     } catch (falha) {
