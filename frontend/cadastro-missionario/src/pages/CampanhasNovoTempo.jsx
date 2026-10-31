@@ -80,8 +80,19 @@ function CartaoMetricaCampanha({ titulo, valor, detalhe, icone, corDestaque, cor
   );
 }
 
-function Detalhe({ pessoa, campanha, carregando, erro, onFechar }) {
+function Detalhe({ pessoa, campanha, carregando, erro, onFechar, onLocalizarLead }) {
   const [mostrarLead, setMostrarLead] = useState(false);
+  const [localizandoLead, setLocalizandoLead] = useState(false);
+  const localizarLead = async () => {
+    if (!pessoa || localizandoLead || !onLocalizarLead) return;
+    setLocalizandoLead(true);
+    try {
+      const localizado = await onLocalizarLead(pessoa);
+      if (localizado) setMostrarLead(true);
+    } finally {
+      setLocalizandoLead(false);
+    }
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs" onClick={onFechar}>
       <div
@@ -124,17 +135,13 @@ function Detalhe({ pessoa, campanha, carregando, erro, onFechar }) {
 
         {pessoa && !carregando && (
           <>
-            {pessoa.lead && (
-              <div className="mt-4 rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div><p className="text-xs font-bold uppercase tracking-wider text-violet-700">Detalhes do lead localizado no PCM</p><p className="mt-1 text-sm text-violet-950">{pessoa.aceitou ? `✓ Aceitou a visita / brinde · ${campanha?.nome || 'Campanha Novo Tempo'}` : 'Cadastro completo disponível'}</p></div>
-                  <button type="button" onClick={() => setMostrarLead(true)} className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-violet-700">Ver detalhes completos →</button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => exportarLeadPdf(pessoa.lead, pessoa.igrejas || [])} className="rounded-xl border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-700">Baixar detalhes do lead</button>
-                </div>
+            <div className="mt-4 rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div><p className="text-xs font-bold uppercase tracking-wider text-violet-700">Detalhes do lead no PCM</p><p className="mt-1 text-sm text-violet-950">{pessoa.lead ? (pessoa.aceitou ? `✓ Aceitou a visita / brinde · ${campanha?.nome || 'Campanha Novo Tempo'}` : 'Cadastro completo localizado') : 'Abra o cadastro completo deste interessado.'}</p></div>
+                <button type="button" onClick={pessoa.lead ? () => setMostrarLead(true) : localizarLead} disabled={localizandoLead} className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-violet-700 disabled:opacity-60">{localizandoLead ? 'Localizando...' : 'Ver detalhes completos →'}</button>
               </div>
-            )}
+              {pessoa.lead && <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => exportarLeadPdf(pessoa.lead, pessoa.igrejas || [])} className="rounded-xl border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-700">Baixar detalhes do lead</button></div>}
+            </div>
             <div className="mt-4 grid gap-2.5 rounded-xl border border-gray-100 bg-[#F8FAFC] p-4 text-xs sm:text-sm text-gray-700 sm:grid-cols-2">
               <p><strong>Distrito:</strong> {pessoa.distrito || 'Não informado'}</p>
               <p><strong>Igreja:</strong> {pessoa.igreja || 'Não informada'}</p>
@@ -360,6 +367,29 @@ export default function CampanhasNovoTempo() {
     }
   }
 
+  async function localizarLeadCampanha(pessoaBase) {
+    if (!pessoaBase) return null;
+    try {
+      const { data } = await api.get('/interessados-nt/leads/contato', {
+        params: { telefone: pessoaBase.telefone || undefined, nome: pessoaBase.nome || undefined },
+        timeout: 15000,
+      });
+      if (!data?.lead) return null;
+      return {
+        igrejas: data.igrejas || [],
+        lead: {
+          ...data.lead,
+          aceitouVisita: Boolean(pessoaBase.aceitou || data.lead.aceitouVisita),
+          campanhaAceiteNome: campanha?.nome || data.lead.campanhaAceiteNome,
+          igrejaAfiliada: pessoaBase.igreja || data.lead.igrejaAfiliada,
+          campanhaAceite: { aceitou: pessoaBase.aceitou, nome: campanha?.nome, situacao: pessoaBase.situacao, igreja: pessoaBase.igreja },
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async function abrirPessoa(item) {
     const versao = ++detalheVersaoRef.current;
     setPessoaId(item.id);
@@ -369,26 +399,8 @@ export default function CampanhasNovoTempo() {
     try {
       const { data } = await api.get(`/interessados-nt/campanhas/${encodeURIComponent(campanhaId)}/conversas/${encodeURIComponent(item.id)}`, { timeout: 35000 });
       let detalhes = data;
-      try {
-        const termo = data.telefone || data.nome;
-        const { data: encontrados } = await api.get('/interessados-nt/filtragem-avancada', { params: { busca: termo, pagina: 1, limite: 1 } });
-        const leadBase = encontrados.leads?.[0];
-        if (leadBase) {
-          detalhes = {
-            ...data,
-            igrejas: encontrados.igrejas || [],
-            lead: {
-              ...leadBase,
-              aceitouVisita: Boolean(data.aceitou || leadBase.aceitouVisita),
-              campanhaAceiteNome: campanha?.nome || leadBase.campanhaAceiteNome,
-              igrejaAfiliada: data.igreja || leadBase.igrejaAfiliada,
-              campanhaAceite: { aceitou: data.aceitou, nome: campanha?.nome, situacao: data.situacao, igreja: data.igreja },
-            },
-          };
-        }
-      } catch {
-        // A conversa continua disponível mesmo se o cadastro completo não for localizado.
-      }
+      const localizado = await localizarLeadCampanha(data);
+      if (localizado) detalhes = { ...data, igrejas: localizado.igrejas, lead: localizado.lead };
       if (versao === detalheVersaoRef.current) setPessoa(detalhes);
     } catch (falha) {
       if (versao === detalheVersaoRef.current) setErroPessoa(erroDaApi(falha, 'Não foi possível abrir esta conversa.'));
@@ -951,6 +963,11 @@ export default function CampanhasNovoTempo() {
           campanha={campanha}
           carregando={carregandoPessoa}
           erro={erroPessoa}
+          onLocalizarLead={async (pessoaBase) => {
+            const localizado = await localizarLeadCampanha(pessoaBase);
+            if (localizado) setPessoa((atual) => (atual ? { ...atual, igrejas: localizado.igrejas, lead: localizado.lead } : atual));
+            return localizado?.lead || null;
+          }}
           onFechar={() => {
             detalheVersaoRef.current += 1;
             setPessoaId('');

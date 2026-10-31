@@ -102,27 +102,29 @@ function AjustarMapa({ pontos }) {
   return null;
 }
 
-function Mapa({ leads, igrejas, onSelecionarLead }) {
+function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
   const [categoriasAtivas, setCategoriasAtivas] = useState([]);
   const [leadMapaSelecionado, setLeadMapaSelecionado] = useState(null);
   const temSelecao = categoriasAtivas.length > 0;
+  const leadsDoMapa = mapa?.leads ?? leads;
+  const prioridadesSelecionadas = categoriasAtivas.filter((categoria) => PRIORIDADES[categoria]);
   const leadsVisiveis = useMemo(() => {
-    if (!temSelecao) return leads;
-    return leads.filter((lead) => categoriasAtivas.includes(lead.prioridade));
-  }, [categoriasAtivas, leads, temSelecao]);
+    if (!prioridadesSelecionadas.length) return leadsDoMapa;
+    return leadsDoMapa.filter((lead) => prioridadesSelecionadas.includes(lead.prioridade));
+  }, [leadsDoMapa, prioridadesSelecionadas]);
   const igrejasVisiveis = useMemo(() => (
     !temSelecao || categoriasAtivas.includes('igrejas') ? igrejas : []
   ), [categoriasAtivas, igrejas, temSelecao]);
-  const pontosLeads = useMemo(() => leadsVisiveis.filter(coordenadasValidas).slice(0, 300), [leadsVisiveis]);
+  const pontosLeads = useMemo(() => leadsVisiveis.filter(coordenadasValidas).slice(0, 5000), [leadsVisiveis]);
   const pontosIgrejas = useMemo(() => igrejasVisiveis.filter(coordenadasValidas), [igrejasVisiveis]);
   const pontos = useMemo(() => [...pontosLeads, ...pontosIgrejas], [pontosIgrejas, pontosLeads]);
   const centro = pontos[0] ? [Number(pontos[0].latitude), Number(pontos[0].longitude)] : [-23.5505, -46.6333];
   const exatos = leadsVisiveis.filter((item) => coordenadasValidas(item) && !ehAproximada(item)).length;
   const aproximados = leadsVisiveis.filter((item) => coordenadasValidas(item) && ehAproximada(item)).length;
-  const contagensPrioridade = useMemo(() => leads.reduce((totais, lead) => {
+  const contagensPrioridade = useMemo(() => mapa?.prioridades || leadsDoMapa.reduce((totais, lead) => {
     totais[lead.prioridade] = (totais[lead.prioridade] || 0) + 1;
     return totais;
-  }, {}), [leads]);
+  }, {}), [leadsDoMapa, mapa?.prioridades]);
   const alternarCategoria = (categoria) => setCategoriasAtivas((atuais) => (
     atuais.includes(categoria) ? atuais.filter((item) => item !== categoria) : [...atuais, categoria]
   ));
@@ -133,20 +135,20 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">Mapa dos leads filtrados</p>
           <h2 className="mt-1 text-2xl font-bold text-[#1A3A6B]">Pontos com leads e igrejas</h2>
-          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · exibindo até 300 leads</p>
+          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · exibindo {numero(pontosLeads.length)} no mapa{mapa?.truncado ? ` de ${numero(mapa.total)}` : ''}</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {
             const ativo = !temSelecao || categoriasAtivas.includes(chave);
             return <button type="button" key={chave} aria-pressed={categoriasAtivas.includes(chave)} onClick={() => alternarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo} {numero(contagensPrioridade[chave])}</button>;
           })}
-          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-violet-700"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-violet-600" />Aceites {numero(leads.filter((lead) => lead.aceitouVisita || lead.campanhaAceite?.aceitou).length)}</span>
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-violet-700"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-violet-600" />Aceites {numero(mapa?.aceitos ?? leadsDoMapa.filter((lead) => lead.aceitouVisita || lead.campanhaAceite?.aceitou).length)}</span>
           <button type="button" aria-pressed={categoriasAtivas.includes('igrejas')} onClick={() => alternarCategoria('igrejas')} className={`rounded-full border px-3 py-2 text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${!temSelecao || categoriasAtivas.includes('igrejas') ? 'border-emerald-100 bg-white' : 'border-transparent bg-white/50 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" />Igrejas {numero(igrejas.filter(coordenadasValidas).length)}</button>
           {temSelecao && <button type="button" onClick={() => setCategoriasAtivas([])} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Mostrar todos</button>}
         </div>
       </div>
       <div className="relative z-0 h-[520px] w-full">
-        <MapContainer center={centro} zoom={9} scrollWheelZoom className="h-full w-full">
+        <MapContainer center={centro} zoom={9} scrollWheelZoom preferCanvas className="h-full w-full">
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <AjustarMapa pontos={pontos} />
           {leadMapaSelecionado && afiliacaoSelecionada?.igreja && coordenadasValidas(leadMapaSelecionado) && coordenadasValidas(afiliacaoSelecionada.igreja) && <Polyline positions={[[Number(leadMapaSelecionado.latitude), Number(leadMapaSelecionado.longitude)], [Number(afiliacaoSelecionada.igreja.latitude), Number(afiliacaoSelecionada.igreja.longitude)]]} pathOptions={{ color: '#7c3aed', weight: 3, dashArray: '8 7', opacity: 0.85 }} />}
@@ -229,6 +231,7 @@ export default function FiltragemAvancadaNovoTempo() {
   const sentinelaRef = useRef(null);
   const facetasSolicitadasRef = useRef(false);
   const versaoRef = useRef(null);
+  const mapaRequisicaoRef = useRef(0);
 
   const parametrosDosFiltros = useCallback((pagina, incluirFacetas = false) => {
     const params = { pagina, limite: 20, ...(incluirFacetas ? { incluirFacetas: 1 } : {}) };
@@ -248,6 +251,7 @@ export default function FiltragemAvancadaNovoTempo() {
     const chaveCache = chaveCacheUsuario(usuario, `tela-filtragem-nt:${caminho}:${JSON.stringify(params)}`);
     if (anexar) setCarregandoMais(true);
     else setAtualizando(true);
+    if (!anexar) setDados((atual) => atual ? { ...atual, mapa: null } : atual);
     setErro('');
     if (!anexar) {
       const cache = await lerCacheLocal(chaveCache);
@@ -263,8 +267,8 @@ export default function FiltragemAvancadaNovoTempo() {
       versaoRef.current = data.versao || null;
       if (data.facetas) setFacetas(data.facetas);
       setDados((atual) => anexar
-        ? { ...data, facetas: data.facetas || atual?.facetas, leads: [...(atual?.leads || []), ...(data.leads || [])] }
-        : { ...data, facetas: data.facetas || atual?.facetas });
+        ? { ...data, mapa: data.mapa || atual?.mapa, facetas: data.facetas || atual?.facetas, leads: [...(atual?.leads || []), ...(data.leads || [])] }
+        : { ...data, mapa: data.mapa || atual?.mapa || null, facetas: data.facetas || atual?.facetas });
       await salvarCacheLocal(chaveCache, data, usuario);
     } catch (falha) {
       if (idRequisicao === requisicaoAtual.current) {
@@ -282,10 +286,23 @@ export default function FiltragemAvancadaNovoTempo() {
     }
   }, [parametrosDosFiltros, usuario]);
 
+  const carregarMapa = useCallback(async () => {
+    const idMapa = ++mapaRequisicaoRef.current;
+    try {
+      const { data } = await api.get('/interessados-nt/filtragem-avancada', { params: { ...parametrosDosFiltros(1, false), limite: 1, mapa: 1 } });
+      if (idMapa === mapaRequisicaoRef.current) setDados((atual) => atual ? { ...atual, mapa: data.mapa || null } : atual);
+    } catch {
+      // O mapa usa os 20 primeiros leads enquanto o recorte completo não chega.
+    }
+  }, [parametrosDosFiltros]);
+
   useEffect(() => {
-    const temporizador = window.setTimeout(() => carregarPagina(1, false, false), filtros.busca ? 350 : 80);
+    const temporizador = window.setTimeout(() => {
+      carregarPagina(1, false, false);
+      carregarMapa();
+    }, filtros.busca ? 350 : 80);
     return () => window.clearTimeout(temporizador);
-  }, [carregarPagina, filtros.busca]);
+  }, [carregarMapa, carregarPagina, filtros.busca]);
 
   useEffect(() => {
     if (facetasSolicitadasRef.current) return undefined;
@@ -394,6 +411,18 @@ export default function FiltragemAvancadaNovoTempo() {
     return () => observador.disconnect();
   }, [carregarMais, dados?.temMais]);
 
+  const abrirLead = useCallback(async (lead) => {
+    if (!lead) return;
+    setLeadSelecionado(lead);
+    if (!lead.id) return;
+    try {
+      const { data } = await api.get(`/interessados-nt/leads/${encodeURIComponent(lead.id)}`);
+      if (data?.lead) setLeadSelecionado({ ...data.lead, __igrejas: data.igrejas || [] });
+    } catch {
+      // O resumo do mapa continua disponível mesmo se o detalhe completo falhar.
+    }
+  }, []);
+
   const exportar = () => exportarListaLeadsPdf(filtrados);
 
   if (!dados && !erro) return <LoadingState mensagem="Carregando a filtragem avançada..." />;
@@ -424,7 +453,7 @@ export default function FiltragemAvancadaNovoTempo() {
             <SelectFiltro titulo="Tempo" valor={filtros.tempo} onChange={(v) => alterar('tempo', v)} {...facetasSelect.tempo}/>
           </div>
         </section>
-        <Mapa leads={filtrados} igrejas={igrejasFiltradas} onSelecionarLead={setLeadSelecionado}/>
+        <Mapa leads={filtrados} igrejas={igrejasFiltradas} mapa={dados?.mapa} onSelecionarLead={abrirLead}/>
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><h2 className="text-xl font-bold text-[#1A3A6B]">Lista de leads</h2><p className="text-sm text-slate-500">{numero(dados.total)} encontrados. {numero(filtrados.length)} carregados em lotes de 20. Clique em um lead para ver todos os dados.</p></div>
@@ -435,7 +464,7 @@ export default function FiltragemAvancadaNovoTempo() {
               <thead className="bg-slate-900 text-left text-xs uppercase tracking-wider text-white"><tr><th className="p-4">Nome</th><th className="p-4">WhatsApp</th><th className="p-4">Distrito</th><th className="p-4">Bairro</th><th className="p-4">Material</th><th className="p-4">Prioridade</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filtrados.map((lead, i) => (
-                  <tr key={lead.id || i} tabIndex={0} role="button" aria-label={`Abrir detalhes de ${lead.nome}`} onClick={() => setLeadSelecionado(lead)} onKeyDown={(evento) => { if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); setLeadSelecionado(lead); } }} className="cursor-pointer transition hover:bg-blue-50 focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                  <tr key={lead.id || i} tabIndex={0} role="button" aria-label={`Abrir detalhes de ${lead.nome}`} onClick={() => abrirLead(lead)} onKeyDown={(evento) => { if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); abrirLead(lead); } }} className="cursor-pointer transition hover:bg-blue-50 focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
                     <td className="p-4"><strong className="text-slate-900">{lead.nome}</strong><br/><span className="text-xs text-slate-400">{lead.email || 'Sem e-mail'}</span></td>
                     <td className="p-4 text-emerald-700">{lead.whatsapp || 'Não informado'}</td>
                     <td className="p-4">{lead.distrito}</td>
@@ -450,7 +479,7 @@ export default function FiltragemAvancadaNovoTempo() {
           {dados.temMais && <div ref={sentinelaRef} className="border-t border-slate-100 p-4 text-center"><button type="button" disabled={carregandoMais} className="btn-outline" onClick={carregarMais}>{carregandoMais ? 'Carregando mais 20...' : 'Ver mais 20'}</button></div>}
         </section>
       </>}
-      <ModalLeadNovoTempo lead={leadSelecionado} igrejas={dados?.igrejas || []} onFechar={() => setLeadSelecionado(null)} />
+      <ModalLeadNovoTempo lead={leadSelecionado} igrejas={leadSelecionado?.__igrejas || dados?.igrejas || []} onFechar={() => setLeadSelecionado(null)} />
     </div>
   );
 }

@@ -105,6 +105,7 @@ const InteressadosNovoTempoController = {
         limite: req.query.limite,
         versao: req.query.versao,
         incluirFacetas: req.query.incluirFacetas === '1',
+        mapa: req.query.mapa === '1',
       });
       return res.json(resultado);
     } catch (falha) {
@@ -130,6 +131,25 @@ const InteressadosNovoTempoController = {
   async status(req, res) {
     try {
       return res.json(await InteressadosNovoTempoService.statusConfiguracao());
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
+  async obterLead(req, res) {
+    try {
+      return res.json(await InteressadosNovoTempoService.obterLead(req.params.leadId, { usuario: req.usuario }));
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
+  async obterLeadPorContato(req, res) {
+    try {
+      return res.json(await InteressadosNovoTempoService.obterLeadPorContato({
+        telefone: req.query.telefone,
+        nome: req.query.nome,
+      }, { usuario: req.usuario }));
     } catch (falha) {
       return responderErro(res, falha);
     }

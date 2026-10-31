@@ -460,7 +460,7 @@ module.exports = function criarEspelhoNovoTempo({
     return { meta, facetas: resultado };
   }
 
-  async function buscar(escopo, filtros = {}, { pagina = 1, limite = 100, versao = null } = {}) {
+  async function buscar(escopo, filtros = {}, { pagina = 1, limite = 100, versao = null, mapa = false } = {}) {
     const meta = await estado();
     if (!meta.loteId) return { meta, contatos: [], total: 0, pagina: 1, limite: 100, temMais: false };
     if (versao && ![meta.loteId, meta.loteAnterior].includes(versao)) return { versaoExpirada: true };
@@ -519,13 +519,39 @@ module.exports = function criarEspelhoNovoTempo({
     const limiteValido = Math.min(100, Math.max(1, Number(limite) || 100));
     const paginaValida = Math.max(1, Number(pagina) || 1);
     const whereSql = condicoesSql(meta, escopo, extras);
-    const [totais, linhas] = await Promise.all([
+    const mapaPromise = mapa ? db.$queryRaw(Prisma.sql`
+        SELECT dados->>'id' AS id,
+          dados->>'nome' AS nome,
+          distrito,
+          "prioridadeChave" AS prioridade,
+          dados->>'prioridadeRotulo' AS "prioridadeRotulo",
+          dados->>'whatsapp' AS whatsapp,
+          dados->>'bairro' AS bairro,
+          dados->>'cidade' AS cidade,
+          dados->>'endereco' AS endereco,
+          CASE WHEN COALESCE(dados->>'latitude', '') ~ '^-?[0-9]+([.,][0-9]+)?$' THEN REPLACE(dados->>'latitude', ',', '.')::double precision ELSE NULL END AS latitude,
+          CASE WHEN COALESCE(dados->>'longitude', '') ~ '^-?[0-9]+([.,][0-9]+)?$' THEN REPLACE(dados->>'longitude', ',', '.')::double precision ELSE NULL END AS longitude,
+          NULLIF(dados->>'geoPrecisao', '') AS "geoPrecisao",
+          NULLIF(dados->>'geoOrigem', '') AS "geoOrigem",
+          CASE WHEN LOWER(COALESCE(dados->>'aceitouVisita', '')) IN ('true', '1', 'sim', 'yes') THEN true ELSE false END AS "aceitouVisita",
+          NULLIF(dados->>'campanhaAceiteNome', '') AS "campanhaAceiteNome",
+          NULLIF(dados->>'igrejaAfiliada', '') AS "igrejaAfiliada"
+        FROM "InteressadoNovoTempo"
+        WHERE ${whereSql}
+        ORDER BY dados->>'nome', dados->>'id'
+        LIMIT 5000
+      `) : Promise.resolve([]);
+    const [totais, linhas, pontosMapa] = await Promise.all([
       db.$queryRaw(Prisma.sql`
         SELECT COUNT(*)::int AS total,
           COUNT(*) FILTER (WHERE "temWhatsapp")::int AS "comWhatsapp",
           COUNT(*) FILTER (WHERE "prioridadeChave" = 'hot')::int AS quentes,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'warm')::int AS potenciais,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'cool')::int AS mornos,
+          COUNT(*) FILTER (WHERE "prioridadeChave" = 'cold')::int AS frios,
           COUNT(*) FILTER (WHERE "vipHistorico")::int AS vips,
           COUNT(*) FILTER (WHERE "estudoAtivo")::int AS estudos,
+          COUNT(*) FILTER (WHERE LOWER(COALESCE(dados->>'aceitouVisita', '')) IN ('true', '1', 'sim', 'yes'))::int AS aceitos,
           COUNT(*) FILTER (WHERE COALESCE(dados->>'email', '') <> '')::int AS "comEmail",
           COUNT(*) FILTER (WHERE LOWER(COALESCE(dados->>'religiao', '')) LIKE '%adventista%')::int AS adventistas,
           COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '') ~ '^[0-9]+$' AND (dados->>'diasSemContato')::int <= 90)::int AS "tempoAte3Meses",
@@ -544,8 +570,9 @@ module.exports = function criarEspelhoNovoTempo({
         ORDER BY nome, id
         LIMIT ${limiteValido} OFFSET ${(paginaValida - 1) * limiteValido}
       `),
+      mapaPromise,
     ]);
-    const resumo = totais[0] || { total: 0, comWhatsapp: 0, quentes: 0, vips: 0, estudos: 0, reativar: 0 };
+    const resumo = totais[0] || { total: 0, comWhatsapp: 0, quentes: 0, potenciais: 0, mornos: 0, frios: 0, vips: 0, estudos: 0, aceitos: 0, reativar: 0 };
     return {
       meta,
       contatos: linhas.map((linha) => linha.dados),
@@ -554,6 +581,7 @@ module.exports = function criarEspelhoNovoTempo({
       pagina: paginaValida,
       limite: limiteValido,
       temMais: paginaValida * limiteValido < resumo.total,
+      mapa: mapa ? pontosMapa : null,
     };
   }
 

@@ -20,6 +20,7 @@ const CENTROS_TERRITORIAIS = {
   mirandopolis: [-23.6093, -46.6413],
 };
 const prisma = require('../lib/prisma');
+const { Prisma } = require('@prisma/client');
 const { PERFIS, ehAdmin } = require('../middlewares/auth');
 const criarEspelhoNovoTempo = require('./interessadosNovoTempo.mirror');
 const criarServicoCampanhasNovoTempo = require('./campanhasNovoTempo.service');
@@ -856,6 +857,35 @@ function prioridadeCanonica(valor) {
   return ({ hot: 'Hot', warm: 'Warm', cool: 'Cool', cold: 'Cold' })[chaveNormalizada(valor)] || 'Cold';
 }
 
+function leadPublico(contato) {
+  return { ...contato, prioridade: prioridadeCanonica(contato.prioridade) };
+}
+
+async function aceitesCampanhaAtivos(escopo) {
+  const estadoCampanhas = await prisma.sincronizacaoCampanhasNovoTempo.findUnique({
+    where: { id: 'principal' },
+    select: { loteAtivo: true },
+  });
+  if (!estadoCampanhas?.loteAtivo) return [];
+  const registros = await prisma.conversaCampanhaNovoTempo.findMany({
+    where: { loteId: estadoCampanhas.loteAtivo, aceitou: true },
+    select: { nome: true, telefone: true, igreja: true, distrito: true, campanhaId: true },
+  });
+  const campanhas = await prisma.campanhaNovoTempo.findMany({
+    where: { loteId: estadoCampanhas.loteAtivo },
+    select: { id: true, nome: true },
+  });
+  const nomes = new Map(campanhas.map((campanha) => [campanha.id, campanha.nome]));
+  return registros
+    .filter((registro) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(registro.distrito)))
+    .map((registro) => ({
+      chaveTelefone: texto(registro.telefone).replace(/\D/g, '').slice(-10),
+      chaveNome: chaveNormalizada(registro.nome),
+      campanhaNome: nomes.get(registro.campanhaId) || null,
+      igreja: registro.igreja || null,
+    }));
+}
+
 function faixaSemContato(dias) {
   if (dias === null) return 'Não informado';
   if (dias <= 90) return 'Até 3 meses';
@@ -1058,13 +1088,14 @@ const InteressadosNovoTempoService = {
   },
 
   async filtragemAvancada(filtros = {}, {
-    atualizar = false, usuario, pagina = 1, limite = 100, versao = null, incluirFacetas = false,
+    atualizar = false, usuario, pagina = 1, limite = 100, versao = null, incluirFacetas = false, mapa = false,
   } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
     if (atualizar) await espelho.solicitar({ forcar: true });
-    const [resultado, dadosFacetas] = await Promise.all([
-      espelho.buscar(escopo, filtros, { pagina, limite, versao }),
+    const [resultado, dadosFacetas, aceites] = await Promise.all([
+      espelho.buscar(escopo, filtros, { pagina, limite, versao, mapa }),
       incluirFacetas ? espelho.facetas(escopo) : Promise.resolve(null),
+      mapa ? aceitesCampanhaAtivos(escopo).catch(() => []) : Promise.resolve([]),
     ]);
     if (resultado?.versaoExpirada) {
       throw erro(409, 'Os interessados foram atualizados. Recarregue a primeira página.', 'VERSAO_NT_EXPIRADA');
@@ -1126,16 +1157,68 @@ const InteressadosNovoTempoService = {
       acompanhamento: contato.acompanhamento,
       geolocalizacao: contato.geolocalizacao,
     }));
+    const leadsComAceites = mapa ? leads.map((lead) => {
+      const telefone = texto(lead.whatsapp).replace(/\D/g, '').slice(-10);
+      const nome = chaveNormalizada(lead.nome);
+      const aceite = aceites.find((item) => (telefone && item.chaveTelefone === telefone)
+        || (nome && item.chaveNome === nome));
+      return aceite ? {
+        ...lead,
+        aceitouVisita: true,
+        campanhaAceiteNome: lead.campanhaAceiteNome || aceite.campanhaNome,
+        igrejaAfiliada: lead.igrejaAfiliada || aceite.igreja,
+      } : lead;
+    }) : leads;
+
+    const pontosMapa = mapa ? (resultado.mapa || []).map((contato) => {
+      const telefone = texto(contato.whatsapp).replace(/\D/g, '').slice(-10);
+      const nome = chaveNormalizada(contato.nome);
+      const aceite = aceites.find((item) => (telefone && item.chaveTelefone === telefone)
+        || (nome && item.chaveNome === nome));
+      return {
+        id: contato.id,
+        nome: contato.nome,
+        distrito: contato.distrito,
+        bairro: contato.bairro,
+        cidade: contato.cidade,
+        endereco: contato.endereco,
+        whatsapp: contato.whatsapp,
+        prioridade: prioridadeCanonica(contato.prioridade),
+        prioridadeRotulo: contato.prioridadeRotulo,
+        latitude: contato.latitude,
+        longitude: contato.longitude,
+        geoPrecisao: contato.geoPrecisao,
+        geoOrigem: contato.geoOrigem,
+        aceitouVisita: Boolean(contato.aceitouVisita || aceite),
+        campanhaAceiteNome: contato.campanhaAceiteNome || aceite?.campanhaNome,
+        igrejaAfiliada: contato.igrejaAfiliada || aceite?.igreja,
+      };
+    }) : null;
+    const aceitosNoMapa = pontosMapa ? pontosMapa.filter((lead) => lead.aceitouVisita).length : 0;
 
     return {
       atualizadoEm: meta.atualizadoEm,
       total: resultado.total,
-      leads,
+      leads: leadsComAceites,
       pagina: resultado.pagina,
       limite: resultado.limite,
       temMais: resultado.temMais,
       versao: meta.loteId,
       resumo: resultado.resumo,
+      ...(mapa ? {
+        mapa: {
+          leads: pontosMapa,
+          total: resultado.total,
+          aceitos: Math.max(Number(resultado.resumo?.aceitos || 0), aceitosNoMapa),
+          prioridades: {
+            Hot: Number(resultado.resumo?.quentes || 0),
+            Warm: Number(resultado.resumo?.potenciais || 0),
+            Cool: Number(resultado.resumo?.mornos || 0),
+            Cold: Number(resultado.resumo?.frios || 0),
+          },
+          truncado: resultado.total > pontosMapa.length,
+        },
+      } : {}),
       igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),
       distritosOficiais: (meta.distritosOficiais || []).filter((distrito) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(nomeDistritoOficial(distrito)))),
       ...(dadosFacetas ? { facetas: dadosFacetas.facetas } : {}),
@@ -1258,6 +1341,49 @@ const InteressadosNovoTempoService = {
       anotacao: registro?.anotacao || '',
       atualizadoEm: registro?.atualizadoEm?.toISOString() || null,
       atualizadoPorNome: registro?.atualizadoPorNome || null,
+    };
+  },
+
+  async obterLead(leadId, { usuario } = {}) {
+    const id = texto(leadId);
+    if (!id) throw erro(400, 'Lead não informado.', 'LEAD_NT_OBRIGATORIO');
+    const escopo = await obterEscopoTerritorial(usuario);
+    const contato = await espelho.buscarPorId(id, escopo);
+    if (!contato) throw erro(404, 'Lead não encontrado no seu território.', 'LEAD_NT_FORA_DO_ESCOPO');
+    const meta = await espelho.estado();
+    return {
+      lead: leadPublico(contato),
+      igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),
+    };
+  },
+
+  async obterLeadPorContato({ telefone, nome } = {}, { usuario } = {}) {
+    const escopo = await obterEscopoTerritorial(usuario);
+    const meta = await espelho.estado();
+    if (!meta.loteId) return { lead: null, igrejas: [] };
+    const telefoneBusca = texto(telefone).replace(/\D/g, '');
+    const nomeBusca = texto(nome).toLocaleLowerCase('pt-BR');
+    const condicoesBase = [Prisma.sql`"loteId" = ${meta.loteId}`];
+    if (!escopo.acessoTotal) condicoesBase.push(Prisma.sql`"distritoChave" IN (${Prisma.join([...escopo.distritos])})`);
+    const localizar = async (condicao) => {
+      const linhas = await prisma.$queryRaw(Prisma.sql`
+        SELECT dados FROM "InteressadoNovoTempo"
+        WHERE ${Prisma.join([...condicoesBase, condicao], ' AND ')}
+        ORDER BY nome, id
+        LIMIT 1
+      `);
+      return linhas[0]?.dados || null;
+    };
+    let contato = null;
+    if (telefoneBusca.length >= 8) {
+      contato = await localizar(Prisma.sql`regexp_replace(COALESCE(dados->>'whatsapp', ''), '[^0-9]', '', 'g') LIKE ${`%${telefoneBusca.slice(-10)}%`}`);
+    }
+    if (!contato && nomeBusca.length >= 3) {
+      contato = await localizar(Prisma.sql`LOWER(COALESCE(dados->>'nome', '')) LIKE ${`%${nomeBusca}%`}`);
+    }
+    return {
+      lead: contato ? leadPublico(contato) : null,
+      igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),
     };
   },
 

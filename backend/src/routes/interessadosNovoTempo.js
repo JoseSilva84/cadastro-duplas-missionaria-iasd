@@ -17,6 +17,8 @@ router.use(
   )
 );
 router.get('/status', InteressadosNovoTempoController.status);
+router.get('/leads/contato', InteressadosNovoTempoController.obterLeadPorContato);
+router.get('/leads/:leadId', InteressadosNovoTempoController.obterLead);
 router.get('/leads/:leadId/anotacao', InteressadosNovoTempoController.obterAnotacao);
 router.put('/leads/:leadId/anotacao', InteressadosNovoTempoController.salvarAnotacao);
 router.get('/campanhas', InteressadosNovoTempoController.campanhas);
