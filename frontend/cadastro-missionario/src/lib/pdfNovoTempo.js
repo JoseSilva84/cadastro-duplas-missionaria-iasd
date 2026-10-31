@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { encontrarIgrejaAfiliada, formatarDistancia } from './proximidadeNovoTempo';
 
 const PRIORIDADES = {
   Hot: 'Quente',
@@ -14,6 +15,7 @@ const texto = (valor, fallback = 'Não informado') => {
 };
 
 const simNao = (valor) => valor ? 'Sim' : 'Não';
+const normalizar = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 function dataCurta(valor) {
   if (!valor) return 'Não informada';
@@ -109,9 +111,11 @@ export function exportarListaLeadsPdf(leads) {
   doc.save('leads-novo-tempo-filtrados.pdf');
 }
 
-export function exportarLeadPdf(lead, igrejas = []) {
+export function exportarLeadPdf(lead, igrejas = [], anotacao = '') {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
   const prioridade = PRIORIDADES[lead.prioridade] || texto(lead.prioridade);
+  const afiliacao = encontrarIgrejaAfiliada(lead, igrejas);
+  const igrejasRelacionadas = igrejas.filter((igreja) => normalizar(igreja.distrito) === normalizar(lead.distrito));
   adicionarCabecalho(doc, texto(lead.nome, 'Detalhes do lead'), `${prioridade} - ${texto(lead.distrito)} - Gerado em ${new Date().toLocaleString('pt-BR')}`);
 
   doc.setFont('helvetica', 'bold');
@@ -125,6 +129,8 @@ export function exportarLeadPdf(lead, igrejas = []) {
     ['WhatsApp', texto(lead.whatsapp)],
     ['E-mail', texto(lead.email)],
     ['Distrito', texto(lead.distrito)],
+    ['Igreja afiliada mais próxima', texto(afiliacao?.igreja?.nome)],
+    ['Distância até a igreja', afiliacao?.igreja ? formatarDistancia(afiliacao.metros) : 'Não calculada'],
     ['Cidade', texto(lead.cidade)],
     ['Bairro', texto(lead.bairro)],
     ['Endereço completo', texto(lead.endereco)],
@@ -147,6 +153,8 @@ export function exportarLeadPdf(lead, igrejas = []) {
     ['Origem', texto(lead.origem)],
     ['Status', texto(lead.status)],
     ['Observações', texto(lead.observacoes, 'Nenhuma')],
+    ['Anotação permanente', texto(anotacao, 'Nenhuma')],
+    ['Aceite de visita / brinde', lead.aceitouVisita || lead.campanhaAceite?.aceitou ? `Sim - ${texto(lead.campanhaAceiteNome || lead.campanhaAceite?.nome, 'Campanha Novo Tempo')}` : 'Não'],
   ];
 
   autoTable(doc, {
@@ -174,7 +182,7 @@ export function exportarLeadPdf(lead, igrejas = []) {
   doc.text(resumo, 14, proximaLinha + 6);
   proximaLinha += 12 + (resumo.length * 4);
 
-  if (igrejas.length) {
+  if (igrejasRelacionadas.length) {
     if (proximaLinha > 263) {
       doc.addPage();
       proximaLinha = 18;
@@ -182,12 +190,12 @@ export function exportarLeadPdf(lead, igrejas = []) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(26, 58, 107);
-    doc.text(`Igrejas do distrito (${igrejas.length})`, 14, proximaLinha);
+    doc.text(`Igrejas do distrito (${igrejasRelacionadas.length})`, 14, proximaLinha);
     autoTable(doc, {
       startY: proximaLinha + 4,
       margin: { left: 14, right: 14, bottom: 14 },
       head: [['Igreja', 'Endereço']],
-      body: igrejas.map((igreja) => [texto(igreja.nome), texto(igreja.endereco || igreja.geoNomeExibicao)]),
+      body: igrejasRelacionadas.map((igreja) => [texto(igreja.nome), texto(igreja.endereco || igreja.geoNomeExibicao)]),
       theme: 'striped',
       styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.3, overflow: 'linebreak' },
       headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255] },

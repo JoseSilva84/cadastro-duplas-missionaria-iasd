@@ -368,6 +368,8 @@ function normalizarRegistro(registro) {
   const respondeu = booleanoOuNulo(localizarCampo(registro, ['respondeu', 'responded']));
   const demonstrouInteresse = booleanoOuNulo(localizarCampo(registro, ['demonstrouInteresse', 'showedInterest']));
   const aceitouVisita = booleanoOuNulo(localizarCampo(registro, ['aceitouVisita', 'acceptedVisit']));
+  const campanhaAceiteNome = textoDeCampo(registro, ['campaignName', 'campanhaNome', 'nomeCampanha', 'acceptedCampaignName']);
+  const igrejaAfiliada = textoDeCampo(registro, ['affiliatedChurch', 'igrejaAfiliada', 'churchName', 'assignedChurchName']);
   const participou = booleanoOuNulo(localizarCampo(registro, ['participou', 'participated']));
 
   const normalizado = {
@@ -412,6 +414,8 @@ function normalizarRegistro(registro) {
     respondeu,
     demonstrouInteresse,
     aceitouVisita,
+    campanhaAceiteNome,
+    igrejaAfiliada,
     participou,
     dataNascimento: localizarCampo(registro, ['birthDate', 'dataNascimento', 'dataAniversario', 'birthday']) || null,
     pontuacaoModelo: numeroOuNulo(registro?.ml ?? localizarCampo(registro, ['ml', 'machineLearningScore', 'modelScore', 'pontuacaoModelo'])),
@@ -1110,6 +1114,8 @@ const InteressadosNovoTempoService = {
       respondeu: contato.respondeu,
       demonstrouInteresse: contato.demonstrouInteresse,
       aceitouVisita: contato.aceitouVisita,
+      campanhaAceiteNome: contato.campanhaAceiteNome,
+      igrejaAfiliada: contato.igrejaAfiliada,
       participou: contato.participou,
       latitude: contato.latitude,
       longitude: contato.longitude,
@@ -1237,6 +1243,43 @@ const InteressadosNovoTempoService = {
       sincronizando: dados.sincronizando,
       semDados: dados.semDados,
       erroSincronizacao: dados.erroSincronizacao,
+    };
+  },
+
+  async obterAnotacao(leadId, { usuario } = {}) {
+    const id = texto(leadId);
+    if (!id) throw erro(400, 'Lead não informado.', 'LEAD_NT_OBRIGATORIO');
+    const escopo = await obterEscopoTerritorial(usuario);
+    const lead = await espelho.buscarPorId(id, escopo);
+    if (!lead) throw erro(404, 'Lead não encontrado no seu território.', 'LEAD_NT_FORA_DO_ESCOPO');
+    const registro = await prisma.anotacaoInteressadoNovoTempo.findUnique({ where: { leadId: id } });
+    return {
+      leadId: id,
+      anotacao: registro?.anotacao || '',
+      atualizadoEm: registro?.atualizadoEm?.toISOString() || null,
+      atualizadoPorNome: registro?.atualizadoPorNome || null,
+    };
+  },
+
+  async salvarAnotacao(leadId, anotacao, { usuario } = {}) {
+    const id = texto(leadId);
+    if (!id) throw erro(400, 'Lead não informado.', 'LEAD_NT_OBRIGATORIO');
+    const valor = String(anotacao ?? '').trim().slice(0, 2000);
+    const escopo = await obterEscopoTerritorial(usuario);
+    const lead = await espelho.buscarPorId(id, escopo);
+    if (!lead) throw erro(404, 'Lead não encontrado no seu território.', 'LEAD_NT_FORA_DO_ESCOPO');
+    const atualizadoPorId = Number(usuario?.id);
+    const atualizadoPorNome = texto(usuario?.nome || usuario?.name || usuario?.email) || null;
+    const registro = await prisma.anotacaoInteressadoNovoTempo.upsert({
+      where: { leadId: id },
+      create: { leadId: id, anotacao: valor, atualizadoPorId: Number.isSafeInteger(atualizadoPorId) ? atualizadoPorId : null, atualizadoPorNome },
+      update: { anotacao: valor, atualizadoPorId: Number.isSafeInteger(atualizadoPorId) ? atualizadoPorId : null, atualizadoPorNome },
+    });
+    return {
+      leadId: id,
+      anotacao: registro.anotacao,
+      atualizadoEm: registro.atualizadoEm.toISOString(),
+      atualizadoPorNome: registro.atualizadoPorNome,
     };
   },
 

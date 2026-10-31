@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from 'react';
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { useEffect, useMemo, useState } from 'react';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
+import api from '../lib/api';
 import { exportarLeadPdf, resumoOperacionalLead } from '../lib/pdfNovoTempo';
 import { ICONE_IGREJA_NT } from '../lib/iconesMapaNovoTempo';
+import { encontrarIgrejaAfiliada, formatarDistancia } from '../lib/proximidadeNovoTempo';
 
 const PRIORIDADES = {
   Hot: ['Quente', '#dc2626'],
@@ -113,7 +115,22 @@ function Campo({ rotulo, valor }) {
   );
 }
 
+function AjustarProximidade({ lead, igreja }) {
+  const mapa = useMap();
+  useEffect(() => {
+    if (!coordenadasValidas(lead) || !coordenadasValidas(igreja)) return;
+    mapa.fitBounds([
+      [Number(lead.latitude), Number(lead.longitude)],
+      [Number(igreja.latitude), Number(igreja.longitude)],
+    ], { padding: [38, 38], maxZoom: 15 });
+  }, [igreja, lead, mapa]);
+  return null;
+}
+
 export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
+  const [anotacao, setAnotacao] = useState('');
+  const [salvandoAnotacao, setSalvandoAnotacao] = useState(false);
+  const [estadoAnotacao, setEstadoAnotacao] = useState('');
   useEffect(() => {
     if (!lead) return undefined;
     const aoPressionar = (evento) => { if (evento.key === 'Escape') onFechar(); };
@@ -131,12 +148,54 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
     return igrejas.filter((igreja) => normalizar(igreja.distrito) === normalizar(lead.distrito));
   }, [igrejas, lead]);
 
+  const afiliacao = useMemo(() => encontrarIgrejaAfiliada(lead, igrejas), [igrejas, lead]);
+
+  useEffect(() => {
+    if (!lead?.id) {
+      setAnotacao('');
+      setEstadoAnotacao('');
+      return undefined;
+    }
+    let ativo = true;
+    setEstadoAnotacao('Carregando anotação...');
+    api.get(`/interessados-nt/leads/${encodeURIComponent(lead.id)}/anotacao`)
+      .then(({ data }) => {
+        if (!ativo) return;
+        setAnotacao(data.anotacao || '');
+        setEstadoAnotacao(data.atualizadoEm ? `Salva em ${new Date(data.atualizadoEm).toLocaleString('pt-BR')}` : 'Nenhuma anotação salva');
+      })
+      .catch(() => { if (ativo) setEstadoAnotacao('Não foi possível carregar a anotação'); });
+    return () => { ativo = false; };
+  }, [lead?.id]);
+
+  const salvarAnotacao = async () => {
+    if (!lead?.id || salvandoAnotacao) return;
+    setSalvandoAnotacao(true);
+    setEstadoAnotacao('Salvando...');
+    try {
+      const { data } = await api.put(`/interessados-nt/leads/${encodeURIComponent(lead.id)}/anotacao`, { anotacao });
+      setAnotacao(data.anotacao || '');
+      setEstadoAnotacao(`Salva em ${new Date(data.atualizadoEm).toLocaleString('pt-BR')}`);
+    } catch (falha) {
+      setEstadoAnotacao(falha.response?.data?.erro || 'Não foi possível salvar a anotação');
+    } finally {
+      setSalvandoAnotacao(false);
+    }
+  };
+
   if (!lead) return null;
 
   const [prioridade, corPrioridade] = PRIORIDADES[lead.prioridade] || ['Sem prioridade', '#64748b'];
   const temLocalizacao = coordenadasValidas(lead);
   const centro = temLocalizacao ? [Number(lead.latitude), Number(lead.longitude)] : [-23.5505, -46.6333];
   const igrejasComLocalizacao = igrejasDoDistrito.filter(coordenadasValidas).slice(0, 30);
+  const igrejaAfiliada = afiliacao?.igreja || null;
+  const igrejasDoMapa = igrejaAfiliada && coordenadasValidas(igrejaAfiliada) && !igrejasComLocalizacao.includes(igrejaAfiliada)
+    ? [igrejaAfiliada, ...igrejasComLocalizacao]
+    : igrejasComLocalizacao;
+  const distanciaAfiliada = afiliacao?.metros;
+  const aceitouCampanha = Boolean(lead.aceitouVisita || lead.campanhaAceite?.aceitou);
+  const nomeCampanhaAceite = lead.campanhaAceiteNome || lead.campanhaAceite?.nome || lead.campanhaAceite?.campanha;
   const osm = temLocalizacao ? `https://www.openstreetmap.org/?mlat=${lead.latitude}&mlon=${lead.longitude}#map=15/${lead.latitude}/${lead.longitude}` : null;
   const camposExtras = Object.entries(lead.camposAdicionais || {});
   const numeroWhatsapp = lead.whatsappNumero || String(lead.whatsapp || '').replace(/\D/g, '');
@@ -153,10 +212,11 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
               <span className="rounded-full px-3 py-1.5 text-white shadow" style={{ background: corPrioridade }}>{prioridade}</span>
               <span className="rounded-full border border-white/30 px-3 py-1.5">{texto(lead.distrito)}</span>
               <span className="rounded-full border border-white/30 px-3 py-1.5">Score {texto(lead.pontuacao, '0')}</span>
+              {aceitouCampanha && <span className="rounded-full bg-violet-500 px-3 py-1.5 text-white shadow">✓ Aceitou visita{nomeCampanhaAceite ? ` · ${nomeCampanhaAceite}` : ''}</span>}
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            <button type="button" onClick={() => exportarLeadPdf(lead, igrejasDoDistrito)} className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20">Exportar PDF</button>
+            <button type="button" onClick={() => exportarLeadPdf(lead, igrejas, anotacao)} className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20">Exportar PDF</button>
             <button type="button" onClick={onFechar} className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">Fechar</button>
           </div>
         </header>
@@ -165,11 +225,22 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
             <section>
               <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Todos os dados</h3>
+              <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
+                <label htmlFor="anotacao-lead-nt" className="text-sm font-bold text-amber-950">Anotação permanente do lead</label>
+                <textarea id="anotacao-lead-nt" value={anotacao} maxLength={2000} onChange={(evento) => { setAnotacao(evento.target.value); setEstadoAnotacao('Alteração ainda não salva'); }} rows={4} placeholder="Ex.: faleceu, mudou de cidade, pediu para não receber contato..." className="mt-3 w-full resize-y rounded-xl border border-amber-300 bg-white p-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200" />
+                <div className="mt-2 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-amber-800">{anotacao.length.toLocaleString('pt-BR')}/2.000 · {estadoAnotacao}</span>
+                  <button type="button" disabled={!lead.id || salvandoAnotacao} onClick={salvarAnotacao} className="rounded-xl bg-amber-600 px-4 py-2.5 font-bold text-white shadow hover:bg-amber-700 disabled:opacity-50">{salvandoAnotacao ? 'Salvando...' : 'Salvar anotação'}</button>
+                </div>
+              </div>
               <dl className="grid gap-3 sm:grid-cols-2">
                 <Campo rotulo="Nome" valor={lead.nome} />
                 <Campo rotulo="WhatsApp" valor={lead.whatsapp} />
                 <Campo rotulo="E-mail" valor={lead.email} />
                 <Campo rotulo="Distrito" valor={lead.distrito} />
+                <Campo rotulo="Igreja afiliada mais próxima" valor={igrejaAfiliada?.nome} />
+                <Campo rotulo="Distância até a igreja" valor={igrejaAfiliada ? `${formatarDistancia(distanciaAfiliada)}${ehAproximada(lead) || ehAproximada(igrejaAfiliada) ? ' (por endereço)' : ''}` : null} />
+                <Campo rotulo="Critério de distribuição" valor={afiliacao?.criterio} />
                 <Campo rotulo="Endereço completo" valor={lead.endereco} />
                 <Campo rotulo="Cidade" valor={lead.cidade} />
                 <Campo rotulo="Bairro" valor={lead.bairro} />
@@ -196,6 +267,7 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
             </section>
 
             <aside className="space-y-4">
+              {aceitouCampanha && <section className="rounded-2xl border border-violet-300 bg-gradient-to-r from-violet-600 to-fuchsia-600 p-5 text-white shadow-lg"><p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-100">✓ Aceitou a visita / brinde da campanha</p><h3 className="mt-2 text-lg font-bold">{nomeCampanhaAceite || 'Campanha Novo Tempo'}</h3>{lead.campanhaAceite?.situacao && <p className="mt-1 text-sm text-violet-100">{lead.campanhaAceite.situacao}</p>}</section>}
               <section>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">WhatsApp e acompanhamento</h3>
                 <div className="space-y-3">
@@ -219,6 +291,7 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
                 <div className="p-5">
                   <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">Localização do lead</h3>
                   <p className="mt-2 font-semibold text-slate-900">{lead.endereco || [lead.bairro, lead.cidade].filter(Boolean).join(' - ') || 'Endereço não informado'}</p>
+                  {igrejaAfiliada && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-950"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Igreja afiliada mais próxima</p><strong className="mt-1 block">⛪ {igrejaAfiliada.nome} · {formatarDistancia(distanciaAfiliada)}</strong><span className="mt-1 block text-xs">{afiliacao.criterio}{ehAproximada(lead) || ehAproximada(igrejaAfiliada) ? ' · distância por endereço aproximado' : ''}</span></div>}
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
                     <span className="rounded-full bg-slate-100 px-3 py-2" style={{ color: corPrioridade }}>{prioridade}</span>
                     {temLocalizacao && <span className={`rounded-full px-3 py-2 ${ehAproximada(lead) ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}`}>{ehAproximada(lead) ? 'Ponto aproximado' : 'Ponto exato'}</span>}
@@ -230,8 +303,10 @@ export default function ModalLeadNovoTempo({ lead, igrejas = [], onFechar }) {
                   {temLocalizacao ? (
                     <MapContainer center={centro} zoom={14} scrollWheelZoom={false} className="h-full w-full">
                       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <AjustarProximidade lead={lead} igreja={igrejaAfiliada} />
                       <CircleMarker center={centro} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: corPrioridade, fillOpacity: 1 }}><Popup><strong>{lead.nome}</strong><br />{prioridade}</Popup></CircleMarker>
-                      {igrejasComLocalizacao.map((igreja, indice) => <Marker key={`${igreja.nome}-${indice}`} position={[Number(igreja.latitude), Number(igreja.longitude)]} icon={ICONE_IGREJA_NT} zIndexOffset={1000}><Popup><strong>{igreja.nome}</strong><br />{igreja.distrito}<br />{igreja.endereco || igreja.geoNomeExibicao || 'Endereço não informado'}<br />{ehAproximada(igreja) ? 'Coordenada aproximada' : 'Coordenada exata'}</Popup></Marker>)}
+                      {igrejaAfiliada && coordenadasValidas(igrejaAfiliada) && <Polyline positions={[centro, [Number(igrejaAfiliada.latitude), Number(igrejaAfiliada.longitude)]]} pathOptions={{ color: '#059669', weight: 3, dashArray: '8 7', opacity: 0.8 }} />}
+                      {igrejasDoMapa.map((igreja, indice) => <Marker key={`${igreja.nome}-${indice}`} position={[Number(igreja.latitude), Number(igreja.longitude)]} icon={ICONE_IGREJA_NT} zIndexOffset={1000}><Popup><strong>{igreja.nome}</strong><br />{igreja.distrito}<br />{igreja.endereco || igreja.geoNomeExibicao || 'Endereço não informado'}<br />{igreja === igrejaAfiliada ? `Igreja afiliada · ${formatarDistancia(distanciaAfiliada)}` : ehAproximada(igreja) ? 'Coordenada aproximada' : 'Coordenada exata'}</Popup></Marker>)}
                     </MapContainer>
                   ) : <div className="grid h-full place-items-center bg-slate-50 px-6 text-center text-sm text-slate-500">Este lead não possui coordenadas válidas para exibição no mapa.</div>}
                 </div>

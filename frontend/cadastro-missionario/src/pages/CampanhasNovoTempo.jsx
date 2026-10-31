@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { exportarAceiteCampanhaPdf, exportarListaAceitesCampanhaPdf } from '../lib/pdfCampanhaNovoTempo';
+import { exportarAceiteCampanhaPdf, exportarConversaCampanhaPdf, exportarListaAceitesCampanhaPdf } from '../lib/pdfCampanhaNovoTempo';
+import { exportarLeadPdf } from '../lib/pdfNovoTempo';
+import ModalLeadNovoTempo from '../components/ModalLeadNovoTempo';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 const dataHora = (valor) => (valor ? new Date(valor).toLocaleString('pt-BR') : '');
@@ -79,6 +81,7 @@ function CartaoMetricaCampanha({ titulo, valor, detalhe, icone, corDestaque, cor
 }
 
 function Detalhe({ pessoa, campanha, carregando, erro, onFechar }) {
+  const [mostrarLead, setMostrarLead] = useState(false);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs" onClick={onFechar}>
       <div
@@ -121,29 +124,43 @@ function Detalhe({ pessoa, campanha, carregando, erro, onFechar }) {
 
         {pessoa && !carregando && (
           <>
+            {pessoa.lead && (
+              <div className="mt-4 rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div><p className="text-xs font-bold uppercase tracking-wider text-violet-700">Detalhes do lead localizado no PCM</p><p className="mt-1 text-sm text-violet-950">{pessoa.aceitou ? `✓ Aceitou a visita / brinde · ${campanha?.nome || 'Campanha Novo Tempo'}` : 'Cadastro completo disponível'}</p></div>
+                  <button type="button" onClick={() => setMostrarLead(true)} className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-violet-700">Ver detalhes completos →</button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => exportarLeadPdf(pessoa.lead, pessoa.igrejas || [])} className="rounded-xl border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-700">Baixar detalhes do lead</button>
+                </div>
+              </div>
+            )}
             <div className="mt-4 grid gap-2.5 rounded-xl border border-gray-100 bg-[#F8FAFC] p-4 text-xs sm:text-sm text-gray-700 sm:grid-cols-2">
               <p><strong>Distrito:</strong> {pessoa.distrito || 'Não informado'}</p>
               <p><strong>Igreja:</strong> {pessoa.igreja || 'Não informada'}</p>
               <p><strong>Telefone:</strong> {pessoa.telefone || 'Não informado'}</p>
               <p>
                 <strong>Situação:</strong>{' '}
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ${pessoa.aceitou ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-800'}`}>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ${pessoa.aceitou ? 'bg-violet-100 text-violet-800' : 'bg-gray-200 text-gray-800'}`}>
                   {pessoa.situacao || 'Não informada'}
                 </span>
               </p>
               <p className="sm:col-span-2"><strong>Endereço informado:</strong> {pessoa.endereco || 'Não informado no Amigos NT'}</p>
             </div>
 
-            {pessoa.aceitou && (
-              <button
-                type="button"
-                onClick={() => exportarAceiteCampanhaPdf(campanha, pessoa)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition-all hover:brightness-105"
-              >
-                {Icones.pdf}
-                Baixar comprovante de aceite em PDF
-              </button>
-            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {pessoa.aceitou && (
+                <button
+                  type="button"
+                  onClick={() => exportarAceiteCampanhaPdf(campanha, pessoa)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-700 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition-all hover:brightness-105"
+                >
+                  {Icones.pdf}
+                  Baixar comprovante de aceite em PDF
+                </button>
+              )}
+              <button type="button" onClick={() => exportarConversaCampanhaPdf(campanha, pessoa)} className="inline-flex items-center gap-2 rounded-xl border border-blue-300 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50">{Icones.pdf} Baixar conversa em PDF</button>
+            </div>
 
             <div className="mt-6 border-t border-gray-100 pt-5">
               <h3 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Conversa registrada</h3>
@@ -197,6 +214,7 @@ function Detalhe({ pessoa, campanha, carregando, erro, onFechar }) {
           </>
         )}
       </div>
+      {mostrarLead && pessoa?.lead && <ModalLeadNovoTempo lead={pessoa.lead} igrejas={pessoa.igrejas || []} onFechar={() => setMostrarLead(false)} />}
     </div>
   );
 }
@@ -350,7 +368,28 @@ export default function CampanhasNovoTempo() {
     setCarregandoPessoa(true);
     try {
       const { data } = await api.get(`/interessados-nt/campanhas/${encodeURIComponent(campanhaId)}/conversas/${encodeURIComponent(item.id)}`, { timeout: 35000 });
-      if (versao === detalheVersaoRef.current) setPessoa(data);
+      let detalhes = data;
+      try {
+        const termo = data.telefone || data.nome;
+        const { data: encontrados } = await api.get('/interessados-nt/filtragem-avancada', { params: { busca: termo, pagina: 1, limite: 1 } });
+        const leadBase = encontrados.leads?.[0];
+        if (leadBase) {
+          detalhes = {
+            ...data,
+            igrejas: encontrados.igrejas || [],
+            lead: {
+              ...leadBase,
+              aceitouVisita: Boolean(data.aceitou || leadBase.aceitouVisita),
+              campanhaAceiteNome: campanha?.nome || leadBase.campanhaAceiteNome,
+              igrejaAfiliada: data.igreja || leadBase.igrejaAfiliada,
+              campanhaAceite: { aceitou: data.aceitou, nome: campanha?.nome, situacao: data.situacao, igreja: data.igreja },
+            },
+          };
+        }
+      } catch {
+        // A conversa continua disponível mesmo se o cadastro completo não for localizado.
+      }
+      if (versao === detalheVersaoRef.current) setPessoa(detalhes);
     } catch (falha) {
       if (versao === detalheVersaoRef.current) setErroPessoa(erroDaApi(falha, 'Não foi possível abrir esta conversa.'));
     } finally {
@@ -871,8 +910,8 @@ export default function CampanhasNovoTempo() {
 
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {item.aceitou && (
-                            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                              {Icones.check} Aceitou
+                            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                              {Icones.check} Aceitou visita · {campanha?.nome || 'campanha'} →
                             </span>
                           )}
                           <span className="text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">

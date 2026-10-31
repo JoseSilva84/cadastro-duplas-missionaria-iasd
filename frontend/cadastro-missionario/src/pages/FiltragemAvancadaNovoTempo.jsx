@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import ModalLeadNovoTempo from '../components/ModalLeadNovoTempo';
 import { exportarListaLeadsPdf } from '../lib/pdfNovoTempo';
-import { ICONE_IGREJA_NT } from '../lib/iconesMapaNovoTempo';
+import { ICONE_ACEITE_NT, ICONE_IGREJA_NT } from '../lib/iconesMapaNovoTempo';
 import { useAuth } from '../contexts/AuthContext';
 import { chaveCacheUsuario, lerCacheLocal, salvarCacheLocal } from '../lib/cacheLocal';
+import { encontrarIgrejaAfiliada, formatarDistancia } from '../lib/proximidadeNovoTempo';
 
 const numero = (valor) => new Intl.NumberFormat('pt-BR').format(Number(valor) || 0);
 const normalizar = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -103,6 +104,7 @@ function AjustarMapa({ pontos }) {
 
 function Mapa({ leads, igrejas, onSelecionarLead }) {
   const [categoriasAtivas, setCategoriasAtivas] = useState([]);
+  const [leadMapaSelecionado, setLeadMapaSelecionado] = useState(null);
   const temSelecao = categoriasAtivas.length > 0;
   const leadsVisiveis = useMemo(() => {
     if (!temSelecao) return leads;
@@ -124,6 +126,7 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
   const alternarCategoria = (categoria) => setCategoriasAtivas((atuais) => (
     atuais.includes(categoria) ? atuais.filter((item) => item !== categoria) : [...atuais, categoria]
   ));
+  const afiliacaoSelecionada = useMemo(() => encontrarIgrejaAfiliada(leadMapaSelecionado, igrejas), [igrejas, leadMapaSelecionado]);
   return (
     <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-lg">
       <div className="flex flex-col gap-4 bg-gradient-to-r from-white to-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -137,6 +140,7 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
             const ativo = !temSelecao || categoriasAtivas.includes(chave);
             return <button type="button" key={chave} aria-pressed={categoriasAtivas.includes(chave)} onClick={() => alternarCategoria(chave)} className={`rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ativo ? 'border-slate-200 bg-white text-slate-900' : 'border-transparent bg-white/50 text-slate-400 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: cor }} />{rotulo} {numero(contagensPrioridade[chave])}</button>;
           })}
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-violet-700"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-violet-600" />Aceites {numero(leads.filter((lead) => lead.aceitouVisita || lead.campanhaAceite?.aceitou).length)}</span>
           <button type="button" aria-pressed={categoriasAtivas.includes('igrejas')} onClick={() => alternarCategoria('igrejas')} className={`rounded-full border px-3 py-2 text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${!temSelecao || categoriasAtivas.includes('igrejas') ? 'border-emerald-100 bg-white' : 'border-transparent bg-white/50 opacity-60'}`}><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" />Igrejas {numero(igrejas.filter(coordenadasValidas).length)}</button>
           {temSelecao && <button type="button" onClick={() => setCategoriasAtivas([])} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Mostrar todos</button>}
         </div>
@@ -145,30 +149,35 @@ function Mapa({ leads, igrejas, onSelecionarLead }) {
         <MapContainer center={centro} zoom={9} scrollWheelZoom className="h-full w-full">
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <AjustarMapa pontos={pontos} />
+          {leadMapaSelecionado && afiliacaoSelecionada?.igreja && coordenadasValidas(leadMapaSelecionado) && coordenadasValidas(afiliacaoSelecionada.igreja) && <Polyline positions={[[Number(leadMapaSelecionado.latitude), Number(leadMapaSelecionado.longitude)], [Number(afiliacaoSelecionada.igreja.latitude), Number(afiliacaoSelecionada.igreja.longitude)]]} pathOptions={{ color: '#7c3aed', weight: 3, dashArray: '8 7', opacity: 0.85 }} />}
           {pontosLeads.map((lead, indice) => {
-            const cor = PRIORIDADES[lead.prioridade]?.[1] || '#334155';
+            const aceitou = Boolean(lead.aceitouVisita || lead.campanhaAceite?.aceitou);
+            const cor = aceitou ? '#7c3aed' : PRIORIDADES[lead.prioridade]?.[1] || '#334155';
             const aproximada = ehAproximada(lead);
             const endereco = enderecoDoLead(lead);
             const links = linksDoMapa(lead);
-            return (
-              <CircleMarker key={`lead-${lead.id || indice}`} center={[Number(lead.latitude), Number(lead.longitude)]} radius={aproximada ? 6 : 7} pathOptions={{ color: '#fff', weight: 2, fillColor: cor, fillOpacity: aproximada ? 0.55 : 0.9, dashArray: aproximada ? '4 3' : undefined }}>
-                <Popup minWidth={285} maxWidth={340}>
+            const afiliacao = encontrarIgrejaAfiliada(lead, igrejas);
+            const popup = (
+              <Popup minWidth={285} maxWidth={340}>
                   <div className="space-y-1 text-sm leading-snug text-slate-700">
                     <strong className="block pr-5 text-base text-slate-900">{lead.nome}</strong>
                     <strong className="block" style={{ color: cor }}>{PRIORIDADES[lead.prioridade]?.[0] || 'Sem prioridade'}</strong>
+                    {aceitou && <div className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white">✓ Aceitou a visita / brinde{lead.campanhaAceiteNome || lead.campanhaAceite?.nome ? ` · ${lead.campanhaAceiteNome || lead.campanhaAceite.nome}` : ''}</div>}
                     <span className="block">{lead.distrito || 'Distrito não informado'}</span>
                     <span className="block">{lead.bairro || 'Bairro não informado'}</span>
                     <span className="block">{endereco || 'Endereço não informado'}</span>
                     <span className="block">{lead.whatsapp || 'Telefone não informado'}</span>
                     <span className="block text-xs font-semibold text-slate-600">Ponto {aproximada ? 'aproximado' : 'exato'}</span>
                     {aproximada && <strong className="block text-xs text-amber-700">Coordenada aproximada. Confira a precisão no Google Maps.</strong>}
+                    {afiliacao?.igreja && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-950"><span className="block text-[10px] font-bold uppercase text-emerald-700">Igreja afiliada</span><strong className="block">⛪ {afiliacao.igreja.nome}</strong><span className="block text-xs">{formatarDistancia(afiliacao.metros)} · {afiliacao.criterio}</span></div>}
                     <a href={links.osm} target="_blank" rel="noreferrer" className="block font-medium text-sky-600 hover:underline">Abrir endereço no OSM</a>
                     <a href={links.google} target="_blank" rel="noreferrer" className="block font-medium text-sky-600 hover:underline">Abrir endereço no Google Maps</a>
                     <button type="button" className="mt-3 w-full rounded-xl bg-blue-600 px-4 py-2.5 font-bold text-white shadow transition hover:bg-blue-700" onClick={() => onSelecionarLead(lead)}>Detalhes do Lead</button>
                   </div>
-                </Popup>
-              </CircleMarker>
+              </Popup>
             );
+            if (aceitou) return <Marker key={`lead-${lead.id || indice}`} position={[Number(lead.latitude), Number(lead.longitude)]} icon={ICONE_ACEITE_NT} eventHandlers={{ click: () => setLeadMapaSelecionado(lead) }} zIndexOffset={800}>{popup}</Marker>;
+            return <CircleMarker key={`lead-${lead.id || indice}`} center={[Number(lead.latitude), Number(lead.longitude)]} radius={aproximada ? 6 : 7} eventHandlers={{ click: () => setLeadMapaSelecionado(lead) }} pathOptions={{ color: '#fff', weight: 2, fillColor: cor, fillOpacity: aproximada ? 0.65 : 0.95, dashArray: aproximada ? '4 3' : undefined }}>{popup}</CircleMarker>;
           })}
           {pontosIgrejas.map((igreja, indice) => {
             const aproximada = ehAproximada(igreja);
@@ -222,7 +231,7 @@ export default function FiltragemAvancadaNovoTempo() {
   const versaoRef = useRef(null);
 
   const parametrosDosFiltros = useCallback((pagina, incluirFacetas = false) => {
-    const params = { pagina, limite: 100, ...(incluirFacetas ? { incluirFacetas: 1 } : {}) };
+    const params = { pagina, limite: 20, ...(incluirFacetas ? { incluirFacetas: 1 } : {}) };
     Object.entries(filtros).forEach(([campo, valor]) => {
       if (Array.isArray(valor)) {
         if (valor.length) params[campo] = valor.join('|');
@@ -418,7 +427,7 @@ export default function FiltragemAvancadaNovoTempo() {
         <Mapa leads={filtrados} igrejas={igrejasFiltradas} onSelecionarLead={setLeadSelecionado}/>
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div><h2 className="text-xl font-bold text-[#1A3A6B]">Lista de leads</h2><p className="text-sm text-slate-500">{numero(dados.total)} encontrados. {numero(filtrados.length)} carregados em lotes de 100. Clique em um lead para ver todos os dados.</p></div>
+            <div><h2 className="text-xl font-bold text-[#1A3A6B]">Lista de leads</h2><p className="text-sm text-slate-500">{numero(dados.total)} encontrados. {numero(filtrados.length)} carregados em lotes de 20. Clique em um lead para ver todos os dados.</p></div>
             <button type="button" onClick={exportar} disabled={!filtrados.length} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Exportar itens carregados</button>
           </div>
           <div className="overflow-x-auto">
@@ -438,7 +447,7 @@ export default function FiltragemAvancadaNovoTempo() {
               </tbody>
             </table>
           </div>
-          {dados.temMais && <div ref={sentinelaRef} className="border-t border-slate-100 p-4 text-center"><button type="button" disabled={carregandoMais} className="btn-outline" onClick={carregarMais}>{carregandoMais ? 'Carregando mais 100...' : 'Ver mais 100'}</button></div>}
+          {dados.temMais && <div ref={sentinelaRef} className="border-t border-slate-100 p-4 text-center"><button type="button" disabled={carregandoMais} className="btn-outline" onClick={carregarMais}>{carregandoMais ? 'Carregando mais 20...' : 'Ver mais 20'}</button></div>}
         </section>
       </>}
       <ModalLeadNovoTempo lead={leadSelecionado} igrejas={dados?.igrejas || []} onFechar={() => setLeadSelecionado(null)} />

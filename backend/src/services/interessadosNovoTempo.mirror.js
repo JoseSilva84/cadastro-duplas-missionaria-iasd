@@ -306,6 +306,20 @@ module.exports = function criarEspelhoNovoTempo({
     return { meta, contatos };
   }
 
+  async function buscarPorId(leadId, escopo) {
+    const meta = await estado();
+    if (!meta.loteId || !leadId) return null;
+    if (!escopo.acessoTotal && !escopo.distritos?.size) return null;
+    const condicoes = [Prisma.sql`"loteId" = ${meta.loteId}`, Prisma.sql`dados->>'id' = ${String(leadId)}`];
+    if (!escopo.acessoTotal) condicoes.push(Prisma.sql`"distritoChave" IN (${Prisma.join([...escopo.distritos])})`);
+    const linhas = await db.$queryRaw(Prisma.sql`
+      SELECT dados FROM "InteressadoNovoTempo"
+      WHERE ${Prisma.join(condicoes, ' AND ')}
+      LIMIT 1
+    `);
+    return linhas[0]?.dados || null;
+  }
+
   function condicoesSql(meta, escopo, extras = []) {
     const condicoes = [Prisma.sql`"loteId" = ${meta.loteId}`];
     if (!escopo.acessoTotal) condicoes.push(Prisma.sql`"distritoChave" IN (${Prisma.join([...escopo.distritos])})`);
@@ -543,5 +557,5 @@ module.exports = function criarEspelhoNovoTempo({
     };
   }
 
-  return { iniciar, solicitar, estado, resumo, porDistrito, todos, dadosParaAnalise, analiseAgregada, facetas, buscar };
+  return { iniciar, solicitar, estado, resumo, porDistrito, todos, buscarPorId, dadosParaAnalise, analiseAgregada, facetas, buscar };
 };

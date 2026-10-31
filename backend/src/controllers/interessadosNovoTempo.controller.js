@@ -134,6 +134,26 @@ const InteressadosNovoTempoController = {
       return responderErro(res, falha);
     }
   },
+
+  async obterAnotacao(req, res) {
+    try {
+      return res.json(await InteressadosNovoTempoService.obterAnotacao(req.params.leadId, { usuario: req.usuario }));
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
+
+  async salvarAnotacao(req, res) {
+    try {
+      return res.json(await InteressadosNovoTempoService.salvarAnotacao(
+        req.params.leadId,
+        req.body?.anotacao,
+        { usuario: req.usuario }
+      ));
+    } catch (falha) {
+      return responderErro(res, falha);
+    }
+  },
 };
 
 module.exports = InteressadosNovoTempoController;
