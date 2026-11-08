@@ -397,8 +397,8 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
   const chaveGrupoAtivo = navLinks.find((link) => link.type === 'dropdown' && link.items.some(rotaAtiva))?.key || null;
 
   useEffect(() => {
-    setSubmenuAberto(chaveGrupoAtivo);
-  }, [chaveGrupoAtivo]);
+    setSubmenuAberto(null);
+  }, [location.pathname, location.search]);
 
   const coresCadastro = ['#38bdf8', '#a78bfa', '#fb7185', '#2dd4bf', '#fbbf24', '#60a5fa', '#c084fc', '#34d399', '#f97316', '#e879f9', '#22d3ee'];
   const coresRelatorio = ['#fbbf24', '#c084fc', '#38bdf8', '#34d399', '#fb7185', '#a78bfa', '#2dd4bf', '#f97316', '#60a5fa'];
@@ -410,7 +410,10 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Logo */}
-      <div className="flex items-start gap-2.5 border-b border-white/10 px-4 py-4 xl:gap-3 xl:px-5 xl:py-6">
+      <div
+        className="flex items-start gap-2.5 border-b border-white/10 px-4 py-4 xl:gap-3 xl:px-5 xl:py-6"
+        onMouseEnter={() => setSubmenuAberto(null)}
+      >
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
@@ -432,26 +435,52 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
       </div>
 
       {/* Navegação */}
-      <nav className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
+      <nav
+        onMouseLeave={() => setSubmenuAberto(null)}
+        className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1"
+      >
         <p className="px-3 pt-0 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30 xl:px-4 xl:pb-2">Menu</p>
         {navLinks.map((link) => {
           if (link.label === 'Configurações' && podePublicarNotificacao) {
-            return <div key={link.to}>
-              <button type="button" onClick={aoAbrirPublicacao} className="sidebar-link w-full text-left text-[#F2C979] hover:text-white hover:bg-white/10">
+            return <div key={link.to} onMouseEnter={() => setSubmenuAberto(null)}>
+              <button
+                type="button"
+                onMouseEnter={() => setSubmenuAberto(null)}
+                onClick={() => {
+                  setSubmenuAberto(null);
+                  aoAbrirPublicacao();
+                }}
+                className="sidebar-link w-full text-left text-[#F2C979] hover:text-white hover:bg-white/10"
+              >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19h.01M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9zM10 21h4" /></svg>
                 Publicar notificação
               </button>
-              <NavLink to={link.to} onClick={() => setSidebarAberta(false)} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>{link.icon}{link.label}</NavLink>
+              <NavLink
+                to={link.to}
+                onMouseEnter={() => setSubmenuAberto(null)}
+                onClick={() => {
+                  setSubmenuAberto(null);
+                  setSidebarAberta(false);
+                }}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              >
+                {link.icon}{link.label}
+              </NavLink>
             </div>;
           }
           if (link.type === 'dropdown') {
             const aberto = submenuAberto === link.key;
+            const grupoAtivo = chaveGrupoAtivo === link.key;
             return (
-              <div key={link.key} onMouseEnter={() => setSubmenuAberto(link.key)}>
+              <div
+                key={link.key}
+                onMouseEnter={() => setSubmenuAberto(link.key)}
+                onMouseLeave={() => setSubmenuAberto((atual) => (atual === link.key ? null : atual))}
+              >
                 <button
                   type="button"
                   onClick={() => setSubmenuAberto(aberto ? null : link.key)}
-                  className={`sidebar-link w-full justify-between ${aberto ? 'active' : ''}`}
+                  className={`sidebar-link w-full justify-between ${aberto || grupoAtivo ? 'active' : ''}`}
                   aria-expanded={aberto}
                 >
                   <span className="flex items-center gap-2">
@@ -463,13 +492,16 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
                   </svg>
                 </button>
                 {aberto && (
-                  <div className="space-y-1 pl-10 mt-1">
+                  <div className="space-y-1 pl-10 pt-1 pb-1">
                     {link.items.map((item, indice) => (
                       <NavLink
                         key={item.to}
                         to={item.to}
                         end={item.to.split('?')[0] === '/relatorios' || item.to.split('?')[0] === '/direto/relatorios'}
-                        onClick={() => setSidebarAberta(false)}
+                        onClick={() => {
+                          setSubmenuAberto(null);
+                          setSidebarAberta(false);
+                        }}
                         style={{ '--sidebar-item-accent': corDoItem(link.key, indice) }}
                         className={() =>
                           `sidebar-link sidebar-subitem text-sm ${itemEstaAtivo(item) ? 'active' : 'text-white/70 hover:text-white'}`
@@ -489,7 +521,11 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
             <NavLink
               key={link.to}
               to={link.to}
-              onClick={() => setSidebarAberta(false)}
+              onMouseEnter={() => setSubmenuAberto(null)}
+              onClick={() => {
+                setSubmenuAberto(null);
+                setSidebarAberta(false);
+              }}
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? 'active' : ''}`
               }
@@ -499,7 +535,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
             </NavLink>
           );
         })}
-        <div className="mt-auto border-t border-white/10 pt-5">
+        <div className="mt-auto border-t border-white/10 pt-5" onMouseEnter={() => setSubmenuAberto(null)}>
           <div className="mb-2 rounded-xl border border-white/5 bg-white/8 p-2.5 backdrop-blur-sm xl:p-3">
             <div className="flex items-center gap-2.5">
               <UsuarioAvatar usuario={usuario} className="h-9 w-9 flex-shrink-0 rounded-full shadow-md" fallbackClassName="text-xs" />
