@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { FotoService } from '../foto.service';
 import { PERFIS, ehAdmin, ehSomenteLeitura, useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/LoadingState';
+import WhatsAppMensagemModal, { WhatsAppIconButton } from '../components/WhatsAppMensagemModal';
 
 const projetoLabel = {
   CASA_A_CASA: 'Visitação',
@@ -240,6 +241,8 @@ export default function Duplas() {
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
   const isAdmin = ehAdmin(usuario);
   const podeCadastrarDupla = !ehSomenteLeitura(usuario);
+  const podeEnviarWhatsAppDupla = Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
+  const [destinatarioWhatsApp, setDestinatarioWhatsApp] = useState(null);
   const [duplas, setDuplas] = useState([]);
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distrito, setDistrito] = useState(null);
@@ -673,10 +676,18 @@ export default function Duplas() {
           const corBorda = clsCfg?.cor || cfg.cor;
 
           return (
-            <button
+            <div
               key={dupla.id}
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/duplas/${dupla.id}`)}
-              className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 p-4 group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(`/duplas/${dupla.id}`);
+                }
+              }}
+              className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 p-4 group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
               style={{ borderLeftColor: corBorda }}
             >
               {/* Linha principal */}
@@ -690,9 +701,23 @@ export default function Duplas() {
                     className="w-10 h-10 rounded-full shadow-sm ring-2 ring-white group-hover:ring-[#1A3A6B]/20 transition-all flex-shrink-0"
                     fallbackGradient="from-[#1A3A6B] to-[#2a5298]"
                   />
-                  <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
-                    {dupla.liderNome}
-                  </p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
+                      {dupla.liderNome}
+                    </p>
+                    {podeEnviarWhatsAppDupla && (
+                      <WhatsAppIconButton
+                        numero={dupla.liderTelefone}
+                        nome={dupla.liderNome}
+                        onClick={() => setDestinatarioWhatsApp({
+                          nome: dupla.liderNome || 'Membro 1',
+                          numero: dupla.liderTelefone,
+                          tipo: 'MEMBRO_DUPLA',
+                          subtitulo: `Membro 1 da Dupla • ${getIgrejaNome(dupla)}${getDistritoNome(dupla) ? ` (${getDistritoNome(dupla)})` : ''}`,
+                        })}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Divisor central */}
@@ -707,9 +732,23 @@ export default function Duplas() {
                     fallbackGradient="from-[#C9963A] to-[#e5b05a]"
                   />
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
-                      {dupla.membro2Nome}
-                    </p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="font-semibold text-[#1A3A6B] text-sm group-hover:text-[#C9963A] transition-colors duration-200 truncate">
+                        {dupla.membro2Nome}
+                      </p>
+                      {podeEnviarWhatsAppDupla && (
+                        <WhatsAppIconButton
+                          numero={dupla.membro2Telefone}
+                          nome={dupla.membro2Nome}
+                          onClick={() => setDestinatarioWhatsApp({
+                            nome: dupla.membro2Nome || 'Membro 2',
+                            numero: dupla.membro2Telefone,
+                            tipo: 'MEMBRO_DUPLA',
+                            subtitulo: `Membro 2 da Dupla • ${getIgrejaNome(dupla)}${getDistritoNome(dupla) ? ` (${getDistritoNome(dupla)})` : ''}`,
+                          })}
+                        />
+                      )}
+                    </div>
                     <p className="mt-0.5 text-xs text-gray-400 truncate">{getIgrejaNome(dupla)}</p>
                     {getDistritoNome(dupla) && (
                       <p className="mt-0.5 text-[11px] font-medium text-gray-400 truncate">Distrito: {getDistritoNome(dupla)}</p>
@@ -845,10 +884,15 @@ export default function Duplas() {
                   </div>
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
+
+      <WhatsAppMensagemModal
+        destinatario={destinatarioWhatsApp}
+        onClose={() => setDestinatarioWhatsApp(null)}
+      />
 
       {duplasFiltradas.length === 0 && (
         <div className="text-center py-20 text-gray-400 animate-fade-in">

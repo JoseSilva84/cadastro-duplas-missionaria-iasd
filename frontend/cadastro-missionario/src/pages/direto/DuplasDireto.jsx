@@ -8,6 +8,7 @@ import { PERFIS, ehSomenteLeitura, useAuth } from '../../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../../lib/seriesEstudo';
 import { toast } from '../../lib/toast';
 import LoadingState from '../../components/LoadingState';
+import WhatsAppMensagemModal, { WhatsAppIconButton, temWhatsAppValido, formatarWhatsApp } from '../../components/WhatsAppMensagemModal';
 
 const medalhaConfig = {
   ouro:   { emoji: '🥇', label: 'Ouro',   cor: '#C9963A', bg: '#C9963A18' },
@@ -66,10 +67,30 @@ const DropletIcon = ({ className = 'w-5 h-5 text-white' }) => (
   </svg>
 );
 
-// Link clicável do WhatsApp Web
-const WhatsAppLink = ({ numero }) => {
-  if (!numero) return null;
+// Link clicável do WhatsApp Web (abre o modal de mensagem quando onClick é fornecido)
+const WhatsAppLink = ({ numero, onClick }) => {
+  if (!temWhatsAppValido(numero)) return null;
   const limpo = numero.replace(/\D/g, '');
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="inline-flex max-w-full min-w-0 items-center gap-1.5 align-top text-[#25D366] font-medium hover:underline text-left"
+        title="Enviar mensagem pelo WhatsApp Web"
+      >
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#25D366] text-white flex-shrink-0 shadow-xs">
+          <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+          </svg>
+        </span>
+        <span className="min-w-0 break-all text-[clamp(0.625rem,1.35vw,0.75rem)] leading-snug">{formatarWhatsApp(numero)}</span>
+      </button>
+    );
+  }
   return (
     <a
       href={`https://web.whatsapp.com/send?phone=55${limpo}`}
@@ -807,6 +828,7 @@ export default function DuplasDireto() {
   const { usuario } = useAuth();
   const podeAlterar = podeAlterarDuplas(usuario);
   const podeCriarConta = podeGerarContaDupla(usuario);
+  const podeEnviarWhatsAppDupla = Boolean(usuario) && usuario.perfil !== PERFIS.DUPLA_MISSIONARIA;
   const [duplas, setDuplas] = useState([]);
   const [estudosEncerrados, setEstudosEncerrados] = useState([]);
   const [distritoAtual, setDistritoAtual] = useState(null);
@@ -842,9 +864,10 @@ export default function DuplasDireto() {
   const [estudoLicaoModal, setEstudoLicaoModal] = useState(null);
   const [licoesRapidas, setLicoesRapidas] = useState({});
   const [salvandoLicaoId, setSalvandoLicaoId] = useState(null);
+  const [destinatarioWhatsApp, setDestinatarioWhatsApp] = useState(null);
 
   useEffect(() => {
-    const algumModalAberto = Boolean(mostraDetalhe || duplaParaExcluir || duplaParaQrCode || estudoLicaoModal || fotoAmpliada);
+    const algumModalAberto = Boolean(mostraDetalhe || duplaParaExcluir || duplaParaQrCode || estudoLicaoModal || fotoAmpliada || destinatarioWhatsApp);
     if (algumModalAberto && typeof document !== 'undefined') {
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
@@ -852,7 +875,7 @@ export default function DuplasDireto() {
         document.body.style.overflow = originalOverflow;
       };
     }
-  }, [mostraDetalhe, duplaParaExcluir, duplaParaQrCode, estudoLicaoModal, fotoAmpliada]);
+  }, [mostraDetalhe, duplaParaExcluir, duplaParaQrCode, estudoLicaoModal, fotoAmpliada, destinatarioWhatsApp]);
 
   const abrirFoto = (src, nome) => setFotoAmpliada({ src, nome });
 
@@ -1408,10 +1431,17 @@ export default function DuplasDireto() {
                 style={{ borderLeftColor: borderColor }}
               >
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] lg:items-center">
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => abrirDetalhesDupla(dupla)}
-                    className="flex min-w-0 items-center gap-3 text-left"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        abrirDetalhesDupla(dupla);
+                      }
+                    }}
+                    className="flex min-w-0 items-center gap-3 text-left cursor-pointer"
                   >
                     <FotoPessoa
                       src={dupla.fotoLiderPreview}
@@ -1420,17 +1450,31 @@ export default function DuplasDireto() {
                       fallbackClassName="bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] text-sm"
                       onPreview={abrirFoto}
                     />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
-                        {dupla.liderNome || 'Sem nome'}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
+                          {dupla.liderNome || 'Sem nome'}
+                        </p>
+                        {podeEnviarWhatsAppDupla && (
+                          <WhatsAppIconButton
+                            numero={dupla.liderTelefone}
+                            nome={dupla.liderNome}
+                            onClick={() => setDestinatarioWhatsApp({
+                              nome: dupla.liderNome || 'Membro 1',
+                              numero: dupla.liderTelefone,
+                              tipo: 'MEMBRO_DUPLA',
+                              subtitulo: `Membro 1 da Dupla • ${getIgrejaNome(dupla)}${getDistritoNome(dupla) ? ` (${getDistritoNome(dupla)})` : ''}`,
+                            })}
+                          />
+                        )}
+                      </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <ClassificacaoAtividadeBadge dupla={dupla} compact />
                         <EstudoSituacaoBadge dupla={dupla} compact />
                         <BatismosBadge valor={batismosDaDupla} compact />
                       </div>
                     </div>
-                  </button>
+                  </div>
 
                   <button
                     type="button"
@@ -1441,10 +1485,17 @@ export default function DuplasDireto() {
                     +
                   </button>
 
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => abrirDetalhesDupla(dupla)}
-                    className="flex min-w-0 items-center gap-3 text-left"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        abrirDetalhesDupla(dupla);
+                      }
+                    }}
+                    className="flex min-w-0 items-center gap-3 text-left cursor-pointer"
                   >
                     <FotoPessoa
                       src={dupla.fotoMembro2Preview}
@@ -1453,10 +1504,24 @@ export default function DuplasDireto() {
                       fallbackClassName="bg-gradient-to-br from-[#C9963A] to-[#e5b05a] text-sm"
                       onPreview={abrirFoto}
                     />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
-                        {dupla.membro2Nome || 'Sem nome'}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="truncate text-sm font-bold text-[#1A3A6B] transition-colors group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
+                          {dupla.membro2Nome || 'Sem nome'}
+                        </p>
+                        {podeEnviarWhatsAppDupla && (
+                          <WhatsAppIconButton
+                            numero={dupla.membro2Telefone}
+                            nome={dupla.membro2Nome}
+                            onClick={() => setDestinatarioWhatsApp({
+                              nome: dupla.membro2Nome || 'Membro 2',
+                              numero: dupla.membro2Telefone,
+                              tipo: 'MEMBRO_DUPLA',
+                              subtitulo: `Membro 2 da Dupla • ${getIgrejaNome(dupla)}${getDistritoNome(dupla) ? ` (${getDistritoNome(dupla)})` : ''}`,
+                            })}
+                          />
+                        )}
+                      </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
                         <span>{getIgrejaNome(dupla)}</span>
                         <IndicadorBadge tipo="visitacoes" valor={getVisitacoesCount(dupla)} compact />
@@ -1465,7 +1530,7 @@ export default function DuplasDireto() {
                         <p className="mt-0.5 truncate text-[10px] font-medium text-gray-400">Distrito: {getDistritoNome(dupla)}</p>
                       )}
                     </div>
-                  </button>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                     <span
@@ -1779,7 +1844,20 @@ export default function DuplasDireto() {
                             <p className="text-gray-700 font-medium truncate">{duplaSelecionada.liderNome || '—'}</p>
                           </div>
                         </div>
-                        {duplaSelecionada.liderTelefone && <div className="min-w-0"><span className="block text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.liderTelefone} /></div>}
+                        {duplaSelecionada.liderTelefone && (
+                          <div className="min-w-0">
+                            <span className="block text-gray-400 text-xs">WhatsApp:</span>
+                            <WhatsAppLink
+                              numero={duplaSelecionada.liderTelefone}
+                              onClick={podeEnviarWhatsAppDupla ? () => setDestinatarioWhatsApp({
+                                nome: duplaSelecionada.liderNome || 'Membro 1',
+                                numero: duplaSelecionada.liderTelefone,
+                                tipo: 'MEMBRO_DUPLA',
+                                subtitulo: `Membro 1 da Dupla • ${getIgrejaNome(duplaSelecionada)}`,
+                              }) : undefined}
+                            />
+                          </div>
+                        )}
                         {duplaSelecionada.liderEmail && <div className="min-w-0"><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700 break-all">{duplaSelecionada.liderEmail}</p></div>}
                         <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.liderIgreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
                         <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.liderDistrito || duplaSelecionada.distrito?.nome || '—'}</p></div>
@@ -1809,7 +1887,20 @@ export default function DuplasDireto() {
                             <p className="text-gray-700 font-medium truncate">{duplaSelecionada.membro2Nome || '—'}</p>
                           </div>
                         </div>
-                        {duplaSelecionada.membro2Telefone && <div className="min-w-0"><span className="block text-gray-400 text-xs">WhatsApp:</span><WhatsAppLink numero={duplaSelecionada.membro2Telefone} /></div>}
+                        {duplaSelecionada.membro2Telefone && (
+                          <div className="min-w-0">
+                            <span className="block text-gray-400 text-xs">WhatsApp:</span>
+                            <WhatsAppLink
+                              numero={duplaSelecionada.membro2Telefone}
+                              onClick={podeEnviarWhatsAppDupla ? () => setDestinatarioWhatsApp({
+                                nome: duplaSelecionada.membro2Nome || 'Membro 2',
+                                numero: duplaSelecionada.membro2Telefone,
+                                tipo: 'MEMBRO_DUPLA',
+                                subtitulo: `Membro 2 da Dupla • ${getIgrejaNome(duplaSelecionada)}`,
+                              }) : undefined}
+                            />
+                          </div>
+                        )}
                         {duplaSelecionada.membro2Email && <div className="min-w-0"><span className="text-gray-400 text-xs">E-mail:</span><p className="text-gray-700 break-all">{duplaSelecionada.membro2Email}</p></div>}
                         <div><span className="text-gray-400 text-xs">Igreja:</span><p className="text-gray-700">{duplaSelecionada.membro2Igreja || duplaSelecionada.igreja?.nome || '—'}</p></div>
                         <div><span className="text-gray-400 text-xs">Distrito:</span><p className="text-gray-700">{duplaSelecionada.membro2Distrito || duplaSelecionada.distrito?.nome || '—'}</p></div>
@@ -1938,19 +2029,60 @@ export default function DuplasDireto() {
                                   )}
                                   <span className="text-[10px] text-gray-400">Atualizado em {formatarData(estudo.atualizadoEm) || '—'}</span>
                                 </div>
-                                <h5 className="font-bold text-[#1A3A6B] break-words">{estudo.nomeEstudante || 'Sem nome'}</h5>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h5 className="font-bold text-[#1A3A6B] break-words">{estudo.nomeEstudante || 'Sem nome'}</h5>
+                                  {temWhatsAppValido(estudo.whatsapp) && (
+                                    <WhatsAppIconButton
+                                      numero={estudo.whatsapp}
+                                      nome={estudo.nomeEstudante}
+                                      size="sm"
+                                      onClick={() => setDestinatarioWhatsApp({
+                                        nome: estudo.nomeEstudante || 'Estudante',
+                                        numero: estudo.whatsapp,
+                                        tipo: 'ALUNO',
+                                        subtitulo: `${tipoEstudoLabels[estudo.tipoEstudo] || 'Estudo Bíblico'} • ${getSerieNome(estudo.serie)}`,
+                                      })}
+                                    />
+                                  )}
+                                </div>
                                 <div className="mt-2 rounded-lg border border-gray-100 bg-white p-3">
                                   <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Estudantes</span>
                                   <div className="mt-2 flex flex-wrap gap-1.5">
-                                    <span className="rounded-full bg-[#1A3A6B]/10 px-2 py-1 text-[11px] font-semibold text-[#1A3A6B]">
-                                      {estudo.nomeEstudante || 'Sem nome'}
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1A3A6B]/10 px-2.5 py-1 text-[11px] font-semibold text-[#1A3A6B]">
+                                      <span>{estudo.nomeEstudante || 'Sem nome'}</span>
+                                      {temWhatsAppValido(estudo.whatsapp) && (
+                                        <WhatsAppIconButton
+                                          numero={estudo.whatsapp}
+                                          nome={estudo.nomeEstudante}
+                                          size="xs"
+                                          onClick={() => setDestinatarioWhatsApp({
+                                            nome: estudo.nomeEstudante || 'Estudante',
+                                            numero: estudo.whatsapp,
+                                            tipo: 'ALUNO',
+                                            subtitulo: `${tipoEstudoLabels[estudo.tipoEstudo] || 'Estudo Bíblico'} • ${getSerieNome(estudo.serie)}`,
+                                          })}
+                                        />
+                                      )}
                                     </span>
                                     {(estudo.participantes || []).map((participante) => (
                                       <span
                                         key={participante.id || participante.nome}
-                                        className="rounded-full bg-[#0d9488]/10 px-2 py-1 text-[11px] font-semibold text-[#0d9488]"
+                                        className="inline-flex items-center gap-1.5 rounded-full bg-[#0d9488]/10 px-2.5 py-1 text-[11px] font-semibold text-[#0d9488]"
                                       >
-                                        {participante.nome || 'Sem nome'}
+                                        <span>{participante.nome || 'Sem nome'}</span>
+                                        {temWhatsAppValido(participante.whatsapp) && (
+                                          <WhatsAppIconButton
+                                            numero={participante.whatsapp}
+                                            nome={participante.nome}
+                                            size="xs"
+                                            onClick={() => setDestinatarioWhatsApp({
+                                              nome: participante.nome || 'Participante',
+                                              numero: participante.whatsapp,
+                                              tipo: 'ALUNO',
+                                              subtitulo: `${tipoEstudoLabels[estudo.tipoEstudo] || 'Estudo Bíblico'} • ${getSerieNome(estudo.serie)}`,
+                                            })}
+                                          />
+                                        )}
                                       </span>
                                     ))}
                                   </div>
@@ -2156,6 +2288,10 @@ export default function DuplasDireto() {
       </div>,
       document.body
     )}
+    <WhatsAppMensagemModal
+      destinatario={destinatarioWhatsApp}
+      onClose={() => setDestinatarioWhatsApp(null)}
+    />
     </>
   );
 }

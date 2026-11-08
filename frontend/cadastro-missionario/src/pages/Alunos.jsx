@@ -7,6 +7,7 @@ import LoadingState from '../components/LoadingState';
 import { ehAdmin, useAuth } from '../contexts/AuthContext';
 import { SERIES_ESTUDO, getLicaoLabel, getSerieNome } from '../lib/seriesEstudo';
 import { toast } from '../lib/toast';
+import WhatsAppMensagemModal, { WhatsAppIconButton } from '../components/WhatsAppMensagemModal';
 
 const tipoLabel = {
   UNICO: 'Estudo individual',
@@ -144,6 +145,16 @@ export default function Alunos() {
   const [motivoEncerramento, setMotivoEncerramento] = useState('');
   const [outroMotivoEncerramento, setOutroMotivoEncerramento] = useState('');
   const [encerrando, setEncerrando] = useState(false);
+  const [destinatarioWhatsApp, setDestinatarioWhatsApp] = useState(null);
+
+  const abrirWhatsAppAluno = (aluno) => {
+    setDestinatarioWhatsApp({
+      nome: aluno.nome,
+      numero: aluno.whatsapp,
+      tipo: 'ALUNO',
+      subtitulo: `${aluno.origem} • ${getSerieNome(aluno.serie)} (${aluno.igreja})`,
+    });
+  };
 
   const carregarPagina = useCallback(async (pagina = 1, substituir = false) => {
     if (!substituir && (carregandoMaisRef.current || !temMaisRef.current)) return;
@@ -544,7 +555,14 @@ export default function Alunos() {
                 <div className="hidden xl:grid grid-cols-[minmax(0,1.2fr)_auto_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_auto] items-center gap-3 p-3.5 xl:gap-3.5 xl:p-4">
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Aluno</p>
-                    <p className="break-words text-sm font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="break-words text-sm font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                      <WhatsAppIconButton
+                        numero={aluno.whatsapp}
+                        nome={aluno.nome}
+                        onClick={() => abrirWhatsAppAluno(aluno)}
+                      />
+                    </div>
                     {aluno.whatsapp && <p className="mt-0.5 text-xs text-gray-400">{aluno.whatsapp}</p>}
                   </div>
 
@@ -618,6 +636,11 @@ export default function Alunos() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="break-words text-base font-bold text-[#1A3A6B]">{aluno.nome}</p>
+                        <WhatsAppIconButton
+                          numero={aluno.whatsapp}
+                          nome={aluno.nome}
+                          onClick={() => abrirWhatsAppAluno(aluno)}
+                        />
                         <BadgeClasse classe={aluno.classificacao} />
                       </div>
                       {aluno.whatsapp && <p className="mt-0.5 text-xs text-gray-400">{aluno.whatsapp}</p>}
@@ -857,6 +880,11 @@ export default function Alunos() {
         </div>,
         document.body
       )}
+
+      <WhatsAppMensagemModal
+        destinatario={destinatarioWhatsApp}
+        onClose={() => setDestinatarioWhatsApp(null)}
+      />
     </div>
   );
 }
