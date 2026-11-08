@@ -33,6 +33,24 @@ export async function pedirPermissaoNotificacoes() {
   return Notification.requestPermission();
 }
 
+export async function atualizarBadgeAplicativo(quantidade) {
+  if (typeof navigator === 'undefined') return false;
+  try {
+    const total = Math.max(0, Number(quantidade) || 0);
+    if (total > 0 && 'setAppBadge' in navigator) {
+      await navigator.setAppBadge(total);
+      return true;
+    }
+    if (total === 0 && 'clearAppBadge' in navigator) {
+      await navigator.clearAppBadge();
+      return true;
+    }
+  } catch {
+    // Alguns sistemas permitem notificações, mas deixam o selo desativado nas preferências do aplicativo.
+  }
+  return false;
+}
+
 export async function notificarPwa({ titulo, corpo, tag = 'pcm', url = '/dashboard', forcar = false }) {
   if (!notificacoesDisponiveis() || Notification.permission !== 'granted') return false;
   if (!forcar && document.visibilityState === 'visible') return false;

@@ -1,7 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { autenticar, apenasAdmins, autorizar } = require('../middlewares/auth');
-const { criarNotificacoes, configuracaoPublica, urlInterna } = require('../services/notificacoes.service');
+const { criarNotificacoes, configuracaoPublica, urlInterna, testarInscricaoPush } = require('../services/notificacoes.service');
 const { PERFIS_PUBLICADORES, PERFIS_DESTINATARIOS, escopoDoAutor, filtroDestinatarios, publicar } = require('../services/publicacoesNotificacoes.service');
 
 const router = express.Router();
@@ -25,6 +25,21 @@ router.get('/', async (req, res) => {
   } catch (erro) { return responder(res, erro); }
 });
 
+router.get('/resumo', async (req, res) => {
+  try {
+    const where = { usuarioId: req.usuario.id, lidaEm: null };
+    const [naoLidas, ultima] = await Promise.all([
+      prisma.notificacao.count({ where }),
+      prisma.notificacao.findFirst({
+        where,
+        orderBy: { criadaEm: 'desc' },
+        select: { id: true, titulo: true, mensagem: true, url: true, criadaEm: true, lidaEm: true },
+      }),
+    ]);
+    return res.json({ naoLidas, ultima });
+  } catch (erro) { return responder(res, erro); }
+});
+
 router.patch('/lidas', async (req, res) => {
   try {
     await prisma.notificacao.updateMany({ where: { usuarioId: req.usuario.id, lidaEm: null }, data: { lidaEm: new Date() } });
@@ -45,19 +60,28 @@ router.get('/push/config', (req, res) => res.json(configuracaoPublica()));
 
 router.post('/push/inscricoes', async (req, res) => {
   if (!configuracaoPublica().disponivel) return res.status(503).json({ erro: 'Web Push ainda não foi configurado no servidor.' });
-  const { endpoint, keys } = req.body || {};
+  const { endpoint, keys, dispositivo = {} } = req.body || {};
   if (typeof endpoint !== 'string' || endpoint.length > 2048 || !endpoint.startsWith('https://') ||
     typeof keys?.p256dh !== 'string' || typeof keys?.auth !== 'string' ||
     keys.p256dh.length > 512 || keys.auth.length > 512) {
     return res.status(400).json({ erro: 'Inscrição push inválida.' });
   }
+  const textoCurto = (valor, limite) => typeof valor === 'string' ? valor.trim().slice(0, limite) || null : null;
+  const dadosDispositivo = {
+    nomeDispositivo: textoCurto(dispositivo.nome, 120),
+    plataforma: textoCurto(dispositivo.plataforma, 80),
+    navegador: textoCurto(dispositivo.navegador, 80),
+    userAgent: textoCurto(req.get('user-agent'), 500),
+    ativa: true,
+    ultimoErro: null,
+  };
   try {
     const inscricao = await prisma.inscricaoPush.upsert({
       where: { endpoint },
-      create: { usuarioId: req.usuario.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
-      update: { usuarioId: req.usuario.id, p256dh: keys.p256dh, auth: keys.auth },
+      create: { usuarioId: req.usuario.id, endpoint, p256dh: keys.p256dh, auth: keys.auth, ...dadosDispositivo },
+      update: { usuarioId: req.usuario.id, p256dh: keys.p256dh, auth: keys.auth, ...dadosDispositivo },
     });
-    return res.status(201).json({ id: inscricao.id });
+    return res.status(201).json({ id: inscricao.id, nomeDispositivo: inscricao.nomeDispositivo });
   } catch (erro) { return responder(res, erro); }
 });
 
@@ -66,6 +90,56 @@ router.delete('/push/inscricoes', async (req, res) => {
   if (typeof endpoint !== 'string') return res.status(400).json({ erro: 'Endpoint inválido.' });
   try {
     await prisma.inscricaoPush.deleteMany({ where: { endpoint, usuarioId: req.usuario.id } });
+    return res.status(204).end();
+  } catch (erro) { return responder(res, erro); }
+});
+
+router.get('/push/dispositivos', async (req, res) => {
+  try {
+    const itens = await prisma.inscricaoPush.findMany({
+      where: { usuarioId: req.usuario.id },
+      orderBy: [{ ativa: 'desc' }, { atualizadaEm: 'desc' }],
+      select: {
+        id: true,
+        nomeDispositivo: true,
+        plataforma: true,
+        navegador: true,
+        ativa: true,
+        ultimoStatus: true,
+        ultimoErro: true,
+        ultimoSucessoEm: true,
+        ultimaFalhaEm: true,
+        criadaEm: true,
+        atualizadaEm: true,
+        endpoint: true,
+      },
+    });
+    return res.json({
+      itens: itens.map(({ endpoint, ...item }) => ({
+        ...item,
+        servico: (() => { try { return new URL(endpoint).hostname; } catch { return 'Serviço desconhecido'; } })(),
+      })),
+    });
+  } catch (erro) { return responder(res, erro); }
+});
+
+router.post('/push/dispositivos/:id/teste', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: 'Dispositivo inválido.' });
+  try {
+    return res.json(await testarInscricaoPush(req.usuario.id, id));
+  } catch (erro) {
+    if (erro?.status) return res.status(erro.status).json({ erro: erro.mensagem });
+    return responder(res, erro);
+  }
+});
+
+router.delete('/push/dispositivos/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: 'Dispositivo inválido.' });
+  try {
+    const removida = await prisma.inscricaoPush.deleteMany({ where: { id, usuarioId: req.usuario.id } });
+    if (!removida.count) return res.status(404).json({ erro: 'Dispositivo não encontrado.' });
     return res.status(204).end();
   } catch (erro) { return responder(res, erro); }
 });

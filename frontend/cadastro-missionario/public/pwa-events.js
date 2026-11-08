@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
     mensagem = { body: event.data?.text() || 'Há uma nova atualização no sistema.' };
   }
 
-  event.waitUntil(self.registration.showNotification(
+  const tarefas = [self.registration.showNotification(
     mensagem.title || 'Capacitação Missionária',
     {
       body: mensagem.body || 'Há uma nova atualização no sistema.',
@@ -15,7 +15,11 @@ self.addEventListener('push', (event) => {
       tag: mensagem.tag || 'pcm-atualizacao',
       data: { url: mensagem.url || '/dashboard' },
     }
-  ));
+  )];
+  const quantidade = Math.max(0, Number(mensagem.unreadCount) || 0);
+  if (quantidade > 0 && 'setAppBadge' in navigator) tarefas.push(navigator.setAppBadge(quantidade));
+  else if (quantidade === 0 && 'clearAppBadge' in navigator) tarefas.push(navigator.clearAppBadge());
+  event.waitUntil(Promise.allSettled(tarefas));
 });
 
 self.addEventListener('notificationclick', (event) => {

@@ -111,7 +111,8 @@ const autenticar = async (req, res, next) => {
 
     const preferenciasDeNotificacao = req.baseUrl === '/api/notificacoes' && (
       req.method === 'PATCH' ||
-      (req.path === '/push/inscricoes' && ['POST', 'DELETE'].includes(req.method))
+      (req.path === '/push/inscricoes' && ['POST', 'DELETE'].includes(req.method)) ||
+      (req.path.startsWith('/push/dispositivos/') && ['POST', 'DELETE'].includes(req.method))
     );
     if (req.usuario.somenteLeitura && !metodosSomenteLeitura.has(req.method) && !alteracaoDaPropriaConta && !preferenciasDeNotificacao) {
       return res.status(403).json({

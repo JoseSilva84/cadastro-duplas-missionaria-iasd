@@ -1,10 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import api from '../lib/api';
 import { toast, toastError, toastSuccess } from '../lib/toast';
-import { notificacoesDisponiveis } from '../lib/pwa';
+import { atualizarBadgeAplicativo, notificacoesDisponiveis } from '../lib/pwa';
 
 const NotificacoesContext = createContext(null);
 const chaveAplicacao = (valor) => {
@@ -27,7 +27,20 @@ async function registrarDispositivo(chavePublica) {
     userVisibleOnly: true,
     applicationServerKey: chave,
   });
-  await api.post('/notificacoes/push/inscricoes', inscricao.toJSON());
+  const userAgent = navigator.userAgent || '';
+  const ehIPad = /iPad/i.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const plataforma = ehIPad ? 'iPadOS' : /iPhone/i.test(userAgent) ? 'iOS' : /Mac/i.test(navigator.platform || userAgent) ? 'macOS' : /Windows/i.test(userAgent) ? 'Windows' : /Android/i.test(userAgent) ? 'Android' : /Linux/i.test(userAgent) ? 'Linux' : 'Outro';
+  const navegador = /Edg/i.test(userAgent) ? 'Edge' : /CriOS|Chrome/i.test(userAgent) ? 'Chrome' : /FxiOS|Firefox/i.test(userAgent) ? 'Firefox' : /Safari/i.test(userAgent) ? 'Safari' : 'Navegador';
+  const resposta = await api.post('/notificacoes/push/inscricoes', {
+    ...inscricao.toJSON(),
+    dispositivo: {
+      nome: `${plataforma} · ${navegador}`,
+      plataforma,
+      navegador,
+    },
+  });
+  localStorage.setItem('pcmPushInscricaoId', String(resposta.data.id));
+  return resposta.data;
 }
 
 export function NotificacoesProvider({ children }) {
@@ -39,6 +52,7 @@ export function NotificacoesProvider({ children }) {
   const [permissao, setPermissao] = useState(() => notificacoesDisponiveis() ? Notification.permission : 'indisponivel');
   const [pushDisponivel, setPushDisponivel] = useState(false);
   const [processando, setProcessando] = useState(false);
+  const ultimoIdRef = useRef(0);
 
   const carregar = useCallback(async (numero = 1) => {
     const token = localStorage.getItem('token');
@@ -47,9 +61,30 @@ export function NotificacoesProvider({ children }) {
     if (token !== localStorage.getItem('token')) return;
     setItens(data.itens);
     setNaoLidas(data.naoLidas);
+    ultimoIdRef.current = Math.max(ultimoIdRef.current, ...data.itens.map((item) => Number(item.id) || 0));
     setPagina(data.pagina);
     setPaginas(data.paginas);
   }, []);
+
+  const carregarResumo = useCallback(async ({ avisar = false } = {}) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const { data } = await api.get('/notificacoes/resumo');
+    if (token !== localStorage.getItem('token')) return;
+    setNaoLidas(data.naoLidas);
+    const ultima = data.ultima;
+    if (ultima && Number(ultima.id) > ultimoIdRef.current) {
+      ultimoIdRef.current = Number(ultima.id);
+      setItens((anteriores) => [ultima, ...anteriores.filter((item) => item.id !== ultima.id)].slice(0, 20));
+      if (avisar && document.visibilityState === 'visible') {
+        toast.info(ultima.titulo, { description: ultima.mensagem, duration: 6000 });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    void atualizarBadgeAplicativo(usuario?.id ? naoLidas : 0);
+  }, [naoLidas, usuario?.id]);
 
   const ativar = async () => {
     if (!notificacoesDisponiveis() || !('PushManager' in window)) {
@@ -80,6 +115,7 @@ export function NotificacoesProvider({ children }) {
   useEffect(() => {
     if (!usuario?.id) {
       setItens([]); setNaoLidas(0); setPushDisponivel(false);
+      ultimoIdRef.current = 0;
       toast.dismiss('pcm-ativar-push');
       return undefined;
     }
@@ -124,24 +160,41 @@ export function NotificacoesProvider({ children }) {
     socket = io(apiBase.origin, { path: '/socket.io', auth: { token: localStorage.getItem('token') }, autoConnect: true });
     socket.on('notificacao:nova', (notificacao) => {
       if (!ativo) return;
-      setItens((anteriores) => [notificacao, ...anteriores].slice(0, 20));
+      ultimoIdRef.current = Math.max(ultimoIdRef.current, Number(notificacao.id) || 0);
+      setItens((anteriores) => [notificacao, ...anteriores.filter((item) => item.id !== notificacao.id)].slice(0, 20));
       setNaoLidas((numero) => numero + 1);
       toast.info(notificacao.titulo, { description: notificacao.mensagem, duration: 6000 });
     });
     socket.on('connect', () => carregar(1).catch(() => {}));
     const ativarPeloToast = () => { void ativar(); };
     window.addEventListener('pcm:ativar-push', ativarPeloToast);
-    const atualizarPermissao = () => setPermissao(notificacoesDisponiveis() ? Notification.permission : 'indisponivel');
-    window.addEventListener('focus', atualizarPermissao);
+    let ultimaRetomada = 0;
+    const atualizarAoRetomar = () => {
+      setPermissao(notificacoesDisponiveis() ? Notification.permission : 'indisponivel');
+      const agora = Date.now();
+      if (agora - ultimaRetomada < 1500) return;
+      ultimaRetomada = agora;
+      carregar(1).catch(() => {});
+    };
+    const aoMudarVisibilidade = () => { if (document.visibilityState === 'visible') atualizarAoRetomar(); };
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && navigator.onLine) carregarResumo({ avisar: true }).catch(() => {});
+    }, 60000);
+    window.addEventListener('focus', atualizarAoRetomar);
+    window.addEventListener('online', atualizarAoRetomar);
+    document.addEventListener('visibilitychange', aoMudarVisibilidade);
     return () => {
       ativo = false;
       socket.disconnect();
       window.removeEventListener('pcm:ativar-push', ativarPeloToast);
-      window.removeEventListener('focus', atualizarPermissao);
+      window.removeEventListener('focus', atualizarAoRetomar);
+      window.removeEventListener('online', atualizarAoRetomar);
+      document.removeEventListener('visibilitychange', aoMudarVisibilidade);
+      window.clearInterval(intervalo);
       toast.dismiss('pcm-ativar-push');
     };
     // A conexão acompanha a sessão, sem recriar o socket ao mudar a página.
-  }, [usuario?.id, carregar]);
+  }, [usuario?.id, carregar, carregarResumo]);
 
   const marcarLida = async (id) => {
     const { data } = await api.patch(`/notificacoes/${id}/lida`);

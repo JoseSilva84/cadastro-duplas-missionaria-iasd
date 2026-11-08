@@ -170,10 +170,20 @@ model InscricaoPush {
   endpoint String @unique
   p256dh String
   auth String
+  nomeDispositivo String?
+  plataforma String?
+  navegador String?
+  userAgent String?
+  ativa Boolean @default(true)
+  ultimoStatus Int?
+  ultimoErro String?
+  ultimoSucessoEm DateTime?
+  ultimaFalhaEm DateTime?
   criadaEm DateTime @default(now())
   atualizadaEm DateTime @updatedAt
 
   @@index([usuarioId])
+  @@index([usuarioId, ativa])
 }
 
 model ConfiguracaoPush {

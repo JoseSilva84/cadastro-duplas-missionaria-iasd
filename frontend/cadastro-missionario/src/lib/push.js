@@ -7,5 +7,8 @@ export async function removerInscricaoDoDispositivo() {
   const inscricao = await registro?.pushManager.getSubscription();
   if (!inscricao) return;
   try { await api.delete('/notificacoes/push/inscricoes', { data: { endpoint: inscricao.endpoint } }); }
-  finally { await inscricao.unsubscribe(); }
+  finally {
+    await inscricao.unsubscribe();
+    localStorage.removeItem('pcmPushInscricaoId');
+  }
 }
