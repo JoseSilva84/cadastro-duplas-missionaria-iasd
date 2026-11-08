@@ -460,7 +460,9 @@ module.exports = function criarEspelhoNovoTempo({
     return { meta, facetas: resultado };
   }
 
-  async function buscar(escopo, filtros = {}, { pagina = 1, limite = 100, versao = null, mapa = false } = {}) {
+  async function buscar(escopo, filtros = {}, {
+    pagina = 1, limite = 100, versao = null, mapa = false, incluirResumo = true, limiteMapa = 1000,
+  } = {}) {
     const meta = await estado();
     if (!meta.loteId) return { meta, contatos: [], total: 0, pagina: 1, limite: 100, temMais: false };
     if (versao && ![meta.loteId, meta.loteAnterior].includes(versao)) return { versaoExpirada: true };
@@ -519,6 +521,7 @@ module.exports = function criarEspelhoNovoTempo({
     const limiteValido = Math.min(100, Math.max(1, Number(limite) || 100));
     const paginaValida = Math.max(1, Number(pagina) || 1);
     const whereSql = condicoesSql(meta, escopo, extras);
+    const limiteMapaValido = Math.min(2500, Math.max(100, Number(limiteMapa) || 1000));
     const mapaPromise = mapa ? db.$queryRaw(Prisma.sql`
         SELECT dados->>'id' AS id,
           dados->>'nome' AS nome,
@@ -539,9 +542,10 @@ module.exports = function criarEspelhoNovoTempo({
         FROM "InteressadoNovoTempo"
         WHERE ${whereSql}
         ORDER BY dados->>'nome', dados->>'id'
+        LIMIT ${limiteMapaValido}
       `) : Promise.resolve([]);
     const [totais, linhas, pontosMapa] = await Promise.all([
-      db.$queryRaw(Prisma.sql`
+      incluirResumo ? db.$queryRaw(Prisma.sql`
         SELECT COUNT(*)::int AS total,
           COUNT(*) FILTER (WHERE "temWhatsapp")::int AS "comWhatsapp",
           COUNT(*) FILTER (WHERE "prioridadeChave" = 'hot')::int AS quentes,
@@ -562,6 +566,9 @@ module.exports = function criarEspelhoNovoTempo({
           COUNT(*) FILTER (WHERE COALESCE(dados->>'diasSemContato', '0') ~ '^[0-9]+$'
             AND (dados->>'diasSemContato')::int > 365)::int AS reativar
         FROM "InteressadoNovoTempo" WHERE ${whereSql}
+      `) : db.$queryRaw(Prisma.sql`
+        SELECT COUNT(*)::int AS total
+        FROM "InteressadoNovoTempo" WHERE ${whereSql}
       `),
       db.$queryRaw(Prisma.sql`
         SELECT dados FROM "InteressadoNovoTempo"
@@ -580,7 +587,9 @@ module.exports = function criarEspelhoNovoTempo({
       pagina: paginaValida,
       limite: limiteValido,
       temMais: paginaValida * limiteValido < resumo.total,
+      resumoCompleto: incluirResumo,
       mapa: mapa ? pontosMapa : null,
+      mapaTemMais: mapa ? resumo.total > pontosMapa.length : false,
     };
   }
 

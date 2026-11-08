@@ -49,6 +49,7 @@ export default function AtivarAcessoQr() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [duplaBusca, setDuplaBusca] = useState(null);
+  const [exibirLocalizacaoNova, setExibirLocalizacaoNova] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -103,6 +104,7 @@ export default function AtivarAcessoQr() {
     if (['regiaoId', 'distritoId', 'igrejaId', 'liderNome', 'membro2Nome'].includes(campo)) {
       setDuplaBusca(null);
     }
+    if (['liderNome', 'membro2Nome'].includes(campo)) setExibirLocalizacaoNova(false);
   };
 
   const validarSenha = () => {
@@ -126,22 +128,31 @@ export default function AtivarAcessoQr() {
   };
 
   const buscarDupla = async () => {
-    if (!form.distritoId || !form.igrejaId || !form.liderNome.trim() || !form.membro2Nome.trim()) {
-      toastError('Informe região, distrito, igreja e os nomes dos dois membros.');
+    if (!form.liderNome.trim() || !form.membro2Nome.trim()) {
+      toastError('Informe os nomes dos dois membros da dupla.');
       return;
     }
     setSalvando(true);
     try {
       const { data } = await api.post('/auth/qr-ativacao/buscar-dupla', {
         token,
-        distritoId: form.distritoId,
-        igrejaId: form.igrejaId,
         liderNome: form.liderNome,
         membro2Nome: form.membro2Nome,
       });
-      setDuplaBusca(data);
-      if (data.encontrada) toastSuccess('Dupla encontrada. Agora crie o login e senha.');
-      else if (data.possivel) toastError('Encontramos uma dupla parecida. Confirme se é a sua antes de cadastrar nova.');
+      if (data.encontrada) {
+        setForm((atual) => ({
+          ...atual,
+          regiaoId: data.dupla?.distrito?.regiao?.id || '',
+          distritoId: data.dupla?.distrito?.id || '',
+          igrejaId: data.dupla?.igreja?.id || '',
+        }));
+        setDuplaBusca(data);
+        setExibirLocalizacaoNova(false);
+        toastSuccess('Dupla encontrada e localização preenchida automaticamente.');
+      } else {
+        setDuplaBusca(data);
+        if (data.possivel) toastError('Encontramos uma dupla parecida. Confirme se é a sua antes de cadastrar nova.');
+      }
     } catch (err) {
       toastError(err.response?.data?.erro || 'Erro ao buscar dupla.');
     } finally {
@@ -150,11 +161,18 @@ export default function AtivarAcessoQr() {
   };
 
   const confirmarDuplaPossivel = (dupla) => {
+    setForm((atual) => ({
+      ...atual,
+      regiaoId: dupla?.distrito?.regiao?.id || '',
+      distritoId: dupla?.distrito?.id || '',
+      igrejaId: dupla?.igreja?.id || '',
+    }));
     setDuplaBusca({
       encontrada: true,
       confirmadaManualmente: true,
       dupla,
     });
+    setExibirLocalizacaoNova(false);
     toastSuccess('Dupla confirmada. Agora crie o login e senha.');
   };
 
@@ -197,6 +215,10 @@ export default function AtivarAcessoQr() {
   };
 
   const cadastrarNovaDupla = () => {
+    if (!form.regiaoId || !form.distritoId || !form.igrejaId) {
+      toastError('Informe região, distrito e igreja somente para cadastrar uma nova dupla.');
+      return;
+    }
     if (!distritoSelecionado?.chaveAcesso || !distritoSelecionado?.chaveAtiva) {
       toastError('Este distrito não possui uma chave ativa para cadastro de nova dupla.');
       return;
@@ -288,23 +310,12 @@ export default function AtivarAcessoQr() {
 
           {info.tipo === 'DUPLA_MISSIONARIA' && (
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <SelectField label="Região" value={form.regiaoId} onChange={(e) => alterar('regiaoId', e.target.value)} required>
-                  <option value="">Região</option>
-                  {regioes.map((regiao) => <option key={regiao.id} value={regiao.id}>{regiao.nome}</option>)}
-                </SelectField>
-                <SelectField label="Distrito" value={form.distritoId} onChange={(e) => alterar('distritoId', e.target.value)} required disabled={!form.regiaoId}>
-                  <option value="">Distrito</option>
-                  {distritosFiltrados.map((distrito) => <option key={distrito.id} value={distrito.id}>{distrito.nome}</option>)}
-                </SelectField>
-                <SelectField label="Igreja" value={form.igrejaId} onChange={(e) => alterar('igrejaId', e.target.value)} required disabled={!form.distritoId}>
-                  <option value="">Igreja</option>
-                  {igrejasFiltradas.map((igreja) => <option key={igreja.id} value={igreja.id}>{igreja.nome}</option>)}
-                </SelectField>
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+                Digite somente os nomes dos dois membros. O sistema localizará automaticamente a região, o distrito e a igreja da dupla.
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Nome do líder" value={form.liderNome} onChange={(e) => alterar('liderNome', e.target.value)} required />
-                <TextField label="Nome do parceiro" value={form.membro2Nome} onChange={(e) => alterar('membro2Nome', e.target.value)} required />
+                <TextField label="Primeiro membro da dupla" value={form.liderNome} onChange={(e) => alterar('liderNome', e.target.value)} placeholder="Primeiro nome ou nome completo" required />
+                <TextField label="Segundo membro da dupla" value={form.membro2Nome} onChange={(e) => alterar('membro2Nome', e.target.value)} placeholder="Primeiro nome ou nome completo" required />
               </div>
               <button
                 type="button"
@@ -316,9 +327,24 @@ export default function AtivarAcessoQr() {
               </button>
 
               {duplaBusca?.encontrada && (
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
-                  {duplaBusca.confirmadaManualmente ? 'Dupla confirmada: ' : 'Encontramos a dupla '}
-                  <strong>{duplaBusca.dupla.liderNome} e {duplaBusca.dupla.membro2Nome}</strong> em {duplaBusca.dupla.igreja?.nome}. Crie abaixo o novo login e senha.
+                <div className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
+                  <p>
+                    {duplaBusca.confirmadaManualmente ? 'Dupla confirmada: ' : 'Encontramos a dupla '}
+                    <strong>{duplaBusca.dupla.liderNome} e {duplaBusca.dupla.membro2Nome}</strong>. Crie abaixo o novo login e senha.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[
+                      ['Região', duplaBusca.dupla.distrito?.regiao?.nome],
+                      ['Distrito', duplaBusca.dupla.distrito?.nome],
+                      ['Igreja', duplaBusca.dupla.igreja?.nome],
+                    ].map(([rotulo, valor]) => (
+                      <div key={rotulo} className="rounded-xl border border-emerald-200 bg-white px-4 py-3">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-700">{rotulo}</span>
+                        <strong className="mt-1 block text-slate-800">{valor || 'Não informada'}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-emerald-700">Localização identificada automaticamente e bloqueada para evitar alteração indevida.</p>
                 </div>
               )}
 
@@ -331,6 +357,9 @@ export default function AtivarAcessoQr() {
                         <p>
                           <strong>{dupla.liderNome}</strong> e <strong>{dupla.membro2Nome}</strong>
                           {dupla.igreja?.nome ? ` — ${dupla.igreja.nome}` : ''}
+                        </p>
+                        <p className="mt-1 text-xs text-blue-800">
+                          {[dupla.distrito?.regiao?.nome, dupla.distrito?.nome].filter(Boolean).join(' · ') || 'Localização não informada'}
                         </p>
                         <p className="mt-1 text-xs text-blue-700">Semelhança aproximada: {dupla.confianca}%</p>
                         <button
@@ -348,10 +377,10 @@ export default function AtivarAcessoQr() {
                   </p>
                   <button
                     type="button"
-                    onClick={cadastrarNovaDupla}
+                    onClick={() => setExibirLocalizacaoNova(true)}
                     className="mt-3 rounded-lg border border-[#1A3A6B]/30 bg-white px-4 py-2 text-xs font-bold text-[#1A3A6B]"
                   >
-                    Não é nenhuma destas, cadastrar nova dupla
+                    Não é nenhuma destas: cadastrar nova dupla
                   </button>
                 </div>
               )}
@@ -361,10 +390,36 @@ export default function AtivarAcessoQr() {
                   <p>{duplaBusca.mensagem}</p>
                   <button
                     type="button"
-                    onClick={cadastrarNovaDupla}
+                    onClick={() => setExibirLocalizacaoNova(true)}
                     className="mt-3 rounded-lg bg-[#1A3A6B] px-4 py-2 text-xs font-bold text-white"
                   >
-                    Cadastrar nova dupla com estes dados
+                    Informar localização para cadastrar nova dupla
+                  </button>
+                </div>
+              )}
+
+              {exibirLocalizacaoNova && !duplaBusca?.encontrada && (
+                <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <div>
+                    <p className="text-sm font-bold text-amber-950">Localização da nova dupla</p>
+                    <p className="mt-1 text-xs text-amber-800">Estes campos aparecem apenas porque a dupla ainda não existe no cadastro.</p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <SelectField label="Região" value={form.regiaoId} onChange={(e) => alterar('regiaoId', e.target.value)} required>
+                      <option value="">Região</option>
+                      {regioes.map((regiao) => <option key={regiao.id} value={regiao.id}>{regiao.nome}</option>)}
+                    </SelectField>
+                    <SelectField label="Distrito" value={form.distritoId} onChange={(e) => alterar('distritoId', e.target.value)} required disabled={!form.regiaoId}>
+                      <option value="">Distrito</option>
+                      {distritosFiltrados.map((distrito) => <option key={distrito.id} value={distrito.id}>{distrito.nome}</option>)}
+                    </SelectField>
+                    <SelectField label="Igreja" value={form.igrejaId} onChange={(e) => alterar('igrejaId', e.target.value)} required disabled={!form.distritoId}>
+                      <option value="">Igreja</option>
+                      {igrejasFiltradas.map((igreja) => <option key={igreja.id} value={igreja.id}>{igreja.nome}</option>)}
+                    </SelectField>
+                  </div>
+                  <button type="button" onClick={cadastrarNovaDupla} className="rounded-lg bg-[#1A3A6B] px-4 py-2.5 text-sm font-bold text-white">
+                    Continuar para cadastrar nova dupla
                   </button>
                 </div>
               )}

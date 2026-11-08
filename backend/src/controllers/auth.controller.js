@@ -37,10 +37,8 @@ const validarCriacaoContaDupla = [
 
 const validarBuscaDuplaQr = [
   body('token').notEmpty().withMessage('QR Code de ativação obrigatório.'),
-  body('distritoId').notEmpty().withMessage('Selecione o distrito.'),
-  body('igrejaId').notEmpty().withMessage('Selecione a igreja.'),
-  body('liderNome').notEmpty().withMessage('Informe o nome do líder.'),
-  body('membro2Nome').notEmpty().withMessage('Informe o nome do parceiro.'),
+  body('liderNome').trim().notEmpty().withMessage('Informe o primeiro membro da dupla.'),
+  body('membro2Nome').trim().notEmpty().withMessage('Informe o segundo membro da dupla.'),
 ];
 
 const validarAtivacaoQr = [

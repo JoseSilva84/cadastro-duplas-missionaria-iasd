@@ -1099,11 +1099,12 @@ const InteressadosNovoTempoService = {
 
   async filtragemAvancada(filtros = {}, {
     atualizar = false, usuario, pagina = 1, limite = 100, versao = null, incluirFacetas = false, mapa = false,
+    incluirResumo = true, limiteMapa = 1000,
   } = {}) {
     const escopo = await obterEscopoTerritorial(usuario);
     if (atualizar) await espelho.solicitar({ forcar: true });
     const [resultado, dadosFacetas, aceites] = await Promise.all([
-      espelho.buscar(escopo, filtros, { pagina, limite, versao, mapa }),
+      espelho.buscar(escopo, filtros, { pagina, limite, versao, mapa, incluirResumo, limiteMapa }),
       incluirFacetas ? espelho.facetas(escopo) : Promise.resolve(null),
       mapa ? aceitesCampanhaAtivos(escopo).catch(() => []) : Promise.resolve([]),
     ]);
@@ -1204,6 +1205,10 @@ const InteressadosNovoTempoService = {
       };
     }) : null;
     const aceitosNoMapa = pontosMapa ? pontosMapa.filter((lead) => lead.aceitouVisita).length : 0;
+    const prioridadesNoMapa = pontosMapa ? pontosMapa.reduce((totais, lead) => {
+      totais[lead.prioridade] = (totais[lead.prioridade] || 0) + 1;
+      return totais;
+    }, {}) : {};
 
     return {
       atualizadoEm: meta.atualizadoEm,
@@ -1214,18 +1219,19 @@ const InteressadosNovoTempoService = {
       temMais: resultado.temMais,
       versao: meta.loteId,
       resumo: resultado.resumo,
+      resumoCompleto: resultado.resumoCompleto,
       ...(mapa ? {
         mapa: {
           leads: pontosMapa,
           total: resultado.total,
           aceitos: Math.max(Number(resultado.resumo?.aceitos || 0), aceitosNoMapa),
-          prioridades: {
+          prioridades: resultado.resumoCompleto ? {
             Hot: Number(resultado.resumo?.quentes || 0),
             Warm: Number(resultado.resumo?.potenciais || 0),
             Cool: Number(resultado.resumo?.mornos || 0),
             Cold: Number(resultado.resumo?.frios || 0),
-          },
-          truncado: resultado.total > pontosMapa.length,
+          } : prioridadesNoMapa,
+          truncado: resultado.mapaTemMais,
         },
       } : {}),
       igrejas: (meta.igrejas || []).filter((igreja) => escopo.acessoTotal || escopo.distritos.has(chaveNormalizada(igreja.distrito))),

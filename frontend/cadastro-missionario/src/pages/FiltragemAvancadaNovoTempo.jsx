@@ -144,7 +144,7 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">Mapa dos leads filtrados</p>
           <h2 className="mt-1 text-2xl font-bold text-[#1A3A6B]">Pontos com leads e igrejas</h2>
-          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas · todos os leads com coordenadas no mapa</p>
+          <p className="mt-1 text-sm text-slate-500">{numero(exatos)} coordenadas exatas · {numero(aproximados)} aproximadas · {numero(leadsVisiveis.length - exatos - aproximados)} sem coordenadas{mapa?.truncado ? ' · amostra dos primeiros 1.000 pontos para manter o mapa rápido' : ' · todos os pontos disponíveis no recorte'}</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold" aria-label="Filtrar pontos do mapa">
           {Object.entries(PRIORIDADES).map(([chave, [rotulo, cor]]) => {
@@ -220,8 +220,8 @@ function Mapa({ leads, igrejas, mapa, onSelecionarLead }) {
   );
 }
 
-function CardResumo({ titulo, valor, detalhe, classe }) {
-  return <div className={`rounded-2xl p-5 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${classe}`}><p className="text-xs font-bold uppercase tracking-[0.16em] text-white/85">{titulo}</p><p className="mt-5 text-3xl font-bold">{numero(valor)}</p><p className="mt-1 text-sm text-white/80">{detalhe}</p></div>;
+function CardResumo({ titulo, valor, detalhe, classe, carregando = false }) {
+  return <div className={`rounded-2xl p-5 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${classe}`}><p className="text-xs font-bold uppercase tracking-[0.16em] text-white/85">{titulo}</p>{carregando ? <div className="mt-5 h-9 w-24 animate-pulse rounded-lg bg-white/25" /> : <p className="mt-5 text-3xl font-bold">{numero(valor)}</p>}<p className="mt-1 text-sm text-white/80">{carregando ? 'Calculando em segundo plano...' : detalhe}</p></div>;
 }
 
 export default function FiltragemAvancadaNovoTempo() {
@@ -235,15 +235,20 @@ export default function FiltragemAvancadaNovoTempo() {
   const [filtros, setFiltros] = useState(filtrosIniciais);
   const [carregandoMais, setCarregandoMais] = useState(false);
   const [atualizando, setAtualizando] = useState(false);
+  const [resumoCarregando, setResumoCarregando] = useState(false);
+  const [mapaCarregando, setMapaCarregando] = useState(false);
+  const [mapaSolicitado, setMapaSolicitado] = useState(false);
   const [leadSelecionado, setLeadSelecionado] = useState(null);
   const requisicaoAtual = useRef(0);
   const sentinelaRef = useRef(null);
+  const mapaContainerRef = useRef(null);
   const facetasSolicitadasRef = useRef(false);
   const versaoRef = useRef(null);
   const mapaRequisicaoRef = useRef(0);
+  const resumoRequisicaoRef = useRef(0);
 
-  const parametrosDosFiltros = useCallback((pagina, incluirFacetas = false) => {
-    const params = { pagina, limite: 20, ...(incluirFacetas ? { incluirFacetas: 1 } : {}) };
+  const parametrosDosFiltros = useCallback((pagina, incluirFacetas = false, incluirResumo = false) => {
+    const params = { pagina, limite: 20, incluirResumo: incluirResumo ? 1 : 0, ...(incluirFacetas ? { incluirFacetas: 1 } : {}) };
     Object.entries(filtros).forEach(([campo, valor]) => {
       if (Array.isArray(valor)) {
         if (valor.length) params[campo] = valor.join('|');
@@ -276,8 +281,16 @@ export default function FiltragemAvancadaNovoTempo() {
       versaoRef.current = data.versao || null;
       if (data.facetas) setFacetas(data.facetas);
       setDados((atual) => anexar
-        ? { ...data, mapa: data.mapa || atual?.mapa, facetas: data.facetas || atual?.facetas, leads: [...(atual?.leads || []), ...(data.leads || [])] }
-        : { ...data, mapa: data.mapa || atual?.mapa || null, facetas: data.facetas || atual?.facetas });
+        ? {
+          ...data,
+          total: atual?.resumoCompleto ? atual.total : data.total,
+          resumo: atual?.resumoCompleto ? atual.resumo : data.resumo,
+          resumoCompleto: Boolean(atual?.resumoCompleto || data.resumoCompleto),
+          mapa: data.mapa || atual?.mapa,
+          facetas: data.facetas || atual?.facetas,
+          leads: [...(atual?.leads || []), ...(data.leads || [])],
+        }
+        : { ...data, mapa: data.mapa || null, facetas: data.facetas || atual?.facetas });
       await salvarCacheLocal(chaveCache, data, usuario);
     } catch (falha) {
       if (idRequisicao === requisicaoAtual.current) {
@@ -297,30 +310,67 @@ export default function FiltragemAvancadaNovoTempo() {
 
   const carregarMapa = useCallback(async () => {
     const idMapa = ++mapaRequisicaoRef.current;
+    setMapaCarregando(true);
     try {
-      const { data } = await api.get('/interessados-nt/filtragem-avancada', { params: { ...parametrosDosFiltros(1, false), limite: 1, mapa: 1 } });
+      const { data } = await api.get('/interessados-nt/filtragem-avancada', { params: { ...parametrosDosFiltros(1, false, false), limite: 1, mapa: 1, limiteMapa: 1000 } });
       if (idMapa === mapaRequisicaoRef.current) setDados((atual) => atual ? { ...atual, mapa: data.mapa || null } : atual);
     } catch {
       // O mapa usa os 20 primeiros leads enquanto o recorte completo não chega.
+    } finally {
+      if (idMapa === mapaRequisicaoRef.current) setMapaCarregando(false);
     }
   }, [parametrosDosFiltros]);
 
   useEffect(() => {
+    setMapaSolicitado(false);
+    setMapaCarregando(false);
+    mapaRequisicaoRef.current += 1;
+    resumoRequisicaoRef.current += 1;
     const temporizador = window.setTimeout(() => {
       carregarPagina(1, false, false);
-      carregarMapa();
     }, filtros.busca ? 350 : 80);
     return () => window.clearTimeout(temporizador);
-  }, [carregarMapa, carregarPagina, filtros.busca]);
+  }, [carregarPagina, filtros.busca]);
+
+  const dadosDisponiveis = Boolean(dados);
+  const resumoCompleto = Boolean(dados?.resumoCompleto);
+  const dadosSemConteudo = Boolean(dados?.semDados);
+  const versaoDosDados = dados?.versao;
+  useEffect(() => {
+    if (!dadosDisponiveis || dadosSemConteudo || resumoCompleto) return undefined;
+    const idResumo = ++resumoRequisicaoRef.current;
+    const temporizador = window.setTimeout(async () => {
+      setResumoCarregando(true);
+      try {
+        const { data } = await api.get('/interessados-nt/filtragem-avancada', {
+          params: { ...parametrosDosFiltros(1, false, true), limite: 1 },
+        });
+        if (idResumo === resumoRequisicaoRef.current) {
+          setDados((atual) => atual ? {
+            ...atual,
+            total: data.total,
+            resumo: data.resumo,
+            resumoCompleto: true,
+          } : atual);
+        }
+      } catch {
+        // A lista permanece utilizável mesmo se os indicadores demorarem mais que o esperado.
+      } finally {
+        if (idResumo === resumoRequisicaoRef.current) setResumoCarregando(false);
+      }
+    }, 180);
+    return () => window.clearTimeout(temporizador);
+  }, [dadosDisponiveis, dadosSemConteudo, parametrosDosFiltros, resumoCompleto, versaoDosDados]);
 
   useEffect(() => {
+    if (!dadosDisponiveis) return undefined;
     if (facetasSolicitadasRef.current) return undefined;
     facetasSolicitadasRef.current = true;
     let ativo = true;
-    const params = { pagina: 1, limite: 1, incluirFacetas: 1 };
+    const params = { pagina: 1, limite: 1, incluirFacetas: 1, incluirResumo: 0 };
     const caminho = '/interessados-nt/filtragem-avancada';
     const chaveCache = chaveCacheUsuario(usuario, `tela-filtragem-nt-facetas:${caminho}`);
-    (async () => {
+    const temporizador = window.setTimeout(async () => {
       const cache = await lerCacheLocal(chaveCache);
       if (ativo && cache?.dados?.facetas) setFacetas(cache.dados.facetas);
       try {
@@ -330,9 +380,9 @@ export default function FiltragemAvancadaNovoTempo() {
       } catch {
         // A página e os filtros básicos continuam utilizáveis com a cópia local.
       }
-    })();
-    return () => { ativo = false; };
-  }, [usuario]);
+    }, 1200);
+    return () => { ativo = false; window.clearTimeout(temporizador); };
+  }, [dadosDisponiveis, usuario]);
 
   const sincronizando = dados?.sincronizando;
   const semDados = dados?.semDados;
@@ -420,6 +470,19 @@ export default function FiltragemAvancadaNovoTempo() {
     return () => observador.disconnect();
   }, [carregarMais, dados?.temMais]);
 
+  useEffect(() => {
+    const alvo = mapaContainerRef.current;
+    if (!alvo || !dados || dados.mapa || mapaSolicitado) return undefined;
+    const observador = new IntersectionObserver((entradas) => {
+      if (!entradas.some((entrada) => entrada.isIntersecting)) return;
+      setMapaSolicitado(true);
+      carregarMapa();
+      observador.disconnect();
+    }, { rootMargin: '320px' });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, [carregarMapa, dados, mapaSolicitado]);
+
   const abrirLead = useCallback(async (lead) => {
     if (!lead) return;
     setLeadSelecionado(lead);
@@ -445,13 +508,14 @@ export default function FiltragemAvancadaNovoTempo() {
       {dados?.erroSincronizacao && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{dados.erroSincronizacao}</div>}
       {dados?.semDados && <div className="rounded-2xl border border-blue-100 bg-white p-6 text-sm text-slate-600">Aguardando a primeira sincronização dos interessados NT.</div>}
       {dados && !dados.semDados && <>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><CardResumo titulo="Total de leads" valor={dados.total} detalhe="resultado completo dos filtros" classe="bg-gradient-to-br from-blue-600 to-cyan-600"/><CardResumo titulo="Com WhatsApp" valor={totalWhats} detalhe="aptos para contato" classe="bg-gradient-to-br from-emerald-500 to-teal-700"/><CardResumo titulo="Quentes" valor={totalQuentes} detalhe="prioridade para ação" classe="bg-gradient-to-br from-red-600 to-orange-500"/><CardResumo titulo="Reativar" valor={reativar} detalhe="sem contato há mais de 1 ano" classe="bg-gradient-to-br from-violet-600 to-fuchsia-600"/></div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><CardResumo titulo="Total de leads" valor={dados.total} detalhe="resultado completo dos filtros" classe="bg-gradient-to-br from-blue-600 to-cyan-600"/><CardResumo titulo="Com WhatsApp" valor={totalWhats} detalhe="aptos para contato" carregando={!dados.resumoCompleto || resumoCarregando} classe="bg-gradient-to-br from-emerald-500 to-teal-700"/><CardResumo titulo="Quentes" valor={totalQuentes} detalhe="prioridade para ação" carregando={!dados.resumoCompleto || resumoCarregando} classe="bg-gradient-to-br from-red-600 to-orange-500"/><CardResumo titulo="Reativar" valor={reativar} detalhe="sem contato há mais de 1 ano" carregando={!dados.resumoCompleto || resumoCarregando} classe="bg-gradient-to-br from-violet-600 to-fuchsia-600"/></div>
         <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-lg sm:p-7">
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Filtragem avançada</p><h2 className="mt-1 text-2xl font-bold text-slate-900">Encontrar leads certos</h2></div><button type="button" onClick={() => setFiltros(filtrosIniciais)} className="btn-outline">Limpar todos os filtros</button></div>
           <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(260px,0.7fr)_minmax(0,1.3fr)]">
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Associação</span><select className="input-field w-full" value="paulistana" disabled><option value="paulistana">Associação Paulistana</option></select></label>
             <label><span className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Buscar</span><span className="relative block"><svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input value={filtros.busca} onChange={(e) => alterar('busca', e.target.value)} className="input-field w-full" style={{ paddingLeft: '3.5rem' }} placeholder="Nome, e-mail, distrito, bairro, material ou WhatsApp" /></span></label>
           </div>
+          {!facetas && <div className="mb-4 flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800"><span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />Carregando opções detalhadas sem bloquear os primeiros resultados...</div>}
           <div className="grid gap-4 lg:grid-cols-2"><PainelOpcoes titulo="Distritos" pesquisavel opcoes={opcoes.distritos} selecionados={filtros.distritos} onChange={(v) => alterar('distritos', v)}/><PainelOpcoes key={`bairros-${filtros.distritos.join('|')}`} titulo="Bairros" pesquisavel opcoes={opcoes.bairros} selecionados={filtros.bairros} onChange={(v) => alterar('bairros', v)}/><PainelOpcoes titulo="Materiais" pesquisavel opcoes={opcoes.materiais} selecionados={filtros.materiais} onChange={(v) => alterar('materiais', v)}/><div className="grid gap-4 sm:grid-cols-2"><PainelOpcoes titulo="Prioridade" opcoes={opcoes.prioridades} selecionados={filtros.prioridades} onChange={(v) => alterar('prioridades', v)}/><PainelOpcoes titulo="Idade" opcoes={opcoes.idades} selecionados={filtros.idades} onChange={(v) => alterar('idades', v)}/><PainelOpcoes titulo="Gênero" opcoes={opcoes.generos} selecionados={filtros.generos} onChange={(v) => alterar('generos', v)}/></div></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <SelectFiltro titulo="WhatsApp" valor={filtros.whatsapp} onChange={(v) => alterar('whatsapp', v)} {...facetasSelect.whatsapp}/>
@@ -462,7 +526,11 @@ export default function FiltragemAvancadaNovoTempo() {
             <SelectFiltro titulo="Tempo" valor={filtros.tempo} onChange={(v) => alterar('tempo', v)} {...facetasSelect.tempo}/>
           </div>
         </section>
-        <Mapa leads={filtrados} igrejas={igrejasFiltradas} mapa={dados?.mapa} onSelecionarLead={abrirLead}/>
+        <div ref={mapaContainerRef}>
+          {dados?.mapa
+            ? <Mapa leads={filtrados} igrejas={igrejasFiltradas} mapa={dados.mapa} onSelecionarLead={abrirLead}/>
+            : <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-white p-6 shadow-lg"><div className="animate-pulse space-y-4"><div className="h-4 w-40 rounded bg-emerald-100"/><div className="h-8 w-80 max-w-full rounded bg-slate-200"/><div className="h-80 rounded-2xl bg-slate-100"/></div><p className="mt-4 text-center text-sm text-slate-500">{mapaCarregando ? 'Carregando o mapa em segundo plano...' : 'O mapa será carregado quando esta área entrar na tela.'}</p></section>}
+        </div>
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><h2 className="text-xl font-bold text-[#1A3A6B]">Lista de leads</h2><p className="text-sm text-slate-500">{numero(dados.total)} encontrados. {numero(filtrados.length)} carregados em lotes de 20. Clique em um lead para ver todos os dados.</p></div>

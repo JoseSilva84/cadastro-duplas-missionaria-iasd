@@ -106,6 +106,8 @@ const InteressadosNovoTempoController = {
         versao: req.query.versao,
         incluirFacetas: req.query.incluirFacetas === '1',
         mapa: req.query.mapa === '1',
+        incluirResumo: req.query.incluirResumo !== '0',
+        limiteMapa: req.query.limiteMapa,
       });
       return res.json(resultado);
     } catch (falha) {

@@ -333,27 +333,46 @@ const AuthService = {
     };
   },
 
-  async buscarDuplaParaAtivacao({ token, distritoId, igrejaId, liderNome, membro2Nome }) {
+  async buscarDuplaParaAtivacao({ token, liderNome, membro2Nome }) {
     const payload = await validarTokenAtivacaoQr(token);
     if (payload.tipo !== 'DUPLA_MISSIONARIA') {
       throw { status: 400, mensagem: 'Este QR Code não é de dupla missionária.' };
     }
 
-    const distritoIdNum = Number(distritoId);
-    const igrejaIdNum = Number(igrejaId);
     const nLider = normalizarTexto(liderNome);
     const nMembro2 = normalizarTexto(membro2Nome);
-    if (!distritoIdNum || !igrejaIdNum || !nLider || !nMembro2) {
-      throw { status: 400, mensagem: 'Informe distrito, igreja e os nomes dos dois membros da dupla.' };
+    if (!nLider || !nMembro2) {
+      throw { status: 400, mensagem: 'Informe os nomes dos dois membros da dupla.' };
     }
 
+    const primeiroNome = (valor) => String(valor || '').trim().split(/\s+/)[0];
+    const primeiroLider = primeiroNome(liderNome);
+    const primeiroMembro2 = primeiroNome(membro2Nome);
+
     const duplas = await prisma.dupla.findMany({
-      where: { distritoId: distritoIdNum, igrejaId: igrejaIdNum },
+      where: {
+        AND: [
+          {
+            OR: [
+              { liderNome: { contains: primeiroLider, mode: 'insensitive' } },
+              { membro2Nome: { contains: primeiroLider, mode: 'insensitive' } },
+            ],
+          },
+          {
+            OR: [
+              { liderNome: { contains: primeiroMembro2, mode: 'insensitive' } },
+              { membro2Nome: { contains: primeiroMembro2, mode: 'insensitive' } },
+            ],
+          },
+        ],
+      },
       include: {
         distrito: { select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true, regiao: { select: { id: true, nome: true } } } },
         igreja: { select: { id: true, nome: true } },
         usuarios: { select: { id: true, email: true, ativo: true } },
       },
+      orderBy: { id: 'asc' },
+      take: 80,
     });
 
     const candidatas = duplas
@@ -361,21 +380,20 @@ const AuthService = {
       .filter((item) => item.score >= 0.72 && item.liderScore >= 0.62 && item.membroScore >= 0.62)
       .sort((a, b) => b.score - a.score);
 
-    const dupla = candidatas.find((item) => item.score >= 0.92 && item.liderScore >= 0.82 && item.membroScore >= 0.82)?.dupla;
+    const correspondenciaExata = candidatas.find((item) => (
+      item.score >= 0.92 && item.liderScore >= 0.82 && item.membroScore >= 0.82
+    ));
+    const candidatasFortes = candidatas.filter((item) => (
+      item.score >= 0.72 && item.liderScore >= 0.68 && item.membroScore >= 0.68
+    ));
+    const correspondencia = correspondenciaExata || (candidatasFortes.length === 1 ? candidatasFortes[0] : null);
+    const dupla = correspondencia?.dupla;
 
     if (!dupla) {
-      const distrito = await prisma.distrito.findUnique({
-        where: { id: distritoIdNum },
-        select: { id: true, nome: true, chaveAcesso: true, chaveAtiva: true, regiao: { select: { id: true, nome: true } } },
-      });
-      const igreja = await prisma.igreja.findUnique({ where: { id: igrejaIdNum }, select: { id: true, nome: true } });
-
       if (candidatas.length) {
         return {
           encontrada: false,
           possivel: true,
-          distrito,
-          igreja,
           mensagem: 'Encontramos uma dupla muito parecida já cadastrada. Confirme se é esta dupla antes de cadastrar uma nova.',
           possiveis: candidatas.slice(0, 3).map((item) => resumoDuplaAtivacao(item.dupla, {
             confianca: Math.round(item.score * 100),
@@ -386,9 +404,7 @@ const AuthService = {
 
       return {
         encontrada: false,
-        distrito,
-        igreja,
-        mensagem: 'Não encontramos uma dupla existente com estes nomes. Continue para cadastrar uma nova dupla.',
+        mensagem: 'Não encontramos uma dupla existente com estes nomes. Revise os nomes ou informe a localização apenas para cadastrar uma nova dupla.',
       };
     }
 
