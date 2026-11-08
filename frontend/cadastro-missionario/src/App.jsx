@@ -312,7 +312,7 @@ function AppRoutes() {
 
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]}><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
-        <Route path="registro-saida" element={<RegistroSaida />} />
+        <Route path="registro-saida" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios/assistencia"><RegistroSaida /></RotaComPerfis>} />
 
         {/* Lideranças — apenas para quem pode gerenciar */}
         <Route
@@ -366,7 +366,7 @@ function AppRoutes() {
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
-        <Route path="relatorios/assistencia" element={<RelatorioAssistencia />} />
+        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
         <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
@@ -479,7 +479,7 @@ function AppRoutes() {
         <Route path="gestao-qrcodes" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/configuracoes"><GestaoQrCodes /></RotaComPerfis>} />
         <Route path="duplas/:id/editar" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA]} redirectTo="/direto/distritos"><Cadastro /></RotaComPerfis>} />
         <Route path="duplas/:id" element={<DadosDupla />} />
-        <Route path="registro-saida" element={<RegistroSaida />} />
+        <Route path="registro-saida" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios/assistencia"><RegistroSaida /></RotaComPerfis>} />
         <Route
           path="cadastro/liderancas"
           element={
@@ -513,7 +513,7 @@ function AppRoutes() {
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
-        <Route path="relatorios/assistencia" element={<RelatorioAssistencia />} />
+        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
         <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />

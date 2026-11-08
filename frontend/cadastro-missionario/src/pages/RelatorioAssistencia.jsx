@@ -4,15 +4,55 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
-const hojeISO = () => new Date().toISOString().split('T')[0];
+const dataLocalISO = (data = new Date()) => {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+};
 
-const primeiroDiaDoMes = () => {
+const hojeISO = () => dataLocalISO();
+
+const semanaISOAtual = () => {
   const data = new Date();
-  data.setDate(1);
-  return data.toISOString().split('T')[0];
+  const quinta = new Date(data);
+  quinta.setHours(0, 0, 0, 0);
+  quinta.setDate(quinta.getDate() + 3 - ((quinta.getDay() + 6) % 7));
+  const primeiraQuinta = new Date(quinta.getFullYear(), 0, 4);
+  const numeroSemana = 1 + Math.round(((quinta - primeiraQuinta) / 86400000 - 3 + ((primeiraQuinta.getDay() + 6) % 7)) / 7);
+  return `${quinta.getFullYear()}-W${String(numeroSemana).padStart(2, '0')}`;
+};
+
+const intervaloDaSemana = (semana) => {
+  const correspondencia = /^(\d{4})-W(\d{2})$/.exec(semana || '');
+  if (!correspondencia) return { de: '', ate: '' };
+  const ano = Number(correspondencia[1]);
+  const numeroSemana = Number(correspondencia[2]);
+  const quatroDeJaneiro = new Date(ano, 0, 4);
+  const segundaPrimeiraSemana = new Date(quatroDeJaneiro);
+  segundaPrimeiraSemana.setDate(quatroDeJaneiro.getDate() - ((quatroDeJaneiro.getDay() + 6) % 7));
+  const inicio = new Date(segundaPrimeiraSemana);
+  inicio.setDate(segundaPrimeiraSemana.getDate() + (numeroSemana - 1) * 7);
+  const fim = new Date(inicio);
+  fim.setDate(inicio.getDate() + 6);
+  return { de: dataLocalISO(inicio), ate: dataLocalISO(fim) };
+};
+
+const mesAtualISO = () => hojeISO().slice(0, 7);
+
+const intervaloDoMes = (mes) => {
+  const correspondencia = /^(\d{4})-(\d{2})$/.exec(mes || '');
+  if (!correspondencia) return { de: '', ate: '' };
+  const ano = Number(correspondencia[1]);
+  const indiceMes = Number(correspondencia[2]) - 1;
+  return {
+    de: dataLocalISO(new Date(ano, indiceMes, 1)),
+    ate: dataLocalISO(new Date(ano, indiceMes + 1, 0)),
+  };
 };
 
 const formatarData = (valor) => {
@@ -45,6 +85,7 @@ const Info = ({ label, valor }) => (
 );
 
 export default function RelatorioAssistencia() {
+  const { usuario } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
@@ -53,13 +94,16 @@ export default function RelatorioAssistencia() {
   const [coordenadores, setCoordenadores] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [tipoPeriodo, setTipoPeriodo] = useState('semana');
+  const [semanaSelecionada, setSemanaSelecionada] = useState(semanaISOAtual);
+  const [mesSelecionado, setMesSelecionado] = useState(mesAtualISO);
   const [filtros, setFiltros] = useState({
-    de: '',
-    ate: '',
+    ...intervaloDaSemana(semanaISOAtual()),
     coordenadorId: '',
   });
   const [registroSelecionado, setRegistroSelecionado] = useState(null);
   const [modalRegistrosAberto, setModalRegistrosAberto] = useState(false);
+  const podeRegistrarAssistencia = ehAdmin(usuario) || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
 
   useEffect(() => {
     api.get('/acompanhamentos/coordenadores')
@@ -128,8 +172,36 @@ export default function RelatorioAssistencia() {
     };
   }, [dados, saidas]);
 
-  const limparFiltros = () => setFiltros({ de: '', ate: '', coordenadorId: '' });
-  const filtrarMesAtual = () => setFiltros({ de: primeiroDiaDoMes(), ate: hojeISO(), coordenadorId: filtros.coordenadorId });
+  const selecionarTipoPeriodo = (tipo) => {
+    setTipoPeriodo(tipo);
+    if (tipo === 'semana') {
+      setFiltros((atual) => ({ ...atual, ...intervaloDaSemana(semanaSelecionada) }));
+    } else if (tipo === 'mes') {
+      setFiltros((atual) => ({ ...atual, ...intervaloDoMes(mesSelecionado) }));
+    }
+  };
+
+  const selecionarSemana = (semana) => {
+    setSemanaSelecionada(semana);
+    setFiltros((atual) => ({ ...atual, ...intervaloDaSemana(semana) }));
+  };
+
+  const selecionarMes = (mes) => {
+    setMesSelecionado(mes);
+    setFiltros((atual) => ({ ...atual, ...intervaloDoMes(mes) }));
+  };
+
+  const limparFiltros = () => {
+    setTipoPeriodo('personalizado');
+    setFiltros({ de: '', ate: '', coordenadorId: '' });
+  };
+
+  const filtrarSemanaAtual = () => {
+    const semana = semanaISOAtual();
+    setSemanaSelecionada(semana);
+    setTipoPeriodo('semana');
+    setFiltros((atual) => ({ ...atual, ...intervaloDaSemana(semana) }));
+  };
 
   if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistência..." />;
 
@@ -141,20 +213,22 @@ export default function RelatorioAssistencia() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Assistência</p>
+              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Coordenação Regional</p>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-              Resumo de Visitas de Assistência
+              Relatório Coordenador Regional
             </h1>
             <p className="text-gray-400 text-sm mt-1">Indicadores, histórico e detalhes dos acompanhamentos realizados pelos coordenadores regionais.</p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/coordenador-regional`)}>
-              Relatório regional
+              Visão geral regional
             </button>
-            <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/registro-saida`)}>
-              Registrar nova assistência
-            </button>
+            {podeRegistrarAssistencia && (
+              <button type="button" className="btn-primary px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/registro-saida`)}>
+                Registrar nova assistência
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -162,16 +236,53 @@ export default function RelatorioAssistencia() {
       <div className={isDireto ? 'flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5' : 'space-y-4 sm:space-y-5'}>
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
-        <section className="card p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_1.2fr_auto_auto_auto] xl:items-end">
-            <label>
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">De</span>
-              <input type="date" className="input-field" value={filtros.de} onChange={(event) => setFiltros((atual) => ({ ...atual, de: event.target.value }))} />
-            </label>
-            <label>
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Até</span>
-              <input type="date" className="input-field" value={filtros.ate} onChange={(event) => setFiltros((atual) => ({ ...atual, ate: event.target.value }))} />
-            </label>
+        <section className="card overflow-hidden p-0">
+          <div className="border-b border-gray-100 bg-gradient-to-r from-[#F8FAFC] to-white px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-bold text-[#1A3A6B]">Período do relatório</h2>
+                <p className="mt-0.5 text-xs text-gray-400">A semana vigente vem selecionada automaticamente.</p>
+              </div>
+              <div className="inline-flex w-full rounded-xl border border-gray-200 bg-white p-1 sm:w-auto" role="group" aria-label="Tipo de período">
+                {[['semana', 'Semana'], ['mes', 'Mês'], ['personalizado', 'Personalizado']].map(([valor, rotulo]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => selecionarTipoPeriodo(valor)}
+                    className={`min-h-10 flex-1 rounded-lg px-3 text-xs font-bold transition sm:flex-none ${tipoPeriodo === valor ? 'bg-[#1A3A6B] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-[#1A3A6B]'}`}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 p-4 sm:p-6 xl:grid-cols-[1fr_1fr_1.25fr_auto_auto] xl:items-end">
+            {tipoPeriodo === 'semana' && (
+              <label className="xl:col-span-2">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Semana do ano</span>
+                <input type="week" className="input-field" value={semanaSelecionada} onChange={(event) => selecionarSemana(event.target.value)} />
+              </label>
+            )}
+            {tipoPeriodo === 'mes' && (
+              <label className="xl:col-span-2">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Mês</span>
+                <input type="month" className="input-field" value={mesSelecionado} onChange={(event) => selecionarMes(event.target.value)} />
+              </label>
+            )}
+            {tipoPeriodo === 'personalizado' && (
+              <>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">De</span>
+                  <input type="date" className="input-field" value={filtros.de} onChange={(event) => setFiltros((atual) => ({ ...atual, de: event.target.value }))} />
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Até</span>
+                  <input type="date" className="input-field" value={filtros.ate} onChange={(event) => setFiltros((atual) => ({ ...atual, ate: event.target.value }))} />
+                </label>
+              </>
+            )}
             <label>
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</span>
               <select className="input-field" value={filtros.coordenadorId} onChange={(event) => setFiltros((atual) => ({ ...atual, coordenadorId: event.target.value }))}>
@@ -183,10 +294,17 @@ export default function RelatorioAssistencia() {
                 ))}
               </select>
             </label>
+            <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" onClick={filtrarSemanaAtual}>Semana atual</button>
             <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={limparFiltros}>Limpar</button>
-            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={filtrarMesAtual}>Mês atual</button>
-            <button type="button" className="btn-outline px-4 py-2 text-sm" onClick={() => setFiltros((atual) => ({ ...atual }))}>Atualizar</button>
           </div>
+          {(filtros.de || filtros.ate) && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 bg-[#F8FAFC] px-4 py-3 text-xs text-gray-500 sm:px-6">
+              <span className="font-bold uppercase tracking-wider text-[#C9963A]">Exibindo</span>
+              <span className="rounded-full bg-white px-3 py-1 font-semibold text-[#1A3A6B] shadow-sm">
+                {filtros.de ? formatarData(`${filtros.de}T12:00:00`) : 'início'} — {filtros.ate ? formatarData(`${filtros.ate}T12:00:00`) : 'hoje'}
+              </span>
+            </div>
+          )}
         </section>
 
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">

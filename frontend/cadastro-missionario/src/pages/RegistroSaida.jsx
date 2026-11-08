@@ -46,6 +46,7 @@ export default function RegistroSaida() {
   const navigate = useNavigate();
   const location = useLocation();
   const isDireto = location.pathname.startsWith('/direto');
+  const prefix = isDireto ? '/direto' : '';
 
   const [duplas, setDuplas] = useState([]);
   const [duplasSelecionadas, setDuplasSelecionadas] = useState([]);
@@ -83,7 +84,14 @@ export default function RegistroSaida() {
     }).finally(() => setCarregando(false));
   }, []);
 
+  const coordenadorSelecionado = coordenadores.find((item) => String(item.id) === String(coordenadorId));
+  const regiaoSelecionadaId = coordenadorSelecionado?.regiao?.id;
+
   const duplasFiltradas = duplas.filter((d) => {
+    if (!coordenadorId) return false;
+    if (regiaoSelecionadaId && Number(d.distrito?.regiaoId || d.distrito?.regiao?.id) !== Number(regiaoSelecionadaId)) {
+      return false;
+    }
     if (!busca) return true;
     const termo = busca.toLowerCase();
     return (
@@ -97,6 +105,18 @@ export default function RegistroSaida() {
     setDuplasSelecionadas((prev) => (
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     ));
+  };
+
+  const selecionarCoordenador = (id) => {
+    setCoordenadorId(id);
+    const coordenador = coordenadores.find((item) => String(item.id) === String(id));
+    const regiaoId = coordenador?.regiao?.id;
+    if (regiaoId) {
+      setDuplasSelecionadas((atuais) => atuais.filter((duplaId) => {
+        const dupla = duplas.find((item) => item.id === duplaId);
+        return Number(dupla?.distrito?.regiaoId || dupla?.distrito?.regiao?.id) === Number(regiaoId);
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -119,7 +139,7 @@ export default function RegistroSaida() {
         duplaIds: duplasSelecionadas,
       });
       toast.success(`Assistência registrada! ${duplasSelecionadas.length} dupla(s) acompanhada(s).`);
-      setTimeout(() => navigate(isDireto ? '/direto/duplas' : '/duplas'), 800);
+      setTimeout(() => navigate(`${prefix}/relatorios/assistencia`), 800);
     } catch (err) {
       const erros = err.response?.data?.erros;
       toast.error(erros ? erros.map((erro) => erro.msg).join(', ') : err.response?.data?.erro || 'Erro ao registrar assistência.');
@@ -131,15 +151,22 @@ export default function RegistroSaida() {
   return (
     <div className={isDireto ? 'flex flex-col h-full animate-fade-in' : 'min-h-screen animate-fade-in'}>
       <div className={isDireto ? 'flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4' : 'mb-8 p-4 sm:p-6'}>
-        <BackButton fallbackTo={isDireto ? '/direto/duplas' : '/duplas'} className="mb-3" />
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
-          <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Coordenador</p>
+        <BackButton fallbackTo={`${prefix}/relatorios/assistencia`} className="mb-3" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#C9963A] to-[#e5b05a]" />
+              <p className="text-[#C9963A] text-sm font-semibold uppercase tracking-wider">Coordenador</p>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
+              Registro de Assistência (Coordenador Regional)
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Selecione o coordenador regional e marque as duplas acompanhadas</p>
+          </div>
+          <button type="button" className="btn-outline whitespace-nowrap px-4 py-2 text-sm" onClick={() => navigate(`${prefix}/relatorios/assistencia`)}>
+            Ver relatório
+          </button>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
-          Registro de Assistência (Coordenador Regional)
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">Selecione o coordenador regional e marque as duplas acompanhadas</p>
       </div>
 
       <form onSubmit={handleSubmit} className={isDireto ? 'flex-1 flex flex-col min-h-0' : ''}>
@@ -151,7 +178,7 @@ export default function RegistroSaida() {
                 <h2 className="font-bold text-[#1A3A6B]">Coordenador Regional</h2>
               </div>
               <Campo label="Nome do coordenador que fez a assistência" obrigatorio>
-                <select className="input-field" value={coordenadorId} onChange={(e) => setCoordenadorId(e.target.value)} required>
+                <select className="input-field" value={coordenadorId} onChange={(e) => selecionarCoordenador(e.target.value)} required>
                   <option value="">Selecione o coordenador regional</option>
                   {coordenadores.map((coordenador) => (
                     <option key={coordenador.id} value={coordenador.id}>
@@ -179,9 +206,11 @@ export default function RegistroSaida() {
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1A3A6B] to-[#2a5298] flex items-center justify-center text-white font-bold text-sm shadow-md">3</div>
                 <div>
                   <h2 className="font-bold text-[#1A3A6B]">Duplas Acompanhadas</h2>
-                  {duplasSelecionadas.length > 0 && (
-                    <p className="text-xs text-[#C9963A] font-medium">{duplasSelecionadas.length} selecionada(s)</p>
-                  )}
+                  <p className="text-xs text-[#C9963A] font-medium">
+                    {duplasSelecionadas.length > 0
+                      ? `${duplasSelecionadas.length} selecionada(s)`
+                      : coordenadorSelecionado?.regiao?.nome || 'Selecione o coordenador para ver as duplas da região'}
+                  </p>
                 </div>
               </div>
 
@@ -247,7 +276,7 @@ export default function RegistroSaida() {
 
                   {duplasFiltradas.length === 0 && (
                     <div className="text-center py-8 text-gray-400">
-                      <p>Nenhuma dupla encontrada.</p>
+                      <p>{coordenadorId ? 'Nenhuma dupla encontrada nesta região.' : 'Selecione um coordenador regional.'}</p>
                     </div>
                   )}
                 </div>

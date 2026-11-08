@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
+import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -105,12 +106,14 @@ function Ranking({ titulo, itens = [], campo, label, cor }) {
 }
 
 export default function DashboardCoordenadorRegional() {
+  const { usuario } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isDireto = location.pathname.startsWith('/direto');
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [modalCoordenador, setModalCoordenador] = useState(null);
+  const podeRegistrarAssistencia = ehAdmin(usuario) || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
 
   useEffect(() => {
     api.get('/relatorios/coordenadores-regionais')
@@ -120,7 +123,7 @@ export default function DashboardCoordenadorRegional() {
 
   const resumo = dados?.resumo || {};
   const rankings = dados?.rankings || {};
-  const coordenadores = dados?.coordenadores || [];
+  const coordenadores = useMemo(() => dados?.coordenadores || [], [dados?.coordenadores]);
   const recentes = dados?.recentes || [];
 
   const coordenadoresOrdenados = useMemo(() => (
@@ -240,9 +243,11 @@ export default function DashboardCoordenadorRegional() {
                     <p className="text-xs text-gray-400 truncate">{coordenador.email}</p>
                     <p className="text-xs font-semibold text-[#C9963A] mt-1">{coordenador.regiao}</p>
                   </div>
-                  <button type="button" onClick={() => navigate(isDireto ? '/direto/registro-saida' : '/registro-saida')} className="btn-outline text-xs px-3 py-2">
-                    Registrar assistência
-                  </button>
+                  {podeRegistrarAssistencia && (
+                    <button type="button" onClick={() => navigate(isDireto ? '/direto/registro-saida' : '/registro-saida')} className="btn-outline text-xs px-3 py-2">
+                      Registrar assistência
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
                   <button type="button" onClick={() => abrirDetalhesCoordenador(coordenador, `Assistências da ${coordenador.regiao}`)} className="cursor-pointer rounded-lg bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C9963A]/25"><p className="text-lg font-bold text-[#1A3A6B]">{numero(coordenador.totalAssistencias)}</p><p className="text-[10px] text-gray-400 uppercase">assistências</p></button>

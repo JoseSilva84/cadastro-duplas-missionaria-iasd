@@ -310,6 +310,51 @@
     border-radius: 0 3px 3px 0;
   }
 
+  .sidebar-subitem {
+    gap: 0.65rem;
+    min-height: 40px;
+    padding: 0.48rem 0.65rem;
+    border: 1px solid transparent;
+  }
+
+  .sidebar-subitem .sidebar-subitem-icon {
+    display: inline-flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: 0 0 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.55rem;
+    background: color-mix(in srgb, var(--sidebar-item-accent) 18%, transparent);
+    color: color-mix(in srgb, var(--sidebar-item-accent) 88%, white);
+    border: 1px solid color-mix(in srgb, var(--sidebar-item-accent) 28%, transparent);
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .sidebar-subitem:hover {
+    border-color: color-mix(in srgb, var(--sidebar-item-accent) 24%, transparent);
+    background: color-mix(in srgb, var(--sidebar-item-accent) 8%, transparent);
+  }
+
+  .sidebar-subitem:hover .sidebar-subitem-icon,
+  .sidebar-subitem.active .sidebar-subitem-icon {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--sidebar-item-accent) 30%, transparent);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--sidebar-item-accent) 18%, transparent);
+  }
+
+  .sidebar-subitem.active {
+    border-color: color-mix(in srgb, var(--sidebar-item-accent) 32%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--sidebar-item-accent) 18%, transparent), rgba(255, 255, 255, 0.06));
+  }
+
+  .sidebar-subitem.active::after {
+    background: var(--sidebar-item-accent);
+  }
+
   @media (min-width: 1024px) and (max-width: 1279.98px) {
     .sidebar-link {
       gap: 0.55rem;

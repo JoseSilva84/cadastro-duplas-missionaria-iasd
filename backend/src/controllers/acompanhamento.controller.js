@@ -1,7 +1,7 @@
 // Controller de Acompanhamento do Coordenador Regional
 const prisma = require('../lib/prisma');
 const { body, validationResult } = require('express-validator');
-const { ehAdmin } = require('../middlewares/auth');
+const { ehAdmin, PERFIS } = require('../middlewares/auth');
 const { registrarAtividade } = require('../services/notificacoesAtividade.service');
 
 const validarAcompanhamento = [
@@ -9,6 +9,22 @@ const validarAcompanhamento = [
   body('coordenadorId').isInt().withMessage('Coordenador regional obrigatório.'),
   body('duplaIds').isArray({ min: 1 }).withMessage('Selecione ao menos uma dupla.'),
 ];
+
+const aplicarEscopoLeitura = (usuario, coordenadorId) => {
+  if (ehAdmin(usuario.perfil)) {
+    return coordenadorId ? { coordenadorId: Number(coordenadorId) } : {};
+  }
+  if (usuario.perfil === PERFIS.COORDENADOR_REGIONAL) {
+    return { coordenadorId: usuario.id };
+  }
+  if (usuario.perfil === PERFIS.PASTOR_REGIONAL && usuario.regiaoId) {
+    return {
+      ...(coordenadorId ? { coordenadorId: Number(coordenadorId) } : {}),
+      coordenador: { is: { regiaoId: usuario.regiaoId } },
+    };
+  }
+  return { coordenadorId: -1 };
+};
 
 const AcompanhamentoController = {
   // POST /api/acompanhamentos — Registra nova saída
@@ -105,8 +121,12 @@ const AcompanhamentoController = {
         ativo: true,
       };
 
-      if (!ehAdmin(req.usuario.perfil)) {
+      if (req.usuario.perfil === PERFIS.COORDENADOR_REGIONAL) {
         where.id = req.usuario.id;
+      } else if (req.usuario.perfil === PERFIS.PASTOR_REGIONAL && req.usuario.regiaoId) {
+        where.regiaoId = req.usuario.regiaoId;
+      } else if (!ehAdmin(req.usuario.perfil)) {
+        where.id = -1;
       }
 
       const coordenadores = await prisma.usuario.findMany({
@@ -131,14 +151,7 @@ const AcompanhamentoController = {
   async listar(req, res) {
     try {
       const { coordenadorId, de, ate } = req.query;
-      const where = {};
-
-      // Coordenadores só veem os próprios; admins veem todos
-      if (!ehAdmin(req.usuario.perfil)) {
-        where.coordenadorId = req.usuario.id;
-      } else if (coordenadorId) {
-        where.coordenadorId = Number(coordenadorId);
-      }
+      const where = aplicarEscopoLeitura(req.usuario, coordenadorId);
 
       if (de || ate) {
         where.dataSaida = {};
@@ -169,8 +182,8 @@ const AcompanhamentoController = {
   // GET /api/acompanhamentos/:id — Detalhe de uma saída
   async buscarPorId(req, res) {
     try {
-      const registro = await prisma.acompanhamentoDupla.findUnique({
-        where: { id: Number(req.params.id) },
+      const registro = await prisma.acompanhamentoDupla.findFirst({
+        where: { id: Number(req.params.id), ...aplicarEscopoLeitura(req.usuario) },
         include: {
           coordenador: { select: { id: true, nome: true } },
           duplas: {
@@ -191,13 +204,7 @@ const AcompanhamentoController = {
   async relatorio(req, res) {
     try {
       const { coordenadorId, de, ate } = req.query;
-      const where = {};
-
-      if (!ehAdmin(req.usuario.perfil)) {
-        where.coordenadorId = req.usuario.id;
-      } else if (coordenadorId) {
-        where.coordenadorId = Number(coordenadorId);
-      }
+      const where = aplicarEscopoLeitura(req.usuario, coordenadorId);
 
       if (de || ate) {
         where.dataSaida = {};

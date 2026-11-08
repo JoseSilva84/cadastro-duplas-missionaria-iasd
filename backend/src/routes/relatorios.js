@@ -29,6 +29,6 @@ router.get('/personalizado', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.AD
 router.patch('/escola-sabatina-resumo', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR), RelatorioController.atualizarEscolaSabatinaResumo);
 
 // GET /api/relatorios/acompanhamento — Relatório de saídas do coordenador
-router.get('/acompanhamento', autenticar, AcompanhamentoController.relatorio);
+router.get('/acompanhamento', autenticar, autorizar(PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL), AcompanhamentoController.relatorio);
 
 module.exports = router;

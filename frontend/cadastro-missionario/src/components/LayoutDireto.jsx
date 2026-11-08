@@ -111,6 +111,7 @@ export default function LayoutDireto() {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const podePublicarNotificacao = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil));
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
@@ -119,6 +120,7 @@ export default function LayoutDireto() {
   const nomePessoa = nomePessoaUsuario(usuario);
   const escopo = escopoUsuario(usuario);
   const podeVerRelatorioCoordenador = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeRegistrarAssistencia = !isSomenteLeitura && (isAdmin || isCoordenadorRegional);
 
   const cadastroItems = [
     { to: '/direto/duplas/nova', label: 'Nova Dupla', icon: '+' },
@@ -131,7 +133,7 @@ export default function LayoutDireto() {
     { to: '/direto/cadastro/liderancas?tipo=distrital', label: 'Pastor Distrital', icon: 'PD' },
     { to: '/direto/cadastro/liderancas?tipo=coordenador', label: 'Coordenador Regional', icon: 'CR' },
     { to: '/direto/cadastro/liderancas?tipo=igreja', label: 'Dados da Igreja', icon: 'IG' },
-    { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
+    ...(podeRegistrarAssistencia ? [{ to: '/direto/registro-saida', label: 'Assistência Coord. Reg.', icon: '✓' }] : []),
     { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
     ...(podeGerenciarUsuarios && !isDiretorMissionario ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
   ];
@@ -144,7 +146,7 @@ export default function LayoutDireto() {
     { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
     { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
     { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-    ...(podeVerRelatorioCoordenador ? [{ to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }] : []),
+    ...(podeVerRelatorioCoordenador ? [{ to: '/direto/relatorios/assistencia', label: 'Relatório Coord. Reg.', icon: 'CR' }] : []),
   ];
   const relatorioItemsVisiveis = relatorioItems;
 

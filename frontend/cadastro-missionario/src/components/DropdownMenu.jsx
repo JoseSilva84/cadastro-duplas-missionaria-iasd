@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 export default function DropdownMenu({ label, shortLabel, icon, items, align = 'left' }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
+  const cores = ['#2563eb', '#7c3aed', '#db2777', '#0d9488', '#d97706', '#0284c7', '#059669', '#ea580c', '#9333ea', '#0891b2'];
 
   useEffect(() => {
     const fecharFora = (event) => {
@@ -49,14 +50,15 @@ export default function DropdownMenu({ label, shortLabel, icon, items, align = '
       {aberto && (
         <div className={`absolute top-full pt-2 z-50 min-w-56 ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <div className="rounded-xl bg-white border border-gray-100 shadow-xl py-2 overflow-hidden">
-            {items.map((item) => (
+            {items.map((item, indice) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 onClick={() => setAberto(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#1A3A6B] hover:bg-[#1A3A6B]/5 hover:text-[#C9963A] transition-colors"
+                style={{ '--dropdown-accent': cores[indice % cores.length] }}
+                className="group flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#1A3A6B] hover:bg-gray-50 transition-colors"
               >
-                <span className="w-5 text-center">{item.icon}</span>
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold transition-transform group-hover:-translate-y-0.5" style={{ color: 'var(--dropdown-accent)', background: 'color-mix(in srgb, var(--dropdown-accent) 10%, white)', borderColor: 'color-mix(in srgb, var(--dropdown-accent) 22%, white)' }}>{item.icon}</span>
                 <span className="font-medium">{item.label}</span>
               </NavLink>
             ))}

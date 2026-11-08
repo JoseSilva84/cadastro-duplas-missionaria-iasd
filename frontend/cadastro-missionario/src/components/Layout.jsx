@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, PERFIS, ehAdmin, ehSomenteLeitura } from '../contexts/AuthContext';
 import UsuarioAvatar from './UsuarioAvatar';
 import NotificationBell from './NotificationBell';
@@ -117,6 +117,7 @@ export default function Layout({ children }) {
   const isDupla = usuario?.perfil === PERFIS.DUPLA_MISSIONARIA;
   const isDiretorMissionario = usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA;
   const isPastorDistrital = usuario?.perfil === PERFIS.PASTOR_DISTRITAL;
+  const isCoordenadorRegional = usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const podePublicarNotificacao = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil));
   const podeVerAlunos = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
   const podeVerInteressadosNt = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil);
@@ -124,6 +125,7 @@ export default function Layout({ children }) {
   const podeVerRelatorios = Boolean(usuario);
   const podeCadastrarDupla = !isSomenteLeitura && !isDupla;
   const podeGerenciarUsuarios = !isSomenteLeitura && (isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DIRETOR_MISSIONARIO_IGREJA].includes(usuario?.perfil));
+  const podeRegistrarAssistencia = !isSomenteLeitura && (isAdmin || isCoordenadorRegional);
   const isDireto = layout === 'direto';
 
   const navLinks = isDupla || isDiretorMissionario
@@ -178,7 +180,7 @@ export default function Layout({ children }) {
             { to: '/direto/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
           ...(podeGerenciarUsuarios ? [{ to: '/direto/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
-          { to: '/direto/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
+          ...(podeRegistrarAssistencia ? [{ to: '/direto/registro-saida', label: 'Assistência Coord. Reg.', icon: '✓' }] : []),
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/direto/relatorios', label: 'Geral', icon: '📊' },
@@ -189,7 +191,7 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
           ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
-            ? [{ to: '/direto/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }]
+            ? [{ to: '/direto/relatorios/assistencia', aliases: ['/direto/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
             : []),
         ] }] : []),
         ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
@@ -220,7 +222,7 @@ export default function Layout({ children }) {
             { to: '/cadastro/liderancas', label: 'Lideranças', icon: '🏅' },
           ] : []),
           ...(podeGerenciarUsuarios ? [{ to: '/gestao-usuarios', label: 'Gestão de Usuários', icon: 'GU' }] : []),
-          { to: '/registro-saida', label: 'Registro de Assistência (Coor. Reg.)', icon: '✅' },
+          ...(podeRegistrarAssistencia ? [{ to: '/registro-saida', label: 'Assistência Coord. Reg.', icon: '✓' }] : []),
         ] },
         ...(podeVerRelatorios ? [{ type: 'dropdown', key: 'relatorios', label: 'Relatórios', icon: icons.relatorios, items: [
           { to: '/relatorios', label: 'Geral', icon: '📊' },
@@ -231,7 +233,7 @@ export default function Layout({ children }) {
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
           ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
-            ? [{ to: '/relatorios/coordenador-regional', label: 'Coordenador Regional', icon: 'CR' }]
+            ? [{ to: '/relatorios/assistencia', aliases: ['/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
             : []),
         ] }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
@@ -368,10 +370,41 @@ function BottomNavigation({ navLinks, onMenuClick }) {
 }
 
 function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoAbrirPublicacao, podePublicarNotificacao }) {
+  const location = useLocation();
   const [submenuAberto, setSubmenuAberto] = useState(null);
   const funcao = usuario?.somenteLeitura ? 'Suporte (somente leitura)' : funcaoUsuario(usuario);
   const nomePessoa = nomePessoaUsuario(usuario);
   const escopo = escopoUsuario(usuario);
+
+  const rotaAtiva = (item) => {
+    const caminho = item.to.split('?')[0];
+    const rotaGeral = caminho === '/relatorios' || caminho === '/direto/relatorios';
+    const caminhos = [caminho, ...(item.aliases || [])];
+    return caminhos.some((rota) => location.pathname === rota || (!rotaGeral && location.pathname.startsWith(`${rota}/`)));
+  };
+
+  const itemEstaAtivo = (item) => {
+    const [caminho, busca] = item.to.split('?');
+    if (!rotaAtiva(item)) return false;
+    if (busca) return location.pathname === caminho && location.search === `?${busca}`;
+    const possuiVariantesComBusca = navLinks.some((link) => (
+      link.type === 'dropdown' && link.items.some((outro) => outro.to.startsWith(`${caminho}?`))
+    ));
+    return !possuiVariantesComBusca || !location.search;
+  };
+
+  const chaveGrupoAtivo = navLinks.find((link) => link.type === 'dropdown' && link.items.some(rotaAtiva))?.key || null;
+
+  useEffect(() => {
+    if (chaveGrupoAtivo) setSubmenuAberto(chaveGrupoAtivo);
+  }, [chaveGrupoAtivo]);
+
+  const coresCadastro = ['#38bdf8', '#a78bfa', '#fb7185', '#2dd4bf', '#fbbf24', '#60a5fa', '#c084fc', '#34d399', '#f97316', '#e879f9', '#22d3ee'];
+  const coresRelatorio = ['#fbbf24', '#c084fc', '#38bdf8', '#34d399', '#fb7185', '#a78bfa', '#2dd4bf', '#f97316', '#60a5fa'];
+
+  const corDoItem = (grupo, indice) => (
+    (grupo === 'cadastro' ? coresCadastro : coresRelatorio)[indice % (grupo === 'cadastro' ? coresCadastro.length : coresRelatorio.length)]
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -413,11 +446,12 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
           if (link.type === 'dropdown') {
             const aberto = submenuAberto === link.key;
             return (
-              <div key={link.key}>
+              <div key={link.key} onMouseEnter={() => setSubmenuAberto(link.key)}>
                 <button
                   type="button"
                   onClick={() => setSubmenuAberto(aberto ? null : link.key)}
                   className={`sidebar-link w-full justify-between ${aberto ? 'active' : ''}`}
+                  aria-expanded={aberto}
                 >
                   <span className="flex items-center gap-2">
                     {link.icon}
@@ -429,17 +463,19 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
                 </button>
                 {aberto && (
                   <div className="space-y-1 pl-10 mt-1">
-                    {link.items.map((item) => (
+                    {link.items.map((item, indice) => (
                       <NavLink
                         key={item.to}
                         to={item.to}
-                        onClick={() => { setSidebarAberta(false); setSubmenuAberto(null); }}
-                        className={({ isActive }) =>
-                          `sidebar-link text-sm ${isActive ? 'active' : 'text-white/70 hover:text-white'}`
+                        end={item.to.split('?')[0] === '/relatorios' || item.to.split('?')[0] === '/direto/relatorios'}
+                        onClick={() => setSidebarAberta(false)}
+                        style={{ '--sidebar-item-accent': corDoItem(link.key, indice) }}
+                        className={() =>
+                          `sidebar-link sidebar-subitem text-sm ${itemEstaAtivo(item) ? 'active' : 'text-white/70 hover:text-white'}`
                         }
                       >
-                        <span>{item.icon}</span>
-                        {item.label}
+                        <span className="sidebar-subitem-icon" aria-hidden="true">{item.icon}</span>
+                        <span className="min-w-0 leading-snug">{item.label}</span>
                       </NavLink>
                     ))}
                   </div>
