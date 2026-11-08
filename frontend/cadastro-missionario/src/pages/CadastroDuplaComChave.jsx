@@ -625,7 +625,7 @@ export default function CadastroDuplaComChave() {
                   2
                 </div>
                 <div>
-                  <h2 className="font-bold text-[#1A3A6B]">Membro 1 — Líder da Dupla</h2>
+                  <h2 className="font-bold text-[#1A3A6B]">Membro 1 da Dupla</h2>
                   <p className="text-xs text-gray-400">Dados cadastrais do primeiro integrante</p>
                 </div>
               </div>
@@ -766,7 +766,7 @@ export default function CadastroDuplaComChave() {
                   3
                 </div>
                 <div>
-                  <h2 className="font-bold text-[#1A3A6B]">Membro 2 — Parceiro da Dupla</h2>
+                  <h2 className="font-bold text-[#1A3A6B]">Membro 2 da Dupla</h2>
                   <p className="text-xs text-gray-400">Dados cadastrais do segundo integrante</p>
                 </div>
               </div>
