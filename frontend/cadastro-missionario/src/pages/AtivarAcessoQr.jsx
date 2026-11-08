@@ -231,7 +231,9 @@ export default function AtivarAcessoQr() {
       liderNome: form.liderNome,
       membro2Nome: form.membro2Nome,
     });
-    navigate(`/cadastro-dupla?${params.toString()}`);
+    navigate(`/cadastro-dupla?${params.toString()}`, {
+      state: { origemAtivacaoQr: true },
+    });
   };
 
   if (carregando) {

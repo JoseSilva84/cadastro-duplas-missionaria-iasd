@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from '../lib/toast';
 import api from '../lib/api';
 import AvatarUpload from '../components/AvatarUpload';
@@ -21,7 +21,10 @@ const LockIcon = () => (
 
 export default function CadastroDuplaComChave() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const veioDaAtivacaoQr = location.state?.origemAtivacaoQr === true;
+  const voltar = () => navigate(veioDaAtivacaoQr ? -1 : '/login');
 
   // Etapa: 'chave' (digitar chave) ou 'formulario' (preencher cadastro)
   const [chaveInput, setChaveInput] = useState(searchParams.get('chave') || '');
@@ -368,12 +371,12 @@ export default function CadastroDuplaComChave() {
       <div className="max-w-3xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">
-          <Link to="/login" className="inline-flex items-center gap-2 text-xs font-semibold text-[#1A3A6B] hover:text-[#0f2347] mb-4 transition-colors">
+          <button type="button" onClick={voltar} className="inline-flex items-center gap-2 text-xs font-semibold text-[#1A3A6B] hover:text-[#0f2347] mb-4 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Voltar para o Login
-          </Link>
+            {veioDaAtivacaoQr ? 'Voltar à página anterior' : 'Voltar para o Login'}
+          </button>
 
           <div className="flex justify-center mb-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center p-2 shadow-md" style={{ background: 'linear-gradient(135deg, #0f2347 0%, #1A3A6B 100%)' }}>
@@ -1231,9 +1234,9 @@ export default function CadastroDuplaComChave() {
 
             {/* Botão de Envio */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-              <Link to="/login" className="text-xs text-gray-500 hover:text-gray-700 underline">
-                Cancelar e voltar ao login
-              </Link>
+              <button type="button" onClick={voltar} className="text-xs text-gray-500 hover:text-gray-700 underline">
+                {veioDaAtivacaoQr ? 'Cancelar e voltar à página anterior' : 'Cancelar e voltar ao login'}
+              </button>
 
               <button
                 type="submit"
