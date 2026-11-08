@@ -657,7 +657,7 @@ const ModalDupla = ({ dupla, onClose, onNavigate, prefix = '' }) => {
           {/* Membros */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Membro
-              titulo="Membro 1 — Líder"
+              titulo="Membro 1 da Dupla"
               foto={dupla.fotoLiderPreview}
               nome={dupla.liderNome}
               dados={[

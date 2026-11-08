@@ -618,7 +618,7 @@ export default function CadastroDuplaComChave() {
               </div>
             </div>
 
-            {/* SEÇÃO 2: Membro 1 — Líder */}
+            {/* SEÇÃO 2: Membro 1 da Dupla */}
             <div className="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
                 <div className="w-8 h-8 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-sm">
@@ -759,7 +759,7 @@ export default function CadastroDuplaComChave() {
               </div>
             </div>
 
-            {/* SEÇÃO 3: Membro 2 — Parceiro */}
+            {/* SEÇÃO 3: Membro 2 da Dupla */}
             <div className="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
                 <div className="w-8 h-8 rounded-xl bg-[#1A3A6B] text-white flex items-center justify-center font-bold text-sm">

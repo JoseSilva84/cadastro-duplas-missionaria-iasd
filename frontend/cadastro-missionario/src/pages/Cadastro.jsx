@@ -397,7 +397,7 @@ export default function Cadastro() {
 
             {/* SEÇÃO 2 — Líder */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '200ms' }}>
-              <SecaoHeader numero="2" titulo="Membro 1 — Líder" descricao="Dados do líder responsável pela dupla" />
+              <SecaoHeader numero="2" titulo="Membro 1 da Dupla" descricao="Dados do líder responsável pela dupla" />
               <div className="flex justify-center w-full mb-4">
                 <AvatarUpload value={form.fotoLider} onChange={(val) => set('fotoLider', val)} label="Foto do Líder" />
               </div>
@@ -458,7 +458,7 @@ export default function Cadastro() {
 
             {/* SEÇÃO 3 — Parceiro */}
             <div className={`card animate-fade-in-up ${isDireto ? 'w-[320px] sm:w-[360px] flex-shrink-0' : ''}`} style={{ animationDelay: '300ms' }}>
-              <SecaoHeader numero="3" titulo="Membro 2 — Parceiro" descricao="Dados do parceiro da dupla" />
+              <SecaoHeader numero="3" titulo="Membro 2 da Dupla" descricao="Dados do parceiro da dupla" />
               <div className="flex justify-center w-full mb-4">
                 <AvatarUpload value={form.fotoMembro2} onChange={(val) => set('fotoMembro2', val)} label="Foto do Parceiro" />
               </div>
