@@ -397,8 +397,8 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
   const chaveGrupoAtivo = navLinks.find((link) => link.type === 'dropdown' && link.items.some(rotaAtiva))?.key || null;
 
   useEffect(() => {
-    setSubmenuAberto(null);
-  }, [location.pathname, location.search]);
+    setSubmenuAberto(chaveGrupoAtivo);
+  }, [chaveGrupoAtivo, location.pathname, location.search]);
 
   const coresCadastro = ['#38bdf8', '#a78bfa', '#fb7185', '#2dd4bf', '#fbbf24', '#60a5fa', '#c084fc', '#34d399', '#f97316', '#e879f9', '#22d3ee'];
   const coresRelatorio = ['#fbbf24', '#c084fc', '#38bdf8', '#34d399', '#fb7185', '#a78bfa', '#2dd4bf', '#f97316', '#60a5fa'];
@@ -410,10 +410,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Logo */}
-      <div
-        className="flex items-start gap-2.5 border-b border-white/10 px-4 py-4 xl:gap-3 xl:px-5 xl:py-6"
-        onMouseEnter={() => setSubmenuAberto(null)}
-      >
+      <div className="flex items-start gap-2.5 border-b border-white/10 px-4 py-4 xl:gap-3 xl:px-5 xl:py-6">
         {icons.logoIasd}
         <div>
           <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
@@ -435,10 +432,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
       </div>
 
       {/* Navegação */}
-      <nav
-        onMouseLeave={() => setSubmenuAberto(null)}
-        className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1"
-      >
+      <nav className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain px-2 py-2 pr-1.5 space-y-0.5 sidebar-scroll xl:px-3 xl:pr-2 xl:space-y-1">
         <p className="px-3 pt-0 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30 xl:px-4 xl:pb-2">Menu</p>
         {navLinks.map((link) => {
           if (link.label === 'Configurações' && podePublicarNotificacao) {
@@ -475,7 +469,6 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
               <div
                 key={link.key}
                 onMouseEnter={() => setSubmenuAberto(link.key)}
-                onMouseLeave={() => setSubmenuAberto((atual) => (atual === link.key ? null : atual))}
               >
                 <button
                   type="button"
@@ -499,7 +492,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
                         to={item.to}
                         end={item.to.split('?')[0] === '/relatorios' || item.to.split('?')[0] === '/direto/relatorios'}
                         onClick={() => {
-                          setSubmenuAberto(null);
+                          setSubmenuAberto(link.key);
                           setSidebarAberta(false);
                         }}
                         style={{ '--sidebar-item-accent': corDoItem(link.key, indice) }}
