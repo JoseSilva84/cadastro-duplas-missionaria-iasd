@@ -119,7 +119,7 @@ export default function LayoutDireto() {
   const funcao = funcaoUsuario(usuario);
   const nomePessoa = nomePessoaUsuario(usuario);
   const escopo = escopoUsuario(usuario);
-  const podeVerRelatorioCoordenador = isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil);
+  const podeVerRelatorioCoordenador = isAdmin || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL;
   const podeRegistrarAssistencia = !isSomenteLeitura && (isAdmin || isCoordenadorRegional);
 
   const cadastroItems = [

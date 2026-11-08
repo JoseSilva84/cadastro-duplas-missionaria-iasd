@@ -366,7 +366,7 @@ function AppRoutes() {
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]}><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
-        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
+        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
         <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
@@ -376,7 +376,7 @@ function AppRoutes() {
         <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
         <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
-        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
+        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
       </Route>
 
       {/* ============================================
@@ -513,7 +513,7 @@ function AppRoutes() {
         <Route path="relatorios/personalizado" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR]} redirectTo="/direto/relatorios"><RelatorioPersonalizado /></RotaComPerfis>} />
         <Route path="relatorios/estudos-geral" element={<RelatorioEstudosGeral />} />
         <Route path="relatorios/ranking-decisoes" element={<RelatorioRankingDecisoes />} />
-        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
+        <Route path="relatorios/assistencia" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><RelatorioAssistencia /></RotaComPerfis>} />
         <Route path="relatorios/estudos-encerrados" element={<RelatorioEstudosBiblicos tipoRelatorio="ENCERRADOS" />} />
         <Route path="relatorios/estudos-cadastrados" element={<RelatorioEstudosBiblicos tipoRelatorio="TODOS" />} />
         <Route path="relatorios/estudos-biblicos" element={<RelatorioEstudosBiblicos tipoRelatorio="UNICO" />} />
@@ -523,7 +523,7 @@ function AppRoutes() {
         <Route path="relatorios/classes-biblicas/registros" element={<RelatorioEstudosBiblicos tipoRelatorio="CLASSE" />} />
         <Route path="relatorios/classes-biblicas/registros/:id" element={<EstudanteDashboard />} />
         <Route path="relatorios/classes-biblicas" element={<RelatorioClassesBiblicas />} />
-        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
+        <Route path="relatorios/coordenador-regional" element={<RotaComPerfis perfisPermitidos={[PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL]} redirectTo="/direto/relatorios"><DashboardCoordenadorRegional /></RotaComPerfis>} />
       </Route>
 
       {/* Fallback */}

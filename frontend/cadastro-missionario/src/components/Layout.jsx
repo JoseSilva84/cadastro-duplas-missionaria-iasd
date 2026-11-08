@@ -190,7 +190,7 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
+          ...((isAdmin || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL)
             ? [{ to: '/direto/relatorios/assistencia', aliases: ['/direto/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
             : []),
         ] }] : []),
@@ -232,7 +232,7 @@ export default function Layout({ children }) {
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          ...((isAdmin || [PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL].includes(usuario?.perfil))
+          ...((isAdmin || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL)
             ? [{ to: '/relatorios/assistencia', aliases: ['/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
             : []),
         ] }] : []),

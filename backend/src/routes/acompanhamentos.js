@@ -4,7 +4,7 @@ const router = express.Router();
 const { AcompanhamentoController, validarAcompanhamento } = require('../controllers/acompanhamento.controller');
 const { autenticar, autorizar, PERFIS } = require('../middlewares/auth');
 
-const PERFIS_LEITURA = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL];
+const PERFIS_LEITURA = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL];
 const PERFIS_CADASTRO = [PERFIS.SUPER_ADMIN, PERFIS.ADMINISTRADOR, PERFIS.COORDENADOR_REGIONAL];
 
 // Todas as rotas requerem autenticação
