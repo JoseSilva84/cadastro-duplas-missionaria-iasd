@@ -662,12 +662,21 @@ export default function RelatorioAssistencia() {
                 <Info label="Data" valor={formatarData(registroSelecionado.dataSaida)} />
                 <Info label="Duplas" valor={registroSelecionado.duplas?.length || 0} />
                 <Info label="Semana" valor={formatarData(registroSelecionado.semanaInicio)} />
+                {registroSelecionado.tipoAssistencia && (
+                  <Info label="Tipo de Assistência" valor={registroSelecionado.tipoAssistencia} />
+                )}
+                {registroSelecionado.distritoNome && (
+                  <Info label="Distrito" valor={registroSelecionado.distritoNome} />
+                )}
+                {registroSelecionado.igrejaNome && (
+                  <Info label="Igreja" valor={registroSelecionado.igrejaNome} />
+                )}
               </div>
 
               <div className="mt-5">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Relato / observações</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Relatório Descritivo da Atividade</h4>
                 <p className="mt-2 min-h-44 whitespace-pre-wrap rounded-xl border border-[#1A3A6B]/10 bg-[#F4F5F7] p-5 text-sm leading-7 text-gray-700 shadow-inner [overflow-wrap:anywhere] sm:min-h-56 sm:p-6 sm:text-base">
-                  {registroSelecionado.observacoes || 'Nenhum relato foi preenchido neste acompanhamento.'}
+                  {registroSelecionado.observacoes || 'Nenhum relatório descritivo foi preenchido neste acompanhamento.'}
                 </p>
               </div>
 

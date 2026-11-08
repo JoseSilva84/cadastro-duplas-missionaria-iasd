@@ -19,7 +19,13 @@ router.get('/', autorizar(...PERFIS_LEITURA), AcompanhamentoController.listar);
 // GET /api/acompanhamentos/coordenadores — Listar coordenadores regionais
 router.get('/coordenadores', autorizar(...PERFIS_LEITURA), AcompanhamentoController.listarCoordenadores);
 
+// PATCH /api/acompanhamentos/coordenadores/:id — Atualizar foto e/ou nome do coordenador regional
+router.patch('/coordenadores/:id', autorizar(...PERFIS_CADASTRO), AcompanhamentoController.atualizarCoordenador);
+
 // GET /api/acompanhamentos/:id — Detalhe de uma saída
 router.get('/:id', autorizar(...PERFIS_LEITURA), AcompanhamentoController.buscarPorId);
+
+// PUT /api/acompanhamentos/:id — Atualizar saída existente
+router.put('/:id', autorizar(...PERFIS_CADASTRO), validarAcompanhamento, AcompanhamentoController.atualizar);
 
 module.exports = router;

@@ -792,6 +792,7 @@ const RelatorioModel = {
   },
 
   async coordenadoresRegionais({ regiaoId } = {}) {
+    const { decodificarObservacoesAssistencia } = require('../controllers/acompanhamento.controller');
     const coordenadores = await prisma.usuario.findMany({
       where: {
         perfil: 'COORDENADOR_REGIONAL',
@@ -803,6 +804,7 @@ const RelatorioModel = {
         id: true,
         nome: true,
         email: true,
+        fotoPerfil: true,
         regiao: { select: { id: true, nome: true } },
         acompanhamentos: {
           orderBy: { dataSaida: 'desc' },
@@ -815,6 +817,7 @@ const RelatorioModel = {
                     liderNome: true,
                     membro2Nome: true,
                     bairro: true,
+                    igreja: { select: { id: true, nome: true } },
                     distrito: { select: { id: true, nome: true } },
                   },
                 },
@@ -856,43 +859,62 @@ const RelatorioModel = {
         id: coordenador.id,
         nome: coordenador.nome,
         email: coordenador.email,
+        fotoPerfil: coordenador.fotoPerfil || null,
         regiao: coordenador.regiao?.nome || 'Sem região',
         regiaoId: coordenador.regiao?.id || null,
         totalAssistencias: assistencias.length,
         totalDuplasAcompanhadas,
         duplasUnicas: duplaIds.size,
-        relatoriosPreenchidos: assistencias.filter((item) => String(item.observacoes || '').trim()).length,
+        relatoriosPreenchidos: assistencias.filter((item) => {
+          const dec = decodificarObservacoesAssistencia(item.observacoes, item.duplas);
+          return Boolean(String(dec.observacoes || '').trim());
+        }).length,
         ultimoAcompanhamento: ultimoAcompanhamento?.dataSaida || null,
         distritoMaisVisitado: ordenarPorTotal(Object.values(distritos))[0] || null,
-        assistencias: assistencias.map((assistencia) => ({
-          id: assistencia.id,
-          dataSaida: assistencia.dataSaida,
-          observacoes: assistencia.observacoes || null,
-          totalDuplas: assistencia.duplas.length,
-          duplas: assistencia.duplas.map((item) => ({
-            id: item.dupla?.id,
-            nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla nÃ£o encontrada',
-            bairro: item.dupla?.bairro || '',
-            distrito: item.dupla?.distrito?.nome || '',
-          })),
-        })),
+        assistencias: assistencias.map((assistencia) => {
+          const dec = decodificarObservacoesAssistencia(assistencia.observacoes, assistencia.duplas);
+          return {
+            id: assistencia.id,
+            dataSaida: assistencia.dataSaida,
+            observacoes: dec.observacoes,
+            tipoAssistencia: dec.tipoAssistencia,
+            distritoId: dec.distritoId,
+            distritoNome: dec.distritoNome,
+            igrejaId: dec.igrejaId,
+            igrejaNome: dec.igrejaNome,
+            totalDuplas: assistencia.duplas.length,
+            duplas: assistencia.duplas.map((item) => ({
+              id: item.dupla?.id,
+              nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla não encontrada',
+              bairro: item.dupla?.bairro || '',
+              distrito: item.dupla?.distrito?.nome || '',
+              igreja: item.dupla?.igreja?.nome || '',
+            })),
+          };
+        }),
       };
     });
 
     const recentes = coordenadores
-      .flatMap((coordenador) => coordenador.acompanhamentos.map((assistencia) => ({
-        id: assistencia.id,
-        dataSaida: assistencia.dataSaida,
-        coordenador: coordenador.nome,
-        regiao: coordenador.regiao?.nome || 'Sem região',
-        totalDuplas: assistencia.duplas.length,
-        relatorio: assistencia.observacoes || null,
-        duplas: assistencia.duplas.map((item) => ({
-          id: item.dupla?.id,
-          nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla não encontrada',
-          bairro: item.dupla?.bairro || '',
-        })),
-      })))
+      .flatMap((coordenador) => coordenador.acompanhamentos.map((assistencia) => {
+        const dec = decodificarObservacoesAssistencia(assistencia.observacoes, assistencia.duplas);
+        return {
+          id: assistencia.id,
+          dataSaida: assistencia.dataSaida,
+          coordenador: coordenador.nome,
+          regiao: coordenador.regiao?.nome || 'Sem região',
+          totalDuplas: assistencia.duplas.length,
+          relatorio: dec.observacoes,
+          tipoAssistencia: dec.tipoAssistencia,
+          distritoNome: dec.distritoNome,
+          igrejaNome: dec.igrejaNome,
+          duplas: assistencia.duplas.map((item) => ({
+            id: item.dupla?.id,
+            nome: item.dupla ? nomeDupla(item.dupla) : 'Dupla não encontrada',
+            bairro: item.dupla?.bairro || '',
+          })),
+        };
+      }))
       .sort((a, b) => new Date(b.dataSaida) - new Date(a.dataSaida))
       .slice(0, 8);
 

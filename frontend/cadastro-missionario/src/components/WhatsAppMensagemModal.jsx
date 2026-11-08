@@ -44,11 +44,7 @@ export function WhatsAppIconButton({
   if (!temWhatsAppValido(numero)) return null;
 
   const numeroFormatado = formatarWhatsApp(numero);
-  const tamanhoClasses = size === 'xs'
-    ? 'w-5 h-5'
-    : size === 'md'
-      ? 'w-7 h-7'
-      : 'w-6 h-6';
+  const dimensaoPx = size === 'xs' ? 20 : size === 'md' ? 26 : 22;
   const iconeClasses = size === 'xs'
     ? 'w-3 h-3'
     : size === 'md'
@@ -67,12 +63,16 @@ export function WhatsAppIconButton({
         type="button"
         onClick={handleClick}
         title={`Enviar mensagem no WhatsApp para ${nome || numeroFormatado} (${numeroFormatado})`}
-        className={`inline-flex items-center gap-1.5 rounded-full bg-[#25D366]/10 px-2 py-0.5 text-xs font-semibold text-[#16a34a] border border-[#25D366]/30 transition-all hover:bg-[#25D366] hover:text-white hover:shadow-sm active:scale-95 ${className}`}
+        style={{ minHeight: '24px', height: 'auto', paddingTop: '2px', paddingBottom: '2px' }}
+        className={`!min-h-0 inline-flex items-center gap-1.5 rounded-full bg-[#25D366]/10 px-2 py-0.5 text-xs font-semibold text-[#16a34a] border border-[#25D366]/30 transition-all hover:bg-[#25D366] hover:text-white hover:shadow-sm active:scale-95 ${className}`}
       >
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#25D366] text-white flex-shrink-0">
+        <span
+          className="inline-flex items-center justify-center rounded-full bg-[#25D366] text-white flex-shrink-0"
+          style={{ width: '16px', height: '16px', minWidth: '16px', minHeight: '16px' }}
+        >
           <WhatsAppSvg className="w-2.5 h-2.5" />
         </span>
-        <span className="truncate">{numeroFormatado}</span>
+        <span className="truncate leading-none">{numeroFormatado}</span>
       </button>
     );
   }
@@ -83,7 +83,16 @@ export function WhatsAppIconButton({
       onClick={handleClick}
       title={`Enviar mensagem no WhatsApp para ${nome || 'contato'} (${numeroFormatado})`}
       aria-label={`Enviar mensagem no WhatsApp para ${nome || numeroFormatado}`}
-      className={`inline-flex ${tamanhoClasses} flex-shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xs ring-2 ring-white transition-all duration-200 hover:scale-110 hover:bg-[#1ebe5d] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#25D366]/50 active:scale-95 ${className}`}
+      style={{
+        width: `${dimensaoPx}px`,
+        height: `${dimensaoPx}px`,
+        minWidth: `${dimensaoPx}px`,
+        minHeight: `${dimensaoPx}px`,
+        maxHeight: `${dimensaoPx}px`,
+        padding: 0,
+        lineHeight: 1,
+      }}
+      className={`!min-h-0 inline-flex flex-shrink-0 aspect-square items-center justify-center rounded-full bg-[#25D366] text-white shadow-xs ring-1 ring-white transition-all duration-200 hover:scale-110 hover:bg-[#1ebe5d] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#25D366]/50 active:scale-95 ${className}`}
     >
       <WhatsAppSvg className={iconeClasses} />
     </button>
@@ -182,7 +191,8 @@ export default function WhatsAppMensagemModal({ destinatario, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition"
+            style={{ width: '32px', height: '32px', minHeight: '32px', minWidth: '32px', padding: 0 }}
+            className="!min-h-0 absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition"
             title="Fechar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
