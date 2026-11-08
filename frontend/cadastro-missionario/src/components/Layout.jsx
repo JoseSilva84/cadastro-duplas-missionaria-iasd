@@ -52,6 +52,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
+  relatorioCoordenador: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7a4 4 0 118 0 4 4 0 01-8 0zm-3 13a7 7 0 0114 0M17 11l2 2 4-4" />
+    </svg>
+  ),
   mapaIgreja: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3zm0 0V3m6 18V6" />
@@ -190,10 +195,8 @@ export default function Layout({ children }) {
           { to: '/direto/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/direto/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/direto/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          ...((isAdmin || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL)
-            ? [{ to: '/direto/relatorios/assistencia', aliases: ['/direto/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
-            : []),
         ] }] : []),
+        ...(isAdmin || isCoordenadorRegional ? [{ to: '/direto/relatorios/assistencia', label: 'Relatório Coord. Reg.', icon: icons.relatorioCoordenador }] : []),
         ...(isAdmin ? [{ to: '/direto/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL].includes(usuario?.perfil)) ? [{ to: '/direto/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
         ...(isSuperAdmin ? [{ to: '/direto/auditoria', label: 'Auditoria e Logs', icon: icons.auditoria }] : []),
@@ -232,10 +235,8 @@ export default function Layout({ children }) {
           { to: '/relatorios/estudos-biblicos', label: 'Estudantes Bíblicos', icon: '📖' },
           { to: '/relatorios/pontos-estudo', label: 'Pontos de Estudo', icon: 'PE' },
           { to: '/relatorios/classes-biblicas', label: 'Classes Bíblicas', icon: 'CB' },
-          ...((isAdmin || usuario?.perfil === PERFIS.COORDENADOR_REGIONAL)
-            ? [{ to: '/relatorios/assistencia', aliases: ['/relatorios/coordenador-regional'], label: 'Relatório Coord. Reg.', icon: 'CR' }]
-            : []),
         ] }] : []),
+        ...(isAdmin || isCoordenadorRegional ? [{ to: '/relatorios/assistencia', label: 'Relatório Coord. Reg.', icon: icons.relatorioCoordenador }] : []),
         ...(isAdmin ? [{ to: '/mapa-igreja', label: 'Mapa da Igreja', icon: icons.mapaIgreja }] : []),
         ...((isAdmin || [PERFIS.DIRETOR_MISSIONARIO_IGREJA, PERFIS.PASTOR_REGIONAL, PERFIS.COORDENADOR_REGIONAL, PERFIS.PASTOR_DISTRITAL, PERFIS.DUPLA_MISSIONARIA].includes(usuario?.perfil)) ? [{ to: '/calendario-missionario', label: 'Calendário Missionário', icon: icons.calendario }] : []),
         ...(isSuperAdmin ? [{ to: '/auditoria', label: 'Auditoria e Logs', icon: icons.auditoria }] : []),
@@ -396,7 +397,7 @@ function SidebarContent({ usuario, navLinks, handleLogout, setSidebarAberta, aoA
   const chaveGrupoAtivo = navLinks.find((link) => link.type === 'dropdown' && link.items.some(rotaAtiva))?.key || null;
 
   useEffect(() => {
-    if (chaveGrupoAtivo) setSubmenuAberto(chaveGrupoAtivo);
+    setSubmenuAberto(chaveGrupoAtivo);
   }, [chaveGrupoAtivo]);
 
   const coresCadastro = ['#38bdf8', '#a78bfa', '#fb7185', '#2dd4bf', '#fbbf24', '#60a5fa', '#c084fc', '#34d399', '#f97316', '#e879f9', '#22d3ee'];

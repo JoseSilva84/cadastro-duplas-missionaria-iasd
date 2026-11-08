@@ -298,12 +298,17 @@ export default function RegistroSaida() {
               </div>
               <Campo label="Relatório">
                 <textarea
-                  className="input-field min-h-32 resize-y"
+                  className="input-field min-h-[22rem] resize-y sm:min-h-[32rem]"
                   placeholder="Descreva como foi o acompanhamento, orientações dadas, necessidades identificadas e próximos passos..."
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
+                  spellCheck="true"
                 />
               </Campo>
+              <div className="mt-2 flex flex-col gap-1 text-xs text-gray-400 sm:flex-row sm:items-center sm:justify-between">
+                <span>Campo livre, sem limite de caracteres. Use o redimensionador no canto inferior.</span>
+                <span className="font-semibold text-[#1A3A6B]">{observacoes.length.toLocaleString('pt-BR')} caracteres</span>
+              </div>
             </div>
           </div>
         </div>

@@ -4,9 +4,21 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
+import EChart from '../components/EChart';
 import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
+
+const PALAVRAS_IGNORADAS = new Set([
+  'a', 'ao', 'aos', 'as', 'com', 'como', 'da', 'das', 'de', 'do', 'dos', 'e', 'ela', 'ele', 'em', 'essa', 'esse',
+  'esta', 'este', 'foi', 'mais', 'mas', 'na', 'nas', 'no', 'nos', 'o', 'os', 'ou', 'para', 'pela', 'pelas', 'pelo',
+  'pelos', 'por', 'que', 'se', 'sem', 'sua', 'suas', 'tambem', 'teve', 'um', 'uma', 'visita', 'assistencia', 'dupla',
+]);
+
+const normalizarPalavra = (valor) => valor
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase();
 
 const dataLocalISO = (data = new Date()) => {
   const ano = data.getFullYear();
@@ -172,6 +184,102 @@ export default function RelatorioAssistencia() {
     };
   }, [dados, saidas]);
 
+  const analiseGraficos = useMemo(() => {
+    const porCoordenador = new Map();
+    const frequenciaPalavras = new Map();
+
+    saidas.forEach((saida) => {
+      const coordenador = saida.coordenador?.nome || 'Sem coordenador';
+      const atual = porCoordenador.get(coordenador) || { nome: coordenador, assistencias: 0, duplas: 0 };
+      atual.assistencias += 1;
+      atual.duplas += saida.duplas?.length || 0;
+      porCoordenador.set(coordenador, atual);
+
+      const palavras = String(saida.observacoes || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+      palavras.forEach((palavra) => {
+        const chave = normalizarPalavra(palavra);
+        if (chave.length < 4 || PALAVRAS_IGNORADAS.has(chave) || /^\d+$/.test(chave)) return;
+        const registro = frequenciaPalavras.get(chave) || { nome: palavra, total: 0 };
+        registro.total += 1;
+        frequenciaPalavras.set(chave, registro);
+      });
+    });
+
+    const semanas = [...(dados?.porSemana || [])]
+      .sort((a, b) => new Date(a.semanaInicio) - new Date(b.semanaInicio))
+      .map((semana) => ({
+        nome: formatarData(`${semana.semanaInicio}T12:00:00`),
+        assistencias: semana.saidas?.length || 0,
+        duplas: semana.totalDuplas || 0,
+      }));
+
+    return {
+      semanas,
+      coordenadores: [...porCoordenador.values()]
+        .sort((a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas)
+        .slice(0, 8),
+      palavras: [...frequenciaPalavras.values()]
+        .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
+        .slice(0, 10),
+      cobertura: [
+        { name: 'Com relato', value: resumo.relatoriosPreenchidos },
+        { name: 'Sem relato', value: Math.max(0, resumo.totalSaidas - resumo.relatoriosPreenchidos) },
+      ],
+    };
+  }, [dados?.porSemana, resumo.relatoriosPreenchidos, resumo.totalSaidas, saidas]);
+
+  const opcoesGraficos = useMemo(() => ({
+    atividade: {
+      color: ['#7c3aed', '#0d9488'],
+      tooltip: { trigger: 'axis' },
+      legend: { bottom: 0, data: ['Assistências', 'Duplas acompanhadas'] },
+      grid: { left: 40, right: 22, top: 28, bottom: 58, containLabel: true },
+      xAxis: { type: 'category', data: analiseGraficos.semanas.map((item) => item.nome), axisLabel: { color: '#64748b' } },
+      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      series: [
+        { name: 'Assistências', type: 'bar', barMaxWidth: 34, data: analiseGraficos.semanas.map((item) => item.assistencias), itemStyle: { borderRadius: [7, 7, 0, 0] } },
+        { name: 'Duplas acompanhadas', type: 'line', smooth: true, symbolSize: 8, data: analiseGraficos.semanas.map((item) => item.duplas), lineStyle: { width: 3 }, areaStyle: { opacity: 0.08 } },
+      ],
+    },
+    cobertura: {
+      color: ['#0d9488', '#e2e8f0'],
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { bottom: 0 },
+      series: [{
+        type: 'pie',
+        radius: ['48%', '72%'],
+        center: ['50%', '44%'],
+        avoidLabelOverlap: true,
+        label: { formatter: '{b}\n{c}', color: '#334155', fontWeight: 600 },
+        data: analiseGraficos.cobertura,
+      }],
+    },
+    coordenadores: {
+      color: ['#1A3A6B', '#C9963A'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0 },
+      grid: { left: 12, right: 20, top: 24, bottom: 55, containLabel: true },
+      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      yAxis: { type: 'category', inverse: true, data: analiseGraficos.coordenadores.map((item) => item.nome), axisLabel: { width: 130, overflow: 'truncate', color: '#475569' } },
+      series: [
+        { name: 'Assistências', type: 'bar', data: analiseGraficos.coordenadores.map((item) => item.assistencias), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+        { name: 'Duplas', type: 'bar', data: analiseGraficos.coordenadores.map((item) => item.duplas), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+      ],
+    },
+    palavras: {
+      color: ['#7c3aed', '#0d9488', '#C9963A', '#2563eb', '#db2777', '#059669', '#ea580c', '#9333ea', '#0891b2', '#475569'],
+      tooltip: { trigger: 'item', formatter: '{b}: {c} menções' },
+      series: [{
+        type: 'pie',
+        roseType: 'radius',
+        radius: ['20%', '72%'],
+        center: ['50%', '48%'],
+        label: { formatter: '{b}\n{c}', color: '#475569', fontSize: 11 },
+        data: analiseGraficos.palavras.map((item) => ({ name: item.nome, value: item.total })),
+      }],
+    },
+  }), [analiseGraficos]);
+
   const selecionarTipoPeriodo = (tipo) => {
     setTipoPeriodo(tipo);
     if (tipo === 'semana') {
@@ -313,6 +421,47 @@ export default function RelatorioAssistencia() {
           <MetricCard label="Duplas únicas" valor={resumo.duplasUnicas} detalhe="Duplas distintas acompanhadas" cor="#1A3A6B" />
           <MetricCard label="Relatórios preenchidos" valor={resumo.relatoriosPreenchidos} detalhe={resumo.coordenadorMaisAtivo ? `Mais ativo: ${resumo.coordenadorMaisAtivo.nome}` : 'Com observações registradas'} cor="#C9963A" />
         </div>
+
+        <section className="card overflow-hidden p-0">
+          <div className="border-b border-gray-100 bg-gradient-to-r from-[#10284f] to-[#1A3A6B] px-5 py-5 text-white sm:px-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#F2C979]">Análise visual</p>
+            <h2 className="mt-1 text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Desempenho da assistência regional</h2>
+            <p className="mt-1 max-w-3xl text-sm text-white/65">Os gráficos acompanham os filtros selecionados e consolidam visitas, duplas, coordenadores e os assuntos mais citados nos relatos.</p>
+          </div>
+
+          {saidas.length > 0 ? (
+            <div className="grid grid-cols-1 gap-px bg-gray-100 lg:grid-cols-2">
+              <div className="bg-white p-4 sm:p-5">
+                <h3 className="font-bold text-[#1A3A6B]">Evolução por semana</h3>
+                <p className="mt-1 text-xs text-gray-400">Assistências registradas e duplas acompanhadas.</p>
+                <EChart option={opcoesGraficos.atividade} className="h-72 sm:h-80" />
+              </div>
+              <div className="bg-white p-4 sm:p-5">
+                <h3 className="font-bold text-[#1A3A6B]">Preenchimento dos relatos</h3>
+                <p className="mt-1 text-xs text-gray-400">Proporção de assistências com relatório detalhado.</p>
+                <EChart option={opcoesGraficos.cobertura} className="h-72 sm:h-80" />
+              </div>
+              <div className="bg-white p-4 sm:p-5">
+                <h3 className="font-bold text-[#1A3A6B]">Atuação por coordenador</h3>
+                <p className="mt-1 text-xs text-gray-400">Comparativo entre assistências e duplas atendidas.</p>
+                <EChart option={opcoesGraficos.coordenadores} className="h-72 sm:h-80" />
+              </div>
+              <div className="bg-white p-4 sm:p-5">
+                <h3 className="font-bold text-[#1A3A6B]">Assuntos mais mencionados</h3>
+                <p className="mt-1 text-xs text-gray-400">Termos recorrentes no conteúdo escrito pelos coordenadores.</p>
+                {analiseGraficos.palavras.length > 0 ? (
+                  <EChart option={opcoesGraficos.palavras} className="h-72 sm:h-80" />
+                ) : (
+                  <div className="flex h-72 items-center justify-center rounded-xl bg-[#F8FAFC] px-6 text-center text-sm text-gray-400 sm:h-80">
+                    Preencha relatos mais detalhados para visualizar os assuntos recorrentes.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="px-5 py-12 text-center text-sm text-gray-400">Nenhuma assistência encontrada para gerar os gráficos deste período.</div>
+          )}
+        </section>
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <section className="card xl:col-span-2">
@@ -491,7 +640,7 @@ export default function RelatorioAssistencia() {
 
       {registroSelecionado && createPortal(
         <div className="app-modal-overlay" onClick={() => setRegistroSelecionado(null)}>
-          <div className="app-modal-panel max-w-3xl" onClick={(event) => event.stopPropagation()}>
+          <div className="app-modal-panel max-w-5xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistência</p>
@@ -517,7 +666,7 @@ export default function RelatorioAssistencia() {
 
               <div className="mt-5">
                 <h4 className="text-sm font-bold uppercase tracking-widest text-gray-400">Relato / observações</h4>
-                <p className="mt-2 rounded-lg bg-[#F4F5F7] p-4 text-sm leading-relaxed text-gray-600">
+                <p className="mt-2 min-h-44 whitespace-pre-wrap rounded-xl border border-[#1A3A6B]/10 bg-[#F4F5F7] p-5 text-sm leading-7 text-gray-700 shadow-inner [overflow-wrap:anywhere] sm:min-h-56 sm:p-6 sm:text-base">
                   {registroSelecionado.observacoes || 'Nenhum relato foi preenchido neste acompanhamento.'}
                 </p>
               </div>
