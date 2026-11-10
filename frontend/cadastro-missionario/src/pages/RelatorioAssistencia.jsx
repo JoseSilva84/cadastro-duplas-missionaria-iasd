@@ -344,17 +344,19 @@ export default function RelatorioAssistencia() {
             {tipoPeriodo === 'semana' && (
               <label className="xl:col-span-2">
                 <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Semana do ano</span>
-                <span className="relative flex min-h-11 items-center justify-between rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-[#1A3A6B] shadow-xs transition focus-within:border-[#1A3A6B] focus-within:ring-2 focus-within:ring-[#1A3A6B]/15">
-                  <span>{rotuloSemana(semanaSelecionada)}</span>
-                  <svg className="h-4 w-4 text-[#1A3A6B]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M8 2v3m8-3v3M3 9h18M5 4h14a2 2 0 012 2v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
+                <span className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                   <input
                     type="date"
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    className="input-field cursor-pointer"
                     value={intervaloDaSemana(semanaSelecionada).de}
                     onChange={(event) => selecionarDataDaSemana(event.target.value)}
-                    aria-label={`Escolher data da ${rotuloSemana(semanaSelecionada)}`}
+                    aria-label="Escolher qualquer dia da semana"
                   />
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1A3A6B]/8 px-4 text-sm font-bold text-[#1A3A6B]">
+                    {rotuloSemana(semanaSelecionada)}
+                  </span>
                 </span>
+                <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-gray-400">Escolha qualquer dia; o relatório exibirá o domingo até o sábado dessa semana.</span>
               </label>
             )}
             {tipoPeriodo === 'mes' && (

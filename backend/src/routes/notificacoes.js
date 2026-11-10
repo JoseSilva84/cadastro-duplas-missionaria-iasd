@@ -7,11 +7,19 @@ const { PERFIS_PUBLICADORES, PERFIS_DESTINATARIOS, escopoDoAutor, filtroDestinat
 const router = express.Router();
 router.use(autenticar);
 const PERFIS_RESPONDEDORES = new Set(PERFIS_PUBLICADORES);
+const REACOES_NOTIFICACAO = Object.freeze({
+  PALMAS: { emoji: '👏', rotulo: 'Palmas' },
+  ORACAO: { emoji: '🙏', rotulo: 'Oração' },
+  TRISTE: { emoji: '😢', rotulo: 'Triste' },
+  CORACAO: { emoji: '❤️', rotulo: 'Coração' },
+  ALEGRIA: { emoji: '🙌', rotulo: 'Alegria' },
+  APOIO: { emoji: '👍', rotulo: 'Apoio' },
+});
 const incluirContextoNotificacao = (usuarioId) => ({
   remetente: { select: { id: true, nome: true } },
   notificacaoOrigem: { select: { id: true, titulo: true, mensagem: true } },
   respostas: {
-    where: { remetenteUsuarioId: Number(usuarioId) }, orderBy: { criadaEm: 'desc' }, take: 1,
+    where: { remetenteUsuarioId: Number(usuarioId), tipo: 'RESPOSTA' }, orderBy: { criadaEm: 'desc' }, take: 1,
     select: { criadaEm: true, usuario: { select: { id: true, nome: true } } },
   },
 });
@@ -27,6 +35,7 @@ const apresentarNotificacao = (item, usuario) => {
     } : null,
     podeResponder: Boolean(PERFIS_RESPONDEDORES.has(usuario.perfil)
       && item.remetenteUsuarioId && item.remetenteUsuarioId !== usuario.id),
+    podeReagir: Boolean(item.remetenteUsuarioId && item.remetenteUsuarioId !== usuario.id),
     respostaEnviada: resposta ? {
       respondidaEm: resposta.criadaEm,
       destinatarioId: resposta.usuario.id,
@@ -114,6 +123,44 @@ router.post('/:id/respostas', autorizar(...PERFIS_PUBLICADORES), async (req, res
     });
     return res.status(201).json({
       enviada: true,
+      item: criada,
+      destinatario: { id: original.remetente.id, nome: original.remetente.nome },
+    });
+  } catch (erro) { return responder(res, erro); }
+});
+
+router.post('/:id/reacao', async (req, res) => {
+  const id = Number(req.params.id);
+  const reacao = typeof req.body?.reacao === 'string' ? req.body.reacao.trim().toUpperCase() : '';
+  const configuracao = REACOES_NOTIFICACAO[reacao];
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: 'Notificação inválida.' });
+  if (!configuracao) return res.status(400).json({ erro: 'Escolha uma reação válida.' });
+  try {
+    const original = await prisma.notificacao.findFirst({
+      where: { id, usuarioId: req.usuario.id },
+      include: { remetente: { select: { id: true, nome: true, ativo: true } } },
+    });
+    if (!original) return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    if (!original.remetente?.ativo || original.remetente.id === req.usuario.id) {
+      return res.status(400).json({ erro: 'Esta notificação não possui um remetente disponível para reação.' });
+    }
+    if (original.reacao === reacao) {
+      return res.json({ alterada: false, reacao, destinatario: { id: original.remetente.id, nome: original.remetente.nome } });
+    }
+    const [criada] = await criarNotificacoes([original.remetente.id], {
+      titulo: `${configuracao.emoji} ${configuracao.rotulo} de ${req.usuario.nome}`,
+      mensagem: `${req.usuario.nome} reagiu com ${configuracao.rotulo.toLowerCase()} à notificação “${original.titulo}”.`,
+      tipo: 'REACAO',
+      url: original.url,
+      remetenteUsuarioId: req.usuario.id,
+      notificacaoOrigemId: original.id,
+    });
+    await prisma.notificacao.update({
+      where: { id: original.id }, data: { reacao, reagidaEm: new Date() },
+    });
+    return res.status(201).json({
+      alterada: true,
+      reacao,
       item: criada,
       destinatario: { id: original.remetente.id, nome: original.remetente.nome },
     });

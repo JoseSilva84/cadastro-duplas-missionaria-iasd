@@ -164,6 +164,9 @@ export function NotificacoesProvider({ children }) {
       setItens((anteriores) => [notificacao, ...anteriores.filter((item) => item.id !== notificacao.id)].slice(0, 20));
       setNaoLidas((numero) => numero + 1);
       toast.info(notificacao.titulo, { description: notificacao.mensagem, duration: 6000 });
+      // Recarrega os vínculos (remetente, reação e contexto) que não fazem
+      // parte do evento compacto enviado pelo socket.
+      carregar(1).catch(() => {});
     });
     socket.on('connect', () => carregar(1).catch(() => {}));
     const ativarPeloToast = () => { void ativar(); };
@@ -215,8 +218,13 @@ export function NotificacoesProvider({ children }) {
     await carregar(pagina);
     return data;
   };
+  const reagir = async (id, reacao) => {
+    const { data } = await api.post(`/notificacoes/${id}/reacao`, { reacao });
+    await carregar(pagina);
+    return data;
+  };
 
-  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas, apagar, responder }}>
+  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas, apagar, responder, reagir }}>
     {children}
   </NotificacoesContext.Provider>;
 }

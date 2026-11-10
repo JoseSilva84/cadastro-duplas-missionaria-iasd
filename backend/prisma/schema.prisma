@@ -131,6 +131,8 @@ model Notificacao {
   url String?
   criadaEm DateTime @default(now())
   lidaEm DateTime?
+  reacao String?
+  reagidaEm DateTime?
   publicacaoId Int?
   publicacao PublicacaoNotificacao? @relation(fields: [publicacaoId], references: [id], onDelete: SetNull)
 
