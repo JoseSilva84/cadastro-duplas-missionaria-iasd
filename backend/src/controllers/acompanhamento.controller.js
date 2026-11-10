@@ -3,6 +3,7 @@ const prisma = require('../lib/prisma');
 const { body, validationResult } = require('express-validator');
 const { ehAdmin, PERFIS } = require('../middlewares/auth');
 const { registrarAtividade } = require('../services/notificacoesAtividade.service');
+const { inicioSemanaDomingoISO } = require('../utils/periodosRelatorio');
 
 const META_PREFIX = '[[META_ASSISTENCIA:';
 const META_SUFFIX = ']]';
@@ -501,15 +502,11 @@ const AcompanhamentoController = {
 
       const registros = registrosBrutos.map(enriquecerRegistroAcompanhamento);
 
-      // Agrupa por semana (ISO)
+      // Agrupa de domingo a sábado, conforme o período exibido no relatório.
       const agrupado = {};
       registros.forEach((r) => {
-        const data = new Date(r.dataSaida);
-        // Semana ISO: segunda-feira como início
-        const diaSemana = data.getDay(); // 0=dom
-        const segundaPrev = new Date(data);
-        segundaPrev.setDate(data.getDate() - ((diaSemana + 6) % 7));
-        const chave = segundaPrev.toISOString().split('T')[0];
+        const chave = inicioSemanaDomingoISO(r.dataSaida);
+        if (!chave) return;
         if (!agrupado[chave]) agrupado[chave] = { semanaInicio: chave, saidas: [], totalDuplas: 0 };
         agrupado[chave].saidas.push(r);
         agrupado[chave].totalDuplas += r.duplas.length;

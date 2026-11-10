@@ -210,8 +210,13 @@ export function NotificacoesProvider({ children }) {
     setItens((anteriores) => anteriores.map((item) => ({ ...item, lidaEm: item.lidaEm || new Date().toISOString() })));
     setNaoLidas(0);
   };
+  const responder = async (id, mensagem) => {
+    const { data } = await api.post(`/notificacoes/${id}/respostas`, { mensagem });
+    await carregar(pagina);
+    return data;
+  };
 
-  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas, apagar }}>
+  return <NotificacoesContext.Provider value={{ itens, naoLidas, pagina, paginas, permissao, pushDisponivel, processando, carregar, ativar, marcarLida, marcarTodas, apagar, responder }}>
     {children}
   </NotificacoesContext.Provider>;
 }

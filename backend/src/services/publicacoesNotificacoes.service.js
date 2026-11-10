@@ -73,6 +73,7 @@ async function publicar(id) {
       await criarNotificacoes(usuarios.map((item) => item.id), {
         titulo: publicacao.titulo, mensagem: publicacao.mensagem,
         url: publicacao.url, tipo: publicacao.tipo, publicacaoId: id,
+        remetenteUsuarioId: publicacao.autorId,
       });
       ultimoId = usuarios[usuarios.length - 1].id;
       await prisma.publicacaoNotificacao.update({

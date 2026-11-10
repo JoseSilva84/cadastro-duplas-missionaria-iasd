@@ -131,25 +131,34 @@ async function testarInscricaoPush(usuarioId, inscricaoId) {
   return { sucesso: true, status: resultado.status, enviadoEm: new Date() };
 }
 
-async function criarNotificacoes(usuarioIds, { titulo, mensagem, tipo = 'INFO', url = null, publicacaoId = null }) {
+async function criarNotificacoes(usuarioIds, {
+  titulo, mensagem, tipo = 'INFO', url = null, publicacaoId = null,
+  remetenteUsuarioId = null, notificacaoOrigemId = null,
+}) {
   const ids = [...new Set(usuarioIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
   if (!ids.length) return [];
   const textoTitulo = String(titulo || '').trim().slice(0, 160);
   const textoMensagem = String(mensagem || '').trim().slice(0, 1000);
   if (!textoTitulo || !textoMensagem) throw new Error('Notificação exige título e mensagem.');
   const destino = urlInterna(url);
+  const remetenteId = Number(remetenteUsuarioId);
+  const origemId = Number(notificacaoOrigemId);
+  const vinculos = {
+    remetenteUsuarioId: Number.isInteger(remetenteId) && remetenteId > 0 ? remetenteId : null,
+    notificacaoOrigemId: Number.isInteger(origemId) && origemId > 0 ? origemId : null,
+  };
   const criadas = [];
   for (let inicio = 0; inicio < ids.length; inicio += 200) {
     const lote = ids.slice(inicio, inicio + 200);
     if (publicacaoId) {
       // A chave única impede duplicatas se o servidor reiniciar durante um envio agendado.
       criadas.push(...await prisma.notificacao.createManyAndReturn({
-        data: lote.map((usuarioId) => ({ usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino, publicacaoId })),
+        data: lote.map((usuarioId) => ({ usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino, publicacaoId, ...vinculos })),
         skipDuplicates: true,
       }));
     } else {
       criadas.push(...await prisma.$transaction(lote.map((usuarioId) => prisma.notificacao.create({
-        data: { usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino },
+        data: { usuarioId, titulo: textoTitulo, mensagem: textoMensagem, tipo, url: destino, ...vinculos },
       }))));
     }
   }
@@ -201,7 +210,9 @@ async function avisarNovoItemCalendario(usuario, { titulo, mensagem, url, alvo =
     },
     select: { id: true },
   });
-  return criarNotificacoes(destinatarios.map((item) => item.id), { titulo, mensagem, tipo: 'CALENDARIO', url });
+  return criarNotificacoes(destinatarios.map((item) => item.id), {
+    titulo, mensagem, tipo: 'CALENDARIO', url, remetenteUsuarioId: usuario.id,
+  });
 }
 
 module.exports = {

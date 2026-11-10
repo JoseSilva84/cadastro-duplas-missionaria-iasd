@@ -6,6 +6,34 @@ const { PERFIS_PUBLICADORES, PERFIS_DESTINATARIOS, escopoDoAutor, filtroDestinat
 
 const router = express.Router();
 router.use(autenticar);
+const PERFIS_RESPONDEDORES = new Set(PERFIS_PUBLICADORES);
+const incluirContextoNotificacao = (usuarioId) => ({
+  remetente: { select: { id: true, nome: true } },
+  notificacaoOrigem: { select: { id: true, titulo: true, mensagem: true } },
+  respostas: {
+    where: { remetenteUsuarioId: Number(usuarioId) }, orderBy: { criadaEm: 'desc' }, take: 1,
+    select: { criadaEm: true, usuario: { select: { id: true, nome: true } } },
+  },
+});
+const apresentarNotificacao = (item, usuario) => {
+  if (!item) return null;
+  const { remetente, notificacaoOrigem, respostas, ...notificacao } = item;
+  const resposta = respostas?.[0];
+  return {
+    ...notificacao,
+    remetenteNome: remetente?.nome || null,
+    respondendoA: notificacaoOrigem ? {
+      id: notificacaoOrigem.id, titulo: notificacaoOrigem.titulo, mensagem: notificacaoOrigem.mensagem,
+    } : null,
+    podeResponder: Boolean(PERFIS_RESPONDEDORES.has(usuario.perfil)
+      && item.remetenteUsuarioId && item.remetenteUsuarioId !== usuario.id),
+    respostaEnviada: resposta ? {
+      respondidaEm: resposta.criadaEm,
+      destinatarioId: resposta.usuario.id,
+      destinatarioNome: resposta.usuario.nome,
+    } : null,
+  };
+};
 const responder = (res, erro) => {
   console.error('Notificações:', erro);
   return res.status(500).json({ erro: 'Não foi possível concluir a operação de notificações.' });
@@ -17,11 +45,17 @@ router.get('/', async (req, res) => {
     const limite = 20;
     const where = { usuarioId: req.usuario.id };
     const [itens, naoLidas, total] = await Promise.all([
-      prisma.notificacao.findMany({ where, orderBy: { criadaEm: 'desc' }, skip: (pagina - 1) * limite, take: limite }),
+      prisma.notificacao.findMany({
+        where, orderBy: { criadaEm: 'desc' }, skip: (pagina - 1) * limite, take: limite,
+        include: incluirContextoNotificacao(req.usuario.id),
+      }),
       prisma.notificacao.count({ where: { ...where, lidaEm: null } }),
       prisma.notificacao.count({ where }),
     ]);
-    return res.json({ itens, naoLidas, total, pagina, paginas: Math.ceil(total / limite) });
+    return res.json({
+      itens: itens.map((item) => apresentarNotificacao(item, req.usuario)),
+      naoLidas, total, pagina, paginas: Math.ceil(total / limite),
+    });
   } catch (erro) { return responder(res, erro); }
 });
 
@@ -33,10 +67,10 @@ router.get('/resumo', async (req, res) => {
       prisma.notificacao.findFirst({
         where,
         orderBy: { criadaEm: 'desc' },
-        select: { id: true, titulo: true, mensagem: true, url: true, criadaEm: true, lidaEm: true },
+        include: incluirContextoNotificacao(req.usuario.id),
       }),
     ]);
-    return res.json({ naoLidas, ultima });
+    return res.json({ naoLidas, ultima: apresentarNotificacao(ultima, req.usuario) });
   } catch (erro) { return responder(res, erro); }
 });
 
@@ -53,6 +87,36 @@ router.patch('/:id/lida', async (req, res) => {
   try {
     const atualizada = await prisma.notificacao.updateMany({ where: { id, usuarioId: req.usuario.id, lidaEm: null }, data: { lidaEm: new Date() } });
     return res.json({ atualizada: atualizada.count > 0 });
+  } catch (erro) { return responder(res, erro); }
+});
+
+router.post('/:id/respostas', autorizar(...PERFIS_PUBLICADORES), async (req, res) => {
+  const id = Number(req.params.id);
+  const mensagem = typeof req.body?.mensagem === 'string' ? req.body.mensagem.trim() : '';
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: 'Notificação inválida.' });
+  if (!mensagem || mensagem.length > 1000) return res.status(400).json({ erro: 'Escreva uma resposta de até 1000 caracteres.' });
+  try {
+    const original = await prisma.notificacao.findFirst({
+      where: { id, usuarioId: req.usuario.id },
+      include: { remetente: { select: { id: true, nome: true, ativo: true } } },
+    });
+    if (!original) return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    if (!original.remetente?.ativo || original.remetente.id === req.usuario.id) {
+      return res.status(400).json({ erro: 'Esta notificação não possui um remetente disponível para resposta.' });
+    }
+    const [criada] = await criarNotificacoes([original.remetente.id], {
+      titulo: `Resposta de ${req.usuario.nome}`,
+      mensagem,
+      tipo: 'RESPOSTA',
+      url: original.url,
+      remetenteUsuarioId: req.usuario.id,
+      notificacaoOrigemId: original.id,
+    });
+    return res.status(201).json({
+      enviada: true,
+      item: criada,
+      destinatario: { id: original.remetente.id, nome: original.remetente.nome },
+    });
   } catch (erro) { return responder(res, erro); }
 });
 
@@ -245,7 +309,9 @@ router.post('/enviar', apenasAdmins, async (req, res) => {
     (url && !urlInterna(url))) return res.status(400).json({ erro: 'Dados da notificação inválidos.' });
   try {
     const usuarios = await prisma.usuario.findMany({ where: { id: { in: usuarioIds.map(Number) }, ativo: true }, select: { id: true } });
-    const criadas = await criarNotificacoes(usuarios.map((item) => item.id), { titulo, mensagem, url });
+    const criadas = await criarNotificacoes(usuarios.map((item) => item.id), {
+      titulo, mensagem, url, remetenteUsuarioId: req.usuario.id,
+    });
     return res.status(201).json({ enviadas: criadas.length });
   } catch (erro) { return responder(res, erro); }
 });

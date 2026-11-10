@@ -84,7 +84,8 @@ model QrCodeAtivacao {
 
 // Usuários do sistema
 model Usuario {
-  notificacoes Notificacao[]
+  notificacoes Notificacao[] @relation("NotificacaoDestinatario")
+  notificacoesEnviadas Notificacao[] @relation("NotificacaoRemetente")
   publicacoesNotificacao PublicacaoNotificacao[]
   inscricoesPush InscricaoPush[]
   acoesCalendario CalendarioAcaoMissionaria[]
@@ -118,7 +119,12 @@ model Usuario {
 model Notificacao {
   id Int @id @default(autoincrement())
   usuarioId Int
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation("NotificacaoDestinatario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  remetenteUsuarioId Int?
+  remetente Usuario? @relation("NotificacaoRemetente", fields: [remetenteUsuarioId], references: [id], onDelete: SetNull)
+  notificacaoOrigemId Int?
+  notificacaoOrigem Notificacao? @relation("RespostasNotificacao", fields: [notificacaoOrigemId], references: [id], onDelete: SetNull)
+  respostas Notificacao[] @relation("RespostasNotificacao")
   titulo String
   mensagem String
   tipo String @default("INFO")
@@ -130,6 +136,8 @@ model Notificacao {
 
   @@index([usuarioId, criadaEm(sort: Desc)])
   @@index([usuarioId, lidaEm])
+  @@index([remetenteUsuarioId])
+  @@index([notificacaoOrigemId])
   @@unique([publicacaoId, usuarioId])
 }
 

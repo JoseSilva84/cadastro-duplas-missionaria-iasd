@@ -58,6 +58,7 @@ async function notificarAtividade({ ator, duplaId, igrejaId, distritoId, regiaoI
     mensagem: `${mensagem}${lugar ? ` · ${lugar}` : ''}${autoria}`.slice(0, 1000),
     tipo: 'ATIVIDADE',
     url,
+    remetenteUsuarioId: ator?.id,
   });
 }
 

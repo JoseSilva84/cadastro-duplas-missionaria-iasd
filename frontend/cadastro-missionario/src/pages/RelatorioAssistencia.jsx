@@ -6,6 +6,7 @@ import LoadingState from '../components/LoadingState';
 import BackButton from '../components/BackButton';
 import EChart from '../components/EChart';
 import { useAuth, PERFIS, ehAdmin } from '../contexts/AuthContext';
+import { dataLocalISO, intervaloDaSemana, rotuloSemana, semanaISOAtual, semanaISOParaData } from '../lib/periodosRelatorio';
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
@@ -20,39 +21,7 @@ const normalizarPalavra = (valor) => valor
   .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase();
 
-const dataLocalISO = (data = new Date()) => {
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const dia = String(data.getDate()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}`;
-};
-
 const hojeISO = () => dataLocalISO();
-
-const semanaISOAtual = () => {
-  const data = new Date();
-  const quinta = new Date(data);
-  quinta.setHours(0, 0, 0, 0);
-  quinta.setDate(quinta.getDate() + 3 - ((quinta.getDay() + 6) % 7));
-  const primeiraQuinta = new Date(quinta.getFullYear(), 0, 4);
-  const numeroSemana = 1 + Math.round(((quinta - primeiraQuinta) / 86400000 - 3 + ((primeiraQuinta.getDay() + 6) % 7)) / 7);
-  return `${quinta.getFullYear()}-W${String(numeroSemana).padStart(2, '0')}`;
-};
-
-const intervaloDaSemana = (semana) => {
-  const correspondencia = /^(\d{4})-W(\d{2})$/.exec(semana || '');
-  if (!correspondencia) return { de: '', ate: '' };
-  const ano = Number(correspondencia[1]);
-  const numeroSemana = Number(correspondencia[2]);
-  const quatroDeJaneiro = new Date(ano, 0, 4);
-  const segundaPrimeiraSemana = new Date(quatroDeJaneiro);
-  segundaPrimeiraSemana.setDate(quatroDeJaneiro.getDate() - ((quatroDeJaneiro.getDay() + 6) % 7));
-  const inicio = new Date(segundaPrimeiraSemana);
-  inicio.setDate(segundaPrimeiraSemana.getDate() + (numeroSemana - 1) * 7);
-  const fim = new Date(inicio);
-  fim.setDate(inicio.getDate() + 6);
-  return { de: dataLocalISO(inicio), ate: dataLocalISO(fim) };
-};
 
 const mesAtualISO = () => hojeISO().slice(0, 7);
 
@@ -294,6 +263,11 @@ export default function RelatorioAssistencia() {
     setFiltros((atual) => ({ ...atual, ...intervaloDaSemana(semana) }));
   };
 
+  const selecionarDataDaSemana = (data) => {
+    const semana = semanaISOParaData(data);
+    if (semana) selecionarSemana(semana);
+  };
+
   const selecionarMes = (mes) => {
     setMesSelecionado(mes);
     setFiltros((atual) => ({ ...atual, ...intervaloDoMes(mes) }));
@@ -370,7 +344,17 @@ export default function RelatorioAssistencia() {
             {tipoPeriodo === 'semana' && (
               <label className="xl:col-span-2">
                 <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Semana do ano</span>
-                <input type="week" className="input-field" value={semanaSelecionada} onChange={(event) => selecionarSemana(event.target.value)} />
+                <span className="relative flex min-h-11 items-center justify-between rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-[#1A3A6B] shadow-xs transition focus-within:border-[#1A3A6B] focus-within:ring-2 focus-within:ring-[#1A3A6B]/15">
+                  <span>{rotuloSemana(semanaSelecionada)}</span>
+                  <svg className="h-4 w-4 text-[#1A3A6B]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M8 2v3m8-3v3M3 9h18M5 4h14a2 2 0 012 2v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" /></svg>
+                  <input
+                    type="date"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    value={intervaloDaSemana(semanaSelecionada).de}
+                    onChange={(event) => selecionarDataDaSemana(event.target.value)}
+                    aria-label={`Escolher data da ${rotuloSemana(semanaSelecionada)}`}
+                  />
+                </span>
               </label>
             )}
             {tipoPeriodo === 'mes' && (
