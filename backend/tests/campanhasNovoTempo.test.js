@@ -21,6 +21,9 @@ function banco(conversa = {}) {
       findFirst: async ({ where }) => { consultas.push(where); return conversa.id ? conversa : null; },
       update: async () => {},
     },
+    igreja: {
+      findUnique: async () => null,
+    },
   };
 }
 
@@ -36,6 +39,52 @@ test('identifica aceite e território sem inventar dados do contato', () => {
   assert.equal(linha.aceitou, true);
   assert.equal(linha.nome, 'Maria');
   assert.equal(linha.endereco, 'Rua A, 10');
+});
+
+test('descarta conversa livre no campo de endereço e mantém um endereço real', () => {
+  const servico = criarServico({ db: banco(), requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
+  assert.equal(servico._internals.limparEndereco('Agradecemos seu contato. Como podemos ajudar?'), '');
+  assert.equal(servico._internals.limparEndereco('Gostaria sim, amo estudar a palavra de Deus'), '');
+  assert.equal(servico._internals.limparEndereco('meu endereço: Rua Lins de Vasconcelos, 590 CEP 06396-130'), 'Rua Lins de Vasconcelos, 590 CEP 06396-130');
+  assert.equal(servico._internals.limparEndereco('CARAPICUÍBA - Parque Santa Teresa'), 'CARAPICUÍBA - Parque Santa Teresa');
+});
+
+test('usa o endereço cadastrado no Amigos NT quando a conversa não informou endereço válido', () => {
+  const servico = criarServico({ db: banco(), requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
+  const item = {
+    id: 'conv-2', leadName: 'Alex', district: 'CARAPICUÍBA',
+    delivery: { accepted: true, address: 'Agradecemos seu contato. Como podemos ajudar?' },
+    enderecoCadastroNovoTempo: 'Rua das Flores, 25 - Jardim Ariston',
+  };
+  const linha = servico._internals.linhaDaConversa(item, 'primeira', 'lote-1', { id: 42, regiaoId: 6, nome: 'CARAPICUÍBA' });
+  assert.equal(linha.endereco, 'Rua das Flores, 25 - Jardim Ariston');
+});
+
+test('diretor missionário visualiza somente a igreja vinculada', async () => {
+  const db = banco();
+  db.igreja.findUnique = async () => ({ distritoId: 42, nome: 'Nova Ariston' });
+  const servico = criarServico({ db, requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
+  const escopo = await servico._internals.escopoDoUsuario({ perfil: 'DIRETOR_MISSIONARIO_IGREJA', igrejaId: 9 }, db);
+  assert.deepEqual(escopo, { distritoId: 42, igreja: 'Nova Ariston' });
+});
+
+test('localiza o endereço cadastrado pelo telefone do interessado, sem confundir homônimos', async () => {
+  const db = banco();
+  db.conversaCampanhaNovoTempo.findMany = async () => [{
+    id: 'hash-2', nome: 'Maria Silva', distrito: 'CARAPICUÍBA', distritoId: 42,
+    igreja: 'Nova Ariston', situacao: 'Brinde confirmado', aceitou: true,
+    telefone: '11999990002', endereco: null, dados: {}, atualizadoEm: null,
+  }];
+  db.sincronizacaoNovoTempo = { findUnique: async () => ({ loteAtivo: 'leads-1' }) };
+  db.interessadoNovoTempo = {
+    findMany: async () => [
+      { nome: 'Maria Silva', distritoChave: 'carapicuiba', dados: { whatsappNumero: '11999990001', endereco: 'Rua A, 10' } },
+      { nome: 'Maria Silva', distritoChave: 'carapicuiba', dados: { whatsappNumero: '11999990002', endereco: 'Rua B, 20' } },
+    ],
+  };
+  const servico = criarServico({ db, requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
+  const resultado = await servico.conversas(usuarioDistrital, 'primeira', {});
+  assert.equal(resultado.itens[0].endereco, 'Rua B, 20');
 });
 
 test('une os aceites ao histórico sem duplicar a mesma conversa', () => {

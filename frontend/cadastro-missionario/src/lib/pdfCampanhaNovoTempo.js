@@ -121,23 +121,59 @@ export function exportarConversaCampanhaPdf(campanha, pessoa) {
   doc.save(`conversa-${arquivo(pessoa.nome)}.pdf`);
 }
 
-export function exportarListaAceitesCampanhaPdf(campanha, pessoas) {
+export function criarListaAceitesCampanhaPdf(campanha, pessoas, recorte = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.text('Pessoas que aceitaram o brinde / visita', 14, 16);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`${linha(campanha?.nome)} · ${pessoas.length.toLocaleString('pt-BR')} pessoa(s)`, 14, 23);
+  doc.text(`${linha(campanha?.nome)} - ${pessoas.length.toLocaleString('pt-BR')} pessoa(s)`, 14, 23);
+  let inicioTabela = 29;
+  if (recorte.distrito) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Distrito: ${linha(recorte.distrito)}`, 14, 29);
+    inicioTabela = 35;
+  }
+  if (recorte.igreja) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Igreja: ${linha(recorte.igreja)}`, 14, inicioTabela);
+    inicioTabela += 6;
+  }
   autoTable(doc, {
-    startY: 29,
-    head: [['Nome', 'Distrito', 'Situação', 'Endereço informado']],
-    body: pessoas.map((pessoa) => [linha(pessoa.nome), linha(pessoa.distrito), linha(pessoa.situacao), linha(pessoa.endereco)]),
+    startY: inicioTabela,
+    head: [['Nome', 'Distrito', 'Igreja', 'Situação', 'Endereço']],
+    body: pessoas.map((pessoa) => [
+      linha(pessoa.nome), linha(pessoa.distrito), linha(pessoa.igreja), linha(pessoa.situacao), linha(pessoa.endereco),
+    ]),
     margin: { left: 14, right: 14, bottom: 14 },
     theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+    styles: { fontSize: 7.5, cellPadding: 1.8, overflow: 'linebreak', valign: 'top', lineWidth: 0.1 },
     headStyles: { fillColor: [26, 58, 107] },
-    columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: 43 }, 2: { cellWidth: 49 } },
+    columnStyles: {
+      0: { cellWidth: 52 }, 1: { cellWidth: 37 }, 2: { cellWidth: 43 }, 3: { cellWidth: 38 }, 4: { cellWidth: 99 },
+    },
+    rowPageBreak: 'avoid',
+    didParseCell: (dados) => {
+      if (dados.section === 'body' && dados.column.index === 4) {
+        const tamanho = String(dados.cell.raw || '').length;
+        if (tamanho > 180) dados.cell.styles.fontSize = 6;
+        else if (tamanho > 100) dados.cell.styles.fontSize = 6.8;
+      }
+    },
   });
+  const paginas = doc.getNumberOfPages();
+  for (let pagina = 1; pagina <= paginas; pagina += 1) {
+    doc.setPage(pagina);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`PCM - ${pagina}/${paginas}`, 283, 203, { align: 'right' });
+  }
+  return doc;
+}
+
+export function exportarListaAceitesCampanhaPdf(campanha, pessoas, recorte = {}) {
+  const doc = criarListaAceitesCampanhaPdf(campanha, pessoas, recorte);
   doc.save(`aceites-${arquivo(campanha?.nome)}.pdf`);
 }

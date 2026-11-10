@@ -252,6 +252,13 @@ export default function CampanhasNovoTempo() {
   const [exportandoLista, setExportandoLista] = useState(false);
   const listaVersaoRef = useRef(0);
   const detalheVersaoRef = useRef(0);
+  const pessoasRef = useRef(null);
+
+  const rolarParaPessoas = () => {
+    window.requestAnimationFrame(() => {
+      pessoasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -433,7 +440,10 @@ export default function CampanhasNovoTempo() {
         temMais = data.temMais;
         pagina += 1;
       }
-      exportarListaAceitesCampanhaPdf(campanha, pessoas);
+      const distrito = distritoId
+        ? resumo?.distritos?.find((item) => String(item.id) === String(distritoId))?.nome
+        : '';
+      exportarListaAceitesCampanhaPdf(campanha, pessoas, { distrito, igreja });
     } catch (falha) {
       setErroLista(erroDaApi(falha, 'Não foi possível gerar a relação de aceites.'));
     } finally {
@@ -620,6 +630,7 @@ export default function CampanhasNovoTempo() {
                       onClick={() => {
                         setIgreja('');
                         setDistritoId(selecionado ? '' : String(item.id));
+                        rolarParaPessoas();
                       }}
                       className={`flex w-full items-center justify-between rounded-xl border p-3 text-left text-xs sm:text-sm transition-all ${
                         selecionado
@@ -694,6 +705,7 @@ export default function CampanhasNovoTempo() {
                       onClick={() => {
                         setDistritoId(String(item.distritoId));
                         setIgreja(selecionado ? '' : item.nome);
+                        rolarParaPessoas();
                       }}
                       className={`rounded-xl border p-3 sm:p-4 text-left transition-all ${
                         selecionado
@@ -809,7 +821,7 @@ export default function CampanhasNovoTempo() {
           </div>
 
           {/* Lista de Pessoas da Campanha em Cards Touch-friendly */}
-          <section className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+          <section ref={pessoasRef} className="scroll-mt-4 rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Pessoas da campanha</h2>

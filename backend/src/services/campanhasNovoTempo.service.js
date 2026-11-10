@@ -53,14 +53,46 @@ function nomeDaConversa(item) {
     || texto(item?.leadSnapshot?.name) || 'Contato sem nome';
 }
 
-function enderecoDaConversa(item) {
-  const valor = item?.delivery?.address || item?.acceptedVisit?.address
-    || item?.leadSnapshot?.address || item?.leadSnapshot?.endereco || '';
-  if (typeof valor === 'string') return valor.trim();
+function limparEndereco(valor) {
   if (valor && typeof valor === 'object') {
-    return [valor.street || valor.logradouro, valor.number || valor.numero,
+    valor = [valor.street || valor.logradouro, valor.number || valor.numero,
       valor.neighborhood || valor.bairro, valor.city || valor.cidade, valor.zip || valor.cep]
       .filter(Boolean).join(', ');
+  }
+  let endereco = texto(valor).replace(/\s+/g, ' ');
+  if (!endereco || /^(?:n[aã]o informado|sem endere[cç]o|n\/a)$/i.test(endereco)) return '';
+
+  // O campo da integração também pode receber respostas livres da conversa.
+  // Quando houver um logradouro depois de uma introdução ("meu endereço é...")
+  // conservamos apenas o trecho que realmente representa o endereço.
+  const inicioLogradouro = endereco.search(/\b(?:rua|r\.?|avenida|av\.?|alameda|travessa|estrada|rodovia|pra[cç]a|largo|viela|quadra|qd\.?|condom[ií]nio|residencial|ch[aá]cara|s[ií]tio)\b/i);
+  if (inicioLogradouro > 0 && inicioLogradouro <= 90) endereco = endereco.slice(inicioLogradouro);
+  endereco = endereco.replace(/[\s,;.!?-]+$/g, '').trim();
+  if (endereco.length < 5 || endereco.length > 320) return '';
+
+  const temLogradouro = /\b(?:rua|r\.?|avenida|av\.?|alameda|travessa|estrada|rodovia|pra[cç]a|largo|viela|quadra|qd\.?|condom[ií]nio|residencial|ch[aá]cara|s[ií]tio)\b/i.test(endereco);
+  const temCep = /\b(?:cep\s*:?[\s-]*)?\d{5}-?\d{3}\b/i.test(endereco);
+  const temNumero = /\b\d+[a-z]?\b/i.test(endereco);
+  const marcadoresLocalidade = endereco.match(/\b(?:bairro|cidade|jardim|jd\.?|parque|pq\.?|vila|casa|ap(?:to|artamento)?\.?|bloco|carapicu[ií]ba|osasco|s[aã]o paulo)\b/gi) || [];
+  const cidadeBairro = /^[\p{L}\s.]+\s+-\s+(?:jardim|jd\.?|parque|pq\.?|vila|bairro)\b/iu.test(endereco);
+  if (!(temLogradouro || temCep || cidadeBairro || (temNumero && marcadoresLocalidade.length) || marcadoresLocalidade.length >= 2)) return '';
+
+  const pareceConversa = /\b(?:agradecemos|seu contato|como podemos ajudar|precisa de atendimento|novo tempo canal|que deus aben[cç]oe|gostaria sim|sim por favor|confirmar a entrega|n[aã]o recebi|estarei no domingo)\b/i.test(endereco);
+  if (pareceConversa && !temLogradouro && !temCep) return '';
+  return endereco;
+}
+
+function enderecoDaConversa(item) {
+  const candidatos = [
+    item?.delivery?.address,
+    item?.acceptedVisit?.address,
+    item?.leadSnapshot?.address,
+    item?.leadSnapshot?.endereco,
+    item?.enderecoCadastroNovoTempo,
+  ];
+  for (const candidato of candidatos) {
+    const endereco = limparEndereco(candidato);
+    if (endereco) return endereco;
   }
   return '';
 }
@@ -101,8 +133,14 @@ async function escopoDoUsuario(usuario, db = prisma) {
   }
   let distritoId = usuario?.distritoId;
   if (usuario?.perfil === PERFIS.DIRETOR_MISSIONARIO_IGREJA) {
-    const igreja = usuario.igrejaId && await db.igreja.findUnique({ where: { id: Number(usuario.igrejaId) }, select: { distritoId: true } });
+    const igreja = usuario.igrejaId && await db.igreja.findUnique({
+      where: { id: Number(usuario.igrejaId) }, select: { distritoId: true, nome: true },
+    });
     distritoId = igreja?.distritoId;
+    if (!distritoId || !texto(igreja?.nome)) {
+      throw erro(403, 'Seu usuário não possui uma igreja vinculada a esta campanha.', 'ESCOPO_CAMPANHA_NAO_CONFIGURADO');
+    }
+    return { distritoId: Number(distritoId), igreja: texto(igreja.nome) };
   }
   if (usuario?.perfil === PERFIS.DUPLA_MISSIONARIA && !distritoId) {
     const dupla = usuario.duplaId && await db.dupla.findUnique({ where: { id: Number(usuario.duplaId) }, select: { distritoId: true } });
@@ -146,13 +184,15 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
         if (espelho?.loteAtivo) {
           const contatos = await db.$queryRaw(Prisma.sql`
             SELECT "distrito", "dados"->>'id' AS "leadId", "dados"->>'nome' AS nome,
-              "dados"->>'whatsappNumero' AS telefone
+              "dados"->>'whatsappNumero' AS telefone, "dados"->>'endereco' AS endereco
             FROM "InteressadoNovoTempo" WHERE "loteId" = ${espelho.loteAtivo}
           `);
           for (const contato of contatos) {
             const candidatos = porNome.get(normalizar(contato.distrito)) || [];
             if (candidatos.length !== 1) continue;
-            const complemento = { distrito: candidatos[0], nome: texto(contato.nome) };
+            const complemento = {
+              distrito: candidatos[0], nome: texto(contato.nome), endereco: limparEndereco(contato.endereco),
+            };
             if (contato.leadId) {
               const idLead = String(contato.leadId);
               const anterior = porLead.get(idLead);
@@ -183,8 +223,12 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
             || (telefone && porTelefone.get(telefone));
           const distrito = candidatos.length === 1 ? candidatos[0] : complemento?.distrito;
           if (!distrito) continue;
-          const enriquecido = texto(item.leadName) || texto(item.leadSnapshot?.n)
-            ? item : { ...item, leadName: complemento?.nome || item.leadName };
+          const enriquecido = {
+            ...item,
+            ...(!(texto(item.leadName) || texto(item.leadSnapshot?.n))
+              ? { leadName: complemento?.nome || item.leadName } : {}),
+            enderecoCadastroNovoTempo: complemento?.endereco || null,
+          };
           const linha = linhaDaConversa(enriquecido, campanhaId, loteId, distrito);
           linhas.set(linha.id, linha);
         }
@@ -381,11 +425,53 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
       db.conversaCampanhaNovoTempo.findMany({
         where, skip: (pagina - 1) * limite, take: limite,
         select: { id: true, nome: true, distrito: true, distritoId: true, igreja: true, situacao: true,
-          aceitou: true, endereco: true, atualizadoEm: true },
+          aceitou: true, endereco: true, telefone: true, dados: true, atualizadoEm: true },
         orderBy: [{ nome: 'asc' }, { id: 'asc' }],
       }),
     ]);
-    return { itens, total, pagina, limite, temMais: pagina * limite < total };
+    const itensComEndereco = await completarEnderecosCadastrados(itens);
+    return { itens: itensComEndereco.map(({ dados, telefone, ...item }) => item), total, pagina, limite, temMais: pagina * limite < total };
+  }
+
+  async function completarEnderecosCadastrados(itens) {
+    if (!itens.length) return itens;
+    const pendentes = itens.filter((item) => !enderecoDaConversa(item.dados || {}) && !limparEndereco(item.endereco));
+    const enderecosPorTelefone = new Map();
+    const enderecosPorNome = new Map();
+    if (pendentes.length && db.interessadoNovoTempo?.findMany && db.sincronizacaoNovoTempo?.findUnique) {
+      try {
+        const estadoLeads = await db.sincronizacaoNovoTempo.findUnique({ where: { id: ID }, select: { loteAtivo: true } });
+        if (estadoLeads?.loteAtivo) {
+          const nomes = [...new Set(pendentes.map((item) => item.nome).filter(Boolean))];
+          const distritos = [...new Set(pendentes.map((item) => normalizar(item.distrito)).filter(Boolean))];
+          const contatos = await db.interessadoNovoTempo.findMany({
+            where: { loteId: estadoLeads.loteAtivo, nome: { in: nomes }, distritoChave: { in: distritos } },
+            select: { nome: true, distritoChave: true, dados: true },
+          });
+          for (const contato of contatos) {
+            const endereco = limparEndereco(contato.dados?.endereco);
+            if (!endereco) continue;
+            const telefone = texto(contato.dados?.whatsappNumero || contato.dados?.whatsapp).replace(/\D/g, '').slice(-10);
+            if (telefone) enderecosPorTelefone.set(`${contato.distritoChave}|${telefone}`, endereco);
+            const chaveNome = `${contato.distritoChave}|${normalizar(contato.nome)}`;
+            if (!enderecosPorNome.has(chaveNome)) enderecosPorNome.set(chaveNome, endereco);
+            else if (enderecosPorNome.get(chaveNome) !== endereco) enderecosPorNome.set(chaveNome, null);
+          }
+        }
+      } catch (falha) {
+        console.warn('[Campanhas NT] Endereço cadastrado indisponível:', falha.message);
+      }
+    }
+    return itens.map((item) => {
+      const distrito = normalizar(item.distrito);
+      const telefone = texto(item.telefone).replace(/\D/g, '').slice(-10);
+      return {
+        ...item,
+        endereco: enderecoDaConversa(item.dados || {}) || limparEndereco(item.endereco)
+          || (telefone && enderecosPorTelefone.get(`${distrito}|${telefone}`))
+          || enderecosPorNome.get(`${distrito}|${normalizar(item.nome)}`) || null,
+      };
+    });
   }
 
   async function detalhe(usuario, campanhaId, conversaId) {
@@ -425,9 +511,10 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
       }
     }
     const mensagens = Array.isArray(dadosConversa.messages) ? dadosConversa.messages : [];
+    const [itemComEndereco] = await completarEnderecosCadastrados([item]);
     return {
       id: item.id, nome: item.nome, distrito: item.distrito, telefone: item.telefone,
-      situacao: item.situacao, aceitou: item.aceitou, endereco: item.endereco,
+      situacao: item.situacao, aceitou: item.aceitou, endereco: itemComEndereco.endereco,
       igreja: item.igreja,
       atualizadoEm: item.atualizadoEm,
       mensagens: mensagens.map((mensagem) => ({
@@ -442,5 +529,5 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
   }
 
   return { iniciar, solicitar, listar, resumo, conversas, detalhe,
-    _internals: { conversasDaResposta, linhaDaConversa, escopoDoUsuario, distritoDaConversa } };
+    _internals: { conversasDaResposta, linhaDaConversa, escopoDoUsuario, distritoDaConversa, limparEndereco } };
 };
