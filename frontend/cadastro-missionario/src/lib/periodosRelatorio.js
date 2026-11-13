@@ -51,3 +51,75 @@ export const rotuloSemana = (semana) => {
   return correspondencia ? `Semana ${Number(correspondencia[2])}, ${correspondencia[1]}` : 'Escolher semana';
 };
 
+const NOMES_MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const NOMES_MESES_COMPLETOS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+export const formatarDiaMes = (iso) => {
+  const correspondencia = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  if (!correspondencia) return '';
+  return `${correspondencia[3]}/${correspondencia[2]}`;
+};
+
+export const listarSemanasDoAno = (ano = new Date().getFullYear()) => {
+  const anoNum = Number(ano) || new Date().getFullYear();
+  const semanas = [];
+  for (let numero = 1; numero <= 53; numero += 1) {
+    const codigo = `${anoNum}-W${String(numero).padStart(2, '0')}`;
+    const { de, ate } = intervaloDaSemana(codigo);
+    if (numero === 53 && semanaISOParaData(de) !== codigo) {
+      break;
+    }
+    semanas.push({
+      codigo,
+      ano: anoNum,
+      numero,
+      rotuloCurto: `S${String(numero).padStart(2, '0')}`,
+      rotulo: `Semana ${numero}, ${anoNum}`,
+      de,
+      ate,
+      intervaloCurto: `${formatarDiaMes(de)}–${formatarDiaMes(ate)}`,
+    });
+  }
+  return semanas;
+};
+
+export const intervaloDoMes = (mes) => {
+  const correspondencia = /^(\d{4})-(\d{2})$/.exec(mes || '');
+  if (!correspondencia) return { de: '', ate: '' };
+  const ano = Number(correspondencia[1]);
+  const indiceMes = Number(correspondencia[2]) - 1;
+  return {
+    de: dataLocalISO(new Date(ano, indiceMes, 1)),
+    ate: dataLocalISO(new Date(ano, indiceMes + 1, 0)),
+  };
+};
+
+export const rotuloMes = (mes) => {
+  const correspondencia = /^(\d{4})-(\d{2})$/.exec(mes || '');
+  if (!correspondencia) return 'Escolher mês';
+  const indiceMes = Number(correspondencia[2]) - 1;
+  return `${NOMES_MESES_COMPLETOS[indiceMes] || mes} de ${correspondencia[1]}`;
+};
+
+export const listarMesesDoAno = (ano = new Date().getFullYear()) => {
+  const anoNum = Number(ano) || new Date().getFullYear();
+  return NOMES_MESES_CURTOS.map((nomeCurto, idx) => {
+    const numeroMes = String(idx + 1).padStart(2, '0');
+    const codigo = `${anoNum}-${numeroMes}`;
+    const { de, ate } = intervaloDoMes(codigo);
+    return {
+      codigo,
+      ano: anoNum,
+      numero: idx + 1,
+      nomeCurto,
+      nomeCompleto: NOMES_MESES_COMPLETOS[idx],
+      de,
+      ate,
+    };
+  });
+};
+
+
