@@ -210,7 +210,7 @@ export default function MapaIgreja() {
       tooltip: { trigger: 'item' },
       legend: { bottom: 0, type: 'scroll', textStyle: { color: '#64748b' } },
       series: [{
-        name: 'Acoes missionarias',
+        name: 'Ações missionárias',
         type: 'pie',
         radius: ['48%', '72%'],
         center: ['50%', '42%'],
@@ -267,7 +267,7 @@ export default function MapaIgreja() {
         <section className="group rounded-2xl border border-[#1A3A6B]/10 bg-white p-4 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#C9963A]/60 hover:shadow-2xl hover:shadow-[#1A3A6B]/10 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Graficos</p>
           <h2 className="mt-1 text-xl font-bold text-[#1A3A6B] transition-colors duration-300 group-hover:text-[#C9963A]" style={{ fontFamily: 'Georgia, serif' }}>
-            Acoes missionarias por igreja
+            Ações missionárias por igreja
           </h2>
           <EChart option={acoesPorIgrejaOption} className="h-80" />
         </section>

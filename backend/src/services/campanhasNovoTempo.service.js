@@ -97,6 +97,139 @@ function enderecoDaConversa(item) {
   return '';
 }
 
+const FAIXAS_TEMPO_PADRAO = [
+  { id: 'up-to-7-days', label: 'Até 7 dias' },
+  { id: '8-to-30-days', label: 'De 8 a 30 dias' },
+  { id: '31-to-60-days', label: 'De 31 a 60 dias' },
+  { id: '61-to-90-days', label: 'De 61 a 90 dias' },
+  { id: '3-to-6-months', label: 'De 3 a 6 meses' },
+  { id: '6-months-to-1-year', label: 'De 6 meses a 1 ano' },
+  { id: '1-to-2-years', label: 'De 1 a 2 anos' },
+  { id: '2-to-4-years', label: 'De 2 a 4 anos' },
+  { id: '4-to-6-years', label: 'De 4 a 6 anos' },
+  { id: 'over-6-years', label: 'Acima de 6 anos' },
+  { id: 'unknown', label: 'Data não informada' },
+];
+
+const MAPA_FAIXAS_ID = new Set(FAIXAS_TEMPO_PADRAO.map((f) => f.id));
+
+function parseDataFlexivel(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
+  const str = texto(String(valor));
+  if (!str) return null;
+  const br = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) {
+    const d = new Date(`${br[3]}-${br[2]}-${br[1]}T12:00:00Z`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const iso = new Date(str);
+  return Number.isNaN(iso.getTime()) ? null : iso;
+}
+
+function classificarDiasEmFaixa(dias) {
+  const n = Number(dias);
+  if (!Number.isFinite(n) || n < 0) return 'unknown';
+  if (n <= 7) return 'up-to-7-days';
+  if (n <= 30) return '8-to-30-days';
+  if (n <= 60) return '31-to-60-days';
+  if (n <= 90) return '61-to-90-days';
+  if (n <= 180) return '3-to-6-months';
+  if (n <= 365) return '6-months-to-1-year';
+  if (n <= 730) return '1-to-2-years';
+  if (n <= 1460) return '2-to-4-years';
+  if (n <= 2190) return '4-to-6-years';
+  return 'over-6-years';
+}
+
+function extrairFaixaDaConversa(registro) {
+  const dados = registro?.dados || registro || {};
+  const delivery = dados.delivery || {};
+  const snapshot = dados.leadSnapshot || {};
+
+  const bucketExplicito = texto(delivery.requestAgeBucket || dados.requestAgeBucket);
+  if (bucketExplicito && MAPA_FAIXAS_ID.has(bucketExplicito)) {
+    return bucketExplicito;
+  }
+
+  const labelExplicito = normalizar(delivery.requestAgeLabel || dados.requestAgeLabel);
+  if (labelExplicito) {
+    const encontrada = FAIXAS_TEMPO_PADRAO.find((f) => normalizar(f.label) === labelExplicito);
+    if (encontrada) return encontrada.id;
+  }
+
+  const diasExplicitos = delivery.requestAgeDays ?? dados.requestAgeDays ?? snapshot.c ?? snapshot.daysSinceLastContact;
+  if (diasExplicitos !== null && diasExplicitos !== undefined && diasExplicitos !== '') {
+    const idFaixa = classificarDiasEmFaixa(diasExplicitos);
+    if (idFaixa !== 'unknown') return idFaixa;
+  }
+
+  const dataContato = parseDataFlexivel(
+    snapshot.lastContactDate || snapshot.requestDate || delivery.materialRequestedAt
+    || dados.lastContactDate || dados.requestDate
+  );
+  if (dataContato) {
+    const dataReferencia = parseDataFlexivel(
+      delivery.acceptedAt || dados.acceptedVisit?.savedAt || registro?.atualizadoEm || dados.lastMessageAt
+    ) || new Date();
+    const diffMs = dataReferencia.getTime() - dataContato.getTime();
+    const diffDias = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    return classificarDiasEmFaixa(diffDias);
+  }
+
+  return 'unknown';
+}
+
+function construirFaixasTempo(conversasAceitas = []) {
+  const contagens = new Map(FAIXAS_TEMPO_PADRAO.map((f) => [f.id, 0]));
+  for (const item of conversasAceitas) {
+    const bucketId = extrairFaixaDaConversa(item);
+    contagens.set(bucketId, (contagens.get(bucketId) || 0) + 1);
+  }
+  const total = conversasAceitas.length;
+  return FAIXAS_TEMPO_PADRAO.map((faixa) => {
+    const count = contagens.get(faixa.id) || 0;
+    const percentage = total > 0 ? Math.round((count / total) * 1000) / 10 : 0;
+    return {
+      id: faixa.id,
+      label: faixa.label,
+      count,
+      percentage,
+    };
+  });
+}
+
+function normalizarFaixasOrigem(bucketsOrigem = [], conversasAceitas = []) {
+  if (!Array.isArray(bucketsOrigem) || !bucketsOrigem.length) {
+    return construirFaixasTempo(conversasAceitas);
+  }
+  const porId = new Map();
+  const porLabel = new Map();
+  let somaOrigem = 0;
+  for (const b of bucketsOrigem) {
+    const count = Number(b?.count) || 0;
+    somaOrigem += count;
+    if (b?.id) porId.set(String(b.id), b);
+    if (b?.label) porLabel.set(normalizar(b.label), b);
+  }
+  if (somaOrigem === 0 && conversasAceitas.length > 0) {
+    return construirFaixasTempo(conversasAceitas);
+  }
+  return FAIXAS_TEMPO_PADRAO.map((faixa) => {
+    const item = porId.get(faixa.id) || porLabel.get(normalizar(faixa.label));
+    const count = Number(item?.count) || 0;
+    const percentage = item?.percentage !== undefined
+      ? Number(item.percentage) || 0
+      : (somaOrigem > 0 ? Math.round((count / somaOrigem) * 1000) / 10 : 0);
+    return {
+      id: faixa.id,
+      label: faixa.label,
+      count,
+      percentage,
+    };
+  });
+}
+
 function situacaoDaConversa(item) {
   return texto(item?.classification?.label) || texto(item?.classification)
     || texto(item?.delivery?.giftDecisionStatus) || texto(item?.status) || 'Sem classificação';
@@ -376,7 +509,7 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
         by: ['situacao'], where, _count: { _all: true }, orderBy: { _count: { situacao: 'desc' } },
       }),
     ]);
-    const [aceitosPorDistrito, aceitosPorIgreja] = await Promise.all([
+    const [aceitosPorDistrito, aceitosPorIgreja, conversasAceitas] = await Promise.all([
       db.conversaCampanhaNovoTempo.groupBy({
         by: ['distritoId'], where: { ...where, aceitou: true }, _count: { _all: true },
       }),
@@ -384,21 +517,63 @@ module.exports = function criarServicoCampanhasNovoTempo({ requisitar, configura
         by: ['distritoId', 'igreja'], where: { ...where, aceitou: true, igreja: { not: null } },
         _count: { _all: true }, orderBy: { _count: { igreja: 'desc' } },
       }),
+      typeof db.conversaCampanhaNovoTempo.findMany === 'function'
+        ? db.conversaCampanhaNovoTempo.findMany({
+            where: { ...where, aceitou: true },
+            select: { distritoId: true, igreja: true, atualizadoEm: true, dados: true },
+          })
+        : Promise.resolve([]),
     ]);
     const contagemAceitos = new Map(aceitosPorDistrito.map((grupo) => [grupo.distritoId, grupo._count._all]));
-    // As métricas da origem só podem ser mostradas se todo o lote pertencer ao escopo do usuário.
-    const origemCompleta = total === campanha.dadosResumo?.totalOrigem;
+    const escopoCompleto = Object.keys(escopo).length === 0;
+    const origemCompleta = escopoCompleto || total === campanha.dadosResumo?.totalOrigem;
+
+    const faixasTempo = escopoCompleto
+      ? normalizarFaixasOrigem(campanha.dadosResumo?.requestAgeBuckets, conversasAceitas)
+      : construirFaixasTempo(conversasAceitas);
+
+    const mapaDistritoAceitas = new Map();
+    const mapaIgrejaAceitas = new Map();
+    for (const item of conversasAceitas) {
+      if (item.distritoId !== null && item.distritoId !== undefined) {
+        const chDistrito = String(item.distritoId);
+        if (!mapaDistritoAceitas.has(chDistrito)) mapaDistritoAceitas.set(chDistrito, []);
+        mapaDistritoAceitas.get(chDistrito).push(item);
+      }
+      if (item.igreja) {
+        const chIgreja = `${item.distritoId}|${item.igreja}`;
+        if (!mapaIgrejaAceitas.has(chIgreja)) mapaIgrejaAceitas.set(chIgreja, []);
+        mapaIgrejaAceitas.get(chIgreja).push(item);
+      }
+    }
+
+    const faixasTempoPorDistrito = {};
+    for (const [chDistrito, lista] of mapaDistritoAceitas.entries()) {
+      faixasTempoPorDistrito[chDistrito] = construirFaixasTempo(lista);
+    }
+
+    const faixasTempoPorIgreja = {};
+    for (const [chIgreja, lista] of mapaIgrejaAceitas.entries()) {
+      faixasTempoPorIgreja[chIgreja] = construirFaixasTempo(lista);
+    }
+
     return {
       campanha: { id: campanha.id, nome: campanha.nome, status: campanha.status },
       atualizadoEm: meta.atualizadoEm,
-      totais: { abordados: origemCompleta ? Number(campanha.dadosResumo?.funnel?.dispatches) || total : total,
+      totais: {
+        abordados: origemCompleta ? Number(campanha.dadosResumo?.funnel?.dispatches) || total : total,
         responderam: origemCompleta ? Number(campanha.dadosResumo?.funnel?.responses) || responderam : responderam,
-        aceitaram: aceitos, conversas: total },
+        aceitaram: aceitos,
+        conversas: total,
+        transmissoes: origemCompleta ? Number(campanha.dadosResumo?.funnel?.transmissions) || 0 : 0,
+      },
       distritos: porDistrito.map((grupo) => ({ id: grupo.distritoId, nome: grupo.distrito,
         total: grupo._count._all, aceitaram: contagemAceitos.get(grupo.distritoId) || 0 })),
       igrejas: aceitosPorIgreja.map((grupo) => ({ distritoId: grupo.distritoId, nome: grupo.igreja, aceitaram: grupo._count._all })),
       situacoes: porSituacao.map((grupo) => ({ nome: grupo.situacao, total: grupo._count._all })),
-      faixasTempo: origemCompleta ? campanha.dadosResumo?.requestAgeBuckets || [] : [],
+      faixasTempo,
+      faixasTempoPorDistrito,
+      faixasTempoPorIgreja,
       dadosParciais: Boolean(campanha.dadosResumo?.limitadoNaOrigem || campanha.dadosResumo?.totalMapeado !== campanha.dadosResumo?.totalOrigem),
     };
   }

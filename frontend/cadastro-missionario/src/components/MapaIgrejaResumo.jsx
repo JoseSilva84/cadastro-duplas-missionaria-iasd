@@ -70,7 +70,7 @@ export default function MapaIgrejaResumo({ mapas, titulo = 'Mapa da Igreja', sub
 
       <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3 transition-all duration-300 hover:border-[#C9963A]/40 hover:bg-white hover:shadow-lg">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">Acoes missionarias</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#1A3A6B]">Ações missionárias</p>
           <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">{acoes.length}</span>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">

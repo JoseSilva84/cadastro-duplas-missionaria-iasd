@@ -44,7 +44,7 @@ router.post('/eventos', autenticar, podeCadastrarAcao, validarCriarEvento, C.cri
 router.put('/eventos/:id', autenticar, podeCadastrarAcao, validarId, validarEvento, C.atualizarEvento);
 router.delete('/eventos/:id', autenticar, podeCadastrarAcao, validarId, C.excluirEvento);
 
-// Acoes missionarias: cada nivel/login cadastra as suas para o evento
+// Ações missionárias: cada nivel/login cadastra as suas para o evento
 router.post('/acoes', autenticar, podeCadastrarAcao, validarCriarAcao, C.criarAcao);
 router.put('/acoes/:id', autenticar, podeCadastrarAcao, validarId, validarAcao, C.atualizarAcao);
 router.delete('/acoes/:id', autenticar, podeCadastrarAcao, validarId, C.excluirAcao);

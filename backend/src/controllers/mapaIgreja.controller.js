@@ -11,7 +11,7 @@ const validarMapaIgreja = [
   body('classeBiblica').optional().isInt({ min: 0 }).withMessage('Classe Biblica deve ser numero positivo.'),
   body('aventureiros').optional().isInt({ min: 0 }).withMessage('Aventureiros deve ser numero positivo.'),
   body('desbravadores').optional().isInt({ min: 0 }).withMessage('Desbravadores deve ser numero positivo.'),
-  body('acoesMissionarias').optional().isArray().withMessage('Acoes missionarias deve ser uma lista.'),
+  body('acoesMissionarias').optional().isArray().withMessage('As ações missionárias devem ser uma lista.'),
 ];
 
 const validarBase = [

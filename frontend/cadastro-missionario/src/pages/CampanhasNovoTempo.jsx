@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { exportarAceiteCampanhaPdf, exportarConversaCampanhaPdf, exportarListaAceitesCampanhaPdf } from '../lib/pdfCampanhaNovoTempo';
@@ -8,6 +8,26 @@ import ModalLeadNovoTempo from '../components/ModalLeadNovoTempo';
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 const dataHora = (valor) => (valor ? new Date(valor).toLocaleString('pt-BR') : '');
 const erroDaApi = (falha, padrao) => falha.response?.data?.erro || padrao;
+const normalizarBusca = (valor) =>
+  String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const FAIXAS_TEMPO_MODELO = [
+  { id: 'up-to-7-days', label: 'Até 7 dias' },
+  { id: '8-to-30-days', label: 'De 8 a 30 dias' },
+  { id: '31-to-60-days', label: 'De 31 a 60 dias' },
+  { id: '61-to-90-days', label: 'De 61 a 90 dias' },
+  { id: '3-to-6-months', label: 'De 3 a 6 meses' },
+  { id: '6-months-to-1-year', label: 'De 6 meses a 1 ano' },
+  { id: '1-to-2-years', label: 'De 1 a 2 anos' },
+  { id: '2-to-4-years', label: 'De 2 a 4 anos' },
+  { id: '4-to-6-years', label: 'De 4 a 6 anos' },
+  { id: 'over-6-years', label: 'Acima de 6 anos' },
+  { id: 'unknown', label: 'Data não informada' },
+];
 
 /* Ícones utilitários inline */
 const Icones = {
@@ -237,6 +257,7 @@ export default function CampanhasNovoTempo() {
   const [lista, setLista] = useState({ itens: [], total: 0, temMais: false, pagina: 1 });
   const [distritoId, setDistritoId] = useState('');
   const [igreja, setIgreja] = useState('');
+  const [buscaIgrejaAceite, setBuscaIgrejaAceite] = useState('');
   const [situacao, setSituacao] = useState('');
   const [apenasAceitos, setApenasAceitos] = useState(true);
   const [carregandoCatalogo, setCarregandoCatalogo] = useState(true);
@@ -296,6 +317,7 @@ export default function CampanhasNovoTempo() {
     setResumo(null);
     setDistritoId('');
     setIgreja('');
+    setBuscaIgrejaAceite('');
     setSituacao('');
     api.get(`/interessados-nt/campanhas/${encodeURIComponent(campanhaId)}/resumo`)
       .then(({ data }) => {
@@ -452,6 +474,33 @@ export default function CampanhasNovoTempo() {
   }
 
   const campanha = catalogo?.campanhas?.find((item) => item.id === campanhaId);
+
+  const igrejasFiltradas = useMemo(() => {
+    const todas = resumo?.igrejas || [];
+    const termo = normalizarBusca(buscaIgrejaAceite);
+    if (!termo) return todas;
+    return todas.filter((item) => {
+      const nomeDistrito = resumo?.distritos?.find((d) => d.id === item.distritoId)?.nome || '';
+      return normalizarBusca(`${item.nome} ${nomeDistrito}`).includes(termo);
+    });
+  }, [resumo?.igrejas, resumo?.distritos, buscaIgrejaAceite]);
+
+  const faixasTempoAtivas = useMemo(() => {
+    if (!resumo) return [];
+    let origem = resumo.faixasTempo;
+    if (igreja && distritoId && resumo.faixasTempoPorIgreja?.[`${distritoId}|${igreja}`]) {
+      origem = resumo.faixasTempoPorIgreja[`${distritoId}|${igreja}`];
+    } else if (distritoId && resumo.faixasTempoPorDistrito?.[String(distritoId)]) {
+      origem = resumo.faixasTempoPorDistrito[String(distritoId)];
+    }
+    if (Array.isArray(origem) && origem.length > 0) return origem;
+    return FAIXAS_TEMPO_MODELO.map((f) => ({ id: f.id, label: f.label, count: 0, percentage: 0 }));
+  }, [resumo, distritoId, igreja]);
+
+  const maiorContagemFaixa = useMemo(
+    () => Math.max(1, ...faixasTempoAtivas.map((f) => Number(f.count) || 0)),
+    [faixasTempoAtivas]
+  );
 
   return (
     <div className={isDireto ? 'h-full overflow-y-auto bg-[#F4F5F7] p-3 sm:p-6 space-y-4 sm:space-y-6' : 'w-full space-y-4 sm:space-y-6 animate-fade-in'}>
@@ -693,130 +742,230 @@ export default function CampanhasNovoTempo() {
           {/* Aceites por igreja (se houver) */}
           {resumo.igrejas?.length > 0 && (
             <section className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
-              <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Aceites por igreja</h2>
-              <p className="mt-0.5 text-xs text-gray-400">Distribuição nos templos do seu escopo.</p>
-              <div className="mt-3.5 grid gap-2.5 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
-                {resumo.igrejas.map((item) => {
-                  const selecionado = igreja === item.nome && distritoId === String(item.distritoId);
-                  return (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Aceites por igreja</h2>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/60">
+                      {numero(igrejasFiltradas.length)} {igrejasFiltradas.length === 1 ? 'igreja' : 'igrejas'}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-gray-400">Distribuição nos templos do seu escopo. Pesquise pelo nome da igreja ou distrito.</p>
+                </div>
+
+                <div className="relative w-full sm:w-80">
+                  <svg
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={buscaIgrejaAceite}
+                    onChange={(evento) => setBuscaIgrejaAceite(evento.target.value)}
+                    placeholder="Buscar igreja ou distrito com aceite..."
+                    aria-label="Buscar igreja que teve aceite"
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8FAFC] py-2 pl-9 pr-8 text-xs sm:text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                  />
+                  {buscaIgrejaAceite && (
                     <button
                       type="button"
-                      key={`${item.distritoId}-${item.nome}`}
-                      onClick={() => {
-                        setDistritoId(String(item.distritoId));
-                        setIgreja(selecionado ? '' : item.nome);
-                        rolarParaPessoas();
-                      }}
-                      className={`rounded-xl border p-3 sm:p-4 text-left transition-all ${
-                        selecionado
-                          ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-1 ring-emerald-500'
-                          : 'border-gray-100 bg-[#F8FAFC] hover:border-emerald-200 hover:bg-white'
-                      }`}
+                      onClick={() => setBuscaIgrejaAceite('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-xs font-bold text-gray-400 hover:bg-gray-200/70 hover:text-gray-700"
+                      title="Limpar pesquisa de igreja"
+                      aria-label="Limpar pesquisa de igreja"
                     >
-                      <strong className="block text-xs sm:text-sm text-[#1A3A6B] truncate">{item.nome}</strong>
-                      <span className="mt-0.5 block text-[10px] sm:text-xs text-gray-400 truncate">
-                        {resumo.distritos.find((distrito) => distrito.id === item.distritoId)?.nome}
-                      </span>
-                      <span className="mt-2 block text-base sm:text-xl font-black text-emerald-700">
-                        {numero(item.aceitaram)} aceites
-                      </span>
+                      ✕
                     </button>
-                  );
-                })}
+                  )}
+                </div>
               </div>
+
+              {igrejasFiltradas.length > 0 ? (
+                <div className="mt-3.5 grid gap-2.5 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {igrejasFiltradas.map((item) => {
+                    const selecionado = igreja === item.nome && distritoId === String(item.distritoId);
+                    return (
+                      <button
+                        type="button"
+                        key={`${item.distritoId}-${item.nome}`}
+                        onClick={() => {
+                          setDistritoId(selecionado ? '' : String(item.distritoId));
+                          setIgreja(selecionado ? '' : item.nome);
+                          rolarParaPessoas();
+                        }}
+                        className={`rounded-xl border p-3 sm:p-4 text-left transition-all ${
+                          selecionado
+                            ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-1 ring-emerald-500'
+                            : 'border-gray-100 bg-[#F8FAFC] hover:border-emerald-200 hover:bg-white'
+                        }`}
+                      >
+                        <strong className="block text-xs sm:text-sm text-[#1A3A6B] truncate">{item.nome}</strong>
+                        <span className="mt-0.5 block text-[10px] sm:text-xs text-gray-400 truncate">
+                          {resumo.distritos.find((distrito) => distrito.id === item.distritoId)?.nome}
+                        </span>
+                        <span className="mt-2 block text-base sm:text-xl font-black text-emerald-700">
+                          {numero(item.aceitaram)} aceites
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-3.5 rounded-xl border border-dashed border-gray-200 bg-[#F8FAFC] py-6 px-4 text-center text-xs sm:text-sm text-gray-500">
+                  Nenhuma igreja com aceite encontrada para <strong>"{buscaIgrejaAceite}"</strong>.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setBuscaIgrejaAceite('')}
+                    className="font-bold text-emerald-700 hover:underline ml-1"
+                  >
+                    Mostrar todas
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
           {/* Funil e Tempo de Atendimento */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
-              <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Funil dos atendimentos</h2>
-              <p className="mt-0.5 text-xs text-gray-400">Conversão de contatos abordados até o aceite.</p>
+            <section className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Funil dos atendimentos</h2>
+                <p className="mt-0.5 text-xs text-gray-400">Conversão de contatos abordados até o aceite.</p>
 
-              <div className="mt-4 space-y-3 text-xs sm:text-sm">
-                <div>
-                  <div className="flex justify-between text-gray-600 mb-1">
-                    <span>Contatos abordados</span>
-                    <strong className="text-gray-900">{numero(resumo.totais.abordados)}</strong>
+                <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
+                  <div>
+                    <div className="flex justify-between items-baseline text-gray-600 mb-1">
+                      <div>
+                        <span className="font-semibold text-gray-800">Contatos abordados</span>
+                        {resumo.totais.transmissoes > 0 && (
+                          <span className="block text-[11px] text-gray-400">
+                            {numero(resumo.totais.transmissoes)} transmissão(ões) registrada(s)
+                          </span>
+                        )}
+                      </div>
+                      <strong className="text-base sm:text-lg font-black text-gray-900">{numero(resumo.totais.abordados)}</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full bg-blue-500 w-full" />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-blue-500 w-full" />
-                  </div>
-                </div>
 
-                <div>
-                  <div className="flex justify-between text-gray-600 mb-1">
-                    <span>Pessoas que responderam</span>
-                    <strong className="text-gray-900">{numero(resumo.totais.responderam)}</strong>
+                  <div>
+                    <div className="flex justify-between items-baseline text-gray-600 mb-1">
+                      <div>
+                        <span className="font-semibold text-gray-800">Pessoas que responderam</span>
+                        <span className="block text-[11px] text-gray-400">
+                          {resumo.totais.abordados ? (Math.round((resumo.totais.responderam / resumo.totais.abordados) * 1000) / 10).toLocaleString('pt-BR') : 0}% dos contatos abordados
+                        </span>
+                      </div>
+                      <strong className="text-base sm:text-lg font-black text-gray-900">{numero(resumo.totais.responderam)}</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-orange-500 transition-all duration-500"
+                        style={{
+                          width: `${resumo.totais.abordados ? Math.min(100, (resumo.totais.responderam / resumo.totais.abordados) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-orange-500 transition-all duration-500"
-                      style={{
-                        width: `${resumo.totais.abordados ? Math.min(100, (resumo.totais.responderam / resumo.totais.abordados) * 100) : 0}%`,
-                      }}
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <div className="flex justify-between text-gray-600 mb-1">
-                    <span>Pessoas que aceitaram</span>
-                    <strong className="text-emerald-700 font-bold">{numero(resumo.totais.aceitaram)}</strong>
-                  </div>
-                  <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                      style={{
-                        width: `${resumo.totais.abordados ? Math.min(100, (resumo.totais.aceitaram / resumo.totais.abordados) * 100) : 0}%`,
-                      }}
-                    />
+                  <div>
+                    <div className="flex justify-between items-baseline text-gray-600 mb-1">
+                      <div>
+                        <span className="font-semibold text-gray-800">Pessoas que aceitaram</span>
+                        <span className="block text-[11px] text-gray-400">
+                          {resumo.totais.responderam ? (Math.round((resumo.totais.aceitaram / resumo.totais.responderam) * 1000) / 10).toLocaleString('pt-BR') : 0}% das respostas
+                        </span>
+                      </div>
+                      <strong className="text-base sm:text-lg font-black text-emerald-700">{numero(resumo.totais.aceitaram)}</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                        style={{
+                          width: `${resumo.totais.abordados ? Math.min(100, (resumo.totais.aceitaram / resumo.totais.abordados) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-gray-100 pt-4 text-center">
+              <div className="mt-5 grid grid-cols-3 gap-2 border-t border-gray-100 pt-4 text-center">
                 <div className="rounded-xl bg-slate-50 p-2.5">
-                  <strong className="block text-lg sm:text-xl font-black text-emerald-700">
-                    {resumo.totais.abordados ? Math.round((resumo.totais.responderam / resumo.totais.abordados) * 100) : 0}%
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Resposta</span>
+                  <strong className="mt-0.5 block text-base sm:text-xl font-black text-emerald-600">
+                    {resumo.totais.abordados ? (Math.round((resumo.totais.responderam / resumo.totais.abordados) * 1000) / 10).toLocaleString('pt-BR') : 0}%
                   </strong>
-                  <span className="text-[11px] text-gray-500 font-medium">Taxa de resposta</span>
+                  <span className="text-[10px] text-gray-500 font-medium leading-tight block">respostas / contatos abordados</span>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-2.5">
-                  <strong className="block text-lg sm:text-xl font-black text-emerald-700">
-                    {resumo.totais.responderam ? Math.round((resumo.totais.aceitaram / resumo.totais.responderam) * 100) : 0}%
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Conversão</span>
+                  <strong className="mt-0.5 block text-base sm:text-xl font-black text-emerald-600">
+                    {resumo.totais.responderam ? (Math.round((resumo.totais.aceitaram / resumo.totais.responderam) * 1000) / 10).toLocaleString('pt-BR') : 0}%
                   </strong>
-                  <span className="text-[11px] text-gray-500 font-medium">Aceites por resposta</span>
+                  <span className="text-[10px] text-gray-500 font-medium leading-tight block">conversões / respostas</span>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-2.5">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Conversão geral</span>
+                  <strong className="mt-0.5 block text-base sm:text-xl font-black text-emerald-600">
+                    {resumo.totais.abordados ? (Math.round((resumo.totais.aceitaram / resumo.totais.abordados) * 1000) / 10).toLocaleString('pt-BR') : 0}%
+                  </strong>
+                  <span className="text-[10px] text-gray-500 font-medium leading-tight block">conversões / contatos abordados</span>
                 </div>
               </div>
             </section>
 
             <section className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
-              <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">Tempo até o aceite</h2>
-              <p className="mt-0.5 text-xs text-gray-400">Tempo decorrido desde o último contato com a Novo Tempo.</p>
-
-              {resumo.faixasTempo?.length ? (
-                <div className="mt-4 space-y-2.5">
-                  {resumo.faixasTempo.map((faixa) => (
-                    <div key={faixa.id || faixa.label} className="grid grid-cols-[minmax(90px,1.2fr)_minmax(60px,1.5fr)_auto] items-center gap-2 text-xs">
-                      <span className="text-gray-600 truncate">{faixa.label}</span>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                          style={{ width: `${Math.min(100, Math.max(0, Number(faixa.percentage) || 0))}%` }}
-                        />
-                      </div>
-                      <strong className="text-right text-gray-700">
-                        {numero(faixa.count)} <span className="font-normal text-gray-400">· {faixa.percentage || 0}%</span>
-                      </strong>
-                    </div>
-                  ))}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-[#1A3A6B]">
+                    Do contato NT até o aceite do brinde/visita
+                  </h2>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    Quantidade e percentual das pessoas que aceitaram, separados pelo tempo desde que teve o último contato com a NT.
+                  </p>
                 </div>
-              ) : (
-                <p className="mt-5 text-xs sm:text-sm text-gray-400 text-center py-6">
-                  Este indicador não está disponível para este recorte territorial.
-                </p>
-              )}
+                {(igreja || distritoId) && (
+                  <span className="flex-shrink-0 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                    {igreja ? `Igreja: ${igreja}` : `Distrito: ${resumo.distritos.find((d) => String(d.id) === distritoId)?.nome || ''}`}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-2.5">
+                {faixasTempoAtivas.map((faixa) => {
+                  const contagem = Number(faixa.count) || 0;
+                  const pct = Number(faixa.percentage) || 0;
+                  const larguraBarra = contagem > 0
+                    ? Math.min(100, Math.max(5, (contagem / maiorContagemFaixa) * 100))
+                    : 0;
+                  return (
+                    <div
+                      key={faixa.id || faixa.label}
+                      className="grid grid-cols-[minmax(115px,1.15fr)_minmax(80px,1.6fr)_minmax(68px,auto)] items-center gap-2.5 text-xs"
+                    >
+                      <span className="text-gray-600 font-medium truncate">{faixa.label}</span>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        {contagem > 0 && (
+                          <div
+                            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                            style={{ width: `${larguraBarra}%` }}
+                          />
+                        )}
+                      </div>
+                      <span className="text-right font-semibold text-gray-700 tabular-nums">
+                        {numero(contagem)} - {pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
           </div>
 

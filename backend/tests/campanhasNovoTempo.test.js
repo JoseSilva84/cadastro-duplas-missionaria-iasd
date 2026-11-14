@@ -19,6 +19,7 @@ function banco(conversa = {}) {
       count: async ({ where }) => { consultas.push(where); return 1; },
       findMany: async ({ where }) => { consultas.push(where); return []; },
       findFirst: async ({ where }) => { consultas.push(where); return conversa.id ? conversa : null; },
+      groupBy: async ({ where }) => { consultas.push(where); return []; },
       update: async () => {},
     },
     igreja: {
@@ -138,3 +139,38 @@ test('região sem campanha não recebe metadados nem conversas', async () => {
   const servico = criarServico({ db, requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
   await assert.rejects(servico.resumo({ perfil: 'PASTOR_REGIONAL', regiaoId: 7 }, 'primeira'), { status: 404 });
 });
+
+test('calcula as 11 faixas de tempo até o aceite no resumo para escopo territorial e geral', async () => {
+  const db = banco();
+  db.conversaCampanhaNovoTempo.findMany = async () => [
+    {
+      distritoId: 42,
+      distrito: 'JD. SILVANIA',
+      igreja: 'Jd. Caprioti',
+      situacao: 'Brinde confirmado',
+      aceitou: true,
+      atualizadoEm: new Date('2026-11-10T10:00:00Z'),
+      dados: { delivery: { requestAgeBucket: '3-to-6-months', requestAgeDays: 120 }, leadMessageCount: 2 },
+    },
+    {
+      distritoId: 42,
+      distrito: 'JD. SILVANIA',
+      igreja: 'Nova Ariston',
+      situacao: 'Brinde confirmado',
+      aceitou: true,
+      atualizadoEm: new Date('2026-11-10T10:00:00Z'),
+      dados: { delivery: { requestAgeDays: 20 }, leadMessageCount: 1 },
+    },
+  ];
+  const servico = criarServico({ db, requisitar: async () => {}, configuracao: () => ({}), possuiCredencial: () => true });
+  const resultado = await servico.resumo(usuarioDistrital, 'primeira');
+  assert.equal(resultado.faixasTempo.length, 11);
+  const faixa8a30 = resultado.faixasTempo.find((f) => f.id === '8-to-30-days');
+  const faixa3a6m = resultado.faixasTempo.find((f) => f.id === '3-to-6-months');
+  assert.equal(faixa8a30.count, 1);
+  assert.equal(faixa8a30.percentage, 50);
+  assert.equal(faixa3a6m.count, 1);
+  assert.equal(faixa3a6m.percentage, 50);
+  assert.equal(resultado.faixasTempoPorIgreja['42|Jd. Caprioti'].find((f) => f.id === '3-to-6-months').count, 1);
+});
+

@@ -21,16 +21,94 @@ import {
 
 const numero = (valor) => Number(valor || 0).toLocaleString('pt-BR');
 
+export const TIPOS_ASSISTENCIA_OPCOES = [
+  {
+    id: 'Treinamento de Igreja',
+    nome: 'Treinamento de Igreja',
+    subtitulo: 'Capacitação e treinamento missionário com a igreja local',
+    icone: '🏛️',
+    cor: '#1A3A6B',
+    bg: '#EEF3FB',
+  },
+  {
+    id: 'Assistência Estudo Bíblico',
+    nome: 'Assistência Estudo Bíblico',
+    subtitulo: 'Acompanhamento prático em estudos bíblicos individuais ou pontos',
+    icone: '📖',
+    cor: '#0284c7',
+    bg: '#E0F2FE',
+  },
+  {
+    id: 'Assistência Classe Bíblica',
+    nome: 'Assistência Classe Bíblica',
+    subtitulo: 'Suporte, organização e acompanhamento de classe bíblica',
+    icone: '🎓',
+    cor: '#7c3aed',
+    bg: '#F3E8FF',
+  },
+  {
+    id: 'Planejamento Missionário',
+    nome: 'Planejamento Missionário',
+    subtitulo: 'Reunião estratégica e alinhamento de metas e ações missionárias',
+    icone: '🧭',
+    cor: '#C9963A',
+    bg: '#FDF8EE',
+  },
+  {
+    id: 'Captação de Interessados',
+    nome: 'Captação de Interessados',
+    subtitulo: 'Mobilização e ações para captação de novos interessados',
+    icone: '🌱',
+    cor: '#0d9488',
+    bg: '#CCFBF1',
+  },
+  {
+    id: 'Visitação',
+    nome: 'Visitação',
+    subtitulo: 'Visitação missionária e acompanhamento de campo com as duplas',
+    icone: '🏠',
+    cor: '#16a34a',
+    bg: '#DCFCE7',
+  },
+  {
+    id: 'Mentoria de Interessados no Novo Tempo',
+    nome: 'Mentoria de Interessados no Novo Tempo',
+    subtitulo: 'Mentoria e acompanhamento no atendimento de interessados da Novo Tempo',
+    icone: '📻',
+    cor: '#ea580c',
+    bg: '#FFEDD5',
+  },
+];
+
+const MAPA_TIPO_ASSISTENCIA = new Map(
+  TIPOS_ASSISTENCIA_OPCOES.map((item) => [item.id.toLowerCase(), item])
+);
+
+const metadadosTipoAssistencia = (tipo) => {
+  const chave = String(tipo || '').trim().toLowerCase();
+  return (
+    MAPA_TIPO_ASSISTENCIA.get(chave) || {
+      id: tipo || 'Visitação',
+      nome: tipo || 'Visitação',
+      icone: '✨',
+      cor: '#C9963A',
+      bg: '#FDF8EE',
+    }
+  );
+};
+
 const PALAVRAS_IGNORADAS = new Set([
   'a', 'ao', 'aos', 'as', 'com', 'como', 'da', 'das', 'de', 'do', 'dos', 'e', 'ela', 'ele', 'em', 'essa', 'esse',
   'esta', 'este', 'foi', 'mais', 'mas', 'na', 'nas', 'no', 'nos', 'o', 'os', 'ou', 'para', 'pela', 'pelas', 'pelo',
   'pelos', 'por', 'que', 'se', 'sem', 'sua', 'suas', 'tambem', 'teve', 'um', 'uma', 'visita', 'assistencia', 'dupla',
 ]);
 
-const normalizarPalavra = (valor) => valor
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toLowerCase();
+const normalizarPalavra = (valor) =>
+  String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
 const hojeISO = () => dataLocalISO();
 
@@ -48,6 +126,11 @@ const extrairAnoDoMes = (mes) => {
 
 const formatarData = (valor) => {
   if (!valor) return 'Sem data';
+  const str = String(valor).slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [ano, mes, dia] = str.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return 'Sem data';
   return data.toLocaleDateString('pt-BR');
@@ -55,8 +138,260 @@ const formatarData = (valor) => {
 
 const nomeDupla = (dupla) => {
   if (!dupla) return 'Dupla não encontrada';
-  return `${dupla.liderNome || 'Líder'} + ${dupla.membro2Nome || 'Membro'}`;
+  const lider = String(dupla.liderNome || 'Líder').trim();
+  const membro2 = String(dupla.membro2Nome || '').trim();
+  if (!membro2 || ['nao informado', 'não informado'].includes(normalizarPalavra(membro2))) {
+    return lider;
+  }
+  return `${lider} + ${membro2}`;
 };
+
+const bairroValido = (valor) => {
+  const limpo = String(valor || '').trim();
+  if (!limpo) return '';
+  if (['nao informado', 'não informado', 'sem bairro', 'n/i', 'ni'].includes(normalizarPalavra(limpo))) {
+    return '';
+  }
+  return limpo;
+};
+
+const localidadeDupla = (dupla) => {
+  if (!dupla) return 'Localidade não informada';
+  const partes = [];
+  if (dupla.igreja?.nome) partes.push(`Igreja: ${dupla.igreja.nome}`);
+  if (dupla.distrito?.nome) partes.push(`Distrito: ${dupla.distrito.nome}`);
+  const bairro = bairroValido(dupla.bairro);
+  if (bairro && !partes.some((p) => normalizarPalavra(p).includes(normalizarPalavra(bairro)))) {
+    partes.push(bairro);
+  }
+  return partes.join(' · ') || 'Localidade não informada';
+};
+
+const regiaoDaSaida = (saida) =>
+  saida?.regiaoNome ||
+  saida?.coordenador?.regiao?.nome ||
+  saida?.duplas?.[0]?.dupla?.distrito?.regiao?.nome ||
+  '';
+
+const distritosDaSaida = (saida) => {
+  if (Array.isArray(saida?.distritosNomes) && saida.distritosNomes.length > 0) {
+    return saida.distritosNomes.join(', ');
+  }
+  if (saida?.distritoNome) return saida.distritoNome;
+  const nomes = [
+    ...new Set(
+      (saida?.duplas || [])
+        .map((item) => item?.dupla?.distrito?.nome)
+        .filter(Boolean)
+    ),
+  ];
+  return nomes.join(', ');
+};
+
+const igrejasDaSaida = (saida) => {
+  if (Array.isArray(saida?.igrejasNomes) && saida.igrejasNomes.length > 0) {
+    return saida.igrejasNomes.join(', ');
+  }
+  if (saida?.igrejaNome) return saida.igrejaNome;
+  const nomes = [
+    ...new Set(
+      (saida?.duplas || [])
+        .map((item) => item?.dupla?.igreja?.nome)
+        .filter(Boolean)
+    ),
+  ];
+  return nomes.join(', ');
+};
+
+function FiltroBuscaInteligente({
+  label,
+  placeholder,
+  itens = [],
+  value,
+  onChange,
+  todosLabel = 'Todos',
+  iconePadrao = '🔎',
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [busca, setBusca] = useState('');
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const aoClicarFora = (evento) => {
+      if (containerRef.current && !containerRef.current.contains(evento.target)) {
+        setAberto(false);
+      }
+    };
+    document.addEventListener('mousedown', aoClicarFora);
+    return () => document.removeEventListener('mousedown', aoClicarFora);
+  }, []);
+
+  const selecionado = useMemo(
+    () => itens.find((item) => String(item.id) === String(value)) || null,
+    [itens, value]
+  );
+
+  const filtrados = useMemo(() => {
+    const termo = normalizarPalavra(busca);
+    if (!termo) return itens;
+    return itens.filter((item) =>
+      normalizarPalavra(`${item.nome} ${item.subtitulo || ''} ${item.badge || ''}`).includes(termo)
+    );
+  }, [itens, busca]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-gray-400">
+        {label}
+      </span>
+
+      {selecionado && !aberto ? (
+        <div className="flex h-11 items-center justify-between gap-2 rounded-xl border border-[#1A3A6B]/25 bg-[#F8FAFF] px-3 shadow-2xs transition">
+          <button
+            type="button"
+            onClick={() => {
+              setAberto(true);
+              setTimeout(() => inputRef.current?.focus(), 30);
+            }}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          >
+            <span className="flex-shrink-0 text-sm">{selecionado.icone || iconePadrao}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs sm:text-sm font-bold text-[#1A3A6B] leading-tight">
+                {selecionado.nome}
+              </p>
+              {selecionado.subtitulo && (
+                <p className="truncate text-[10px] font-medium text-gray-500 leading-tight">
+                  {selecionado.subtitulo}
+                </p>
+              )}
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setBusca('');
+            }}
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+            title={`Limpar ${label.toLowerCase()}`}
+            aria-label={`Limpar ${label.toLowerCase()}`}
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="text"
+            value={busca}
+            onFocus={() => setAberto(true)}
+            onChange={(evento) => {
+              setBusca(evento.target.value);
+              setAberto(true);
+            }}
+            placeholder={placeholder || todosLabel}
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-9 text-xs sm:text-sm font-medium text-gray-800 placeholder:text-gray-500 shadow-2xs transition focus:border-[#1A3A6B] focus:outline-none focus:ring-2 focus:ring-[#1A3A6B]/15"
+          />
+          <button
+            type="button"
+            onClick={() => setAberto((atual) => !atual)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-[#1A3A6B]"
+            aria-label={`Abrir opções de ${label}`}
+          >
+            <svg className={`h-4 w-4 transition-transform ${aberto ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {aberto && (
+        <div className="absolute left-0 right-0 z-50 mt-1.5 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl animate-fade-in">
+          <div className="flex items-center justify-between border-b border-gray-100 bg-[#F8FAFC] px-3 py-2 text-[11px] font-semibold text-gray-500">
+            <span>{filtrados.length} {filtrados.length === 1 ? 'opção' : 'opções'}</span>
+            {value && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setBusca('');
+                  setAberto(false);
+                }}
+                className="font-bold text-red-600 hover:underline"
+              >
+                Limpar seleção
+              </button>
+            )}
+          </div>
+          <div className="max-h-60 overflow-y-auto divide-y divide-gray-50">
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setBusca('');
+                setAberto(false);
+              }}
+              className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs sm:text-sm transition ${
+                !value ? 'bg-[#EEF3FB] font-bold text-[#1A3A6B]' : 'text-gray-600 hover:bg-[#F8FAFC]'
+              }`}
+            >
+              <span>{todosLabel}</span>
+              {!value && <span className="text-[10px] font-bold uppercase text-[#1A3A6B]">Ativo</span>}
+            </button>
+            {filtrados.map((item) => {
+              const ativo = String(item.id) === String(value);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(String(item.id));
+                    setBusca('');
+                    setAberto(false);
+                  }}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left transition ${
+                    ativo ? 'bg-[#EEF3FB] border-l-4 border-[#1A3A6B]' : 'hover:bg-[#F8FAFC]'
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    {item.icone && <span className="flex-shrink-0 text-sm">{item.icone}</span>}
+                    <div className="min-w-0">
+                      <p className="truncate text-xs sm:text-sm font-bold text-[#1A3A6B]">{item.nome}</p>
+                      {item.subtitulo && (
+                        <p className="truncate text-[11px] text-gray-500">{item.subtitulo}</p>
+                      )}
+                    </div>
+                  </div>
+                  {item.badge && (
+                    <span className="flex-shrink-0 rounded-full bg-[#FDF8EE] px-2 py-0.5 text-[10px] font-bold text-[#C9963A] border border-[#C9963A]/20">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            {filtrados.length === 0 && (
+              <div className="px-4 py-5 text-center text-xs text-gray-400">
+                Nenhum resultado encontrado para "{busca}".
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const MetricCard = ({ label, valor, detalhe, cor }) => (
   <div className="card p-3 sm:p-5 flex flex-col justify-between">
@@ -88,6 +423,9 @@ export default function RelatorioAssistencia() {
   const [dados, setDados] = useState(null);
   const [dadosAno, setDadosAno] = useState(null);
   const [coordenadores, setCoordenadores] = useState([]);
+  const [regioes, setRegioes] = useState([]);
+  const [distritos, setDistritos] = useState([]);
+  const [igrejas, setIgrejas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [tipoPeriodo, setTipoPeriodo] = useState('semana');
@@ -98,7 +436,11 @@ export default function RelatorioAssistencia() {
   const [apenasSemanasComRegistros, setApenasSemanasComRegistros] = useState(false);
   const [filtros, setFiltros] = useState(() => ({
     ...intervaloDaSemana(semanaVigente),
+    regiaoId: '',
     coordenadorId: '',
+    tipoAssistencia: '',
+    distritoId: '',
+    igrejaId: '',
   }));
   const [registroSelecionado, setRegistroSelecionado] = useState(null);
   const [modalRegistrosAberto, setModalRegistrosAberto] = useState(false);
@@ -110,16 +452,116 @@ export default function RelatorioAssistencia() {
   const mesesDoAno = useMemo(() => listarMesesDoAno(anoReferencia), [anoReferencia]);
 
   useEffect(() => {
-    api.get('/acompanhamentos/coordenadores')
-      .then((res) => setCoordenadores(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setCoordenadores([]));
+    Promise.all([
+      api.get('/acompanhamentos/coordenadores').catch(() => ({ data: [] })),
+      api.get('/regioes').catch(() => ({ data: [] })),
+      api.get('/distritos').catch(() => ({ data: [] })),
+      api.get('/igrejas').catch(() => ({ data: [] })),
+    ]).then(([coordRes, regRes, distRes, igrRes]) => {
+      setCoordenadores(Array.isArray(coordRes.data) ? coordRes.data : []);
+      setRegioes(Array.isArray(regRes.data) ? regRes.data : []);
+      setDistritos(Array.isArray(distRes.data) ? distRes.data : []);
+      setIgrejas(Array.isArray(igrRes.data) ? igrRes.data : []);
+    });
   }, []);
+
+  const opcoesRegioes = useMemo(() => {
+    const mapa = new Map();
+    regioes.forEach((r) => {
+      if (r?.id) {
+        mapa.set(Number(r.id), {
+          id: String(r.id),
+          nome: r.nome,
+          subtitulo: r.nomeConselheiro ? `Conselheiro: ${r.nomeConselheiro}` : 'Região missionária',
+          icone: '🗺️',
+        });
+      }
+    });
+    coordenadores.forEach((c) => {
+      if (c?.regiao?.id && !mapa.has(Number(c.regiao.id))) {
+        mapa.set(Number(c.regiao.id), {
+          id: String(c.regiao.id),
+          nome: c.regiao.nome,
+          subtitulo: `Coordenador(a): ${c.nome}`,
+          icone: '🗺️',
+        });
+      }
+    });
+    return [...mapa.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [regioes, coordenadores]);
+
+  const opcoesCoordenadores = useMemo(() => {
+    const lista = filtros.regiaoId
+      ? coordenadores.filter((c) => String(c.regiao?.id) === String(filtros.regiaoId))
+      : coordenadores;
+    return lista.map((c) => ({
+      id: String(c.id),
+      nome: c.nome,
+      subtitulo: c.regiao?.nome || 'Sem região vinculada',
+      badge: c.regiao?.nome || '',
+      icone: '👤',
+    }));
+  }, [coordenadores, filtros.regiaoId]);
+
+  const regiaoEfetiva = useMemo(() => {
+    if (filtros.regiaoId) return String(filtros.regiaoId);
+    if (filtros.coordenadorId) {
+      const coord = coordenadores.find((c) => String(c.id) === String(filtros.coordenadorId));
+      if (coord?.regiao?.id) return String(coord.regiao.id);
+    }
+    return '';
+  }, [filtros.regiaoId, filtros.coordenadorId, coordenadores]);
+
+  const opcoesDistritos = useMemo(() => {
+    const lista = regiaoEfetiva
+      ? distritos.filter((d) => String(d.regiaoId || d.regiao?.id) === regiaoEfetiva)
+      : distritos;
+    return lista
+      .map((d) => ({
+        id: String(d.id),
+        nome: d.nome,
+        subtitulo: d.regiao?.nome || opcoesRegioes.find((r) => r.id === String(d.regiaoId))?.nome || 'Distrito pastoral',
+        badge: d.regiao?.nome || '',
+        icone: '📍',
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [distritos, regiaoEfetiva, opcoesRegioes]);
+
+  const opcoesIgrejas = useMemo(() => {
+    let lista = igrejas;
+    if (filtros.distritoId) {
+      lista = lista.filter((i) => String(i.distritoId || i.distrito?.id) === String(filtros.distritoId));
+    } else if (regiaoEfetiva) {
+      const idsDistritosDaRegiao = new Set(opcoesDistritos.map((d) => String(d.id)));
+      lista = lista.filter(
+        (i) =>
+          String(i.distrito?.regiaoId || i.distrito?.regiao?.id) === regiaoEfetiva ||
+          idsDistritosDaRegiao.has(String(i.distritoId || i.distrito?.id))
+      );
+    }
+    return lista
+      .map((i) => {
+        const nomeDist = i.distrito?.nome || distritos.find((d) => String(d.id) === String(i.distritoId))?.nome || '';
+        return {
+          id: String(i.id),
+          nome: i.nome,
+          subtitulo: nomeDist ? `Distrito: ${nomeDist}` : 'Congregação local',
+          badge: nomeDist,
+          icone: '⛪',
+        };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [igrejas, distritos, filtros.distritoId, regiaoEfetiva, opcoesDistritos]);
 
   useEffect(() => {
     const params = {};
     if (filtros.de) params.de = filtros.de;
     if (filtros.ate) params.ate = filtros.ate;
+    if (filtros.regiaoId) params.regiaoId = filtros.regiaoId;
     if (filtros.coordenadorId) params.coordenadorId = filtros.coordenadorId;
+    if (filtros.tipoAssistencia) params.tipoAssistencia = filtros.tipoAssistencia;
+    if (filtros.distritoId) params.distritoId = filtros.distritoId;
+    if (filtros.igrejaId) params.igrejaId = filtros.igrejaId;
 
     setCarregando(true);
     setErro('');
@@ -135,12 +577,24 @@ export default function RelatorioAssistencia() {
     const de = primeiraSemanaDe < `${anoReferencia}-01-01` ? primeiraSemanaDe : `${anoReferencia}-01-01`;
     const ate = ultimaSemanaAte > `${anoReferencia}-12-31` ? ultimaSemanaAte : `${anoReferencia}-12-31`;
     const params = { de, ate };
+    if (filtros.regiaoId) params.regiaoId = filtros.regiaoId;
     if (filtros.coordenadorId) params.coordenadorId = filtros.coordenadorId;
+    if (filtros.tipoAssistencia) params.tipoAssistencia = filtros.tipoAssistencia;
+    if (filtros.distritoId) params.distritoId = filtros.distritoId;
+    if (filtros.igrejaId) params.igrejaId = filtros.igrejaId;
 
     api.get('/relatorios/acompanhamento', { params })
       .then((res) => setDadosAno(res.data || null))
       .catch(() => setDadosAno(null));
-  }, [anoReferencia, filtros.coordenadorId, semanasDoAno]);
+  }, [
+    anoReferencia,
+    filtros.regiaoId,
+    filtros.coordenadorId,
+    filtros.tipoAssistencia,
+    filtros.distritoId,
+    filtros.igrejaId,
+    semanasDoAno,
+  ]);
 
   const atividadeAno = useMemo(() => {
     const porSemana = {};
@@ -219,7 +673,9 @@ export default function RelatorioAssistencia() {
           porDupla[chave] = {
             id: dupla.id,
             nome: nomeDupla(dupla),
-            bairro: dupla.bairro || dupla.igreja?.nome || dupla.distrito?.nome || 'Sem bairro',
+            localidade: localidadeDupla(dupla),
+            igrejaNome: dupla.igreja?.nome || '',
+            distritoNome: dupla.distrito?.nome || '',
             coordenadores: new Set(),
             total: 0,
           };
@@ -254,14 +710,70 @@ export default function RelatorioAssistencia() {
 
   const analiseGraficos = useMemo(() => {
     const porCoordenador = new Map();
+    const porTipo = new Map();
+    const porRegiao = new Map();
+    const porDistrito = new Map();
+    const porIgreja = new Map();
     const frequenciaPalavras = new Map();
 
+    TIPOS_ASSISTENCIA_OPCOES.forEach((op) => {
+      porTipo.set(op.id, {
+        nome: op.nome,
+        icone: op.icone,
+        cor: op.cor,
+        bg: op.bg,
+        assistencias: 0,
+        duplas: 0,
+      });
+    });
+
     saidas.forEach((saida) => {
+      const qtdDuplas = saida.duplas?.length || 0;
       const coordenador = saida.coordenador?.nome || 'Sem coordenador';
-      const atual = porCoordenador.get(coordenador) || { nome: coordenador, assistencias: 0, duplas: 0 };
-      atual.assistencias += 1;
-      atual.duplas += saida.duplas?.length || 0;
-      porCoordenador.set(coordenador, atual);
+      const atualCoord = porCoordenador.get(coordenador) || { nome: coordenador, assistencias: 0, duplas: 0 };
+      atualCoord.assistencias += 1;
+      atualCoord.duplas += qtdDuplas;
+      porCoordenador.set(coordenador, atualCoord);
+
+      const tipoNome = saida.tipoAssistencia || 'Visitação';
+      const metaTipo = metadadosTipoAssistencia(tipoNome);
+      const atualTipo = porTipo.get(metaTipo.id) || {
+        nome: metaTipo.nome,
+        icone: metaTipo.icone,
+        cor: metaTipo.cor,
+        bg: metaTipo.bg,
+        assistencias: 0,
+        duplas: 0,
+      };
+      atualTipo.assistencias += 1;
+      atualTipo.duplas += qtdDuplas;
+      porTipo.set(metaTipo.id, atualTipo);
+
+      const nomeRegiao = regiaoDaSaida(saida) || 'Região não informada';
+      const atualRegiao = porRegiao.get(nomeRegiao) || { nome: nomeRegiao, assistencias: 0, duplas: 0 };
+      atualRegiao.assistencias += 1;
+      atualRegiao.duplas += qtdDuplas;
+      porRegiao.set(nomeRegiao, atualRegiao);
+
+      const distritosUnicosSaida = Array.isArray(saida.distritosNomes) && saida.distritosNomes.length > 0
+        ? saida.distritosNomes
+        : (saida.distritoNome ? [saida.distritoNome] : []);
+      distritosUnicosSaida.forEach((dNome) => {
+        const atualDist = porDistrito.get(dNome) || { nome: dNome, assistencias: 0, duplas: 0 };
+        atualDist.assistencias += 1;
+        atualDist.duplas += qtdDuplas;
+        porDistrito.set(dNome, atualDist);
+      });
+
+      const igrejasUnicasSaida = Array.isArray(saida.igrejasNomes) && saida.igrejasNomes.length > 0
+        ? saida.igrejasNomes
+        : (saida.igrejaNome ? [saida.igrejaNome] : []);
+      igrejasUnicasSaida.forEach((iNome) => {
+        const atualIgr = porIgreja.get(iNome) || { nome: iNome, assistencias: 0, duplas: 0 };
+        atualIgr.assistencias += 1;
+        atualIgr.duplas += qtdDuplas;
+        porIgreja.set(iNome, atualIgr);
+      });
 
       const palavras = String(saida.observacoes || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
       palavras.forEach((palavra) => {
@@ -281,8 +793,29 @@ export default function RelatorioAssistencia() {
         duplas: semana.totalDuplas || 0,
       }));
 
+    const listaTipos = [...porTipo.values()].sort(
+      (a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas || a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+
+    const listaRegioes = [...porRegiao.values()].sort(
+      (a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas || a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+
+    const listaDistritos = [...porDistrito.values()]
+      .sort((a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas || a.nome.localeCompare(b.nome, 'pt-BR'))
+      .slice(0, 10);
+
+    const listaIgrejas = [...porIgreja.values()]
+      .sort((a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas || a.nome.localeCompare(b.nome, 'pt-BR'))
+      .slice(0, 10);
+
     return {
       semanas,
+      tipos: listaTipos,
+      tiposComRegistro: listaTipos.filter((item) => item.assistencias > 0),
+      regioes: listaRegioes,
+      distritos: listaDistritos,
+      igrejas: listaIgrejas,
       coordenadores: [...porCoordenador.values()]
         .sort((a, b) => b.assistencias - a.assistencias || b.duplas - a.duplas)
         .slice(0, 8),
@@ -297,6 +830,95 @@ export default function RelatorioAssistencia() {
   }, [dados?.porSemana, resumo.relatoriosPreenchidos, resumo.totalSaidas, saidas]);
 
   const opcoesGraficos = useMemo(() => ({
+    tipos: {
+      color: ['#1A3A6B', '#0d9488'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0 },
+      grid: { left: 12, right: 20, top: 20, bottom: 52, containLabel: true },
+      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: (analiseGraficos.tiposComRegistro.length ? analiseGraficos.tiposComRegistro : analiseGraficos.tipos).map((item) => item.nome),
+        axisLabel: { width: 155, overflow: 'truncate', color: '#334155', fontWeight: 600 },
+      },
+      series: [
+        {
+          name: 'Assistências',
+          type: 'bar',
+          data: (analiseGraficos.tiposComRegistro.length ? analiseGraficos.tiposComRegistro : analiseGraficos.tipos).map((item) => item.assistencias),
+          itemStyle: { borderRadius: [0, 6, 6, 0] },
+        },
+        {
+          name: 'Duplas acompanhadas',
+          type: 'bar',
+          data: (analiseGraficos.tiposComRegistro.length ? analiseGraficos.tiposComRegistro : analiseGraficos.tipos).map((item) => item.duplas),
+          itemStyle: { borderRadius: [0, 6, 6, 0] },
+        },
+      ],
+    },
+    regioes: {
+      color: ['#7c3aed', '#C9963A'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0 },
+      grid: { left: 12, right: 20, top: 24, bottom: 52, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: analiseGraficos.regioes.map((item) => item.nome),
+        axisLabel: { color: '#475569', fontWeight: 600 },
+      },
+      yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      series: [
+        {
+          name: 'Assistências',
+          type: 'bar',
+          barMaxWidth: 34,
+          data: analiseGraficos.regioes.map((item) => item.assistencias),
+          itemStyle: { borderRadius: [6, 6, 0, 0] },
+        },
+        {
+          name: 'Duplas acompanhadas',
+          type: 'bar',
+          barMaxWidth: 34,
+          data: analiseGraficos.regioes.map((item) => item.duplas),
+          itemStyle: { borderRadius: [6, 6, 0, 0] },
+        },
+      ],
+    },
+    distritos: {
+      color: ['#2563eb', '#0d9488'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0 },
+      grid: { left: 12, right: 20, top: 20, bottom: 52, containLabel: true },
+      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: analiseGraficos.distritos.map((item) => item.nome),
+        axisLabel: { width: 135, overflow: 'truncate', color: '#475569' },
+      },
+      series: [
+        { name: 'Assistências', type: 'bar', data: analiseGraficos.distritos.map((item) => item.assistencias), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+        { name: 'Duplas', type: 'bar', data: analiseGraficos.distritos.map((item) => item.duplas), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+      ],
+    },
+    igrejas: {
+      color: ['#059669', '#C9963A'],
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { bottom: 0 },
+      grid: { left: 12, right: 20, top: 20, bottom: 52, containLabel: true },
+      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef2f7' } } },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: analiseGraficos.igrejas.map((item) => item.nome),
+        axisLabel: { width: 135, overflow: 'truncate', color: '#475569' },
+      },
+      series: [
+        { name: 'Assistências', type: 'bar', data: analiseGraficos.igrejas.map((item) => item.assistencias), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+        { name: 'Duplas', type: 'bar', data: analiseGraficos.igrejas.map((item) => item.duplas), itemStyle: { borderRadius: [0, 6, 6, 0] } },
+      ],
+    },
     atividade: {
       color: ['#7c3aed', '#0d9488'],
       tooltip: { trigger: 'axis' },
@@ -430,8 +1052,18 @@ export default function RelatorioAssistencia() {
   };
 
   const limparFiltros = () => {
-    setTipoPeriodo('personalizado');
-    setFiltros({ de: '', ate: '', coordenadorId: '' });
+    const semana = semanaISOAtual();
+    setSemanaSelecionada(semana);
+    setAnoReferencia(extrairAnoDaSemana(semana));
+    setTipoPeriodo('semana');
+    setFiltros({
+      ...intervaloDaSemana(semana),
+      regiaoId: '',
+      coordenadorId: '',
+      tipoAssistencia: '',
+      distritoId: '',
+      igrejaId: '',
+    });
   };
 
   const filtrarSemanaAtual = () => {
@@ -445,6 +1077,14 @@ export default function RelatorioAssistencia() {
   const intervaloSemanaAtiva = useMemo(
     () => intervaloDaSemana(semanaSelecionada),
     [semanaSelecionada]
+  );
+
+  const possuiFiltroOpcionalAtivo = Boolean(
+    filtros.regiaoId ||
+    filtros.coordenadorId ||
+    filtros.tipoAssistencia ||
+    filtros.distritoId ||
+    filtros.igrejaId
   );
 
   if (carregando && !dados) return <LoadingState mensagem="Carregando resumo de assistência..." />;
@@ -480,13 +1120,13 @@ export default function RelatorioAssistencia() {
       <div className={isDireto ? 'flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5' : 'space-y-4 sm:space-y-5'}>
         {erro && <div className="card border border-red-100 text-sm text-red-600">{erro}</div>}
 
-        <section className="card overflow-hidden p-0">
-          <div className="border-b border-gray-100 bg-gradient-to-r from-[#F8FAFC] to-white px-4 py-4 sm:px-6">
+        <section className="card overflow-visible p-0">
+          <div className="rounded-t-2xl border-b border-gray-100 bg-gradient-to-r from-[#F8FAFC] to-white px-4 py-4 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="font-bold text-[#1A3A6B]">Período do relatório</h2>
+                <h2 className="font-bold text-[#1A3A6B]">Período e filtros inteligentes do relatório</h2>
                 <p className="mt-0.5 text-xs text-gray-400">
-                  A semana vigente vem selecionada automaticamente. Clique nos quadrados abaixo para alternar rapidamente.
+                  Comece selecionando a semana, mês ou período e refine opcionalmente por região, coordenador, tipo de assistência, distrito ou igreja.
                 </p>
               </div>
               <div className="inline-flex w-full rounded-xl border border-gray-200 bg-white p-1 sm:w-auto" role="group" aria-label="Tipo de período">
@@ -504,8 +1144,8 @@ export default function RelatorioAssistencia() {
             </div>
           </div>
 
-          {/* Linha principal de filtros: perfeitamente alinhada na mesma linha horizontal */}
-          <div className="grid grid-cols-1 gap-3 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_auto] lg:items-end">
+          {/* Linha 1: Tempo / Data / Semana e botões rápidos */}
+          <div className="grid grid-cols-1 gap-3 px-4 pt-4 pb-3 sm:px-6 sm:pt-5 lg:grid-cols-[minmax(0,1.5fr)_auto] lg:items-end">
             {tipoPeriodo === 'semana' && (
               <div>
                 <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Semana do ano</span>
@@ -642,22 +1282,6 @@ export default function RelatorioAssistencia() {
               </div>
             )}
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</span>
-              <select
-                className="input-field h-11 py-0"
-                value={filtros.coordenadorId}
-                onChange={(event) => setFiltros((atual) => ({ ...atual, coordenadorId: event.target.value }))}
-              >
-                <option value="">Todos os coordenadores</option>
-                {coordenadores.map((coordenador) => (
-                  <option key={coordenador.id} value={coordenador.id}>
-                    {coordenador.nome}{coordenador.regiao?.nome ? ` - ${coordenador.regiao.nome}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-
             <div className="flex h-11 items-center gap-2">
               <button
                 type="button"
@@ -671,8 +1295,116 @@ export default function RelatorioAssistencia() {
                 className="btn-outline inline-flex h-11 items-center justify-center whitespace-nowrap px-4 text-sm"
                 onClick={limparFiltros}
               >
-                Limpar
+                Limpar tudo
               </button>
+            </div>
+          </div>
+
+          {/* Linha 2: Filtros inteligentes opcionais (Região, Coordenador, Tipo de Assistência, Distrito, Igreja) */}
+          <div className="border-t border-gray-100 bg-[#FAFBFD] px-4 py-3.5 sm:px-6">
+            <div className="mb-2.5 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1A3A6B]">
+                Filtros inteligentes opcionais
+              </span>
+              {possuiFiltroOpcionalAtivo && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFiltros((atual) => ({
+                      ...atual,
+                      regiaoId: '',
+                      coordenadorId: '',
+                      tipoAssistencia: '',
+                      distritoId: '',
+                      igrejaId: '',
+                    }))
+                  }
+                  className="text-xs font-bold text-red-600 hover:underline"
+                >
+                  Limpar filtros opcionais
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <FiltroBuscaInteligente
+                label="Região"
+                placeholder="Todas as regiões..."
+                todosLabel="Todas as regiões"
+                iconePadrao="🗺️"
+                itens={opcoesRegioes}
+                value={filtros.regiaoId}
+                onChange={(novoRegiaoId) => {
+                  setFiltros((atual) => ({
+                    ...atual,
+                    regiaoId: novoRegiaoId,
+                    coordenadorId: '',
+                    distritoId: '',
+                    igrejaId: '',
+                  }));
+                }}
+              />
+
+              <FiltroBuscaInteligente
+                label="Coordenador Regional"
+                placeholder="Todos os coordenadores..."
+                todosLabel="Todos os coordenadores"
+                iconePadrao="👤"
+                itens={opcoesCoordenadores}
+                value={filtros.coordenadorId}
+                onChange={(novoCoordId) => {
+                  setFiltros((atual) => ({
+                    ...atual,
+                    coordenadorId: novoCoordId,
+                  }));
+                }}
+              />
+
+              <FiltroBuscaInteligente
+                label="Tipo de Assistência"
+                placeholder="Todos os tipos..."
+                todosLabel="Todos os tipos de assistência"
+                iconePadrao="✨"
+                itens={TIPOS_ASSISTENCIA_OPCOES}
+                value={filtros.tipoAssistencia}
+                onChange={(novoTipo) => {
+                  setFiltros((atual) => ({
+                    ...atual,
+                    tipoAssistencia: novoTipo,
+                  }));
+                }}
+              />
+
+              <FiltroBuscaInteligente
+                label="Distrito"
+                placeholder="Buscar distrito..."
+                todosLabel="Todos os distritos"
+                iconePadrao="📍"
+                itens={opcoesDistritos}
+                value={filtros.distritoId}
+                onChange={(novoDistritoId) => {
+                  setFiltros((atual) => ({
+                    ...atual,
+                    distritoId: novoDistritoId,
+                    igrejaId: '',
+                  }));
+                }}
+              />
+
+              <FiltroBuscaInteligente
+                label="Igreja"
+                placeholder="Buscar igreja..."
+                todosLabel="Todas as igrejas"
+                iconePadrao="⛪"
+                itens={opcoesIgrejas}
+                value={filtros.igrejaId}
+                onChange={(novaIgrejaId) => {
+                  setFiltros((atual) => ({
+                    ...atual,
+                    igrejaId: novaIgrejaId,
+                  }));
+                }}
+              />
             </div>
           </div>
 
@@ -899,13 +1631,15 @@ export default function RelatorioAssistencia() {
             </div>
           )}
 
-          {(filtros.de || filtros.ate) && (
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 bg-[#F8FAFC] px-4 py-3 text-xs text-gray-500 sm:px-6">
+          {(filtros.de || filtros.ate || possuiFiltroOpcionalAtivo) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-b-2xl border-t border-gray-100 bg-[#F8FAFC] px-4 py-3 text-xs text-gray-500 sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold uppercase tracking-wider text-[#C9963A]">Exibindo</span>
-                <span className="rounded-full bg-white px-3 py-1 font-semibold text-[#1A3A6B] shadow-sm">
-                  {filtros.de ? formatarData(`${filtros.de}T12:00:00`) : 'início'} — {filtros.ate ? formatarData(`${filtros.ate}T12:00:00`) : 'hoje'}
-                </span>
+                {(filtros.de || filtros.ate) && (
+                  <span className="rounded-full bg-white px-3 py-1 font-semibold text-[#1A3A6B] shadow-sm">
+                    {filtros.de ? formatarData(`${filtros.de}T12:00:00`) : 'início'} — {filtros.ate ? formatarData(`${filtros.ate}T12:00:00`) : 'hoje'}
+                  </span>
+                )}
                 {tipoPeriodo === 'semana' && (
                   <span className="rounded-full bg-[#1A3A6B]/10 px-3 py-1 font-bold text-[#1A3A6B]">
                     {rotuloSemana(semanaSelecionada)}
@@ -914,6 +1648,31 @@ export default function RelatorioAssistencia() {
                 {tipoPeriodo === 'mes' && (
                   <span className="rounded-full bg-[#1A3A6B]/10 px-3 py-1 font-bold text-[#1A3A6B]">
                     {rotuloMes(mesSelecionado)}
+                  </span>
+                )}
+                {filtros.regiaoId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 px-2.5 py-0.5 font-bold text-[#9A6F1E]">
+                    🗺️ {opcoesRegioes.find((r) => r.id === String(filtros.regiaoId))?.nome || 'Região'}
+                  </span>
+                )}
+                {filtros.coordenadorId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100/80 px-2.5 py-0.5 font-bold text-[#1A3A6B]">
+                    👤 {coordenadores.find((c) => String(c.id) === String(filtros.coordenadorId))?.nome || 'Coordenador'}
+                  </span>
+                )}
+                {filtros.tipoAssistencia && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-100/80 px-2.5 py-0.5 font-bold text-purple-800">
+                    {metadadosTipoAssistencia(filtros.tipoAssistencia).icone} {filtros.tipoAssistencia}
+                  </span>
+                )}
+                {filtros.distritoId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-teal-100/80 px-2.5 py-0.5 font-bold text-teal-800">
+                    📍 {distritos.find((d) => String(d.id) === String(filtros.distritoId))?.nome || 'Distrito'}
+                  </span>
+                )}
+                {filtros.igrejaId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/80 px-2.5 py-0.5 font-bold text-emerald-800">
+                    ⛪ {igrejas.find((i) => String(i.id) === String(filtros.igrejaId))?.nome || 'Igreja'}
                   </span>
                 )}
               </div>
@@ -932,14 +1691,14 @@ export default function RelatorioAssistencia() {
           <MetricCard label="Relatórios preenchidos" valor={resumo.relatoriosPreenchidos} detalhe={resumo.coordenadorMaisAtivo ? `Mais ativo: ${resumo.coordenadorMaisAtivo.nome}` : 'Com observações registradas'} cor="#C9963A" />
         </div>
 
-        {/* 2. Histórico de assistências e Duplas acompanhadas (posicionados logo após os cards de indicadores) */}
+        {/* 2. Histórico de assistências e Duplas acompanhadas */}
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <section className="card xl:col-span-2">
             <div className="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
               <div className="min-w-0">
                 <h2 className="text-lg font-bold text-[#1A3A6B]">Histórico de assistências</h2>
                 <p className="max-w-xl text-sm text-gray-400">
-                  Quem deu a assistência, duplas acompanhadas e relatório de cada saída no período selecionado.
+                  Quem deu a assistência, região, tipo de assistência, distrito, igreja, duplas acompanhadas e relatório de cada saída.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -955,7 +1714,11 @@ export default function RelatorioAssistencia() {
             <div className="grid grid-cols-1 gap-3">
               {saidas.slice(0, 8).map((saida) => {
                 const duplasDaSaida = (saida.duplas || []).map((item) => item.dupla).filter(Boolean);
-                const regiaoOuDistrito = saida.coordenador?.regiao?.nome || saida.distritoNome || saida.igrejaNome || '';
+                const regiaoNome = regiaoDaSaida(saida);
+                const distritoTexto = distritosDaSaida(saida);
+                const igrejaTexto = igrejasDaSaida(saida);
+                const metaTipo = metadadosTipoAssistencia(saida.tipoAssistencia);
+
                 return (
                   <button
                     key={saida.id}
@@ -963,27 +1726,46 @@ export default function RelatorioAssistencia() {
                     onClick={() => setRegistroSelecionado(saida)}
                     className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-[#C9963A]/40 hover:shadow-sm"
                   >
-                    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[8rem_minmax(12rem,1.2fr)_5.5rem_minmax(0,1.45fr)] lg:items-start">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[9.5rem_minmax(13rem,1.25fr)_4.5rem_minmax(0,1.4fr)] lg:items-start">
                       <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
                         <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
-                        {saida.tipoAssistencia && (
-                          <span className="mt-1 inline-block rounded bg-[#C9963A]/12 px-2 py-0.5 text-[10px] font-bold text-[#C9963A]">
-                            {saida.tipoAssistencia}
-                          </span>
-                        )}
+                        <span
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold leading-snug"
+                          style={{ backgroundColor: metaTipo.bg, color: metaTipo.cor }}
+                        >
+                          <span>{metaTipo.icone}</span>
+                          <span className="truncate">{metaTipo.nome}</span>
+                        </span>
                       </div>
+
                       <div className="min-w-0 overflow-hidden">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Quem deu a assistência</p>
                         <p className="break-words font-bold leading-snug text-[#1A3A6B]">{saida.coordenador?.nome || 'Sem coordenador'}</p>
-                        {regiaoOuDistrito && (
-                          <p className="mt-0.5 truncate text-xs font-medium text-[#C9963A]">{regiaoOuDistrito}</p>
-                        )}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {regiaoNome && (
+                            <span className="inline-flex items-center rounded bg-[#C9963A]/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#9A6F1E]">
+                              {regiaoNome}
+                            </span>
+                          )}
+                          {distritoTexto && (
+                            <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                              📍 Distrito: {distritoTexto}
+                            </span>
+                          )}
+                          {igrejaTexto && (
+                            <span className="inline-flex items-center rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 border border-emerald-200/60">
+                              ⛪ Igreja: {igrejaTexto}
+                            </span>
+                          )}
+                        </div>
                       </div>
+
                       <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
                         <p className="text-2xl font-bold text-[#0d9488]">{numero(duplasDaSaida.length)}</p>
                       </div>
+
                       <div className="min-w-0 overflow-hidden">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
                         <p className="line-clamp-2 max-w-full break-words text-sm leading-snug text-gray-600 [overflow-wrap:anywhere]">
@@ -1000,9 +1782,14 @@ export default function RelatorioAssistencia() {
                         {duplasDaSaida.map((dupla) => (
                           <span
                             key={`${saida.id}-dupla-${dupla.id}`}
-                            className="inline-flex items-center rounded-lg bg-[#0d9488]/10 px-2.5 py-0.5 text-xs font-semibold text-[#0d9488]"
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#0d9488]/10 px-2.5 py-0.5 text-xs font-semibold text-[#0d9488]"
                           >
-                            {nomeDupla(dupla)}
+                            <span>{nomeDupla(dupla)}</span>
+                            {dupla.igreja?.nome && (
+                              <span className="text-[10px] font-normal text-[#0d9488]/80">
+                                ({dupla.igreja.nome})
+                              </span>
+                            )}
                           </span>
                         ))}
                       </div>
@@ -1023,7 +1810,7 @@ export default function RelatorioAssistencia() {
 
               {saidas.length === 0 && (
                 <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
-                  Nenhuma assistência encontrada para o período selecionado. Clique em outro quadrado de semana/mês acima para visualizar os relatórios.
+                  Nenhuma assistência encontrada para os filtros selecionados. Clique em outro quadrado de semana/mês acima ou ajuste os filtros.
                 </div>
               )}
             </div>
@@ -1031,7 +1818,7 @@ export default function RelatorioAssistencia() {
 
           <section className="card">
             <h2 className="text-lg font-bold text-[#1A3A6B]">Duplas acompanhadas</h2>
-            <p className="text-sm text-gray-400 mb-4">Duplas atendidas no período e quem realizou o acompanhamento.</p>
+            <p className="text-sm text-gray-400 mb-4">Duplas atendidas no período, igreja/distrito e quem realizou o acompanhamento.</p>
             <div className="space-y-3">
               {resumo.duplasMaisVisitadas.map((dupla, index) => (
                 <button
@@ -1043,7 +1830,7 @@ export default function RelatorioAssistencia() {
                   <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-gray-400">{index + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block break-words text-sm font-bold text-[#1A3A6B]">{dupla.nome}</span>
-                    <span className="block truncate text-xs text-gray-400">{dupla.bairro}</span>
+                    <span className="block truncate text-xs text-gray-500">{dupla.localidade}</span>
                     {dupla.coordenadoresNomes && (
                       <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#C9963A]">
                         Coord.: {dupla.coordenadoresNomes}
@@ -1062,43 +1849,156 @@ export default function RelatorioAssistencia() {
           </section>
         </div>
 
-        {/* 3. Análise visual (Gráficos consolidados) */}
+        {/* 3. Análise visual (Gráficos e distribuição por Tipo de Treinamento/Assistência, Região, Distrito, Igreja, Coordenador, etc.) */}
         <section className="card overflow-hidden p-0">
           <div className="border-b border-gray-100 bg-gradient-to-r from-[#10284f] to-[#1A3A6B] px-5 py-5 text-white sm:px-6">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#F2C979]">Análise visual</p>
             <h2 className="mt-1 text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Desempenho da assistência regional</h2>
-            <p className="mt-1 max-w-3xl text-sm text-white/65">Os gráficos acompanham os filtros selecionados e consolidam visitas, duplas, coordenadores e os assuntos mais citados nos relatos.</p>
+            <p className="mt-1 max-w-3xl text-sm text-white/65">
+              Visualização consolidada por tipo de treinamento/assistência, região, distrito, igreja, coordenador, evolução semanal e assuntos abordados.
+            </p>
           </div>
 
           {saidas.length > 0 ? (
-            <div className="grid grid-cols-1 gap-px bg-gray-100 lg:grid-cols-2">
-              <div className="bg-white p-4 sm:p-5">
-                <h3 className="font-bold text-[#1A3A6B]">Evolução por semana</h3>
-                <p className="mt-1 text-xs text-gray-400">Assistências registradas e duplas acompanhadas.</p>
-                <EChart option={opcoesGraficos.atividade} className="h-72 sm:h-80" />
-              </div>
-              <div className="bg-white p-4 sm:p-5">
-                <h3 className="font-bold text-[#1A3A6B]">Preenchimento dos relatos</h3>
-                <p className="mt-1 text-xs text-gray-400">Proporção de assistências com relatório detalhado.</p>
-                <EChart option={opcoesGraficos.cobertura} className="h-72 sm:h-80" />
-              </div>
-              <div className="bg-white p-4 sm:p-5">
-                <h3 className="font-bold text-[#1A3A6B]">Atuação por coordenador</h3>
-                <p className="mt-1 text-xs text-gray-400">Comparativo entre assistências e duplas atendidas.</p>
-                <EChart option={opcoesGraficos.coordenadores} className="h-72 sm:h-80" />
-              </div>
-              <div className="bg-white p-4 sm:p-5">
-                <h3 className="font-bold text-[#1A3A6B]">Assuntos mais mencionados</h3>
-                <p className="mt-1 text-xs text-gray-400">Termos recorrentes no conteúdo escrito pelos coordenadores.</p>
-                {analiseGraficos.palavras.length > 0 ? (
-                  <EChart option={opcoesGraficos.palavras} className="h-72 sm:h-80" />
-                ) : (
-                  <div className="flex h-72 items-center justify-center rounded-xl bg-[#F8FAFC] px-6 text-center text-sm text-gray-400 sm:h-80">
-                    Preencha relatos mais detalhados para visualizar os assuntos recorrentes.
+            <>
+              {/* Painel detalhado por Tipo de Treinamento / Assistência */}
+              <div className="border-b border-gray-100 bg-white p-4 sm:p-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-bold text-[#1A3A6B]">Distribuição por tipo de treinamento / assistência</h3>
+                    <p className="text-xs text-gray-400">
+                      Clique em uma modalidade para filtrar o relatório por aquele tipo de assistência.
+                    </p>
                   </div>
-                )}
+                  {filtros.tipoAssistencia && (
+                    <button
+                      type="button"
+                      onClick={() => setFiltros((atual) => ({ ...atual, tipoAssistencia: '' }))}
+                      className="text-xs font-bold text-[#1A3A6B] hover:underline"
+                    >
+                      Mostrar todos os tipos
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+                  {analiseGraficos.tipos.map((item) => {
+                    const pct = resumo.totalSaidas ? Math.round((item.assistencias / resumo.totalSaidas) * 100) : 0;
+                    const ativo = filtros.tipoAssistencia === item.nome;
+                    return (
+                      <button
+                        key={item.nome}
+                        type="button"
+                        onClick={() =>
+                          setFiltros((atual) => ({
+                            ...atual,
+                            tipoAssistencia: atual.tipoAssistencia === item.nome ? '' : item.nome,
+                          }))
+                        }
+                        className={`rounded-xl border p-3.5 text-left transition ${
+                          ativo
+                            ? 'border-[#1A3A6B] bg-[#EEF3FB] shadow-xs ring-1 ring-[#1A3A6B]'
+                            : 'border-gray-100 bg-[#F8FAFC] hover:border-[#C9963A]/40 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base"
+                            style={{ backgroundColor: item.bg, color: item.cor }}
+                          >
+                            {item.icone}
+                          </span>
+                          <span className="text-xs font-extrabold text-gray-400">{pct}%</span>
+                        </div>
+                        <p className="mt-2 truncate text-xs sm:text-sm font-bold text-[#1A3A6B]" title={item.nome}>
+                          {item.nome}
+                        </p>
+                        <div className="mt-1.5 flex items-baseline justify-between text-xs">
+                          <strong className="text-base font-black" style={{ color: item.cor }}>
+                            {numero(item.assistencias)} assist.
+                          </strong>
+                          <span className="text-gray-500 font-medium">{numero(item.duplas)} duplas</span>
+                        </div>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200/70">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: item.cor }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 gap-px bg-gray-100 lg:grid-cols-2">
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Comparativo por tipo de treinamento / assistência</h3>
+                  <p className="mt-1 text-xs text-gray-400">Volume de assistências e duplas acompanhadas em cada modalidade.</p>
+                  <EChart option={opcoesGraficos.tipos} className="h-72 sm:h-80" />
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Desempenho por região</h3>
+                  <p className="mt-1 text-xs text-gray-400">Assistências realizadas e duplas acompanhadas em cada região.</p>
+                  <EChart option={opcoesGraficos.regioes} className="h-72 sm:h-80" />
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Atuação por distrito</h3>
+                  <p className="mt-1 text-xs text-gray-400">Distritos com maior número de assistências e duplas atendidas.</p>
+                  {analiseGraficos.distritos.length > 0 ? (
+                    <EChart option={opcoesGraficos.distritos} className="h-72 sm:h-80" />
+                  ) : (
+                    <div className="flex h-72 items-center justify-center rounded-xl bg-[#F8FAFC] px-6 text-center text-sm text-gray-400 sm:h-80">
+                      Sem distritos identificados neste período.
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Atuação por igreja</h3>
+                  <p className="mt-1 text-xs text-gray-400">Igrejas com maior número de assistências e duplas acompanhadas.</p>
+                  {analiseGraficos.igrejas.length > 0 ? (
+                    <EChart option={opcoesGraficos.igrejas} className="h-72 sm:h-80" />
+                  ) : (
+                    <div className="flex h-72 items-center justify-center rounded-xl bg-[#F8FAFC] px-6 text-center text-sm text-gray-400 sm:h-80">
+                      Sem igrejas identificadas neste período.
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Evolução por semana</h3>
+                  <p className="mt-1 text-xs text-gray-400">Assistências registradas e duplas acompanhadas.</p>
+                  <EChart option={opcoesGraficos.atividade} className="h-72 sm:h-80" />
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Preenchimento dos relatos</h3>
+                  <p className="mt-1 text-xs text-gray-400">Proporção de assistências com relatório detalhado.</p>
+                  <EChart option={opcoesGraficos.cobertura} className="h-72 sm:h-80" />
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Atuação por coordenador</h3>
+                  <p className="mt-1 text-xs text-gray-400">Comparativo entre assistências e duplas atendidas.</p>
+                  <EChart option={opcoesGraficos.coordenadores} className="h-72 sm:h-80" />
+                </div>
+
+                <div className="bg-white p-4 sm:p-5">
+                  <h3 className="font-bold text-[#1A3A6B]">Assuntos mais mencionados</h3>
+                  <p className="mt-1 text-xs text-gray-400">Termos recorrentes no conteúdo escrito pelos coordenadores.</p>
+                  {analiseGraficos.palavras.length > 0 ? (
+                    <EChart option={opcoesGraficos.palavras} className="h-72 sm:h-80" />
+                  ) : (
+                    <div className="flex h-72 items-center justify-center rounded-xl bg-[#F8FAFC] px-6 text-center text-sm text-gray-400 sm:h-80">
+                      Preencha relatos mais detalhados para visualizar os assuntos recorrentes.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
             <div className="px-5 py-12 text-center text-sm text-gray-400">Nenhuma assistência encontrada para gerar os gráficos deste período.</div>
           )}
@@ -1161,40 +2061,67 @@ export default function RelatorioAssistencia() {
 
             <div className="app-modal-body">
               <div className="grid grid-cols-1 gap-3">
-                {saidas.map((saida) => (
-                  <button
-                    key={`modal-${saida.id}`}
-                    type="button"
-                    onClick={() => {
-                      setModalRegistrosAberto(false);
-                      setRegistroSelecionado(saida);
-                    }}
-                    className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40 hover:shadow-md"
-                  >
-                    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[8rem_minmax(12rem,1fr)_6rem_minmax(8rem,.85fr)_minmax(0,1.35fr)] lg:items-start">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
-                        <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
+                {saidas.map((saida) => {
+                  const metaTipo = metadadosTipoAssistencia(saida.tipoAssistencia);
+                  const regiaoNome = regiaoDaSaida(saida);
+                  const distritoTexto = distritosDaSaida(saida);
+                  const igrejaTexto = igrejasDaSaida(saida);
+
+                  return (
+                    <button
+                      key={`modal-${saida.id}`}
+                      type="button"
+                      onClick={() => {
+                        setModalRegistrosAberto(false);
+                        setRegistroSelecionado(saida);
+                      }}
+                      className="w-full overflow-hidden rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40 hover:shadow-md"
+                    >
+                      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[9.5rem_minmax(13rem,1.25fr)_5rem_minmax(0,1.35fr)] lg:items-start">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Data</p>
+                          <p className="font-bold text-[#1A3A6B]">{formatarData(saida.dataSaida)}</p>
+                          <span
+                            className="mt-1.5 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold"
+                            style={{ backgroundColor: metaTipo.bg, color: metaTipo.cor }}
+                          >
+                            <span>{metaTipo.icone}</span>
+                            <span className="truncate">{metaTipo.nome}</span>
+                          </span>
+                        </div>
+                        <div className="min-w-0 overflow-hidden">
+                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador e local</p>
+                          <p className="break-words font-semibold leading-snug text-[#1A3A6B]">{saida.coordenador?.nome || 'Sem coordenador'}</p>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            {regiaoNome && (
+                              <span className="inline-flex items-center rounded bg-[#C9963A]/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#9A6F1E]">
+                                {regiaoNome}
+                              </span>
+                            )}
+                            {distritoTexto && (
+                              <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                                📍 Distrito: {distritoTexto}
+                              </span>
+                            )}
+                            {igrejaTexto && (
+                              <span className="inline-flex items-center rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 border border-emerald-200/60">
+                                ⛪ Igreja: {igrejaTexto}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
+                          <p className="text-2xl font-bold text-[#0d9488]">{numero(saida.duplas?.length || 0)}</p>
+                        </div>
+                        <div className="min-w-0 overflow-hidden">
+                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
+                          <p className="line-clamp-2 max-w-full break-words text-sm leading-snug text-gray-500 [overflow-wrap:anywhere]">{saida.observacoes || 'Sem relato informado.'}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0 overflow-hidden">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coordenador</p>
-                        <p className="break-words font-semibold leading-snug text-gray-700">{saida.coordenador?.nome || 'Sem coordenador'}</p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duplas</p>
-                        <p className="text-2xl font-bold text-[#0d9488]">{numero(saida.duplas?.length || 0)}</p>
-                      </div>
-                      <div className="min-w-0 overflow-hidden">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Semana</p>
-                        <p className="font-semibold text-gray-600">{formatarData(`${saida.semanaInicio}T12:00:00`)}</p>
-                      </div>
-                      <div className="min-w-0 overflow-hidden">
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Relato</p>
-                        <p className="line-clamp-2 max-w-full break-words text-sm leading-snug text-gray-500 [overflow-wrap:anywhere]">{saida.observacoes || 'Sem relato informado.'}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
 
                 {saidas.length === 0 && (
                   <div className="rounded-xl bg-[#F4F5F7] px-4 py-10 text-center text-sm text-gray-400">
@@ -1220,11 +2147,32 @@ export default function RelatorioAssistencia() {
           <div className="app-modal-panel max-w-5xl" onClick={(event) => event.stopPropagation()}>
             <div className="app-modal-header">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistência</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#C9963A]">Detalhe da assistência</p>
+                  {regiaoDaSaida(registroSelecionado) && (
+                    <span className="rounded-full bg-[#C9963A]/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#9A6F1E]">
+                      {regiaoDaSaida(registroSelecionado)}
+                    </span>
+                  )}
+                  {registroSelecionado.tipoAssistencia && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                      style={{
+                        backgroundColor: metadadosTipoAssistencia(registroSelecionado.tipoAssistencia).bg,
+                        color: metadadosTipoAssistencia(registroSelecionado.tipoAssistencia).cor,
+                      }}
+                    >
+                      <span>{metadadosTipoAssistencia(registroSelecionado.tipoAssistencia).icone}</span>
+                      <span>{registroSelecionado.tipoAssistencia}</span>
+                    </span>
+                  )}
+                </div>
                 <h3 className="mt-1 text-xl font-bold text-[#1A3A6B]" style={{ fontFamily: 'Georgia, serif' }}>
                   {formatarData(registroSelecionado.dataSaida)}
                 </h3>
-                <p className="mt-1 text-sm text-gray-400">{registroSelecionado.coordenador?.nome || 'Sem coordenador'}</p>
+                <p className="mt-1 text-sm text-gray-500 font-medium">
+                  {registroSelecionado.coordenador?.nome || 'Sem coordenador'}
+                </p>
               </div>
               <button type="button" onClick={() => setRegistroSelecionado(null)} className="flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-[#1A3A6B]" aria-label="Fechar">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1235,19 +2183,15 @@ export default function RelatorioAssistencia() {
             </div>
 
             <div className="app-modal-body">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Info label="Data" valor={formatarData(registroSelecionado.dataSaida)} />
-                <Info label="Duplas" valor={registroSelecionado.duplas?.length || 0} />
                 <Info label="Semana" valor={formatarData(`${registroSelecionado.semanaInicio}T12:00:00`)} />
-                {registroSelecionado.tipoAssistencia && (
-                  <Info label="Tipo de Assistência" valor={registroSelecionado.tipoAssistencia} />
-                )}
-                {registroSelecionado.distritoNome && (
-                  <Info label="Distrito" valor={registroSelecionado.distritoNome} />
-                )}
-                {registroSelecionado.igrejaNome && (
-                  <Info label="Igreja" valor={registroSelecionado.igrejaNome} />
-                )}
+                <Info label="Coordenador Regional" valor={registroSelecionado.coordenador?.nome || 'Não informado'} />
+                <Info label="Região" valor={regiaoDaSaida(registroSelecionado) || 'Não informada'} />
+                <Info label="Tipo de Assistência" valor={registroSelecionado.tipoAssistencia || 'Visitação'} />
+                <Info label="Distrito" valor={distritosDaSaida(registroSelecionado) || 'Não especificado'} />
+                <Info label="Igreja" valor={igrejasDaSaida(registroSelecionado) || 'Não especificada'} />
+                <Info label="Duplas Acompanhadas" valor={registroSelecionado.duplas?.length || 0} />
               </div>
 
               <div className="mt-5">
@@ -1268,7 +2212,7 @@ export default function RelatorioAssistencia() {
                       className="rounded-lg border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#C9963A]/40"
                     >
                       <p className="break-words text-sm font-bold text-[#1A3A6B]">{nomeDupla(item.dupla)}</p>
-                      <p className="mt-1 text-xs text-gray-400">{item.dupla?.bairro || 'Sem bairro'}</p>
+                      <p className="mt-1 text-xs font-medium text-gray-500">{localidadeDupla(item.dupla)}</p>
                     </button>
                   ))}
                 </div>

@@ -44,6 +44,78 @@ const codificarObservacoesAssistencia = ({
   return textoLimpo ? `${cabecalho}\n${textoLimpo}` : cabecalho;
 };
 
+const normalizarTextoAssistencia = (valor = '') =>
+  String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const inferirTipoAssistencia = (textoObservacoes = '') => {
+  const t = normalizarTextoAssistencia(textoObservacoes);
+  if (!t) return 'Visitação';
+  if (t.includes('classe biblica')) return 'Assistência Classe Bíblica';
+  if (t.includes('novo tempo') || t.includes('amigos nt') || t.includes('interessados nt')) {
+    return 'Mentoria de Interessados no Novo Tempo';
+  }
+  if (
+    t.includes('captar') ||
+    t.includes('captacao') ||
+    t.includes('pesquisa biblica') ||
+    t.includes('mutirao') ||
+    t.includes('passando contatos') ||
+    t.includes('contatos para') ||
+    t.includes('abordar para oferecer')
+  ) {
+    return 'Captação de Interessados';
+  }
+  if (
+    t.includes('treinamento') ||
+    t.includes('treinando') ||
+    t.includes('instrucao') ||
+    t.includes('ensinar a dupla') ||
+    t.includes('uso do pcm') ||
+    t.includes('orientacao pcm') ||
+    t.includes('assessorando a usar o pcm') ||
+    t.includes('auxiliando no uso do pcm') ||
+    t.includes('capacitacao')
+  ) {
+    return 'Treinamento de Igreja';
+  }
+  if (
+    t.includes('planejamento') ||
+    t.includes('planejando') ||
+    t.includes('organizacao') ||
+    t.includes('organizando') ||
+    t.includes('organizar') ||
+    t.includes('encontro com') ||
+    t.includes('encontro missionario') ||
+    t.includes('2º encontro') ||
+    t.includes('2o encontro') ||
+    t.includes('fichas cadastrais') ||
+    t.includes('coletar dados') ||
+    t.includes('dados para cadastro') ||
+    t.includes('finalizando cadastro') ||
+    t.includes('conferindo datas') ||
+    t.includes('acertando data') ||
+    t.includes('agendando')
+  ) {
+    return 'Planejamento Missionário';
+  }
+  if (
+    t.includes('estudo biblico') ||
+    t.includes('estudos biblicos') ||
+    t.includes('ministrei o estudo') ||
+    t.includes('ponto de estudo') ||
+    t.includes('estudo especifico') ||
+    t.includes('estudo sobre') ||
+    t.includes('batismo')
+  ) {
+    return 'Assistência Estudo Bíblico';
+  }
+  return 'Visitação';
+};
+
 const decodificarObservacoesAssistencia = (observacoesBrutas, duplas = []) => {
   const bruto = String(observacoesBrutas || '');
   let meta = {};
@@ -62,37 +134,110 @@ const decodificarObservacoesAssistencia = (observacoesBrutas, duplas = []) => {
     }
   }
 
-  const primeiraDupla = Array.isArray(duplas)
-    ? (duplas[0]?.dupla || duplas[0] || null)
-    : null;
+  const listaDuplas = Array.isArray(duplas)
+    ? duplas.map((item) => item?.dupla || item).filter(Boolean)
+    : [];
+  const primeiraDupla = listaDuplas[0] || null;
 
-  const distritoInferidoId = primeiraDupla?.distrito?.id || primeiraDupla?.distritoId || null;
-  const distritoInferidoNome = primeiraDupla?.distrito?.nome || '';
-  const igrejaInferidaId = primeiraDupla?.igreja?.id || primeiraDupla?.igrejaId || null;
-  const igrejaInferidaNome = primeiraDupla?.igreja?.nome || '';
+  const distritoIdsSet = new Set();
+  const distritosNomesSet = new Set();
+  const igrejaIdsSet = new Set();
+  const igrejasNomesSet = new Set();
+
+  if (meta.distritoId && Number(meta.distritoId)) distritoIdsSet.add(Number(meta.distritoId));
+  if (meta.distritoNome && String(meta.distritoNome).trim()) distritosNomesSet.add(String(meta.distritoNome).trim());
+  if (meta.igrejaId && Number(meta.igrejaId)) igrejaIdsSet.add(Number(meta.igrejaId));
+  if (meta.igrejaNome && String(meta.igrejaNome).trim()) igrejasNomesSet.add(String(meta.igrejaNome).trim());
+
+  for (const d of listaDuplas) {
+    const dId = d?.distrito?.id || d?.distritoId;
+    const dNome = d?.distrito?.nome;
+    const iId = d?.igreja?.id || d?.igrejaId;
+    const iNome = d?.igreja?.nome;
+    if (dId && Number(dId)) distritoIdsSet.add(Number(dId));
+    if (dNome && String(dNome).trim()) distritosNomesSet.add(String(dNome).trim());
+    if (iId && Number(iId)) igrejaIdsSet.add(Number(iId));
+    if (iNome && String(iNome).trim()) igrejasNomesSet.add(String(iNome).trim());
+  }
+
+  const distritoIds = [...distritoIdsSet];
+  const distritosNomes = [...distritosNomesSet];
+  const igrejaIds = [...igrejaIdsSet];
+  const igrejasNomes = [...igrejasNomesSet];
+
+  const distritoInferidoId = primeiraDupla?.distrito?.id || primeiraDupla?.distritoId || distritoIds[0] || null;
+  const distritoInferidoNome = distritosNomes.join(', ') || primeiraDupla?.distrito?.nome || '';
+  const igrejaInferidaId = primeiraDupla?.igreja?.id || primeiraDupla?.igrejaId || igrejaIds[0] || null;
+  const igrejaInferidaNome = igrejasNomes.join(', ') || primeiraDupla?.igreja?.nome || '';
+
+  const tipoFinal = (meta.tipoAssistencia && String(meta.tipoAssistencia).trim())
+    ? String(meta.tipoAssistencia).trim()
+    : inferirTipoAssistencia(texto);
 
   return {
     observacoes: texto.trim() ? texto : null,
-    tipoAssistencia: meta.tipoAssistencia || null,
-    distritoId: meta.distritoId || distritoInferidoId || null,
-    distritoNome: meta.distritoNome || distritoInferidoNome || null,
-    igrejaId: meta.igrejaId || igrejaInferidaId || null,
-    igrejaNome: meta.igrejaNome || igrejaInferidaNome || null,
+    tipoAssistencia: tipoFinal,
+    distritoId: meta.distritoId ? Number(meta.distritoId) : (distritoInferidoId || null),
+    distritoNome: (meta.distritoNome && String(meta.distritoNome).trim()) || distritoInferidoNome || null,
+    distritoIds,
+    distritosNomes,
+    igrejaId: meta.igrejaId ? Number(meta.igrejaId) : (igrejaInferidaId || null),
+    igrejaNome: (meta.igrejaNome && String(meta.igrejaNome).trim()) || igrejaInferidaNome || null,
+    igrejaIds,
+    igrejasNomes,
   };
 };
 
 const enriquecerRegistroAcompanhamento = (registro) => {
   if (!registro) return registro;
   const decodificado = decodificarObservacoesAssistencia(registro.observacoes, registro.duplas);
+  const primeiraDupla = Array.isArray(registro.duplas)
+    ? (registro.duplas[0]?.dupla || registro.duplas[0] || null)
+    : null;
+  const regiaoObj = registro.coordenador?.regiao || primeiraDupla?.distrito?.regiao || null;
   return {
     ...registro,
     observacoes: decodificado.observacoes,
     tipoAssistencia: decodificado.tipoAssistencia,
+    regiaoId: regiaoObj?.id || null,
+    regiaoNome: regiaoObj?.nome || null,
     distritoId: decodificado.distritoId,
     distritoNome: decodificado.distritoNome,
+    distritoIds: decodificado.distritoIds,
+    distritosNomes: decodificado.distritosNomes,
     igrejaId: decodificado.igrejaId,
     igrejaNome: decodificado.igrejaNome,
+    igrejaIds: decodificado.igrejaIds,
+    igrejasNomes: decodificado.igrejasNomes,
   };
+};
+
+const filtrarRegistrosEnriquecidos = (registros, query = {}) => {
+  const { regiaoId, tipoAssistencia, distritoId, igrejaId } = query;
+  const numRegiao = regiaoId ? Number(regiaoId) : null;
+  const numDistrito = distritoId ? Number(distritoId) : null;
+  const numIgreja = igrejaId ? Number(igrejaId) : null;
+  const tipoNorm = tipoAssistencia ? normalizarTextoAssistencia(tipoAssistencia) : '';
+
+  return registros.filter((r) => {
+    if (numRegiao && Number(r.regiaoId) !== numRegiao && Number(r.coordenador?.regiao?.id) !== numRegiao) {
+      return false;
+    }
+    if (tipoNorm && normalizarTextoAssistencia(r.tipoAssistencia) !== tipoNorm) {
+      return false;
+    }
+    if (numDistrito) {
+      const pertenceDistrito = Number(r.distritoId) === numDistrito
+        || (Array.isArray(r.distritoIds) && r.distritoIds.includes(numDistrito));
+      if (!pertenceDistrito) return false;
+    }
+    if (numIgreja) {
+      const pertenceIgreja = Number(r.igrejaId) === numIgreja
+        || (Array.isArray(r.igrejaIds) && r.igrejaIds.includes(numIgreja));
+      if (!pertenceIgreja) return false;
+    }
+    return true;
+  });
 };
 
 const INCLUDE_PADRAO_ACOMPANHAMENTO = {
@@ -118,7 +263,7 @@ const INCLUDE_PADRAO_ACOMPANHAMENTO = {
           igrejaId: true,
           distritoId: true,
           igreja: { select: { id: true, nome: true } },
-          distrito: { select: { id: true, nome: true } },
+          distrito: { select: { id: true, nome: true, regiao: { select: { id: true, nome: true } } } },
         },
       },
     },
@@ -455,13 +600,18 @@ const AcompanhamentoController = {
         if (ate) where.dataSaida.lte = new Date(`${ate}T23:59:59.999Z`);
       }
 
-      const registros = await prisma.acompanhamentoDupla.findMany({
+      const registrosBrutos = await prisma.acompanhamentoDupla.findMany({
         where,
         orderBy: [{ dataSaida: 'desc' }, { id: 'desc' }],
         include: INCLUDE_PADRAO_ACOMPANHAMENTO,
       });
 
-      res.json(registros.map(enriquecerRegistroAcompanhamento));
+      const registros = filtrarRegistrosEnriquecidos(
+        registrosBrutos.map(enriquecerRegistroAcompanhamento),
+        req.query
+      );
+
+      res.json(registros);
     } catch (err) {
       console.error(err);
       res.status(500).json({ erro: 'Erro ao listar acompanhamentos.' });
@@ -500,7 +650,10 @@ const AcompanhamentoController = {
         include: INCLUDE_PADRAO_ACOMPANHAMENTO,
       });
 
-      const registros = registrosBrutos.map(enriquecerRegistroAcompanhamento);
+      const registros = filtrarRegistrosEnriquecidos(
+        registrosBrutos.map(enriquecerRegistroAcompanhamento),
+        req.query
+      );
 
       // Agrupa de domingo a sábado, conforme o período exibido no relatório.
       const agrupado = {};
