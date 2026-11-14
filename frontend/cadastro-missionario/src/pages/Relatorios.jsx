@@ -121,7 +121,7 @@ export default function Relatorios() {
       setPorRegiao(pr.data);
       setPainelAssociacao(painel.data);
     }).catch((err) => {
-      setErro(err.response?.data?.erro || 'Não foi possível carregar os relatórios do seu escopo.');
+      setErro(err.response?.data?.erro || 'Não foi possível carregar os relatórios da sua página. Clique em “Atualizar página” para tentar novamente.');
     }).finally(() => setCarregando(false));
   }, [isAdmin, podeConsultarRegioes]);
 
