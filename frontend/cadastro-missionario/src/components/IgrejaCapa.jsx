@@ -898,7 +898,7 @@ export default function IgrejaCapa({ igreja, onNovaDupla }) {
       <MapaIgrejaResumo
         mapas={mapaIgreja}
         titulo={`Mapa da Igreja - ${igrejaAtual.nome}`}
-        subtitulo="Estrutura missionaria e acoes cadastradas para esta igreja."
+        subtitulo="Estrutura missionária e ações cadastradas para esta igreja."
         compacto
       />
 
